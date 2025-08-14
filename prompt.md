@@ -1,282 +1,363 @@
-# OpenRiverCam Hardware Specification & Parts Sourcing
+# OpenRiverCam Raspberry Pi 5 Setup & Configuration Guide
 
-You are a hardware engineering specialist focused on designing rugged field monitoring systems for tropical environments. Your task is to create a complete hardware specification and source suitable parts for an autonomous river monitoring station.
+You are a systems engineering specialist focused on creating automated, resilient field monitoring systems. Your task is to develop comprehensive installation and configuration instructions for deploying OpenRiverCam software on Raspberry Pi 5 hardware with environmental control systems.
 
-## System Requirements
+## System Overview
 
-### Core Function
-Design a solar-powered monitoring station that captures video of river flow for computer vision analysis, transmits data via 4G, and operates autonomously in Indonesian jungle conditions.
+### Mission
+Create a complete setup guide for installing and configuring a Raspberry Pi 5 system that autonomously captures river imagery hourly, processes it using OpenRiverCam computer vision algorithms, monitors and controls environmental conditions, and transmits results to remote servers via cellular connectivity.
 
-### Technical Specifications Needed
+### Target Environment
+- **Location**: Remote tropical jungle locations in Indonesia
+- **Climate**: High humidity (up to 95% RH), temperature range 20-40°C
+- **Connectivity**: 4G/cellular with intermittent coverage
+- **Power**: Solar + battery system with power management
+- **Maintenance**: Autonomous operation for 6-12 months between service visits
 
-#### Computing Platform
-- **Primary**: Raspberry Pi 5 (confirmed requirement)
-- Define minimum RAM, storage, and cooling requirements
-- Specify case/heatsink needs for tropical operation
+## Required Documentation Deliverables
 
-#### Camera System
-- High-quality camera module compatible with Raspberry Pi 5
-- Weatherproof housing with optical clarity
-- Field of view suitable for river monitoring (typically 20-50m width)
-- Low-light performance for dawn/dusk operation
-- Anti-condensation measures for lens clarity
+### 1. Complete Installation Guide
+Create step-by-step instructions covering:
 
-#### Power Management
-- Solar panel sizing for continuous operation (consider latitude ~6°S)
-- Battery capacity for 3-5 days backup power
-- Charge controller with MPPT capability
-- Power distribution and monitoring
-- Low-power operation modes
+#### Hardware Assembly & Connections
+- Raspberry Pi 5 setup with proper cooling configuration
+- Camera Module v3 installation and testing
+- Real-Time Clock (RTC) module integration for scheduled operation
+- Temperature and humidity sensor installation (DHT22/SHT30)
+- Environmental control hardware setup (fans, relays, heating elements)
+- 4G/cellular modem/HAT configuration and antenna connection
+- Power management system integration (battery monitoring, solar charge controller)
+- Weatherproof enclosure assembly with proper cable management
 
-#### Connectivity Options
-Design separate connectivity solutions with individual pricing:
-- **WiFi Connectivity**: WiFi modules, range extenders, outdoor antennas
-- **Cellular Connectivity**: 4G/5G modems/HATs, carrier-compatible antennas
-- **Satellite Connectivity**: Satellite modems, directional antennas, subscription hardware
+#### Operating System Installation
+- Raspberry Pi OS (64-bit) installation and initial configuration
+- SSH access setup for remote configuration
+- System security hardening and unnecessary service disabling
+- User account setup and sudo configuration
+- Network configuration for cellular and WiFi connectivity
+- Time zone configuration and NTP synchronization
 
-#### Environmental Protection
-- **Weatherproof enclosure** rated for tropical conditions
-- **Humidity control** - active dehumidification or desiccant systems
-- **Ventilation** without compromising waterproofing
-- **Mounting hardware** for pole or structure installation
+#### Software Dependencies Installation
+- Python 3.11+ environment setup with virtual environment
+- OpenCV installation and optimization for Pi 5 hardware
+- Scientific computing libraries (NumPy, SciPy, PIL/Pillow)
+- Sensor libraries for I2C/SPI communication
+- GPIO control libraries (RPi.GPIO or gpiozero)
+- Cellular modem software and drivers
+- System monitoring tools and utilities
 
-#### Grounding & Lightning Protection
-- **Grounding systems** - rods, conductors, and connections
-- **Lightning arrestors** - surge protection for power and data lines
-- **Surge suppressors** - equipment protection from electrical spikes
-- **Bonding hardware** - proper electrical grounding implementation
+### 2. OpenRiverCam Integration Instructions
+Develop detailed procedures for:
 
-#### Security & Anti-Theft
-- **Tamper-evident enclosures** - detect unauthorized access
-- **Security fasteners** - specialized bolts and locks
-- **Anti-theft mounting** - secure attachment systems
-- **Intrusion detection** - sensors for unauthorized access alerts
+#### Core Software Installation
+- OpenRiverCam library installation and dependencies
+- Computer vision pipeline configuration
+- Camera calibration and field-of-view setup
+- Image processing parameter tuning for river monitoring
+- Algorithm configuration for tropical lighting conditions
+- Performance optimization for Pi 5 hardware capabilities
 
-#### Additional Components
-- Power cycling/watchdog systems
-- Status indicator LEDs
-- Maintenance access ports
-- Cable management and strain relief
+#### Data Processing Pipeline
+- Video capture scheduling and file management
+- Image quality validation and error handling
+- Flow analysis algorithm integration
+- Data export format configuration (JSON/CSV)
+- Local data storage and automatic cleanup policies
+- Compression and transmission optimization
 
-### Sourcing Requirements
+### 3. Environmental Control System Setup
+Create comprehensive configuration for:
 
-#### Regional Considerations
-- Parts available from US suppliers preferred
-- Standard US domestic shipping
-- US technical support availability
-- No customs or import considerations for build phase
+#### Sensor Configuration
+- Temperature sensor installation and calibration
+- Humidity sensor setup and accuracy validation
+- Sensor data collection scheduling and logging
+- I2C/SPI bus configuration and device addressing
+- Sensor failure detection and fallback procedures
 
-#### Budget Tier Requirements
-Design solutions for three distinct budget categories to enable flexible deployment strategies:
+#### Control System Implementation
+- Fan control for active cooling based on temperature thresholds
+- Heating element control for condensation prevention
+- Dehumidification system automation
+- Camera lens heating for condensation prevention during capture
+- Relay control for power management of environmental systems
+- Emergency shutdown procedures for extreme conditions
 
-**Low Budget Tier ($200-300 USD)**
-- Essential components only
-- Basic functionality with manual intervention acceptable
-- 3-6 months operational life expectancy
-- Suitable for proof-of-concept or high-volume basic deployments
+#### Environmental Logic Programming
+- Temperature control algorithms with hysteresis
+- Humidity control with predictive activation
+- Power-aware environmental control (battery level considerations)
+- Thermal protection for electronic components
+- Environmental data logging and trend analysis
+- Alert thresholds and automated responses
 
-**Mid Budget Tier ($400-500 USD)**
-- Balanced cost-effectiveness with reliable operation
-- 6-12 months autonomous operation capability
-- Standard deployment tier for most monitoring locations
-- Good reliability with reasonable feature set
+### 4. Automated Scheduling Configuration
+Design and implement:
 
-**High Budget Tier ($600-800 USD)**
-- Premium components with redundant systems
-- 12+ months autonomous operation
-- Maximum reliability for critical monitoring locations
-- Advanced features like self-diagnostics and remote monitoring
+#### Systemd Service Configuration
+- Main OpenRiverCam service for image capture and processing
+- Environmental monitoring service for continuous condition tracking
+- Data transmission service with retry logic and queue management
+- System health monitoring service
+- Watchdog service for automatic recovery from failures
+- Log rotation and cleanup services
 
-#### Quality Standards
-- Industrial/commercial grade components preferred
-- IP65/IP67 ratings for outdoor components
-- Operating temperature range: 20-40°C
-- Humidity tolerance up to 95% RH
+#### Timer-Based Operation
+- Hourly capture schedule using systemd timers
+- RTC-based wake-up configuration for power management
+- Environmental control scheduling (continuous vs. periodic)
+- Data transmission scheduling (immediate vs. batched)
+- System maintenance scheduling (log cleanup, updates)
+- Battery level-aware scheduling modifications
 
-## Deliverables Required
+#### Power Management Integration
+- Sleep mode configuration between capture cycles
+- Battery level monitoring and low-power mode activation
+- Solar charging optimization and battery protection
+- Environmental control power budgeting
+- Emergency power conservation protocols
 
-For each budget tier (Low, Mid, High), provide:
+### 5. Communication & Data Transmission Setup
+Establish robust connectivity:
 
-1. **Complete Bill of Materials (BOM)** for each tier with:
+#### Cellular Modem Configuration
+- 4G/LTE modem driver installation and configuration
+- APN settings for Indonesian cellular carriers
+- Connection management and automatic reconnection
+- Data usage monitoring and optimization
+- Signal strength monitoring and logging
+- Fallback procedures for connectivity issues
 
-**Required BOM Format - CSV Output:**
-Save all BOMs as CSV files in the project directory:
+#### Data Transmission Protocol
+- HTTP/HTTPS client configuration for secure data upload
+- API endpoint configuration and authentication setup
+- Data packaging and compression for efficient transmission
+- Transmission queue management and retry logic
+- Environmental data integration with analysis results
+- Error handling for transmission failures
 
-**File Names:**
-- `bom_low_budget.csv` - Low budget tier BOM
-- `bom_mid_budget.csv` - Mid budget tier BOM  
-- `bom_high_budget.csv` - High budget tier BOM
-- `bom_connectivity_wifi.csv` - WiFi connectivity add-on pricing
-- `bom_connectivity_cellular.csv` - Cellular connectivity add-on pricing
-- `bom_connectivity_satellite.csv` - Satellite connectivity add-on pricing
+#### Remote Monitoring Capabilities
+- Status reporting via cellular connection
+- System health telemetry transmission
+- Environmental condition reporting
+- Log file transmission for remote diagnostics
+- Remote command execution for basic system control
+- Over-the-air configuration update capabilities
 
-**CSV Headers:**
-```
-Component_Category,Item_Description,Critical_Specs,Quantity,Unit_Cost_USD,Total_Cost_USD,Supplier,Product_Link,Notes
-```
+### 6. System Monitoring & Diagnostics
+Implement comprehensive monitoring:
 
-**Example CSV Row:**
-```
-Computing Platform,Raspberry Pi 5 8GB,ARM Cortex-A76 8GB RAM WiFi6 BT5.0,1,80.00,80.00,Element14,https://...,Primary computing unit
-```
+#### Logging Configuration
+- Structured logging for all system components
+- Log rotation and compression to manage storage
+- Remote log transmission for diagnostics
+- Error categorization and alert priorities
+- Performance metrics logging
+- Environmental condition logging
 
-**Required Information for Each Item:**
-   - **Critical Specs**: Key technical specifications (power consumption, operating temp, IP rating, etc.)
-   - **Quantity**: Exact quantity needed per system
-   - **Unit Cost**: Individual component cost in USD including any applicable taxes
-   - **Total Cost**: Unit cost × quantity
-   - **Supplier**: Primary supplier name with regional availability
-   - **Product Link**: Direct URL to product page for verification and ordering
+#### Health Monitoring
+- CPU temperature and performance monitoring
+- Memory usage tracking and optimization
+- Disk space monitoring with automatic cleanup
+- Network connectivity status monitoring
+- Battery level and charging status tracking
+- Environmental sensor health monitoring
 
-**BOM Categories to Include:**
-   - Computing Platform (Pi 5, storage, cooling)
-   - Camera System (module, housing, optics)
-   - Power Management (solar, battery, charge controller)
-   - Connectivity Options (separate pricing for WiFi, Cellular, Satellite)
-   - Environmental Protection (enclosure, humidity control, mounting)
-   - Grounding & Lightning Protection (rods, arrestors, surge protection)
-   - Security & Anti-Theft (tamper-evident, locks, intrusion detection)
-   - Monitoring & Control (watchdog, indicators)
-   - Assembly Hardware (cables, connectors, fasteners)
+#### Automated Diagnostics
+- System self-test procedures on startup
+- Camera functionality testing
+- Environmental control system testing
+- Connectivity testing and validation
+- Data integrity verification
+- Performance benchmark monitoring
 
-**Cost Calculation Requirements:**
-   - Include US domestic shipping costs
-   - Use US supplier pricing
-   - Provide alternative US suppliers for critical components
-   - Include 10% contingency in total cost calculations
+### 7. Error Handling & Recovery Procedures
+Develop robust error management:
 
-2. **Comparative System Integration Plans**:
-   - Assembly instructions for each budget tier
-   - Wiring diagrams and connections
-   - Mounting and installation requirements by tier
-   - Testing and validation procedures
-   - Upgrade path considerations between tiers
+#### Failure Detection
+- Hardware failure detection (camera, sensors, modem)
+- Software crash detection and automatic restart
+- Network connectivity failure handling
+- Environmental threshold violation detection
+- Power system failure detection
+- Storage failure detection and data recovery
 
-3. **Tiered Environmental Design Solutions**:
-   - Basic vs. advanced condensation prevention strategies
-   - Humidity management approaches by budget level
-   - Thermal management solutions (passive vs. active)
-   - Weatherproofing methodology variations
-   - Grounding and lightning protection by budget tier
-   - Security and anti-theft measures by budget level
+#### Automatic Recovery
+- Service restart procedures for software failures
+- Network reconnection protocols
+- Camera reset and reinitialization procedures
+- Environmental control system reset
+- Data queue recovery after connectivity restoration
+- System reboot procedures for critical failures
 
-4. **Budget-Specific Operational Specifications**:
-   - Power consumption analysis for each tier
-   - Battery life and solar sizing by budget level
-   - Data transmission capabilities and limitations by connectivity type
-   - Maintenance schedule recommendations per tier
-   - Performance trade-offs documentation
-   - Security and theft deterrent effectiveness
+#### Manual Intervention Protocols
+- Remote troubleshooting procedures
+- Safe mode operation for maintenance
+- Emergency shutdown and restart procedures
+- Data recovery from local storage
+- System reset and factory restore procedures
+- Field maintenance protocols
 
-5. **Connectivity Options Analysis**:
-   - Separate BOMs and pricing for WiFi, Cellular, and Satellite options
-   - Coverage area and reliability comparison
-   - Data throughput and latency specifications
-   - Power consumption differences between connectivity types
-   - Installation and maintenance requirements for each option
+### 8. Security & Hardening Configuration
+Ensure system security:
 
-6. **Budget Tier Comparison Matrix**:
-   - Feature comparison across all three tiers
-   - Cost-benefit analysis with detailed cost breakdowns
-   - Deployment scenario recommendations
-   - Risk assessment for each budget level
-   - Component upgrade/downgrade paths between tiers
-   - Connectivity option recommendations by budget and use case
+#### System Hardening
+- Minimal service installation and configuration
+- Firewall configuration for essential connectivity only
+- SSH key-based authentication setup
+- User privilege management and sudo configuration
+- Automatic security update configuration
+- Intrusion detection and monitoring
 
-7. **Supplier Verification and Sourcing Plan**:
-   - Verified availability from US suppliers
-   - Lead times and minimum order quantities
-   - US domestic shipping costs and delivery timeframes
-   - Distributor contacts and support availability
-   - Bulk pricing analysis for multiple unit orders
-   - Alternative sourcing options for critical components
+#### Data Security
+- Encryption for all transmitted data
+- Secure credential storage and management
+- API authentication and key management
+- Local data encryption for sensitive information
+- Secure boot configuration if supported
+- Physical security considerations
 
-8. **Pre-Integrated Solutions and Open Source Analysis**:
-   - **Commercial Solutions**: Research existing weather stations, IoT platforms, and monitoring systems that could be adapted
-   - **Open Source Projects**: Identify relevant GitHub repositories, community projects, and maker solutions
-   - **Cost-Benefit Analysis**: Compare pre-integrated vs. custom build costs and effort
-   - **Adaptation Assessment**: Evaluate modification requirements for OpenRiverCam integration
-   - **Community Support**: Document active development, user base, and maintenance status
-   - **Reference Documentation**: Provide URLs, project status, and compatibility notes
+### 9. Testing & Validation Procedures
+Develop comprehensive testing protocols:
 
-## Success Criteria by Budget Tier
+#### Component Testing
+- Individual sensor testing and calibration
+- Camera capture quality validation
+- Environmental control system testing
+- Cellular connectivity testing with various carriers
+- Power system testing under various conditions
+- RTC accuracy and scheduling validation
 
-### Low Budget Tier Success Criteria
-- System operates for 3-6 months with minimal intervention
-- Basic video capture in good weather conditions
-- Periodic data transmission capability
-- Total cost under $300 per unit
-- Simple assembly and testing in US
+#### Integration Testing
+- Complete system workflow testing
+- Environmental control integration with main operation
+- Power management under various battery levels
+- Network failure and recovery testing
+- Data transmission under various connectivity conditions
+- Long-duration autonomous operation testing
 
-### Mid Budget Tier Success Criteria
-- System operates autonomously for 6-12 months
-- Clear video capture in most weather conditions
-- Reliable 4G data transmission
-- Total cost under $500 per unit
-- Assembly and testing capability in US
+#### Field Validation
+- Pre-deployment testing in controlled environment
+- Environmental stress testing (temperature, humidity extremes)
+- Power consumption validation and optimization
+- Remote monitoring and control validation
+- Performance benchmarking under field conditions
+- Maintenance procedure validation
 
-### High Budget Tier Success Criteria
-- System operates autonomously for 12+ months
-- Clear video capture in all weather conditions including storms
-- Continuous reliable 4G data transmission with redundancy
-- Advanced monitoring and self-diagnostic capabilities
-- Total cost under $800 per unit
-- Assembly and testing in US with minimal maintenance design
+### 10. Deployment & Maintenance Documentation
+Create operational procedures:
 
-Focus on practical, field-tested solutions suitable for remote deployment in challenging environmental conditions. Prioritize reliability and maintainability over advanced features.
+#### Field Deployment Guide
+- Site preparation and installation procedures
+- System commissioning and initial configuration
+- Field testing and validation procedures
+- Documentation and record keeping requirements
+- Handoff procedures to local operators
+- Emergency contact and support procedures
 
-## Research Requirements for Pre-Integrated Solutions
+#### Maintenance Procedures
+- Scheduled maintenance tasks and intervals
+- Remote monitoring and health check procedures
+- Troubleshooting guides for common issues
+- Parts replacement procedures and inventory
+- System upgrade and update procedures
+- End-of-life decommissioning procedures
 
-### Commercial Solution Categories to Research
-1. **Weather Monitoring Stations** - Davis Instruments, Campbell Scientific, Onset HOBO
-2. **Industrial IoT Platforms** - Particle, Arduino Pro, Adafruit IO systems
-3. **Environmental Sensor Networks** - NEON, LoRaWAN platforms, cellular IoT gateways
-4. **Educational/Maker Platforms** - SparkFun weather kits, Adafruit environmental systems
-5. **Solar Power Kits** - Goal Zero, Renogy, BattleBorn systems with data logging
+## Technical Specifications to Address
 
-### Open Source Project Research Areas
-1. **River/Water Monitoring** - Search GitHub for "river monitoring", "water level sensor", "stream gauge"
-2. **Environmental Sensing** - Arduino weather stations, Raspberry Pi sensor networks
-3. **Solar Power Management** - Open source MPPT controllers, battery monitoring systems
-4. **Cellular/WiFi Data Logging** - Remote sensor data transmission projects
-5. **Computer Vision Water Flow** - OpenCV flow analysis, particle tracking systems
+### Performance Requirements
+- **Boot Time**: System ready for operation within 2 minutes of power-on
+- **Capture Cycle**: Complete image capture and processing within 15 minutes
+- **Power Consumption**: Sleep mode <1W, active mode <15W including environmental controls
+- **Storage Management**: Automatic cleanup maintaining 7 days of local data
+- **Network Efficiency**: Minimal cellular data usage through compression and batching
 
-### Documentation Format for References
-Create additional CSV file: `reference_solutions.csv` with columns:
-```
-Solution_Type,Project_Name,URL,Budget_Tier_Fit,Cost_Estimate,Adaptation_Effort,Active_Status,Notes
-```
+### Environmental Control Specifications
+- **Temperature Control**: Maintain 20-35°C internal temperature
+- **Humidity Control**: Maintain <70% RH internal humidity
+- **Response Time**: Environmental control activation within 60 seconds of threshold breach
+- **Sensor Accuracy**: ±2°C temperature, ±5% RH humidity
+- **Control Power**: Environmental controls peak usage <5W
 
-## BOM Quality Assurance Requirements
+### Reliability Requirements
+- **Uptime Target**: 99%+ operational availability
+- **Error Recovery**: Automatic recovery from 95%+ of error conditions
+- **Data Integrity**: Zero data loss during normal operation
+- **Environmental Protection**: 100% prevention of condensation-related failures
+- **Remote Diagnostics**: Complete system status available via cellular connection
 
-### Supplier Link Verification
-- All product links must be active and lead to correct items
-- Verify pricing accuracy within 30 days of BOM creation
-- Confirm product availability and stock status
-- Include alternative product links for critical components
+### Security Requirements
+- **Data Encryption**: All transmitted data encrypted using TLS 1.3
+- **Authentication**: Strong authentication for all remote access
+- **Access Control**: Principle of least privilege for all services
+- **Update Security**: Secure, authenticated software update mechanism
+- **Physical Security**: Tamper detection and reporting capabilities
 
-### Technical Specification Validation
-- Verify all critical specs meet operational requirements
-- Cross-reference power consumption with solar/battery sizing
-- Confirm environmental ratings (IP65/67, temperature, humidity)
-- Validate compatibility between components (voltage, connectors, etc.)
+## Implementation Priorities
 
-### Regional Sourcing Priorities
-1. **Primary**: Major US electronics distributors (Digi-Key, Mouser, Element14)
-2. **Secondary**: Direct manufacturer sales within US
-3. **Tertiary**: Amazon Business or other US commercial suppliers
-4. **Emergency**: Alternative US suppliers for critical components
+### Phase 1: Base System Setup (Week 1)
+1. Hardware assembly and basic OS installation
+2. Core software dependencies and Python environment
+3. Camera and sensor integration testing
+4. Basic environmental monitoring implementation
+5. Initial connectivity testing
 
-### Cost Accuracy Standards
-- Include all applicable US taxes and fees
-- Use current USD pricing at time of BOM creation
-- Add realistic US domestic shipping estimates
-- Account for standard US sales tax considerations
-- Provide cost range estimates (±10%) to account for price fluctuations
+### Phase 2: OpenRiverCam Integration (Week 2)
+1. OpenRiverCam software installation and configuration
+2. Image capture pipeline development
+3. Computer vision algorithm integration
+4. Data processing and export functionality
+5. Local storage and cleanup implementation
 
-### CSV File Output Requirements
-- Save all BOMs and reference data as CSV files in project directory
-- Use consistent naming convention: `bom_[tier]_[type].csv`
-- Include header row with standardized column names
-- Ensure all URLs are active and properly formatted
-- Validate CSV format for easy import/analysis
+### Phase 3: Environmental Control (Week 3)
+1. Environmental control hardware integration
+2. Control algorithm implementation and testing
+3. Proactive control system development
+4. Power management integration
+5. Environmental data logging and transmission
+
+### Phase 4: Automation & Scheduling (Week 4)
+1. Systemd service and timer configuration
+2. RTC-based scheduling implementation
+3. Power management and sleep mode configuration
+4. Automated startup and shutdown procedures
+5. Error handling and recovery mechanisms
+
+### Phase 5: Communication & Remote Management (Week 5)
+1. Cellular modem configuration and optimization
+2. Data transmission and API integration
+3. Remote monitoring and status reporting
+4. Over-the-air update implementation
+5. Security hardening and validation
+
+### Phase 6: Testing & Documentation (Week 6)
+1. Comprehensive system testing and validation
+2. Performance optimization and tuning
+3. Field deployment preparation
+4. Documentation completion and review
+5. Training materials and troubleshooting guides
+
+## Quality Assurance Requirements
+
+### Documentation Standards
+- Step-by-step instructions with command examples
+- Screenshots for critical configuration steps
+- Troubleshooting sections for common issues
+- Validation procedures for each major component
+- Cross-references between related sections
+
+### Testing Validation
+- All procedures tested on actual hardware
+- Commands verified on target Raspberry Pi OS version
+- Error conditions tested and recovery procedures validated
+- Performance benchmarks measured and documented
+- Security configurations tested and verified
+
+### Code Quality
+- All scripts and configuration files provided
+- Code comments explaining complex configurations
+- Error handling in all automation scripts
+- Version control for all configuration files
+- Backup and recovery procedures for all configurations
+
+Focus on creating practical, field-tested procedures that can be followed by technicians with basic Linux experience. Emphasize reliability, maintainability, and autonomous operation in challenging environmental conditions.

@@ -1,174 +1,267 @@
-# OpenRiverCam Hardware Build Project
+# OpenRiverCam Software Configuration & Deployment
 
 ## Project Overview
-This project builds a low-cost, open-source river monitoring station using computer vision to measure water flow in Indonesian rivers. The hardware system will be deployed in collaboration with the Indonesian Red Cross (PMI) to improve flood monitoring and community disaster preparedness.
+OpenRiverCam is a low-cost, open-source river monitoring system that uses computer vision to analyze water flow patterns in Indonesian rivers. This software component handles the automated capture, processing, and transmission of river monitoring data using Raspberry Pi 5 hardware.
 
-## Hardware Mission Statement
-Build a weatherproof, solar-powered monitoring station that can operate autonomously in tropical jungle conditions for extended periods, capturing video data for the OpenRiverCam software to analyze river flow patterns.
+## Software Mission Statement
+Develop a robust, autonomous software system that schedules hourly image capture, processes video data using OpenRiverCam algorithms, and reliably transmits analysis results to remote servers while operating unattended in tropical field conditions with proactive environmental control.
 
-## Core Hardware Requirements
+## Core Software Requirements
 
-### Primary Components
-- **Raspberry Pi 5** - Main computing platform
-- **High-quality camera module** - For video capture of river flow
-- **4G cellular connectivity** - For data transmission to remote servers
-- **Solar power system** - Primary power source for autonomous operation
-- **Battery backup** - For continuous operation during low-light periods
-- **Weatherproof enclosure** - Protection against Indonesian tropical climate
+### System Architecture
+- **Platform**: Raspberry Pi OS (64-bit) on Raspberry Pi 5
+- **Runtime**: Python 3.11+ with OpenCV and scientific computing libraries
+- **Scheduling**: Systemd timers for hourly execution cycles
+- **Connectivity**: 4G/cellular data transmission with WiFi fallback
+- **Storage**: Local data buffering with automatic cleanup
+- **Logging**: Comprehensive system monitoring and error reporting
+- **Environmental Control**: Temperature and humidity monitoring with proactive management
 
-### Environmental Challenges
-- **High humidity** - Tropical jungle environment requires active humidity management
-- **Condensation prevention** - Camera lens must remain clear for accurate readings
-- **Temperature variation** - System must handle day/night temperature swings
-- **Weather resistance** - Must withstand heavy rainfall and storms
-- **Remote deployment** - System must operate without maintenance for extended periods
+### OpenRiverCam Integration
+- **Computer Vision Pipeline**: Integration with existing OpenRiverCam analysis algorithms
+- **Camera Control**: Raspberry Pi Camera Module v3 integration
+- **Video Processing**: Real-time flow analysis and velocity calculations
+- **Data Export**: Standardized JSON/CSV output format for remote servers
+- **Quality Control**: Image quality validation and error handling
 
-### Operational Requirements
-- **Power cycling capability** - Automated system reboot and power management
-- **Video capture scheduling** - Regular video recording with specific file naming conventions
-- **Data processing** - Local processing of OpenRiverCam algorithms
-- **Remote transmission** - Upload processed results to remote servers
-- **Autonomous operation** - Minimal human intervention required
+### Environmental Monitoring & Control
+- **Temperature Monitoring**: Continuous internal and external temperature sensing
+- **Humidity Control**: Active dehumidification and condensation prevention
+- **Thermal Management**: Automated cooling and heating control systems
+- **Sensor Integration**: I2C/SPI sensors for environmental data collection
+- **Proactive Protection**: Automated responses to environmental threats
 
-## Hardware Design Goals
-- Cost-effective solution suitable for multiple deployments
-- Locally buildable and maintainable in Indonesia
-- Robust operation in challenging environmental conditions
-- Integration with existing OpenRiverCam software stack
-- Scalable design for network of monitoring stations
+### Operational Features
+- **Scheduled Operation**: Automated hourly capture and processing cycles
+- **Power Management**: Battery-aware operation with low-power sleep modes
+- **Data Transmission**: Reliable upload to remote servers with retry logic
+- **System Health**: Automated diagnostics and status reporting
+- **Remote Monitoring**: Basic telemetry and control capabilities
+- **Environmental Protection**: Proactive control of enclosure conditions
 
 ## Current Phase
-**Multi-Budget Hardware Specification and Parts Sourcing** - Define detailed technical specifications and identify suitable commercial components for three distinct budget tiers, allowing for flexible deployment strategies based on available funding and operational requirements.
+**Raspberry Pi Software Installation and Configuration** - Create comprehensive setup instructions for installing, configuring, and deploying the software stack on Raspberry Pi 5 hardware with real-time clock (RTC) and environmental control systems for reliable scheduled operation in tropical conditions.
 
-## Budget Tier Strategy
+## Software Stack Components
 
-### Low Budget Tier (~$200-300 USD)
-- **Target Use Case**: Basic monitoring for proof-of-concept or high-volume deployments
-- **Focus**: Essential functionality with minimal features
-- **Trade-offs**: Reduced redundancy, shorter operational life, manual intervention acceptable
+### Core System Software
+- **Operating System**: Raspberry Pi OS Lite (64-bit) for minimal resource usage
+- **Python Environment**: Python 3.11+ with virtual environment for dependencies
+- **OpenRiverCam**: Core computer vision algorithms and analysis pipeline
+- **System Services**: Systemd services for automated operation and monitoring
+- **Network Management**: NetworkManager for cellular and WiFi connectivity
 
-### Mid Budget Tier (~$400-500 USD)
-- **Target Use Case**: Standard deployment for reliable long-term monitoring
-- **Focus**: Balanced cost-effectiveness with robust operation
-- **Trade-offs**: Good reliability with reasonable feature set
+### Computer Vision Stack
+- **OpenCV**: Computer vision processing and image analysis
+- **NumPy/SciPy**: Scientific computing and numerical analysis
+- **PIL/Pillow**: Image processing and format conversion
+- **MediaPipe**: Optional advanced computer vision features
+- **FFmpeg**: Video processing and format conversion
 
-### High Budget Tier (~$600-800 USD)
-- **Target Use Case**: Critical monitoring locations requiring maximum reliability
-- **Focus**: Premium components and redundant systems
-- **Trade-offs**: Higher cost for enhanced durability and autonomous operation
+### Environmental Control Stack
+- **Sensor Libraries**: I2C/SPI libraries for temperature/humidity sensors
+- **GPIO Control**: RPi.GPIO or gpiozero for relay and fan control
+- **Environmental Logic**: Automated control algorithms for climate management
+- **Alert System**: Temperature/humidity threshold monitoring and alerts
+- **Data Logging**: Environmental condition logging and trend analysis
 
-## Success Criteria by Budget Tier
+### Communication Stack
+- **Cellular Modem**: 4G/LTE modem configuration and management
+- **HTTP Client**: Requests library for API communication
+- **Data Serialization**: JSON and CSV export capabilities
+- **Compression**: Data compression for efficient transmission
+- **Security**: HTTPS/TLS encryption for data transmission
 
-### Low Budget Success Criteria
-- 3-6 months autonomous operation
-- Basic video capture in good weather conditions
-- Periodic data transmission capability
-- Cost under $300 per unit
-- Simple assembly and testing in US
+### System Monitoring
+- **Logging**: Python logging with rotation and compression
+- **System Metrics**: CPU, memory, disk, and network monitoring
+- **Power Monitoring**: Battery level and charging status tracking
+- **Environmental Metrics**: Temperature, humidity, and control system status
+- **Error Handling**: Comprehensive exception handling and recovery
+- **Watchdog**: Hardware watchdog timer for system reliability
 
-### Mid Budget Success Criteria
-- 6-12 months autonomous operation
-- Clear video capture in most weather conditions
+## Environmental Control Requirements
+
+### Temperature Management
+- **Internal Temperature**: Monitor CPU and enclosure temperature
+- **External Temperature**: Ambient air temperature sensing
+- **Thermal Protection**: Automatic shutdown if overheating detected
+- **Cooling Control**: Fan activation based on temperature thresholds
+- **Heating Control**: Optional heating elements for cold conditions
+- **Temperature Logging**: Continuous temperature data recording
+
+### Humidity Control
+- **Humidity Monitoring**: Internal enclosure humidity sensing
+- **Condensation Prevention**: Proactive dehumidification activation
+- **Desiccant Management**: Automated desiccant regeneration cycles
+- **Ventilation Control**: Smart ventilation to balance humidity and waterproofing
+- **Alert Thresholds**: High humidity warnings and protective actions
+- **Humidity Logging**: Continuous humidity data recording
+
+### Proactive Environmental Controls
+- **Automated Responses**: Immediate action on threshold violations
+- **Predictive Control**: Trend analysis for proactive intervention
+- **Camera Protection**: Lens heating to prevent condensation
+- **Equipment Protection**: Component shutdown during extreme conditions
+- **Power Optimization**: Environmental control power management
+- **Emergency Protocols**: Automated responses to critical conditions
+
+## Installation Requirements
+
+### Hardware Prerequisites
+- Raspberry Pi 5 (4GB or 8GB RAM recommended)
+- High-quality microSD card (64GB+ Class 10 or better)
+- Raspberry Pi Camera Module v3 (or compatible)
+- Real-Time Clock (RTC) module for accurate scheduling
+- Temperature/humidity sensors (DHT22, SHT30, or similar)
+- Environmental control hardware (fans, relays, heating elements)
+- 4G/cellular HAT or USB modem for data transmission
+- Reliable power supply (solar + battery system)
+
+### Software Prerequisites
+- Fresh Raspberry Pi OS installation (64-bit recommended)
+- Internet connectivity for initial setup and package installation
+- SSH access for remote configuration
+- Basic Linux system administration knowledge
+- Python development environment setup
+
+## Configuration Goals
+
+### Automated Hourly Operation
+- System wakes up on the hour via RTC alarm
+- Environmental conditions checked and controlled
+- Camera captures video/images of river flow (if conditions suitable)
+- OpenRiverCam algorithms process captured data
+- Results packaged and transmitted to remote server
+- Environmental status included in transmitted data
+- System returns to low-power state until next cycle
+
+### Environmental Protection
+- Continuous temperature and humidity monitoring
+- Proactive activation of cooling/heating systems
+- Automatic dehumidification when humidity exceeds thresholds
+- Camera lens heating to prevent condensation during capture
+- Equipment protection during extreme weather conditions
+- Environmental data transmission with analysis results
+
+### Robust Error Handling
+- Network connectivity failures handled gracefully
+- Camera/hardware errors logged and reported
+- Environmental control system failures detected and reported
+- Data buffering during network outages
+- Automatic system recovery from crashes
+- Comprehensive logging for remote diagnostics
+
+### Remote Management
+- Status reporting via cellular connection (including environmental data)
+- Basic remote command execution capability
+- Environmental control override commands
+- Log file transmission for troubleshooting
+- Over-the-air configuration updates
+- Emergency system reset and recovery procedures
+
+## Success Criteria
+
+### Primary Success Criteria
+- Successful hourly capture and analysis cycles
 - Reliable data transmission to remote servers
-- Cost under $500 per unit
-- Assembly and testing capability in US
+- Autonomous operation for weeks without intervention
+- Effective environmental condition control
+- Comprehensive error logging and recovery
+- Low power consumption for extended battery life
 
-### High Budget Success Criteria
-- 12+ months autonomous operation
-- Clear video capture in all weather conditions
-- Continuous reliable data transmission
-- Advanced monitoring and self-diagnostics
-- Cost under $800 per unit
-- Minimal maintenance requirements
+### Environmental Control Success Criteria
+- Maintain internal temperature within 20-35°C range
+- Keep internal humidity below 70% RH
+- Prevent camera condensation during all weather conditions
+- Automated response to environmental threats within 60 seconds
+- Environmental data accuracy within ±2°C and ±5% RH
+- Zero equipment damage from environmental conditions
 
-## Bill of Materials (BOM) Requirements
+### Secondary Success Criteria
+- Remote monitoring and status reporting
+- Automated software updates and configuration changes
+- Data quality validation and error detection
+- Performance optimization for Pi 5 hardware
+- Integration with existing monitoring infrastructure
 
-Each budget tier must include a complete BOM with the following format:
+### Deployment Success Criteria
+- Simple installation process for field deployment
+- Minimal configuration required after hardware setup
+- Reliable operation in tropical environmental conditions
+- Easy troubleshooting and maintenance procedures
+- Scalable deployment across multiple monitoring stations
 
-### BOM Output Format - CSV Files
-Save all BOMs as CSV files in the project directory with the following structure:
+## Technical Specifications
 
-**File Names:**
-- `bom_low_budget.csv` - Low budget tier BOM
-- `bom_mid_budget.csv` - Mid budget tier BOM  
-- `bom_high_budget.csv` - High budget tier BOM
-- `bom_connectivity_wifi.csv` - WiFi connectivity options
-- `bom_connectivity_cellular.csv` - Cellular connectivity options
-- `bom_connectivity_satellite.csv` - Satellite connectivity options
+### Performance Requirements
+- **Processing Time**: Complete analysis cycle within 15 minutes
+- **Memory Usage**: Peak usage under 2GB RAM during processing
+- **Storage**: Automatic cleanup maintaining 7 days of local data
+- **Network**: Efficient data transmission minimizing cellular usage
+- **Power**: Sleep mode power consumption under 1W
+- **Environmental Response**: Control activation within 60 seconds of threshold breach
 
-**CSV Column Headers:**
-```
-Component_Category,Item_Description,Critical_Specs,Quantity,Unit_Cost_USD,Total_Cost_USD,Supplier,Product_Link,Notes
-```
+### Environmental Control Specifications
+- **Temperature Range**: Maintain 20-35°C internal temperature
+- **Humidity Range**: Maintain <70% RH internal humidity
+- **Sensor Accuracy**: ±2°C temperature, ±5% RH humidity
+- **Control Response**: Automated response within 1 minute
+- **Data Frequency**: Environmental readings every 5 minutes
+- **Power Consumption**: Environmental controls <5W peak usage
 
-### Required BOM Categories
-1. **Computing Platform**
-   - Raspberry Pi 5 and accessories
-   - Storage (microSD/SSD)
-   - Cooling solutions
+### Reliability Requirements
+- **Uptime**: 99%+ operational availability over deployment period
+- **Data Integrity**: Zero data loss during transmission
+- **Error Recovery**: Automatic recovery from 95%+ of error conditions
+- **Timing Accuracy**: RTC-based scheduling accurate to ±1 minute
+- **System Health**: Comprehensive monitoring of all critical components
+- **Environmental Protection**: 100% prevention of condensation-related failures
 
-2. **Camera System**
-   - Camera module and housing
-   - Lens protection and anti-condensation
+### Security Requirements
+- **Data Encryption**: All transmitted data encrypted in transit
+- **Authentication**: Secure authentication with remote servers
+- **Access Control**: Minimal attack surface with disabled unnecessary services
+- **Updates**: Secure update mechanism for software and configuration
+- **Monitoring**: Intrusion detection and security event logging
 
-3. **Power Management**
-   - Solar panels with specifications
-   - Battery systems with capacity ratings
-   - Charge controllers and power distribution
+## Development Priorities
 
-4. **Connectivity Options** (Separate pricing for each)
-   - **WiFi Option**: WiFi modules, range extenders, antennas
-   - **Cellular Option**: 4G/5G modems, carrier-compatible antennas
-   - **Satellite Option**: Satellite modems, directional antennas, subscription considerations
+### Phase 1: Core System Setup
+1. Raspberry Pi OS installation and basic configuration
+2. RTC module integration and time synchronization
+3. Camera module setup and testing
+4. Basic Python environment and dependency installation
 
-5. **Environmental Protection**
-   - Weatherproof enclosures with IP ratings
-   - Humidity control systems
-   - Mounting hardware
+### Phase 2: Environmental Control Integration
+1. Temperature and humidity sensor installation and testing
+2. Environmental control hardware setup (fans, relays, heating)
+3. Environmental monitoring software development
+4. Proactive control algorithm implementation
 
-6. **Grounding & Lightning Protection**
-   - Grounding rods and conductors
-   - Lightning arrestors and surge protectors
-   - Grounding hardware and connections
+### Phase 3: OpenRiverCam Integration
+1. OpenRiverCam library installation and configuration
+2. Camera capture pipeline development with environmental checks
+3. Image processing and analysis workflow
+4. Data export including environmental data
 
-7. **Security & Anti-Theft**
-   - Tamper-evident enclosures
-   - Security locks and fasteners
-   - Anti-theft mounting systems
-   - Intrusion detection sensors
+### Phase 4: Automation and Scheduling
+1. Systemd service and timer configuration
+2. Automated startup and shutdown procedures
+3. Environmental control integration with main schedule
+4. Error handling and recovery mechanisms
+5. System monitoring and logging implementation
 
-8. **Monitoring & Control**
-   - Watchdog systems
-   - Status indicators
-   - Maintenance access components
+### Phase 5: Communication and Remote Management
+1. Cellular modem configuration and testing
+2. Data transmission including environmental telemetry
+3. Remote monitoring and status reporting
+4. Environmental control remote override capabilities
+5. Over-the-air update capabilities
 
-### Pre-Integrated Solutions and Open Source Projects
-For each budget tier, research and include:
-
-**Pre-Integrated Hardware Solutions:**
-- Commercial weather monitoring stations that could be adapted
-- Industrial IoT platforms with suitable components
-- Educational/maker platforms with relevant features
-- Complete kits that meet subset of requirements
-
-**Open Source Project References:**
-- Existing open source river monitoring projects
-- Environmental sensor networks and platforms
-- Solar-powered remote monitoring solutions
-- Community-developed weather station designs
-- Relevant GitHub repositories and documentation
-
-**Documentation Requirements:**
-- Project URLs and active status
-- Component compatibility assessment
-- Cost comparison with custom build
-- Adaptation requirements and effort estimation
-- Community support and maintenance status
-
-### BOM Validation Requirements
-- All costs based on US suppliers and shipping
-- Supplier links must be active and verified
-- Critical specs must match operational requirements
-- Quantities must account for assembly needs
-- Alternative suppliers required for critical components
-- Save all data as CSV files in project directory
+### Phase 6: Testing and Deployment
+1. Comprehensive system testing in controlled environment
+2. Environmental stress testing and validation
+3. Power consumption optimization
+4. Field deployment procedures and documentation
+5. Troubleshooting guides and maintenance procedures
