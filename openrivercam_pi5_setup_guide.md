@@ -94,7 +94,7 @@ sudo raspi-config nonint do_i2c 0
 # Connect Camera Module v3 to Pi 5 camera port
 # Ensure ribbon cable is fully seated with contacts facing inward
 # Test connection after OS installation:
-libcamera-hello --preview-window 0,0,640,480 --timeout 5000
+rpicam-hello --preview 0,0,640,480 --timeout 5000ms
 ```
 
 #### 5. Power System Wiring
@@ -515,7 +515,7 @@ sudo apt install -y python3-picamera2
 
 # Alternative camera interfaces
 pip install picamera
-pip install python3-libcamera
+pip install python3-libcamera  # Note: Use rpicam commands for CLI
 
 # Camera calibration tools
 pip install camera-calibration-python
@@ -683,10 +683,10 @@ EOF
 #### Camera Module Setup
 ```bash
 # Test camera functionality
-libcamera-hello --preview-window 0,0,640,480 --timeout 5000
+rpicam-hello --preview 0,0,640,480 --timeout 5000ms
 
 # Test camera capture
-libcamera-still -o /tmp/test_image.jpg --width 1920 --height 1080
+rpicam-still --nopreview -o /tmp/test_image.jpg --width 1920 --height 1080
 
 # Create camera test script
 cat << 'EOF' > /home/openrivercam/test_camera.py

@@ -178,6 +178,8 @@ export DISPLAY=localhost:0.0
 
 ### 3. Create X11 Testing Script
 
+**Create X11 test script:**
+
 ```bash
 cat << 'EOF' > ~/test_x11.sh
 #!/bin/bash
@@ -270,10 +272,12 @@ except Exception as e:
 
 echo "✅ X11 forwarding tests completed!"
 EOF
+```
 
+**Make script executable and run:**
+
+```bash
 chmod +x ~/test_x11.sh
-
-# Run the X11 test
 ~/test_x11.sh
 ```
 
@@ -294,7 +298,8 @@ sudo raspi-config nonint do_i2c 0
 # Enable SSH (should already be enabled)
 sudo raspi-config nonint do_ssh 0
 
-# Install libcamera tools for camera testing
+# Install camera tools for camera testing
+# Note: Commands were renamed from libcamera-* to rpicam-* in recent Pi OS versions
 sudo apt install -y libcamera-apps
 
 # Reboot to apply changes
@@ -360,20 +365,40 @@ sudo shutdown -h now
 ssh -Y openriver@<PI_IP_ADDRESS>
 
 # Check camera detection first
-vcgencmd get_camera
-# Should show: supported=1 detected=1
+# Note: vcgencmd get_camera is deprecated in newer Pi OS
+# Use rpicam detection instead:
 
-# List available cameras
-libcamera-hello --list-cameras
+# List available cameras (this is the primary detection method)
+# Note: Commands renamed from libcamera-* to rpicam-* in recent Pi OS
+rpicam-hello --list-cameras
 
-# Test camera with libcamera (should display preview on your local machine via X11)
-libcamera-hello --preview-window 0,0,640,480 --timeout 5000
+# Alternative detection methods:
+# Check if camera interface is enabled in device tree
+ls /proc/device-tree/soc/i2c0mux/i2c@1/imx*/status 2>/dev/null || echo "Camera interface may not be enabled"
 
-# Test still capture
-libcamera-still -o ~/test_image.jpg --width 1920 --height 1080
+# Check for camera devices in /dev
+ls /dev/video* 2>/dev/null || echo "No video devices found"
 
-# Test video capture
-libcamera-vid -o ~/test_video.h264 --width 1920 --height 1080 --timeout 10000
+# Camera Testing for Headless Operation
+# Note: All rpicam commands use --nopreview to avoid X11/EGL display issues
+
+# Step 1: Test camera detection first
+rpicam-hello --list-cameras
+# Should show: Available cameras and camera details
+
+# Step 2: Test camera functionality without preview (recommended for headless)
+rpicam-hello --nopreview --timeout 5000ms
+# Should show camera initialization messages and complete successfully
+
+# Step 3: Alternative preview test (only if X11 forwarding works perfectly)
+# Note: Often fails with "failed to import fd" error over SSH
+# rpicam-hello --preview 0,0,640,480 --timeout 5000ms
+
+# Step 4: Test still image capture (headless)
+rpicam-still --nopreview -o ~/test_image.jpg --width 1920 --height 1080
+
+# Step 5: Test video capture (headless)
+rpicam-vid --nopreview -o ~/test_video.h264 --width 1920 --height 1080 --timeout 10000ms
 
 # Check captured files
 ls -la ~/*.jpg ~/*.h264
@@ -383,10 +408,121 @@ ls -la ~/*.jpg ~/*.h264
 # Interface Options -> Camera -> Enable -> Finish -> Reboot
 ```
 
-### 3. Camera Configuration Script
+### 3. Verify Camera Detection Success
 
 ```bash
-# Create camera test script
+# Confirm camera is properly detected
+rpicam-hello --list-cameras
+
+# Expected output for Camera Module v3:
+# Available cameras
+# ----------------
+# 0 : imx708 [4608x2592] (/base/soc/i2c0mux/i2c@1/imx708@1a)
+#     Modes: 'SRGGB10_CSI2P' : 1536x864 [120.13 fps - (768, 432)/3072x1728 crop]
+#            'SRGGB10_CSI2P' : 2304x1296 [56.03 fps - (0, 0)/4608x2592 crop]
+#            'SRGGB10_CSI2P' : 4608x2592 [14.35 fps - (0, 0)/4608x2592 crop]
+
+# Test basic functionality with a quick preview
+rpicam-hello --nopreview --timeout 2000ms
+
+# ✅ Camera detection successful! Ready to proceed with software setup.
+
+# Quick setup status check:
+echo "📋 Camera Setup Status:"
+echo "✅ Camera interface enabled"
+echo "✅ libcamera-apps installed (rpicam commands available)" 
+echo "✅ Camera detected via rpicam-hello"
+echo "🎯 Ready for Python environment setup"
+```
+
+---
+
+## Software Dependencies
+
+### 1. Python Environment Setup
+
+```bash
+# Install Python development tools
+sudo apt install -y python3-dev python3-pip python3-venv python3-setuptools
+
+# Install system dependencies for OpenCV and scientific computing
+sudo apt install -y build-essential cmake pkg-config
+sudo apt install -y libjpeg-dev libtiff5-dev libpng-dev
+sudo apt install -y libavcodec-dev libavformat-dev libswscale-dev
+sudo apt install -y libgtk2.0-dev libcanberra-gtk-module
+sudo apt install -y libatlas-base-dev gfortran
+sudo apt install -y libhdf5-dev libhdf5-serial-dev
+
+# Install dependencies for Picamera2
+sudo apt install -y libcap-dev
+
+# Install libcamera Python bindings (required for picamera2 in virtual environments)
+sudo apt install -y python3-libcamera python3-kms++
+
+# Verify Python version
+python3 --version  # Should be 3.9+ for Pi OS
+```
+
+### 2. Create Isolated Virtual Environment
+
+```bash
+# Remove any existing virtual environment
+rm -rf ~/openrivercam/venv
+
+# Create fresh virtual environment with --clear flag for complete isolation
+python3 -m venv ~/openrivercam/venv --clear --prompt="openrivercam"
+
+# Verify virtual environment was created
+ls -la ~/openrivercam/venv/
+```
+
+**Create activation helper script:**
+
+```bash
+cat << 'EOF' > ~/openrivercam/activate_env.sh
+#!/bin/bash
+# OpenRiverCam Virtual Environment Activation
+echo "🐍 Activating OpenRiverCam Python environment..."
+source ~/openrivercam/venv/bin/activate
+echo "✅ Virtual environment activated: $(which python3)"
+echo "✅ Python version: $(python3 --version)"
+echo "✅ Pip version: $(pip --version)"
+EOF
+```
+
+**Make script executable:**
+
+```bash
+chmod +x ~/openrivercam/activate_env.sh
+```
+
+### 3. Activate and Upgrade Virtual Environment
+
+```bash
+# Activate virtual environment using our helper
+source ~/openrivercam/activate_env.sh
+
+# OR activate directly:
+# source ~/openrivercam/venv/bin/activate
+
+# Verify we're in the virtual environment
+which python3  # Should show ~/openrivercam/venv/bin/python3
+which pip      # Should show ~/openrivercam/venv/bin/pip
+
+# Upgrade pip and core tools in isolated environment
+pip install --upgrade pip setuptools wheel
+
+# Verify isolation - should be empty or minimal
+pip list
+```
+
+### 4. Camera Configuration Script (After Virtual Environment)
+
+Now that the virtual environment is created and activated, we can create and test the camera functionality.
+
+**Create camera test script:**
+
+```bash
 cat << 'EOF' > ~/openrivercam/scripts/test_camera.py
 #!/usr/bin/env python3
 """
@@ -411,14 +547,46 @@ def check_venv():
 # Check virtual environment first
 check_venv()
 
-import cv2
-import numpy as np
-from picamera2 import Picamera2
 import time
+import subprocess
+
+# Import libraries with error handling
+try:
+    import cv2
+    import numpy as np
+    # Import picamera2 with preview fallback for headless operation
+    import os
+    os.environ['PICAMERA2_LOG_LEVEL'] = 'info'
+    from picamera2 import Picamera2
+    DEPENDENCIES_AVAILABLE = True
+except ImportError as e:
+    print(f"⚠️  Some dependencies not available: {e}")
+    print("This is normal if camera test is run before OpenCV installation")
+    DEPENDENCIES_AVAILABLE = False
 
 def test_camera_basic():
     """Test basic camera functionality"""
     print("Testing Raspberry Pi Camera Module...")
+    
+    # First check if camera is detected using rpicam tools
+    try:
+        result = subprocess.run(['rpicam-hello', '--list-cameras'], 
+                               capture_output=True, text=True, timeout=10)
+        if result.returncode == 0:
+            print("📷 Camera detection via rpicam-hello:")
+            print(result.stdout)
+        else:
+            print("❌ rpicam-hello failed to detect cameras")
+            return False
+    except Exception as e:
+        print(f"❌ Failed to run rpicam-hello: {e}")
+        return False
+    
+    # Check if Python dependencies are available
+    if not DEPENDENCIES_AVAILABLE:
+        print("⚠️  Python camera libraries not yet installed")
+        print("Basic camera detection successful - run this test again after OpenCV installation")
+        return True
     
     try:
         # Initialize camera
@@ -492,98 +660,23 @@ if __name__ == "__main__":
     success = test_camera_basic()
     exit(0 if success else 1)
 EOF
+```
 
+**Make script executable:**
+
+```bash
 chmod +x ~/openrivercam/scripts/test_camera.py
 ```
 
-### 4. Run Camera Test
-
-```bash
-cd ~/openrivercam/scripts
-
-# Activate virtual environment first
-source ~/openrivercam/activate_env.sh
-
-# Run camera test
-python3 test_camera.py
-
-# Check the captured test image
-ls -la ~/openrivercam/data/raw/
-```
-
----
-
-## Software Dependencies
-
-### 1. Python Environment Setup
-
-```bash
-# Install Python development tools
-sudo apt install -y python3-dev python3-pip python3-venv python3-setuptools
-
-# Install system dependencies for OpenCV and scientific computing
-sudo apt install -y build-essential cmake pkg-config
-sudo apt install -y libjpeg-dev libtiff5-dev libpng-dev
-sudo apt install -y libavcodec-dev libavformat-dev libswscale-dev
-sudo apt install -y libgtk2.0-dev libcanberra-gtk-module
-sudo apt install -y libatlas-base-dev gfortran
-sudo apt install -y libhdf5-dev libhdf5-serial-dev
-
-# Verify Python version
-python3 --version  # Should be 3.9+ for Pi OS
-```
-
-### 2. Create Isolated Virtual Environment
-
-```bash
-# Remove any existing virtual environment
-rm -rf ~/openrivercam/venv
-
-# Create fresh virtual environment with --clear flag for complete isolation
-python3 -m venv ~/openrivercam/venv --clear --prompt="openrivercam"
-
-# Verify virtual environment was created
-ls -la ~/openrivercam/venv/
-
-# Create activation helper script
-cat << 'EOF' > ~/openrivercam/activate_env.sh
-#!/bin/bash
-# OpenRiverCam Virtual Environment Activation
-echo "🐍 Activating OpenRiverCam Python environment..."
-source ~/openrivercam/venv/bin/activate
-echo "✅ Virtual environment activated: $(which python3)"
-echo "✅ Python version: $(python3 --version)"
-echo "✅ Pip version: $(pip --version)"
-EOF
-
-chmod +x ~/openrivercam/activate_env.sh
-```
-
-### 3. Activate and Upgrade Virtual Environment
-
-```bash
-# Activate virtual environment using our helper
-source ~/openrivercam/activate_env.sh
-
-# OR activate directly:
-# source ~/openrivercam/venv/bin/activate
-
-# Verify we're in the virtual environment
-which python3  # Should show ~/openrivercam/venv/bin/python3
-which pip      # Should show ~/openrivercam/venv/bin/pip
-
-# Upgrade pip and core tools in isolated environment
-pip install --upgrade pip setuptools wheel
-
-# Verify isolation - should be empty or minimal
-pip list
-```
-
-### 4. Install Core Python Libraries in Virtual Environment
+### 5. Install Core Python Libraries in Virtual Environment
 
 ```bash
 # Ensure virtual environment is activated
 source ~/openrivercam/activate_env.sh
+
+# Create symlinks to system Python bindings (required for picamera2)
+ln -sf /usr/lib/python3/dist-packages/libcamera ~/openrivercam/venv/lib/python3.11/site-packages/
+ln -sf /usr/lib/python3/dist-packages/pykms ~/openrivercam/venv/lib/python3.11/site-packages/
 
 # Install packages in specific order for better dependency resolution
 
@@ -620,6 +713,11 @@ pip check
 pip freeze > ~/openrivercam/requirements.txt
 
 # Create a minimal requirements file for production
+```
+
+**Create core requirements file:**
+
+```bash
 cat << 'EOF' > ~/openrivercam/requirements-core.txt
 # Core OpenRiverCam Dependencies
 numpy==1.24.3
@@ -632,16 +730,47 @@ pyyaml==6.0.1
 requests==2.31.0
 psutil==5.9.5
 EOF
+```
 
+**Verify requirements:**
+
+```bash
 echo "✅ Requirements files created:"
 echo "   📄 requirements.txt (complete freeze)"
 echo "   📄 requirements-core.txt (essential packages only)"
 ```
 
-### 5. Create Environment Management Scripts
+### 5. Test Camera with Python Libraries
+
+Now that all required libraries are installed in the virtual environment, we can run the full camera functionality test.
 
 ```bash
-# Create environment check script
+# Make sure we're in the virtual environment
+source ~/openrivercam/activate_env.sh
+
+# Run the camera test script (now with OpenCV available)
+cd ~/openrivercam/scripts
+python3 test_camera.py
+
+# Check the captured test image
+ls -la ~/openrivercam/data/raw/
+
+# Optional: View image properties if captured successfully
+if [ -f ~/openrivercam/data/raw/camera_test_*.jpg ]; then
+    echo "✅ Camera test image captured successfully!"
+    file ~/openrivercam/data/raw/camera_test_*.jpg
+else
+    echo "❌ No camera test image found - check error messages above"
+fi
+```
+
+**Note**: The camera test script can be run at any time, but will only perform full image capture and analysis after OpenCV and Picamera2 are installed. If run earlier, it will only perform basic camera detection.
+
+### 6. Create Environment Management Scripts
+
+**Create environment check script:**
+
+```bash
 cat << 'EOF' > ~/openrivercam/scripts/check_environment.py
 #!/usr/bin/env python3
 """
@@ -703,10 +832,17 @@ if __name__ == "__main__":
     success = check_environment()
     sys.exit(0 if success else 1)
 EOF
+```
 
+**Make script executable:**
+
+```bash
 chmod +x ~/openrivercam/scripts/check_environment.py
+```
 
-# Create environment reset script
+**Create environment reset script:**
+
+```bash
 cat << 'EOF' > ~/openrivercam/reset_environment.sh
 #!/bin/bash
 # Reset OpenRiverCam Python Environment
@@ -738,11 +874,15 @@ fi
 echo "✅ Environment reset complete!"
 echo "Run: source ~/openrivercam/activate_env.sh"
 EOF
+```
 
+**Make script executable:**
+
+```bash
 chmod +x ~/openrivercam/reset_environment.sh
 ```
 
-### 6. Test Python Environment
+### 7. Test Python Environment
 
 ```bash
 # Test virtual environment setup
@@ -1533,7 +1673,7 @@ class LabTestSuite:
     def test_camera_hardware(self):
         """Test camera hardware connectivity"""
         try:
-            result = subprocess.run(['libcamera-hello', '--timeout', '1000'], 
+            result = subprocess.run(['rpicam-hello', '--nopreview', '--timeout', '1000ms'], 
                                   capture_output=True, timeout=5)
             return result.returncode == 0
         except:
@@ -1765,6 +1905,18 @@ xclock
 # Enable compression for slower connections
 ssh -X -C openriver@<PI_IP_ADDRESS>
 
+# Problem: Camera preview crashes with "failed to import fd" or EGL errors
+# This is common with rpicam-hello preview mode over X11 forwarding
+# Solution: Use --nopreview for headless camera testing
+rpicam-hello --nopreview --timeout 5000ms
+
+# Alternative: Install additional EGL/OpenGL packages
+sudo apt install -y mesa-utils xserver-xorg-video-dummy
+
+# For camera testing without preview window
+rpicam-hello --list-cameras  # Detection only
+rpicam-still --nopreview -o test.jpg     # Still capture (no preview needed)
+
 # Problem: "Error: Can't open display"
 # Check if X server is running on client machine
 # Linux: Usually automatic
@@ -1787,20 +1939,27 @@ sudo apt install -y qtbase5-dev qtbase5-dev-tools
 #### 2. Camera Not Detected
 ```bash
 # First, check camera detection status
-vcgencmd get_camera
-# Expected: supported=1 detected=1
-# If supported=0: camera interface not enabled
-# If detected=0: camera not physically connected or faulty
+# Note: vcgencmd get_camera is deprecated in newer Pi OS versions
+# Use rpicam detection methods instead:
 
-# Check if libcamera tools are installed
-which libcamera-hello
-# If not found: sudo apt install -y libcamera-apps
+# Primary detection method (note: commands changed from libcamera-* to rpicam-*)
+rpicam-hello --list-cameras
+# Should show available cameras, e.g.:
+# Available cameras
+# ----------------
+# 0 : imx708 [4608x2592] (/base/soc/i2c0mux/i2c@1/imx708@1a)
+
+# If no cameras shown, camera not detected
+
+# Check if camera tools are installed
+which rpicam-hello
+# If not found: sudo apt install -y libcamera-apps (provides rpicam commands)
 
 # Check if camera interface is enabled
 sudo raspi-config nonint do_camera 0
 
 # List available cameras
-libcamera-hello --list-cameras
+rpicam-hello --list-cameras
 
 # Check physical connection
 # 1. Power off Pi completely: sudo shutdown -h now
@@ -1810,15 +1969,19 @@ libcamera-hello --list-cameras
 # 5. Power on and test again
 
 # If still not detected, try legacy camera detection
-# (Note: This is for debugging only, we use libcamera for actual operation)
+# (Note: This is for debugging only, we use rpicam for actual operation)
 sudo modprobe bcm2835-v4l2
 ls /dev/video*  # Should show video devices if detected
 
 # Test with system tools after enabling interface
 sudo reboot
 # After reboot:
-libcamera-hello --list-cameras
-vcgencmd get_camera
+rpicam-hello --list-cameras
+
+# Check boot messages for camera detection
+dmesg | grep -i camera
+dmesg | grep -i imx708  # For Camera Module v3
+dmesg | grep -i imx219  # For Camera Module v2
 ```
 
 #### 3. OpenCV Import Errors
@@ -1834,14 +1997,27 @@ sudo apt install -y libatlas-base-dev liblapack-dev
 
 #### 4. Picamera2 Issues
 ```bash
-# Update system
-sudo apt update && sudo apt upgrade
+# Problem: "You need to install libcap development headers"
+# Install missing system dependency
+sudo apt install -y libcap-dev
 
-# Install picamera2 system packages
-sudo apt install -y python3-picamera2
+# Problem: "No module named 'libcamera'" or "No module named 'kms'" when importing picamera2
+# Install system Python bindings
+sudo apt install -y python3-libcamera python3-kms++
 
-# Or install in virtual environment
+# Create symlinks in virtual environment
+ln -sf /usr/lib/python3/dist-packages/libcamera ~/openrivercam/venv/lib/python3.11/site-packages/
+ln -sf /usr/lib/python3/dist-packages/pykms ~/openrivercam/venv/lib/python3.11/site-packages/
+
+# Then retry picamera2 installation
 pip install picamera2
+
+# Test import
+python3 -c "from picamera2 import Picamera2; print('Success')"
+
+# Alternative: Update system and install system packages
+sudo apt update && sudo apt upgrade
+sudo apt install -y python3-picamera2
 ```
 
 #### 5. Permission Issues
