@@ -108,12 +108,13 @@ Develop autonomous, low-cost river monitoring stations that can operate in remot
 ## Technical Specifications
 
 ### Software Stack
-- **Operating System**: Raspberry Pi OS (64-bit)
+- **Operating System**: Raspberry Pi OS (64-bit) - headless configuration
 - **Computer Vision**: OpenCV 4.8.1+ with custom flow analysis
 - **Camera Interface**: PiCamera2 for Raspberry Pi Camera Module v3
 - **Data Processing**: NumPy, SciPy, Pandas
 - **Communication**: HTTP/HTTPS with data compression
 - **Scheduling**: Systemd timers with RTC backup
+- **Remote Access**: SSH with X11 forwarding for GUI applications
 
 ### Hardware Targets
 - **Computing**: Raspberry Pi 5 (4GB/8GB RAM)

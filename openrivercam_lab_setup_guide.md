@@ -83,8 +83,11 @@ This guide focuses on getting OpenRiverCam running on Raspberry Pi 5 in a contro
 ### 2. Initial Boot and Update
 
 ```bash
-# SSH into the Pi (or use direct connection with monitor/keyboard)
-ssh openriver@<PI_IP_ADDRESS>
+# SSH into the Pi with X11 forwarding enabled
+ssh -X openriver@<PI_IP_ADDRESS>
+
+# Alternatively, use -Y for trusted X11 forwarding (more permissive)
+# ssh -Y openriver@<PI_IP_ADDRESS>
 
 # Update system packages
 sudo apt update && sudo apt upgrade -y
@@ -92,8 +95,232 @@ sudo apt update && sudo apt upgrade -y
 # Install essential packages
 sudo apt install -y git vim htop curl wget tree
 
+# Install X11 forwarding prerequisites (for headless GUI applications)
+sudo apt install -y xauth x11-apps
+
 # Set timezone (use your local timezone for lab testing)
 sudo timedatectl set-timezone America/New_York  # Adjust as needed
+```
+
+### 3. Configure X11 Forwarding for Headless Operation
+
+```bash
+# Configure SSH server for X11 forwarding
+sudo nano /etc/ssh/sshd_config
+
+# Ensure these lines are present and set correctly:
+# X11Forwarding yes
+# X11DisplayOffset 10
+# X11UseLocalhost no
+
+# If you need to modify sshd_config:
+sudo sed -i 's/#X11Forwarding yes/X11Forwarding yes/' /etc/ssh/sshd_config
+sudo sed -i 's/X11Forwarding no/X11Forwarding yes/' /etc/ssh/sshd_config
+
+# Restart SSH service to apply changes
+sudo systemctl restart ssh
+
+# Install additional GUI libraries for OpenCV and camera applications
+sudo apt install -y libgtk-3-dev libqt5gui5 qt5-default
+sudo apt install -y python3-tk  # For matplotlib GUI backends
+
+# Test X11 forwarding (should open a simple GUI window)
+xclock &
+# Press Ctrl+C or close the window to stop
+
+# Test with a more comprehensive X11 application
+xeyes &
+# This should open a pair of eyes that track your mouse cursor
+```
+
+### 4. Client-Side X11 Setup
+
+#### On Linux/macOS Client:
+```bash
+# Install X11 server if not already present
+# Linux: Usually pre-installed
+# macOS: Install XQuartz from https://www.xquartz.org/
+
+# Connect with X11 forwarding
+ssh -X openriver@<PI_IP_ADDRESS>
+
+# For trusted forwarding (if you get authentication errors)
+ssh -Y openriver@<PI_IP_ADDRESS>
+
+# Test X11 forwarding from client
+echo $DISPLAY  # Should show something like localhost:10.0
+```
+
+#### On Windows Client:
+```bash
+# Install X Server for Windows:
+# Option 1: VcXsrv (https://sourceforge.net/projects/vcxsrv/)
+# Option 2: Xming (https://sourceforge.net/projects/xming/)
+# Option 3: MobaXterm (includes built-in X server)
+
+# Using VcXsrv:
+# 1. Install and start VcXsrv
+# 2. Configure: Multiple windows, Display number 0, Start no client
+# 3. In Extra settings: Check "Disable access control"
+
+# Connect with X11 forwarding using PuTTY or WSL
+# PuTTY: Enable X11 forwarding in Connection -> SSH -> X11
+# WSL: Use ssh -X as with Linux
+
+# Set DISPLAY variable if needed (usually automatic)
+export DISPLAY=localhost:0.0
+```
+
+### 5. Create X11 Testing Script
+
+```bash
+cat << 'EOF' > ~/test_x11.sh
+#!/bin/bash
+# Test X11 forwarding functionality
+
+echo "🖥️  Testing X11 Forwarding for OpenRiverCam"
+echo "=================================="
+
+# Check if DISPLAY is set
+if [ -z "$DISPLAY" ]; then
+    echo "❌ DISPLAY variable not set"
+    echo "Make sure you connected with: ssh -X openriver@<PI_IP>"
+    exit 1
+else
+    echo "✅ DISPLAY set to: $DISPLAY"
+fi
+
+# Test basic X11 functionality
+echo "Testing basic X11..."
+if command -v xclock > /dev/null; then
+    echo "✅ xclock available"
+    echo "Opening xclock for 5 seconds..."
+    timeout 5s xclock &
+    sleep 6
+else
+    echo "❌ xclock not available - install x11-apps"
+fi
+
+# Test Python GUI capabilities
+echo "Testing Python GUI support..."
+python3 -c "
+import sys
+try:
+    import tkinter as tk
+    print('✅ Tkinter available')
+    
+    # Test simple window creation
+    root = tk.Tk()
+    root.title('X11 Test')
+    root.geometry('200x100')
+    label = tk.Label(root, text='X11 Forwarding Works!')
+    label.pack(pady=20)
+    root.after(3000, root.destroy)  # Auto-close after 3 seconds
+    print('✅ Opening test window for 3 seconds...')
+    root.mainloop()
+    
+except ImportError:
+    print('❌ Tkinter not available')
+    sys.exit(1)
+except Exception as e:
+    print(f'❌ GUI test failed: {e}')
+    sys.exit(1)
+"
+
+# Test matplotlib GUI backend
+echo "Testing matplotlib GUI backend..."
+python3 -c "
+import sys
+try:
+    import matplotlib
+    matplotlib.use('TkAgg')  # Use Tkinter backend
+    import matplotlib.pyplot as plt
+    import numpy as np
+    
+    print('✅ Matplotlib with GUI backend available')
+    
+    # Create simple test plot
+    x = np.linspace(0, 10, 100)
+    y = np.sin(x)
+    
+    plt.figure(figsize=(6, 4))
+    plt.plot(x, y)
+    plt.title('X11 Matplotlib Test')
+    plt.xlabel('X axis')
+    plt.ylabel('Y axis')
+    
+    # Show plot for 3 seconds then close
+    plt.ion()  # Turn on interactive mode
+    plt.show()
+    plt.pause(3)
+    plt.close('all')
+    
+    print('✅ Matplotlib GUI test successful')
+    
+except ImportError as e:
+    print(f'❌ Matplotlib import failed: {e}')
+except Exception as e:
+    print(f'❌ Matplotlib GUI test failed: {e}')
+"
+
+echo "✅ X11 forwarding tests completed!"
+EOF
+
+chmod +x ~/test_x11.sh
+
+# Run the X11 test
+~/test_x11.sh
+```
+
+### 6. OpenCV GUI Testing
+
+```bash
+cat << 'EOF' > ~/test_opencv_gui.py
+#!/usr/bin/env python3
+"""
+Test OpenCV GUI functionality over X11 forwarding
+"""
+
+import cv2
+import numpy as np
+import sys
+
+def test_opencv_gui():
+    """Test OpenCV window display over X11"""
+    print("🎥 Testing OpenCV GUI over X11 forwarding...")
+    
+    try:
+        # Create a test image
+        img = np.zeros((480, 640, 3), dtype=np.uint8)
+        
+        # Draw some test patterns
+        cv2.rectangle(img, (50, 50), (200, 200), (0, 255, 0), 3)
+        cv2.circle(img, (400, 150), 80, (255, 0, 0), -1)
+        cv2.putText(img, 'OpenCV X11 Test', (200, 300), 
+                   cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+        
+        # Display the image
+        cv2.imshow('OpenCV X11 Test', img)
+        print("✅ OpenCV window should be visible on your local display")
+        print("Press any key in the OpenCV window to close...")
+        
+        # Wait for key press
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
+        
+        print("✅ OpenCV GUI test successful!")
+        return True
+        
+    except Exception as e:
+        print(f"❌ OpenCV GUI test failed: {e}")
+        return False
+
+if __name__ == "__main__":
+    success = test_opencv_gui()
+    sys.exit(0 if success else 1)
+EOF
+
+chmod +x ~/test_opencv_gui.py
 ```
 
 ---
@@ -1336,6 +1563,32 @@ class LabTestSuite:
         except:
             return False
     
+    def test_x11_forwarding(self):
+        """Test X11 forwarding functionality"""
+        try:
+            import os
+            
+            # Check if DISPLAY is set
+            display = os.environ.get('DISPLAY')
+            if not display:
+                print("X11 forwarding test skipped - no DISPLAY variable")
+                return True  # Don't fail if no X11 is expected
+            
+            # Test tkinter GUI
+            try:
+                import tkinter as tk
+                root = tk.Tk()
+                root.withdraw()  # Hide the window
+                root.destroy()
+                print("X11 forwarding available")
+                return True
+            except Exception as e:
+                print(f"X11 forwarding test failed: {e}")
+                return False
+                
+        except:
+            return True  # Don't fail test suite if X11 isn't available
+    
     def test_upload_system(self):
         """Test upload system (simulation)"""
         try:
@@ -1374,6 +1627,7 @@ class LabTestSuite:
         tests = [
             ("Directory Structure", self.test_directory_structure),
             ("Python Environment", self.test_python_environment),
+            ("X11 Forwarding", self.test_x11_forwarding),
             ("Camera Hardware", self.test_camera_hardware),
             ("Camera Capture", self.test_camera_capture),
             ("WiFi Connectivity", self.test_wifi_connectivity),
@@ -1444,7 +1698,46 @@ ls -la ~/openrivercam/test_results_*.json
 
 ### Common Issues and Solutions
 
-#### 1. Camera Not Detected
+#### 1. X11 Forwarding Issues
+```bash
+# Problem: No GUI applications display
+# Check DISPLAY variable
+echo $DISPLAY
+# Should show something like localhost:10.0
+
+# Problem: "cannot connect to X server" error
+# Ensure you connected with -X flag
+ssh -X openriver@<PI_IP_ADDRESS>
+
+# If still failing, try trusted forwarding
+ssh -Y openriver@<PI_IP_ADDRESS>
+
+# Problem: "X11 connection rejected because of wrong authentication"
+# Clean up old X11 authentication files
+rm ~/.Xauthority
+# Reconnect with X11 forwarding
+
+# Test X11 forwarding
+xclock
+
+# Problem: Slow X11 forwarding
+# Enable compression for slower connections
+ssh -X -C openriver@<PI_IP_ADDRESS>
+
+# Problem: "Error: Can't open display"
+# Check if X server is running on client machine
+# Linux: Usually automatic
+# macOS: Start XQuartz
+# Windows: Start VcXsrv/Xming
+
+# Problem: OpenCV windows not displaying
+# Install GUI libraries
+sudo apt install -y libgtk-3-dev python3-tk
+# Test with
+python3 ~/test_opencv_gui.py
+```
+
+#### 2. Camera Not Detected
 ```bash
 # Check if camera is physically connected
 lsusb  # Should show camera if USB

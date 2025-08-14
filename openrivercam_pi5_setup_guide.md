@@ -174,14 +174,27 @@ Solar Panel (12V) → MPPT Charge Controller → LiFePO4 Battery (12V)
 #### Initial Boot Configuration
 ```bash
 # Insert SD card and boot Pi 5
-# SSH into the system (find IP with network scanner)
-ssh openriver@<PI_IP_ADDRESS>
+# SSH into the system with X11 forwarding (find IP with network scanner)
+ssh -X openriver@<PI_IP_ADDRESS>
 
 # Update system packages
 sudo apt update && sudo apt upgrade -y
 
 # Install essential packages
 sudo apt install -y git vim htop screen tmux curl wget
+
+# Install X11 forwarding support for headless GUI applications
+sudo apt install -y xauth x11-apps libgtk-3-dev python3-tk
+
+# Configure SSH server for X11 forwarding
+sudo sed -i 's/#X11Forwarding yes/X11Forwarding yes/' /etc/ssh/sshd_config
+sudo sed -i 's/X11Forwarding no/X11Forwarding yes/' /etc/ssh/sshd_config
+sudo systemctl restart ssh
+
+# Test X11 forwarding (should open a GUI window on your local machine)
+xclock &
+sleep 3
+pkill xclock
 
 # Set timezone for Indonesian operations
 sudo timedatectl set-timezone Asia/Jakarta
