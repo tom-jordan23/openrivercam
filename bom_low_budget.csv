@@ -1,0 +1,23 @@
+Component_Category,Item_Description,Critical_Specs,Quantity,Unit_Cost_USD,Total_Cost_USD,Supplier,Product_Link,Notes
+Computing Platform,Raspberry Pi 5 4GB,ARM Cortex-A76 4GB RAM WiFi6 BT5.0 2.4GHz quad-core,1,60.00,60.00,Digi-Key,https://www.digikey.com/en/products/detail/raspberry-pi/SC1111/21658263,Primary computing unit
+Computing Platform,MicroSD Card 32GB Class 10,UHS-I U1 32GB -25°C to 85°C,1,8.00,8.00,Amazon,https://www.amazon.com/SanDisk-Ultra-microSDHC-UHS-I-SDSQUAR-032G-GN6MA/dp/B08GY9NYRM,Operating system storage
+Computing Platform,Basic Heat Sink,Aluminum heat sink with thermal tape,1,5.00,5.00,Amazon,https://www.amazon.com/UCTRONICS-Heatsink-Raspberry-Cooling-Aluminum/dp/B07ZLZRDXZ,Basic thermal management
+Camera System,Raspberry Pi Camera Module v2,8MP Sony IMX219 1/4" 62.2° diagonal FOV,1,18.00,18.00,Amazon,https://www.amazon.com/Raspberry-Pi-Camera-Module-Megapixel/dp/B01ER2SKFS,Primary video capture
+Camera System,Simple Clear Case,Acrylic clear case basic weather protection,1,12.00,12.00,Amazon,https://www.amazon.com/Waterproof-Camera-Raspberry-Official-Module/dp/B07BMXBZPX,Basic camera protection
+Power Management,20W Solar Panel,20W 12V monocrystalline 0°C to 85°C,1,22.00,22.00,Amazon,https://www.amazon.com/Newpowa-Monocrystalline-Photovoltaic-Off-grid-Application/dp/B072MHQZPX,Primary power source
+Power Management,12V 7Ah SLA Battery,12V 7Ah sealed lead-acid -20°C to 50°C,1,20.00,20.00,Amazon,https://www.amazon.com/ExpertPower-EXP1270-Rechargeable-Lead-Battery/dp/B003S1RQ2S,Energy storage backup
+Power Management,Basic PWM Controller,12V 10A PWM charge controller basic,1,10.00,10.00,Amazon,https://www.amazon.com/MOHOO-Intelligent-Controller-Regulator-Overload/dp/B071Z83JLV,Basic charge management
+Power Management,DC-DC Converter,12V to 5V 3A step-down USB output,1,6.00,6.00,Amazon,https://www.amazon.com/BINZET-Converter-5-5x2-1mm-Regulator-Transformer/dp/B01NALDSJ0,Pi power regulation
+Environmental Protection,Basic Plastic Box,ABS plastic 150x110x70mm basic sealing,1,12.00,12.00,Amazon,https://www.amazon.com/uxcell-Dustproof-Waterproof-Electric-150x110x70mm/dp/B01GPM5NGI,Basic system protection
+Environmental Protection,Foam Padding,Closed-cell foam for shock absorption,1,5.00,5.00,Amazon,https://www.amazon.com/Duck-Brand-Self-Adhesive-Weatherstrip-280047/dp/B000BQRMO2,Basic cushioning
+Grounding & Lightning Protection,Simple Ground Wire,14 AWG bare copper 25ft basic grounding,1,8.00,8.00,Home Depot,https://www.homedepot.com/p/Southwire-25-ft-14-Bare-Copper-Grounding-Wire-10637802/100648868,Basic grounding
+Security & Anti-Theft,Standard Screws,Stainless steel screws M4x12mm Phillips,10,0.20,2.00,Amazon,https://www.amazon.com/uxcell-M4x12mm-Stainless-Phillips-Screws/dp/B077QMNXLR,Basic fastening
+Monitoring & Control,Basic LED Indicator,Single status LED red 3mm with resistor,1,1.00,1.00,Amazon,https://www.amazon.com/DiCUNO-Emitting-Resistor-Assorted-Arduino/dp/B077XGF3YR,Basic status display
+Assembly Hardware,Basic Cable Entry,Rubber grommets for cable protection,4,0.50,2.00,Amazon,https://www.amazon.com/Rubber-Grommets-Electrical-Gasket-Firewall/dp/B075KBVBM7,Cable protection
+Assembly Hardware,Wire Nuts,Electrical wire nuts assorted 50 pack,1,5.00,5.00,Amazon,https://www.amazon.com/Ideal-30-073-In-Sure-Connectors-Assortment/dp/B000HBBHOO,Basic connections
+Assembly Hardware,Hookup Wire,22 AWG stranded wire 4 colors 15ft each,1,8.00,8.00,Amazon,https://www.amazon.com/StrivedayTM-Flexible-Silicone-Electronic-Electrics/dp/B01KQ2JNLI,System wiring
+Assembly Hardware,USB Cable,USB-C 2A rated 1 meter basic cable,1,4.00,4.00,Amazon,https://www.amazon.com/Amazon-Basics-USB-Type-C-Charger/dp/B01GGKYXVE,Pi power connection
+,,,,SUBTOTAL,251.00,,,
+,,,,SHIPPING (8%),20.08,,,Estimated US domestic shipping
+,,,,CONTINGENCY (10%),27.11,,,Price fluctuation buffer
+,,,,TOTAL WITH CONTINGENCY,298.19,,,Total project cost under $300

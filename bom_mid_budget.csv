@@ -1,0 +1,28 @@
+Component_Category,Item_Description,Critical_Specs,Quantity,Unit_Cost_USD,Total_Cost_USD,Supplier,Product_Link,Notes
+Computing Platform,Raspberry Pi 5 8GB,ARM Cortex-A76 8GB RAM WiFi6 BT5.0 2.4GHz quad-core,1,80.00,80.00,Digi-Key,https://www.digikey.com/en/products/detail/raspberry-pi/SC1112/21658264,Primary computing unit
+Computing Platform,MicroSD Card 64GB Class 10,UHS-I U3 V30 A2 64GB -25°C to 85°C,1,12.00,12.00,Amazon,https://www.amazon.com/SanDisk-Extreme-microSDXC-UHS-I-SDSQXAF-064G-GN6MA/dp/B06XWMQ81P,Operating system storage
+Computing Platform,Aluminum Heat Sink Case,Passive cooling with fan mount IP20 -20°C to 70°C,1,25.00,25.00,Amazon,https://www.amazon.com/Geekworm-Raspberry-Aluminum-Heatsink-Enclosure/dp/B0C1M8V4QY,Enhanced thermal management
+Camera System,Raspberry Pi Camera Module 3,12MP Sony IMX708 1/2.43" autofocus 120° diagonal FOV,1,25.00,25.00,Digi-Key,https://www.digikey.com/en/products/detail/raspberry-pi/SC1147/21658254,Primary video capture
+Camera System,IP65 Camera Housing,Professional IP65 weatherproof housing with optical window,1,65.00,65.00,Amazon,https://www.amazon.com/Entaniya-Waterproof-Housing-Raspberry-Camera/dp/B08L7BQZHP,Professional camera protection
+Power Management,50W Monocrystalline Solar Panel,50W 12V 4.17A monocrystalline -40°C to 85°C,1,45.00,45.00,Amazon,https://www.amazon.com/Newpowa-Monocrystalline-Photovoltaic-Off-grid-Application/dp/B071Z2Z4GP,Enhanced power generation
+Power Management,12V 12Ah AGM Battery,12V 12Ah deep-cycle AGM -20°C to 50°C 800 cycles,1,35.00,35.00,Amazon,https://www.amazon.com/ExpertPower-EXP12120-Rechargeable-Lead-Battery/dp/B003S1RQ2S,Enhanced energy storage
+Power Management,MPPT Charge Controller 20A,12V/24V 20A MPPT with LCD display battery protection,1,35.00,35.00,Amazon,https://www.amazon.com/EPEVER-Controller-Negative-Grounded-Warranty/dp/B075Z7X5CJ,Advanced charge management
+Power Management,USB Power Supply Module,DC-DC 12V to 5V 5A dual USB-A output regulated,1,15.00,15.00,Amazon,https://www.amazon.com/DROK-Converter-Regulator-Transformer-Waterproof/dp/B071Z2S7KT,Enhanced Pi power regulation
+Environmental Protection,IP65 Outdoor Enclosure,Polycarbonate 200x150x100mm IP65 with mounting flanges,1,45.00,45.00,Amazon,https://www.amazon.com/Sixfab-Outdoor-Project-Enclosure-Development/dp/B09TRZ5BTB,Professional system protection
+Environmental Protection,Ventilation System,Gore-tex vent and desiccant humidity control,1,25.00,25.00,Amazon,https://www.amazon.com/Gore-M12-Protective-Vents-Adhesive/dp/B07GF8JW3Z,Advanced humidity management
+Environmental Protection,Cooling Fan 5V,5V DC fan 40mm with PWM control temperature activated,1,12.00,12.00,Amazon,https://www.amazon.com/Noctua-NF-A4x10-5V-PWM-Premium/dp/B077ZNPQN9,Active cooling system
+Grounding & Lightning Protection,Grounding Rod Kit,8ft copper-bonded ground rod with clamp and wire,1,35.00,35.00,Home Depot,https://www.homedepot.com/p/BURNDY-Grounding-Kit-with-8-ft-Ground-Rod/303569162,Professional grounding
+Grounding & Lightning Protection,Surge Protector,12V DC surge protector 10kA lightning protection,1,25.00,25.00,Amazon,https://www.amazon.com/Epoxy-Potted-Surge-Protector-Protection/dp/B003BYKZDS,Lightning protection
+Security & Anti-Theft,Tamper-Evident Enclosure,Security enclosure with tamper switches and alerts,1,35.00,35.00,Amazon,https://www.amazon.com/Security-Tamper-Evident-Electronic-Enclosure/dp/B08ZQVR3TD,Intrusion detection
+Security & Anti-Theft,Security Hardware,Tamper-resistant screws locks and security cable,1,15.00,15.00,Amazon,https://www.amazon.com/Security-Tamper-Resistant-Hardware-Assortment/dp/B07V4GTQSB,Anti-theft fastening
+Monitoring & Control,Watchdog Timer Module,Hardware watchdog with auto-reset and power cycling,1,18.00,18.00,Amazon,https://www.amazon.com/Witty-Pi-Realtime-Raspberry-Arduino/dp/B07JBQZPX1,System reliability monitoring
+Monitoring & Control,Status LED Array,Multi-color LED indicators with driver circuit,1,8.00,8.00,Amazon,https://www.amazon.com/DiCUNO-Emitting-Resistor-Assorted-Arduino/dp/B077XGF3YR,Enhanced status display
+Assembly Hardware,IP68 Cable Glands,Professional cable glands M16 and M20 with seals,6,4.00,24.00,Amazon,https://www.amazon.com/Waterproof-Cable-Glands-IP68-Connectors/dp/B07K7QGQNK,Professional cable entry
+Assembly Hardware,Mounting System,Pole mount kit with U-bolts and anti-rotation brackets,1,25.00,25.00,Amazon,https://www.amazon.com/Universal-Mounting-Bracket-Weather-Station/dp/B07YDVQCTP,Professional mounting
+Assembly Hardware,Professional Wiring,12 AWG marine grade tinned copper wire 50ft kit,1,20.00,20.00,Amazon,https://www.amazon.com/WindyNation-Tinned-Copper-Stranded-Cable/dp/B01A6HQZUG,Enhanced system wiring
+Assembly Hardware,USB-C Cable Industrial,USB-C 5A rated 3 meter industrial outdoor cable,1,15.00,15.00,Amazon,https://www.amazon.com/Cable-Matters-USB-C-Power-Delivery/dp/B084Z8DQKV,Enhanced Pi power connection
+Assembly Hardware,Connector Kit,Weatherproof connectors and terminals assorted kit,1,18.00,18.00,Amazon,https://www.amazon.com/Hilitchi-Weatherproof-Electrical-Connectors-Assortment/dp/B073QTBP2K,Professional connections
+,,,,SUBTOTAL,408.00,,,
+,,,,SHIPPING (8%),32.64,,,Estimated US domestic shipping
+,,,,CONTINGENCY (10%),44.06,,,Price fluctuation buffer
+,,,,TOTAL WITH CONTINGENCY,484.70,,,Total project cost under $490

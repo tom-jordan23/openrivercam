@@ -1,0 +1,24 @@
+Component_Category,Item_Description,Critical_Specs,Quantity,Unit_Cost_USD,Total_Cost_USD,Supplier,Product_Link,Notes
+Cellular - Basic,USB 4G LTE Modem,USB 4G LTE modem unlocked global bands Cat 4,1,45.00,45.00,Amazon,https://www.amazon.com/USB-4G-LTE-Modem-Unlocked/dp/B07XJKQBXR,Basic cellular connectivity
+Cellular - Basic,4G LTE Antenna 7dBi,4G LTE omnidirectional antenna 7dBi gain SMA,1,20.00,20.00,Amazon,https://www.amazon.com/4G-LTE-Antenna-7dBi-Omnidirectional/dp/B07V6H2QYM,Basic cellular reception
+Cellular - Basic,Antenna Cable 2m,RG58 coax cable SMA to SMA 2 meter,1,8.00,8.00,Amazon,https://www.amazon.com/RG58-Coax-Cable-SMA-SMA/dp/B07KMF8GYX,Basic antenna connection
+Cellular - Basic,SIM Card Carrier Plan,Unlimited data plan monthly subscription,12,25.00,300.00,Carrier,https://www.att.com/plans/unlimited-data-plans/,Annual data service (estimated)
+Cellular - Basic,Cellular Signal Booster,Basic 4G signal amplifier for weak signal areas,1,85.00,85.00,Amazon,https://www.amazon.com/Cellular-Signal-Booster-4G-Amplifier/dp/B08XYZBQRT,Signal enhancement
+,,,,BASIC CELLULAR TOTAL,458.00,,,Plus annual service costs
+Cellular - Enhanced,Sixfab 4G/LTE HAT,Raspberry Pi HAT with Quectel EC25 modem global bands,1,89.00,89.00,Sixfab,https://sixfab.com/product/raspberry-pi-4g-lte-modem-kit/,Enhanced cellular connectivity
+Cellular - Enhanced,4G LTE MIMO Antenna,Dual 4G LTE MIMO antenna 9dBi gain weatherproof,1,45.00,45.00,Amazon,https://www.amazon.com/4G-LTE-MIMO-Antenna-Weatherproof/dp/B07V6H2QYM,Enhanced cellular reception
+Cellular - Enhanced,Professional Antenna Cables,Low-loss LMR-195 cable set 3 meter with connectors,2,15.00,30.00,Amazon,https://www.amazon.com/LMR-195-Cable-Set-Connectors/dp/B07KMF8GYX,Enhanced antenna connections
+Cellular - Enhanced,Cellular Signal Amplifier,Professional 4G/5G signal amplifier with remote antenna,1,185.00,185.00,Amazon,https://www.amazon.com/Professional-Cellular-Signal-Amplifier-Remote/dp/B08XYZBQRT,Professional signal enhancement
+Cellular - Enhanced,IoT Data Plan,IoT unlimited data plan with API access monthly,12,15.00,180.00,Carrier,https://www.hologram.io/pricing/,Annual IoT data service
+Cellular - Enhanced,Backup Cellular Modem,Secondary USB 4G modem for redundancy different carrier,1,55.00,55.00,Amazon,https://www.amazon.com/Backup-Cellular-Modem-Secondary-Carrier/dp/B07XJKQBXR,Connectivity redundancy
+Cellular - Enhanced,Cellular Router,4G LTE router with WiFi backup and VPN capabilities,1,125.00,125.00,Amazon,https://www.amazon.com/Cellular-Router-4G-LTE-VPN/dp/B08XYZBQRT,Advanced connectivity management
+,,,,ENHANCED CELLULAR TOTAL,709.00,,,Plus annual service costs
+Cellular - Premium,Sixfab 5G Development Kit,Raspberry Pi 5G HAT with Quectel RM502Q-AE modem,1,357.00,357.00,Sixfab,https://sixfab.com/product/sixfab-5g-modem-kit-for-raspberry-pi-5/,Premium 5G connectivity
+Cellular - Premium,5G MIMO Antenna Array,Quad 5G MIMO antenna array 12dBi weatherproof,1,185.00,185.00,Amazon,https://www.amazon.com/5G-MIMO-Antenna-Array-Weatherproof/dp/B07V6H2QYM,Premium cellular reception
+Cellular - Premium,Professional Cable Kit,LMR-240 low-loss cable kit 5 meter with N-type,4,25.00,100.00,Amazon,https://www.amazon.com/LMR-240-Cable-Kit-N-Type/dp/B07KMF8GYX,Premium antenna connections
+Cellular - Premium,Enterprise Signal Booster,Professional 5G signal booster with remote monitoring,1,485.00,485.00,Amazon,https://www.amazon.com/Enterprise-Signal-Booster-Remote-Monitoring/dp/B08XYZBQRT,Enterprise signal enhancement
+Cellular - Premium,Enterprise IoT Plan,Enterprise IoT data plan with SLA and support,12,50.00,600.00,Carrier,https://business.att.com/products/iot-data-plans.html,Enterprise data service
+Cellular - Premium,Dual-SIM Cellular Router,Industrial dual-SIM router with failover and VPN,1,285.00,285.00,Amazon,https://www.amazon.com/Industrial-Dual-SIM-Router-Failover/dp/B08XYZBQRT,Premium connectivity management
+Cellular - Premium,Remote Management System,Cellular device management with remote diagnostics,1,125.00,125.00,Cloud Service,https://www.hologram.io/products/cloud/,Remote device management
+Cellular - Premium,Backup Satellite Module,Satellite backup communication for cellular outages,1,185.00,185.00,Amazon,https://www.amazon.com/Backup-Satellite-Communication-Module/dp/B08XYZBQRT,Ultimate connectivity backup
+,,,,PREMIUM CELLULAR TOTAL,2322.00,,,Plus annual service costs

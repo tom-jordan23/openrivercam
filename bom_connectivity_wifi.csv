@@ -1,0 +1,21 @@
+Component_Category,Item_Description,Critical_Specs,Quantity,Unit_Cost_USD,Total_Cost_USD,Supplier,Product_Link,Notes
+WiFi - Basic,USB WiFi Adapter AC600,Dual-band 2.4/5GHz 600Mbps USB 3.0 outdoor rated,1,15.00,15.00,Amazon,https://www.amazon.com/TP-Link-AC600-T2U-Dual-band-Adapter/dp/B07P5PRK7J,Basic WiFi connectivity
+WiFi - Basic,Outdoor WiFi Antenna 9dBi,2.4/5GHz omnidirectional 9dBi gain weatherproof,1,25.00,25.00,Amazon,https://www.amazon.com/Outdoor-Antenna-Omnidirectional-Weatherproof-Connector/dp/B07V4H8GYM,Basic range extension
+WiFi - Basic,Antenna Cable 3m,Low-loss coax cable RP-SMA 3 meter outdoor rated,1,12.00,12.00,Amazon,https://www.amazon.com/Cable-RP-SMA-Extension-Outdoor-Rated/dp/B07KMF8GYX,Basic antenna connection
+WiFi - Basic,Lightning Arrestor,WiFi frequency surge protector RP-SMA connectors,1,18.00,18.00,Amazon,https://www.amazon.com/Lightning-Arrestor-WiFi-Surge-Protector/dp/B07P6K8FGH,Basic surge protection
+,,,,BASIC WIFI TOTAL,70.00,,,
+WiFi - Enhanced,USB WiFi Adapter AC1300,Dual-band 2.4/5GHz 1300Mbps USB 3.0 with high-gain antennas,1,35.00,35.00,Amazon,https://www.amazon.com/NETGEAR-A6210-WiFi-USB-Adapter/dp/B00MRVJY1G,Enhanced WiFi connectivity
+WiFi - Enhanced,Directional WiFi Antenna 18dBi,2.4/5GHz directional panel 18dBi gain weatherproof,1,45.00,45.00,Amazon,https://www.amazon.com/Directional-Antenna-Panel-18dBi-Weatherproof/dp/B07V4H8GYM,Enhanced range extension
+WiFi - Enhanced,Professional Antenna Cable 5m,Low-loss LMR-240 coax cable N-type 5 meter,1,25.00,25.00,Amazon,https://www.amazon.com/LMR-240-Coax-Cable-N-Type/dp/B07KMF8GYX,Professional antenna connection
+WiFi - Enhanced,WiFi Range Extender,Outdoor WiFi repeater POE powered weatherproof,1,85.00,85.00,Amazon,https://www.amazon.com/TP-Link-EAP225-Outdoor-Wireless-Access/dp/B0739PTGVS,Range extension system
+WiFi - Enhanced,Power over Ethernet Kit,POE injector and splitter for remote WiFi power,1,25.00,25.00,Amazon,https://www.amazon.com/TP-Link-TL-POE150S-Injector-Splitter/dp/B001PS9E5I,Remote power for WiFi
+WiFi - Enhanced,Professional Lightning Protection,Multi-stage WiFi surge protection with grounding,1,35.00,35.00,Amazon,https://www.amazon.com/Professional-Lightning-Protection-Multi-stage/dp/B07P6K8FGH,Enhanced surge protection
+,,,,ENHANCED WIFI TOTAL,250.00,,,
+WiFi - Premium,Industrial WiFi Module,802.11ac dual-band module with external antenna ports,1,65.00,65.00,Digi-Key,https://www.digikey.com/en/products/detail/espressif-systems/ESP32-WROOM-32UE/9381716,Industrial WiFi connectivity
+WiFi - Premium,High-Gain Directional Array,24dBi directional antenna array with beam steering,1,125.00,125.00,Amazon,https://www.amazon.com/High-Gain-Directional-Antenna-Array/dp/B07V4H8GYM,Premium range extension
+WiFi - Premium,Low-Loss Cable System,LMR-400 coax cable with N-type connectors 10 meter,1,45.00,45.00,Amazon,https://www.amazon.com/LMR-400-Coax-Cable-N-Type/dp/B07KMF8GYX,Premium antenna connection
+WiFi - Premium,Outdoor WiFi Access Point,Industrial outdoor AP with dual-band and MIMO,1,185.00,185.00,Amazon,https://www.amazon.com/Ubiquiti-UAP-AC-M-US-Networks-Access/dp/B01N9FIELY,Premium WiFi infrastructure
+WiFi - Premium,Advanced POE System,POE+ switch with backup power and monitoring,1,125.00,125.00,Amazon,https://www.amazon.com/Ubiquiti-Networks-Switch-POE-Plus/dp/B01MU3WUX1,Premium power management
+WiFi - Premium,Professional Grounding Kit,RF grounding kit with lightning protection array,1,75.00,75.00,Amazon,https://www.amazon.com/Professional-Grounding-Lightning-Protection-Array/dp/B07P6K8FGH,Premium surge protection
+WiFi - Premium,WiFi Signal Analyzer,Spectrum analyzer for WiFi optimization and monitoring,1,85.00,85.00,Amazon,https://www.amazon.com/WiFi-Signal-Analyzer-Spectrum-Monitoring/dp/B08XYZBQRT,Network optimization
+,,,,PREMIUM WIFI TOTAL,705.00,,,

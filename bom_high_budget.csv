@@ -1,0 +1,34 @@
+Component_Category,Item_Description,Critical_Specs,Quantity,Unit_Cost_USD,Total_Cost_USD,Supplier,Product_Link,Notes
+Computing Platform,Raspberry Pi 5 8GB,ARM Cortex-A76 8GB RAM WiFi6 BT5.0 2.4GHz quad-core,1,80.00,80.00,Digi-Key,https://www.digikey.com/en/products/detail/raspberry-pi/SC1112/21658264,Primary computing unit
+Computing Platform,Industrial MicroSD 128GB,UHS-I U3 V30 A2 128GB -40°C to 85°C 10000 cycles,1,35.00,35.00,Digi-Key,https://www.digikey.com/en/products/detail/sandisk/SDSQQVR-128G-GN6IA/9739068,Industrial grade storage
+Computing Platform,Aluminum Case with Fan,Active cooling IP54 with temperature control -20°C to 70°C,1,45.00,45.00,Amazon,https://www.amazon.com/Geekworm-Raspberry-Aluminum-Cooling-X735/dp/B08KTHJWY5,Professional thermal management
+Computing Platform,UPS HAT Module,Uninterruptible power supply with battery backup monitoring,1,35.00,35.00,Amazon,https://www.amazon.com/Geekworm-Raspberry-Battery-Management-Expansion/dp/B07QD755Z8,Power management redundancy
+Camera System,Raspberry Pi HQ Camera,12.3MP Sony IMX477 1/2.3" interchangeable lens C/CS mount,1,50.00,50.00,Digi-Key,https://www.digikey.com/en/products/detail/raspberry-pi/SC1166/21658242,High-quality video capture
+Camera System,6mm CS Lens,6mm f/1.2 CS mount lens with IR filter -40°C to 70°C,1,25.00,25.00,Amazon,https://www.amazon.com/Arducam-6mm-CS-Lens-Raspberry/dp/B07L92MV3L,Professional optics
+Camera System,IP67 Camera Housing,Professional IP67 housing with optical window and heater,1,95.00,95.00,Amazon,https://www.amazon.com/Entaniya-Waterproof-Professional-Housing-Camera/dp/B08L7BQZHP,Premium camera protection
+Power Management,100W Monocrystalline Solar Panel,100W 12V 8.33A monocrystalline -40°C to 85°C 25yr warranty,1,85.00,85.00,Amazon,https://www.amazon.com/Renogy-Monocrystalline-Solar-Panel-Compact/dp/B07GF5JY35,High-capacity power generation
+Power Management,12V 35Ah LiFePO4 Battery,12V 35Ah lithium iron phosphate -20°C to 60°C 3000+ cycles,1,180.00,180.00,Amazon,https://www.amazon.com/LiTime-LiFePO4-Battery-Built-BMS/dp/B08DXNQY72,Premium energy storage
+Power Management,MPPT Controller 40A with BMS,40A MPPT with battery management system LCD Bluetooth,1,75.00,75.00,Amazon,https://www.amazon.com/EPEVER-Controller-Bluetooth-Monitoring-Negative/dp/B075Z8DMKY,Advanced charge management
+Power Management,Redundant Power Supply,Dual USB-C PD 65W with backup switching and monitoring,1,45.00,45.00,Amazon,https://www.amazon.com/Anker-PowerPort-Switch-Delivery-Charger/dp/B07WBQQ7ZL,Redundant power system
+Environmental Protection,IP67 Outdoor Enclosure,Die-cast aluminum 250x200x130mm IP67 with mounting system,1,125.00,125.00,Amazon,https://www.amazon.com/Sixfab-Outdoor-Enclosure-Raspberry-Development/dp/B09TRZ5BTB,Premium system protection
+Environmental Protection,Active Dehumidification,Electronic dehumidifier with humidity sensor and control,1,45.00,45.00,Amazon,https://www.amazon.com/Eva-Dry-E-333-Renewable-Dehumidifier/dp/B000H0XFCS,Active humidity management
+Environmental Protection,Temperature Control,Thermoelectric cooling/heating with temperature sensor,1,55.00,55.00,Amazon,https://www.amazon.com/TEC1-12706-Thermoelectric-Cooler-Peltier/dp/B07CSLQCMZ,Active temperature control
+Environmental Protection,Pressure Relief Valve,Automatic pressure equalization with Gore-tex membrane,1,25.00,25.00,Amazon,https://www.amazon.com/Gore-Protective-Vents-Pressure-Equalization/dp/B07GF8JW3Z,Advanced pressure management
+Grounding & Lightning Protection,Professional Grounding Kit,8ft ground rod with exothermic welding kit and testing,1,85.00,85.00,Home Depot,https://www.homedepot.com/p/BURNDY-Complete-Grounding-Kit-Professional/303569162,Professional grounding system
+Grounding & Lightning Protection,Lightning Arrestor,12V 20kA surge arrestor with grounding and monitoring,1,65.00,65.00,Amazon,https://www.amazon.com/Polyphaser-IS-50UX-B2-Lightning-Protector/dp/B001AHYSPM,Professional lightning protection
+Grounding & Lightning Protection,Surge Protection Array,Multi-stage surge protection for power and data lines,1,35.00,35.00,Amazon,https://www.amazon.com/Tripp-Lite-Protector-Telephone-TLP366TEL/dp/B0000513LW,Comprehensive surge protection
+Security & Anti-Theft,Advanced Security Enclosure,Tamper-evident with intrusion detection and cellular alerts,1,85.00,85.00,Amazon,https://www.amazon.com/Advanced-Security-Enclosure-Intrusion-Detection/dp/B08ZQVR3TD,Advanced intrusion detection
+Security & Anti-Theft,Security Mounting System,Anti-theft mounting with concealed fasteners and vibration detection,1,45.00,45.00,Amazon,https://www.amazon.com/Security-Mounting-Anti-Theft-Concealed-Fasteners/dp/B07V4GTQSB,Professional anti-theft system
+Security & Anti-Theft,GPS Tracking Module,GPS/GNSS module with cellular backup for theft recovery,1,35.00,35.00,Amazon,https://www.amazon.com/SIM808-GPS-GPRS-Module-Arduino/dp/B07PQJK1PR,Theft recovery system
+Monitoring & Control,Advanced Watchdog System,Multi-tier watchdog with remote monitoring and diagnostics,1,55.00,55.00,Amazon,https://www.amazon.com/Witty-Pi-Advanced-Watchdog-Remote/dp/B08JBQZPX1,Advanced system monitoring
+Monitoring & Control,Environmental Sensors,Temperature humidity pressure sensors with data logging,1,35.00,35.00,Amazon,https://www.amazon.com/BME280-Temperature-Humidity-Barometric-Pressure/dp/B07KR24P6P,Environmental monitoring
+Monitoring & Control,Status Display System,OLED display with status LEDs and remote monitoring,1,25.00,25.00,Amazon,https://www.amazon.com/Display-Module-SSD1306-Arduino-Raspberry/dp/B072Q2X2LL,Advanced status display
+Assembly Hardware,IP68 Cable Management,Professional cable glands IP68 rated with strain relief,8,6.00,48.00,Amazon,https://www.amazon.com/Professional-Cable-Glands-IP68-Strain/dp/B07K7QGQNK,Professional cable management
+Assembly Hardware,Industrial Mounting Kit,Heavy-duty pole mount with vibration dampening and leveling,1,65.00,65.00,Amazon,https://www.amazon.com/Industrial-Mounting-Heavy-Duty-Vibration/dp/B07YDVQCTP,Industrial mounting system
+Assembly Hardware,Premium Wiring Harness,10 AWG marine grade wire harness with professional connectors,1,45.00,45.00,Amazon,https://www.amazon.com/WindyNation-Marine-Grade-Wire-Harness/dp/B01A6HQZUG,Premium wiring system
+Assembly Hardware,Industrial Connectors,IP67 rated quick-disconnect connectors with locking mechanisms,1,35.00,35.00,Amazon,https://www.amazon.com/Industrial-Connectors-Quick-Disconnect-Locking/dp/B073QTBP2K,Professional connections
+Assembly Hardware,Backup Storage Device,Industrial USB-C SSD 512GB for data backup and recovery,1,85.00,85.00,Amazon,https://www.amazon.com/Samsung-T7-Portable-SSD-MU-PC500T/dp/B087Q7P15R,Data backup system
+,,,,SUBTOTAL,676.00,,,
+,,,,SHIPPING (6%),40.56,,,Estimated US domestic shipping
+,,,,CONTINGENCY (10%),71.66,,,Price fluctuation buffer
+,,,,TOTAL WITH CONTINGENCY,788.22,,,Total project cost under $790

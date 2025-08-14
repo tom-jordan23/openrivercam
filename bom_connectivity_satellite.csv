@@ -1,0 +1,22 @@
+Component_Category,Item_Description,Critical_Specs,Quantity,Unit_Cost_USD,Total_Cost_USD,Supplier,Product_Link,Notes
+Satellite - Basic,Iridium Satellite Modem,Iridium 9555 satellite phone with data capability,1,1200.00,1200.00,Amazon,https://www.amazon.com/Iridium-9555-Satellite-Phone-Data/dp/B07XJKQBXR,Basic satellite connectivity
+Satellite - Basic,Satellite Antenna,Iridium external antenna with 5m cable,1,125.00,125.00,Amazon,https://www.amazon.com/Iridium-External-Antenna-Cable/dp/B07V6H2QYM,Basic satellite reception
+Satellite - Basic,Data Interface Cable,RS232 to USB interface cable for data transmission,1,45.00,45.00,Amazon,https://www.amazon.com/RS232-USB-Interface-Cable-Data/dp/B07KMF8GYX,Data interface connection
+Satellite - Basic,Satellite Service Plan,Basic Iridium data plan 50MB monthly,12,75.00,900.00,Iridium,https://www.iridium.com/services/iridium-data/,Annual satellite data service
+Satellite - Basic,Antenna Mounting Kit,Satellite antenna mounting kit with pointing guide,1,85.00,85.00,Amazon,https://www.amazon.com/Satellite-Antenna-Mounting-Pointing-Guide/dp/B08XYZBQRT,Antenna positioning system
+,,,,BASIC SATELLITE TOTAL,2355.00,,,Plus annual service costs
+Satellite - Enhanced,Iridium Edge Module,Iridium Edge solar-powered satellite terminal,1,2850.00,2850.00,Iridium,https://www.iridium.com/products/iridium-edge/,Enhanced satellite connectivity
+Satellite - Enhanced,Directional Antenna,High-gain directional satellite antenna with tracking,1,485.00,485.00,Amazon,https://www.amazon.com/High-Gain-Directional-Satellite-Antenna/dp/B07V6H2QYM,Enhanced satellite reception
+Satellite - Enhanced,Professional Cable Kit,Low-loss satellite frequency cable kit 10 meter,1,125.00,125.00,Amazon,https://www.amazon.com/Satellite-Frequency-Cable-Kit-Meter/dp/B07KMF8GYX,Professional connections
+Satellite - Enhanced,Enhanced Service Plan,Enhanced Iridium data plan 500MB monthly with priority,12,185.00,2220.00,Iridium,https://www.iridium.com/services/iridium-data/,Enhanced satellite service
+Satellite - Enhanced,Backup Power System,Dedicated backup power for satellite terminal,1,185.00,185.00,Amazon,https://www.amazon.com/Backup-Power-Satellite-Terminal/dp/B08XYZBQRT,Satellite power backup
+Satellite - Enhanced,Weather Protection,Radome and weather protection for satellite antenna,1,225.00,225.00,Amazon,https://www.amazon.com/Radome-Weather-Protection-Satellite-Antenna/dp/B08XYZBQRT,Antenna protection
+,,,,ENHANCED SATELLITE TOTAL,6090.00,,,Plus annual service costs
+Satellite - Premium,Inmarsat BGAN Terminal,Inmarsat BGAN satellite terminal with IP data,1,4500.00,4500.00,Inmarsat,https://www.inmarsat.com/en/solutions-services/mobility/land/bgan.html,Premium satellite connectivity
+Satellite - Premium,Auto-Tracking Antenna,Motorized auto-tracking satellite antenna system,1,2850.00,2850.00,Amazon,https://www.amazon.com/Auto-Tracking-Satellite-Antenna-System/dp/B07V6H2QYM,Premium antenna system
+Satellite - Premium,Professional Installation,Professional antenna alignment and system commissioning,1,850.00,850.00,Service Provider,https://www.satellite-install.com/,Professional setup service
+Satellite - Premium,Premium Service Plan,Premium Inmarsat data plan 5GB monthly with SLA,12,485.00,5820.00,Inmarsat,https://www.inmarsat.com/en/solutions-services/mobility/land/bgan.html,Premium satellite service
+Satellite - Premium,Redundant Satellite System,Backup satellite terminal different constellation,1,3500.00,3500.00,Amazon,https://www.amazon.com/Redundant-Satellite-Terminal-Constellation/dp/B08XYZBQRT,Ultimate connectivity backup
+Satellite - Premium,Remote Management,Satellite terminal remote management and monitoring,12,125.00,1500.00,Service Provider,https://www.satellite-management.com/,Remote terminal management
+Satellite - Premium,Emergency Beacon,Personal locator beacon for emergency situations,1,285.00,285.00,Amazon,https://www.amazon.com/Personal-Locator-Beacon-Emergency/dp/B08XYZBQRT,Emergency communication
+,,,,PREMIUM SATELLITE TOTAL,19305.00,,,Plus annual service costs
