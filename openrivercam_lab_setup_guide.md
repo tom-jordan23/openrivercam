@@ -23,15 +23,16 @@ This guide focuses on getting OpenRiverCam running on Raspberry Pi 5 in a contro
 ## Table of Contents
 1. [Hardware Requirements (Lab Version)](#hardware-requirements-lab-version)
 2. [Operating System Installation](#operating-system-installation)
-3. [Basic System Configuration](#basic-system-configuration)
-4. [Camera Module Setup](#camera-module-setup)
+3. [X11 Forwarding Setup](#x11-forwarding-setup)
+4. [Basic System Configuration](#basic-system-configuration)  
 5. [Software Dependencies](#software-dependencies)
-6. [OpenRiverCam Installation](#openrivercam-installation)
-7. [River Analysis Pipeline](#river-analysis-pipeline)
-8. [Data Management](#data-management)
-9. [WiFi Data Transmission](#wifi-data-transmission)
-10. [Testing and Validation](#testing-and-validation)
-11. [Troubleshooting](#troubleshooting)
+6. [Camera Module Setup](#camera-module-setup)
+7. [OpenRiverCam Installation](#openrivercam-installation)
+8. [River Analysis Pipeline](#river-analysis-pipeline)
+9. [Data Management](#data-management)
+10. [WiFi Data Transmission](#wifi-data-transmission)
+11. [Testing and Validation](#testing-and-validation)
+12. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -102,7 +103,11 @@ sudo apt install -y xauth x11-apps
 sudo timedatectl set-timezone America/New_York  # Adjust as needed
 ```
 
-### 3. Configure X11 Forwarding for Headless Operation
+---
+
+## X11 Forwarding Setup
+
+### 1. Configure X11 Forwarding for Headless Operation
 
 ```bash
 # Configure SSH server for X11 forwarding
@@ -133,7 +138,7 @@ xeyes &
 # This should open a pair of eyes that track your mouse cursor
 ```
 
-### 4. Client-Side X11 Setup
+### 2. Client-Side X11 Setup
 
 #### On Linux/macOS Client:
 ```bash
@@ -171,7 +176,7 @@ echo $DISPLAY  # Should show something like localhost:10.0
 export DISPLAY=localhost:0.0
 ```
 
-### 5. Create X11 Testing Script
+### 3. Create X11 Testing Script
 
 ```bash
 cat << 'EOF' > ~/test_x11.sh
@@ -272,56 +277,6 @@ chmod +x ~/test_x11.sh
 ~/test_x11.sh
 ```
 
-### 6. OpenCV GUI Testing
-
-```bash
-cat << 'EOF' > ~/test_opencv_gui.py
-#!/usr/bin/env python3
-"""
-Test OpenCV GUI functionality over X11 forwarding
-"""
-
-import cv2
-import numpy as np
-import sys
-
-def test_opencv_gui():
-    """Test OpenCV window display over X11"""
-    print("🎥 Testing OpenCV GUI over X11 forwarding...")
-    
-    try:
-        # Create a test image
-        img = np.zeros((480, 640, 3), dtype=np.uint8)
-        
-        # Draw some test patterns
-        cv2.rectangle(img, (50, 50), (200, 200), (0, 255, 0), 3)
-        cv2.circle(img, (400, 150), 80, (255, 0, 0), -1)
-        cv2.putText(img, 'OpenCV X11 Test', (200, 300), 
-                   cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
-        
-        # Display the image
-        cv2.imshow('OpenCV X11 Test', img)
-        print("✅ OpenCV window should be visible on your local display")
-        print("Press any key in the OpenCV window to close...")
-        
-        # Wait for key press
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
-        
-        print("✅ OpenCV GUI test successful!")
-        return True
-        
-    except Exception as e:
-        print(f"❌ OpenCV GUI test failed: {e}")
-        return False
-
-if __name__ == "__main__":
-    success = test_opencv_gui()
-    sys.exit(0 if success else 1)
-EOF
-
-chmod +x ~/test_opencv_gui.py
-```
 
 ---
 
@@ -795,7 +750,76 @@ print(f'Pandas version: {pd.__version__}')
 pip show opencv-python numpy pandas picamera2
 ```
 
-### 7. Environment Usage Best Practices
+### 7. Test OpenCV GUI Functionality
+
+```bash
+# Now that OpenCV is installed, test GUI functionality over X11
+cat << 'EOF' > ~/openrivercam/scripts/test_opencv_gui.py
+#!/usr/bin/env python3
+"""
+Test OpenCV GUI functionality over X11 forwarding
+"""
+
+import sys
+import os
+
+# Check if we're in the correct virtual environment
+def check_venv():
+    venv_path = os.path.expanduser("~/openrivercam/venv")
+    if not (hasattr(sys, 'real_prefix') or (hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix)):
+        print("❌ Error: Not running in virtual environment!")
+        print("Please run: source ~/openrivercam/activate_env.sh")
+        sys.exit(1)
+
+# Check virtual environment first
+check_venv()
+
+import cv2
+import numpy as np
+
+def test_opencv_gui():
+    """Test OpenCV window display over X11"""
+    print("🎥 Testing OpenCV GUI over X11 forwarding...")
+    
+    try:
+        # Create a test image
+        img = np.zeros((480, 640, 3), dtype=np.uint8)
+        
+        # Draw some test patterns
+        cv2.rectangle(img, (50, 50), (200, 200), (0, 255, 0), 3)
+        cv2.circle(img, (400, 150), 80, (255, 0, 0), -1)
+        cv2.putText(img, 'OpenCV X11 Test', (200, 300), 
+                   cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+        
+        # Display the image
+        cv2.imshow('OpenCV X11 Test', img)
+        print("✅ OpenCV window should be visible on your local display")
+        print("Press any key in the OpenCV window to close...")
+        
+        # Wait for key press
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
+        
+        print("✅ OpenCV GUI test successful!")
+        return True
+        
+    except Exception as e:
+        print(f"❌ OpenCV GUI test failed: {e}")
+        return False
+
+if __name__ == "__main__":
+    success = test_opencv_gui()
+    sys.exit(0 if success else 1)
+EOF
+
+chmod +x ~/openrivercam/scripts/test_opencv_gui.py
+
+# Test OpenCV GUI (make sure virtual environment is activated)
+source ~/openrivercam/activate_env.sh
+python3 ~/openrivercam/scripts/test_opencv_gui.py
+```
+
+### 8. Environment Usage Best Practices
 
 ```bash
 # Always activate before running any OpenRiverCam scripts
@@ -1733,8 +1757,9 @@ ssh -X -C openriver@<PI_IP_ADDRESS>
 # Problem: OpenCV windows not displaying
 # Install GUI libraries
 sudo apt install -y libgtk-3-dev libqt5gui5 qtbase5-dev qtbase5-dev-tools python3-tk
-# Test with
-python3 ~/test_opencv_gui.py
+# Test with (make sure virtual environment is activated)
+source ~/openrivercam/activate_env.sh
+python3 ~/openrivercam/scripts/test_opencv_gui.py
 
 # Problem: "Package 'qt5-default' has no installation candidate"
 # qt5-default was removed in newer Debian/Ubuntu versions
