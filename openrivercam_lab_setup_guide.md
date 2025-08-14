@@ -121,7 +121,7 @@ sudo sed -i 's/X11Forwarding no/X11Forwarding yes/' /etc/ssh/sshd_config
 sudo systemctl restart ssh
 
 # Install additional GUI libraries for OpenCV and camera applications
-sudo apt install -y libgtk-3-dev libqt5gui5 qt5-default
+sudo apt install -y libgtk-3-dev libqt5gui5 qtbase5-dev qtbase5-dev-tools
 sudo apt install -y python3-tk  # For matplotlib GUI backends
 
 # Test X11 forwarding (should open a simple GUI window)
@@ -1732,9 +1732,14 @@ ssh -X -C openriver@<PI_IP_ADDRESS>
 
 # Problem: OpenCV windows not displaying
 # Install GUI libraries
-sudo apt install -y libgtk-3-dev python3-tk
+sudo apt install -y libgtk-3-dev libqt5gui5 qtbase5-dev qtbase5-dev-tools python3-tk
 # Test with
 python3 ~/test_opencv_gui.py
+
+# Problem: "Package 'qt5-default' has no installation candidate"
+# qt5-default was removed in newer Debian/Ubuntu versions
+# Use instead:
+sudo apt install -y qtbase5-dev qtbase5-dev-tools
 ```
 
 #### 2. Camera Not Detected

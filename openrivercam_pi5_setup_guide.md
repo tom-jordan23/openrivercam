@@ -184,7 +184,7 @@ sudo apt update && sudo apt upgrade -y
 sudo apt install -y git vim htop screen tmux curl wget
 
 # Install X11 forwarding support for headless GUI applications
-sudo apt install -y xauth x11-apps libgtk-3-dev python3-tk
+sudo apt install -y xauth x11-apps libgtk-3-dev libqt5gui5 qtbase5-dev qtbase5-dev-tools python3-tk
 
 # Configure SSH server for X11 forwarding
 sudo sed -i 's/#X11Forwarding yes/X11Forwarding yes/' /etc/ssh/sshd_config
