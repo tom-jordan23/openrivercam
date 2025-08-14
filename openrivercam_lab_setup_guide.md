@@ -294,6 +294,9 @@ sudo raspi-config nonint do_i2c 0
 # Enable SSH (should already be enabled)
 sudo raspi-config nonint do_ssh 0
 
+# Install libcamera tools for camera testing
+sudo apt install -y libcamera-apps
+
 # Reboot to apply changes
 sudo reboot
 ```
@@ -353,7 +356,17 @@ sudo shutdown -h now
 ### 2. Camera Testing
 
 ```bash
-# Test camera with libcamera (new camera stack)
+# After reboot, reconnect with X11 forwarding
+ssh -Y openriver@<PI_IP_ADDRESS>
+
+# Check camera detection first
+vcgencmd get_camera
+# Should show: supported=1 detected=1
+
+# List available cameras
+libcamera-hello --list-cameras
+
+# Test camera with libcamera (should display preview on your local machine via X11)
 libcamera-hello --preview-window 0,0,640,480 --timeout 5000
 
 # Test still capture
@@ -364,6 +377,10 @@ libcamera-vid -o ~/test_video.h264 --width 1920 --height 1080 --timeout 10000
 
 # Check captured files
 ls -la ~/*.jpg ~/*.h264
+
+# If camera not detected, check physical connection and try:
+# sudo raspi-config
+# Interface Options -> Camera -> Enable -> Finish -> Reboot
 ```
 
 ### 3. Camera Configuration Script
@@ -1769,19 +1786,42 @@ sudo apt install -y qtbase5-dev qtbase5-dev-tools
 
 #### 2. Camera Not Detected
 ```bash
-# Check if camera is physically connected
-lsusb  # Should show camera if USB
-ls /dev/video*  # Should show video devices
+# First, check camera detection status
+vcgencmd get_camera
+# Expected: supported=1 detected=1
+# If supported=0: camera interface not enabled
+# If detected=0: camera not physically connected or faulty
 
-# Check camera interface
-sudo raspi-config
-# Navigate to Interface Options → Camera → Enable
+# Check if libcamera tools are installed
+which libcamera-hello
+# If not found: sudo apt install -y libcamera-apps
 
-# Test with system tools
+# Check if camera interface is enabled
+sudo raspi-config nonint do_camera 0
+
+# List available cameras
 libcamera-hello --list-cameras
+
+# Check physical connection
+# 1. Power off Pi completely: sudo shutdown -h now
+# 2. Check ribbon cable connection to camera port
+# 3. Ensure ribbon cable contacts face away from ethernet port
+# 4. Ensure ribbon cable is fully seated with connector flap down
+# 5. Power on and test again
+
+# If still not detected, try legacy camera detection
+# (Note: This is for debugging only, we use libcamera for actual operation)
+sudo modprobe bcm2835-v4l2
+ls /dev/video*  # Should show video devices if detected
+
+# Test with system tools after enabling interface
+sudo reboot
+# After reboot:
+libcamera-hello --list-cameras
+vcgencmd get_camera
 ```
 
-#### 2. OpenCV Import Errors
+#### 3. OpenCV Import Errors
 ```bash
 # Reinstall OpenCV
 source ~/openrivercam/activate_env.sh
@@ -1792,7 +1832,7 @@ pip install opencv-python==4.8.1.78
 sudo apt install -y libatlas-base-dev liblapack-dev
 ```
 
-#### 3. Picamera2 Issues
+#### 4. Picamera2 Issues
 ```bash
 # Update system
 sudo apt update && sudo apt upgrade
@@ -1804,7 +1844,7 @@ sudo apt install -y python3-picamera2
 pip install picamera2
 ```
 
-#### 4. Permission Issues
+#### 5. Permission Issues
 ```bash
 # Add user to video group
 sudo usermod -a -G video $USER
@@ -1815,7 +1855,7 @@ sudo usermod -a -G gpio $USER
 # Logout and login again
 ```
 
-#### 5. WiFi Connectivity Issues
+#### 6. WiFi Connectivity Issues
 ```bash
 # Check WiFi status
 iwconfig
