@@ -999,17 +999,20 @@ orc
 ```bash
 cd ~/openrivercam
 
-# Clone the official repository
-git clone https://github.com/localdevices/OpenRiverCam.git
+# Clone the correct repository (pyorc - the actual OpenRiverCam implementation)
+git clone https://github.com/localdevices/pyorc.git
 
 # Enter the directory
-cd OpenRiverCam
+cd pyorc
 
 # Activate virtual environment
 source ~/openrivercam/activate_env.sh
 
-# Install OpenRiverCam
+# Install pyorc (OpenRiverCam)
 pip install -e .
+
+# Alternative: Install from PyPI instead of source
+# pip install pyopenrivercam[extra]
 ```
 
 ### 2. Basic Configuration
@@ -1053,15 +1056,18 @@ EOF
 ```bash
 # Test basic import
 python3 -c "
-import openrivercam
-print('✅ OpenRiverCam imported successfully')
+import pyorc
+print('✅ pyorc (OpenRiverCam) imported successfully')
+print(f'Version: {pyorc.__version__}')
 "
 
 # Test configuration loading
 python3 -c "
-import openrivercam
+import pyorc
 import yaml
-with open('~/.openrivercam/config.yaml', 'r') as f:
+import os
+config_path = os.path.expanduser('~/.openrivercam/config.yaml')
+with open(config_path, 'r') as f:
     config = yaml.safe_load(f)
 print('✅ Configuration loaded successfully')
 print(config)

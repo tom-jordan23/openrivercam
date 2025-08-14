@@ -47,7 +47,7 @@ Develop a robust, autonomous software system that schedules hourly image capture
 ### Core System Software
 - **Operating System**: Raspberry Pi OS Lite (64-bit) for minimal resource usage
 - **Python Environment**: Python 3.11+ with virtual environment for dependencies
-- **OpenRiverCam**: Core computer vision algorithms and analysis pipeline
+- **pyorc (OpenRiverCam)**: Core computer vision algorithms and analysis pipeline
 - **System Services**: Systemd services for automated operation and monitoring
 - **Network Management**: NetworkManager for cellular and WiFi connectivity
 
@@ -240,9 +240,11 @@ Develop a robust, autonomous software system that schedules hourly image capture
 4. Proactive control algorithm implementation
 
 ### Phase 3: OpenRiverCam Integration
-1. OpenRiverCam library installation and configuration
+1. pyorc (OpenRiverCam) library installation and configuration
+   - Install via pip: `pip install pyopenrivercam[extra]`
+   - Or clone from source: `git clone https://github.com/localdevices/pyorc.git`
 2. Camera capture pipeline development with environmental checks
-3. Image processing and analysis workflow
+3. Image processing and analysis workflow using pyorc algorithms
 4. Data export including environmental data
 
 ### Phase 4: Automation and Scheduling
