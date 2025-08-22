@@ -19,7 +19,7 @@ def check_environment():
     if in_venv:
         print("✅ Running in virtual environment")
         venv_path = sys.prefix
-        expected_path = os.path.expanduser("~/openrivercam/venv")
+        expected_path = os.path.expanduser("~/orc/venv")
         
         if os.path.samefile(venv_path, expected_path):
             print("✅ Correct virtual environment (OpenRiverCam)")
