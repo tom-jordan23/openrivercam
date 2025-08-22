@@ -453,6 +453,9 @@ sudo apt install -y libgtk2.0-dev libcanberra-gtk-module
 sudo apt install -y libatlas-base-dev gfortran
 sudo apt install -y libhdf5-dev libhdf5-serial-dev
 
+# Install GDAL dependencies (required for rasterio/pyorc geospatial processing)
+sudo apt install -y gdal-bin libgdal-dev
+
 # Install dependencies for Picamera2
 sudo apt install -y libcap-dev
 
