@@ -53,6 +53,12 @@
     - Will we have a shell account on it?
     - What firewalling / security is needed?
     - Do you typically configure automated updates on the device?
+
+## NodeORC questions
+    - Will the PtBox be preconfigured for image capture, or do we need to do that?
+    - Is there a preferred way to schedule image capture (e.g. Cron job?)
+    - Do we have specifics on the camera used in the PtBox?
+    - Will we need to generate the device config for NodeORC, or will that be provided with the PtBox?
     - 
 
 
