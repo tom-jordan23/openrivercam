@@ -41,7 +41,9 @@
 
 ## Measuring and Calibrating
     - Do we want to take the Ardusimple + fishfinder approach?
-    - Are we ok with the risk of building in-country? Or should we build and test here, then ship?
+    - Is renting the equipment an option? There appear to be places in Jakarta and Sukabumi.
+    - Does AmRC Domestic have equipment they could lend us?
+    - Are we ok with the risk of building a low cost RTK rig in-country? Or should we build and test here, then ship?
     - If not that approach, what others are realistic?
     - Will there be more documentation / instructions provided?
     - Do we need to make sure we train the local team on the calibration process?
