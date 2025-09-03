@@ -24,6 +24,7 @@
     - What security / anti-tampering measures are needed based on the site surroundings? Is it accessible to the public?
     - What mounting hardware should we plan for the PtBox?
     - What mounting hardware to plan for power (solar panel + charge controller)?
+    - Do we need to provide a waterproof enclosure for charge controller and battery?
     - What mounting hardware to plan for IR emittter?
 
 
@@ -60,8 +61,7 @@
     - Will the PtBox be preconfigured for image capture, or do we need to do that?
     - Is there a preferred way to schedule image capture (e.g. Cron job?)
     - Do we have specifics on the camera used in the PtBox?
-    - Will we need to generate the device config for NodeORC, or will that be provided with the PtBox?
-    - 
+    - Will we need to generate the device config for NodeORC, or will that be provided with the PtBox? (Thinking that we will need to generate it, since the device config includes the GPS coords of the bounding box / ground reference points).
 
 
 ## Uplink Connectivity
