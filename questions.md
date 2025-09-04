@@ -25,6 +25,7 @@
     - What mounting hardware should we plan for the PtBox?
     - What mounting hardware to plan for power (solar panel + charge controller)?
     - Do we need to provide a waterproof enclosure for charge controller and battery?
+    - Don't forget to account for inline fuse, battery terminal connectors, etc.
     - What mounting hardware to plan for IR emittter?
 
 
