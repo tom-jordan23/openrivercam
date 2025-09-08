@@ -43,6 +43,9 @@
 
 ## Measuring and Calibrating
     - Do we want to take the Ardusimple + fishfinder approach?
+        - Approach: [Manual how to perform accurate bathymetry measurements with a fishfinder](https://docs.google.com/presentation/d/1-20GT_kJZRlo2iy9VqDYBEpLsxQkqFnX/edit?slide=id.p1#slide=id.p1)
+        - RTK Rover Kit: [Ardusimple RTK kit with base and rover](https://www.ardusimple.com/product/simplertk2b-starter-kit-lr-ip65/)
+        - Depth finder: [Deeper Chirp+ 2](https://deepersonar.com/en-us?srsltid=AfmBOooO4WUW1LSdv_qE3xYW0rKcFeYEGZb9QAGJ5zcjrRaHE7St36rz)
     - Is renting the equipment an option? There appear to be places in Jakarta and Sukabumi.
     - Does AmRC Domestic have equipment they could lend us?
     - Are we ok with the risk of building a low cost RTK rig in-country? Or should we build and test here, then ship?
