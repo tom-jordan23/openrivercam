@@ -6,7 +6,7 @@ This guide provides step-by-step instructions for building a PVC bathymetry shut
 
 ![Completed Shuttle](images/shuttle.jpeg)
 
-The PVC bathymetry shuttle is a simple, cost-effective device designed to measure water depth profiles across river cross-sections by using a highly accurate [RTK GPS](https://www.ardusimple.com/rtk-explained/) along with an inexpensive depth finder to record the depth of a body of water at a specific location. When combined with an arduino device to log both values, the bathymetry shuttle can map the underside of a body of water with a high degree of accuracy. [OpenRiverCam](https://github.com/localdevices/ORC-OS) uses this data along with video analysis of the surface movement to calculate the flow of a river using inexpensive commodity hardware. This provides an alternative to the cost, labor and civil construction required for more traditional measurements (staff gauges, float systems, pressure loggers, etc).
+The PVC bathymetry shuttle is a simple, cost-effective device designed to measure water depth profiles across river cross-sections by using a highly accurate [RTK GPS](https://www.ardusimple.com/rtk-explained/) along with an inexpensive depth finder to record the depth of a body of water at a specific location. When combined with an android device running GNSS-Master to log values, the bathymetry shuttle can map the underside of a body of water with a high degree of accuracy. [OpenRiverCam](https://github.com/localdevices/ORC-OS) uses this data along with video analysis of the surface movement to calculate the flow of a river using inexpensive commodity hardware. This provides an alternative to the cost, labor and civil construction required for more traditional measurements (staff gauges, float systems, pressure loggers, etc).
 
 This project was based on [prior work](https://docs.google.com/presentation/d/1-20GT_kJZRlo2iy9VqDYBEpLsxQkqFnX/edit?slide=id.p1#slide=id.p1) by Oliver Hoes at TU Delft.
 
@@ -28,18 +28,18 @@ Parts list (metric):
 
 ## 3. Prepare the Parts
 
-### 3a. Measure
+### Measure
 
 ![Measuring pipe section](images/IMG_0947.jpeg)
 ![Marking measurements](images/IMG_0948.jpeg)
 
 The above parts should provide a shuttle that is 30cm wide by 45cm long by 30 cm high. You may alter the size of the shuttle to fit your needs and available parts, but it is *very important* to ensure that the GPS receiver is raised above the water and shielded from below. GNSS signals of the type used by RTK GPS units are reflected by water, so we do not want reflected signals to interfere with our observations. 
 
-### 3b. Cut
+### Cut
 
 Using a manual or powered miter saw equipped with a finish blade, cut all PVC components to the marked lengths. Make clean, straight cuts perpendicular to the pipe axis. A finish blade will provide smoother cuts with less chipping. Take your time and work carefully.
 
-### 3c. Deburr
+### Deburr
 
 ![Deburring pipe edges](images/IMG_0958.jpeg)
 
@@ -63,21 +63,21 @@ Perform a complete dry-fit assembly without primer or cement to ensure all compo
 ![Priming and cementing setup](images/IMG_0959.jpeg)
 To assemble, we'll use PVC primer to clean the surfaces, and PVC cement to join them. Alister, my helper, is seen in the background.
 
-### 6a. Prime
+### Prime
 
 ![Applying primer](images/IMG_0971.jpeg)
 ![Primer application detail](images/IMG_0976.jpeg)
 
 Apply PVC primer to both the male and female portions of each joint to be cemented. The primer cleans and softens the PVC surface, ensuring a strong chemical bond. Work quickly but carefully, as primer begins working immediately upon application. Ensure complete coverage of all surfaces that will be joined.
 
-### 6b. Cement
+### Cement
 
 ![Applying cement](images/IMG_0965.jpeg)
 ![Cement application technique](images/IMG_0963.jpeg)
 
 Immediately after priming, apply PVC cement to both surfaces of the joint. Work quickly as the cement sets rapidly. Apply a thin, even coat to ensure proper bonding without excess that could interfere with the joint fit. The cement chemically welds the PVC pieces together, creating a permanent, watertight seal.
 
-### 6c. Assemble
+### Assemble
 
 ![Final assembly](images/IMG_0968.jpeg)
 
