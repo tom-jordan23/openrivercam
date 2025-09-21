@@ -45,7 +45,7 @@
     - If not that approach, what others are realistic?
     - Will there be more documentation / instructions provided?
     - Do we need to make sure we train the local team on the calibration process?
-    - Will the local team need to periodically recalibrate the instrument?
+    - Will the localgit a team need to periodically recalibrate the instrument?
 
 
 ## Software configuration
@@ -62,3 +62,7 @@
     - Do we know if there will be any port restrictions on the cellular internet service?
     - Do we need a VPN connection to post information to the LiveORC server, or is this generally open to any IP?
     - Will the Pi / PxBox Ethernet interface be available to us? (in the event that we need to bridge the PtBox through something else during setup or troubleshooting)
+
+
+## Project Team / Support / etc
+    - Will there be others involved in the install? (e.g. local Hydrology, local college / university, etc)
