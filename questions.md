@@ -24,6 +24,8 @@
     - What security / anti-tampering measures are needed based on the site surroundings? Is it accessible to the public?
     - What mounting hardware should we plan for the PtBox?
     - What mounting hardware to plan for power (solar panel + charge controller)?
+    - Do we need to provide a waterproof enclosure for charge controller and battery?
+    - Don't forget to account for inline fuse, battery terminal connectors, etc.
     - What mounting hardware to plan for IR emittter?
 
 
@@ -41,7 +43,12 @@
 
 ## Measuring and Calibrating
     - Do we want to take the Ardusimple + fishfinder approach?
-    - Are we ok with the risk of building in-country? Or should we build and test here, then ship?
+        - Approach: https://docs.google.com/presentation/d/1-20GT_kJZRlo2iy9VqDYBEpLsxQkqFnX/edit?slide=id.p3#slide=id.p3
+        - RTK Rover Kit: https://www.ardusimple.com/product/simplertk2b-starter-kit-lr-ip65/
+        - Depth finder: https://deepersonar.com/en-us?srsltid=AfmBOooO4WUW1LSdv_qE3xYW0rKcFeYEGZb9QAGJ5zcjrRaHE7St36rz
+    - Is renting the equipment an option? There appear to be places in Jakarta and Sukabumi.
+    - Does AmRC Domestic have equipment they could lend us?
+    - Are we ok with the risk of building a low cost RTK rig in-country? Or should we build and test here, then ship?
     - If not that approach, what others are realistic?
     - Will there be more documentation / instructions provided?
     - Do we need to make sure we train the local team on the calibration process?
@@ -53,7 +60,12 @@
     - Will we have a shell account on it?
     - What firewalling / security is needed?
     - Do you typically configure automated updates on the device?
-    - 
+
+## NodeORC questions
+    - Will the PtBox be preconfigured for image capture, or do we need to do that?
+    - Is there a preferred way to schedule image capture (e.g. Cron job?)
+    - Do we have specifics on the camera used in the PtBox?
+    - Will we need to generate the device config for NodeORC, or will that be provided with the PtBox? (Thinking that we will need to generate it, since the device config includes the GPS coords of the bounding box / ground reference points).
 
 
 ## Uplink Connectivity
