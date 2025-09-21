@@ -61,6 +61,7 @@ Perform a complete dry-fit assembly without primer or cement to ensure all compo
 ## 6. Prime and Cement Parts
 
 ![Priming and cementing setup](images/IMG_0959.jpeg)
+To assemble, we'll use PVC primer to clean the surfaces, and PVC cement to join them. Alister, my helper, is seen in the background.
 
 ### 6a. Prime
 
