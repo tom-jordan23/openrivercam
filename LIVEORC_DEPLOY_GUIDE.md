@@ -71,32 +71,21 @@ This guide will walk you through deploying Live OpenRiverCam (LiveORC) on AWS. Y
 
 ---
 
-## 🔐 Phase 3: Set Up IAM Role for EC2
+## 🔐 Phase 3: Set Up IAM Policy and Role for EC2
 
-### Step 3.1: Create IAM Role
+### Step 3.1: Create Custom Policy First
 1. In AWS Console, search for "IAM" and click on it
-2. In the left sidebar, click "Roles"
-3. Click "Create role"
-4. **Select trusted entity type:** AWS service
-5. **Use case:** EC2
-6. Click "Next"
-
-### Step 3.2: Create Custom Policy
-1. Click "Create policy" (opens in new tab)
-2. Click the "JSON" tab
-3. Replace the existing content with:
+2. In the left sidebar, click "Policies"
+3. Click "Create policy"
+4. Click the "JSON" tab
+5. Replace the existing content with:
 ```json
 {
   "Version": "2012-10-17",
   "Statement": [
     {
       "Effect": "Allow",
-      "Action": [
-        "s3:ListBucket",
-        "s3:GetObject",
-        "s3:PutObject",
-        "s3:DeleteObject"
-      ],
+      "Action": "s3:*",
       "Resource": [
         "arn:aws:s3:::openrivercam-video",
         "arn:aws:s3:::openrivercam-video/*"
@@ -114,18 +103,25 @@ This guide will walk you through deploying Live OpenRiverCam (LiveORC) on AWS. Y
   ]
 }
 ```
-4. Click "Next: Tags" (skip tags)
-5. Click "Next: Review"
-6. **Policy name:** `LiveORC-S3-SSM-Policy`
-7. Click "Create policy"
+6. Click "Next"
+7. **Policy name:** `LiveORC-S3-SSM-Policy`
+8. **Description:** `Allows LiveORC EC2 instance to access S3 bucket and use Session Manager`
+9. Click "Create policy"
+
+### Step 3.2: Create IAM Role
+1. In the left sidebar, click "Roles"
+2. Click "Create role"
+3. **Select trusted entity type:** AWS service
+4. **Use case:** EC2
+5. Click "Next"
 
 ### Step 3.3: Attach Policy to Role
-1. Go back to the role creation tab
-2. Click the refresh button next to "Create policy"
-3. Search for "LiveORC-S3-SSM-Policy"
-4. Check the box next to your policy
-5. Click "Next"
-6. **Role name:** `LiveORC-EC2-Role`
+1. In the search box, type "LiveORC-S3-SSM-Policy"
+2. Check the box next to your policy
+3. **Optional:** Also search for and add "CloudWatchAgentServerPolicy" for better monitoring
+4. Click "Next"
+5. **Role name:** `LiveORC-EC2-Role`
+6. **Description:** `Role for LiveORC EC2 instance with S3 and SSM access`
 7. Click "Create role"
 
 ---
@@ -166,8 +162,9 @@ This guide will walk you through deploying Live OpenRiverCam (LiveORC) on AWS. Y
 4. **Description:** `Security group for LiveORC server`
 5. **Inbound security group rules:**
    - Rule 1: Type: SSH, Port: 22, Source: My IP
-   - Rule 2: Type: HTTP, Port: 80, Source: Anywhere (0.0.0.0/0)
-   - Rule 3: Type: HTTPS, Port: 443, Source: Anywhere (0.0.0.0/0)
+   - Rule 2: Type: HTTPS, Port: 443, Source: Anywhere (0.0.0.0/0)
+   - Rule 3: Type: HTTP, Port: 80, Source: Anywhere (0.0.0.0/0) 
+     - **Note:** HTTP only needed for SSL certificate validation, can be removed after setup
 
 ### Step 4.6: Configure Storage
 1. Under "Configure storage"
@@ -518,6 +515,16 @@ sudo certbot renew --dry-run
 2. Go to `https://liveorc.yourdomain.com`
 3. You should see the LiveORC dashboard
 4. Check that there are no SSL certificate warnings
+
+### Step 8.1.5: Remove HTTP Access (Security Hardening)
+Once HTTPS is working, remove the HTTP rule for better security:
+
+1. Go to **EC2** → **Security Groups**
+2. Select `LiveORC-Security-Group`
+3. Click **Inbound rules** tab
+4. Find the HTTP (port 80) rule
+5. Click **Delete** to remove it
+6. **Result:** Only HTTPS traffic allowed (more secure)
 
 ### Step 8.2: Test API Endpoint
 ```bash
