@@ -60,7 +60,7 @@ openrivercam-video/
 - Use Case: Long-term trends, research projects
 
 ### 2.3 Network Architecture
-- **Region**: ap-southeast-1 (Singapore)
+- **Region**: us-east-1 (N. Virginia)
 - **Security Groups**: HTTPS (443) and temporary HTTP (80) for SSL certificate validation
 - **Access Method**: AWS Session Manager (no SSH port exposure)
 - **API Endpoint**: HTTPS with SSL/TLS encryption

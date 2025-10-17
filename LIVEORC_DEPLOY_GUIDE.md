@@ -25,9 +25,9 @@ This guide will walk you through deploying Live OpenRiverCam (LiveORC) on AWS. Y
 ### Step 1.1: Log into AWS Console
 1. Go to https://aws.amazon.com/console/
 2. Sign in with your AWS account credentials
-3. **Important:** Make sure you're in the **Asia Pacific (Singapore)** region
+3. **Important:** Make sure you're in the **US East (N. Virginia)** region
    - Look at the top-right corner of the console
-   - If it doesn't say "Singapore", click the region dropdown and select "Asia Pacific (Singapore)"
+   - If it doesn't say "N. Virginia", click the region dropdown and select "US East (N. Virginia)"
 
 ### Step 1.2: Enable Billing Alerts
 1. In the AWS Console, click your account name (top-right)
@@ -46,7 +46,7 @@ This guide will walk you through deploying Live OpenRiverCam (LiveORC) on AWS. Y
 2. Click "Create bucket"
 3. **Bucket name:** `openrivercam-video` (must be globally unique)
    - If this name is taken, try: `openrivercam-video-yourname` or `openrivercam-video-2024`
-4. **Region:** Asia Pacific (Singapore) ap-southeast-1
+4. **Region:** US East (N. Virginia) us-east-1
 5. **Bucket settings:**
    - Uncheck "Block all public access" (we'll configure security properly later)
    - Check the acknowledgment box
@@ -200,12 +200,10 @@ usermod -aG docker ubuntu
 
 
 # Install other dependencies
-apt-get install -y s3fs git certbot
+apt-get install -y s3fs git
 
-# Create initial directories
-mkdir -p /opt/liveorc
+# Create S3 mount point only
 mkdir -p /mnt/s3-storage
-chown ubuntu:ubuntu /opt/liveorc
 ```
 
 ### Step 4.8: Launch Instance
@@ -254,14 +252,26 @@ chown ubuntu:ubuntu /opt/liveorc
 
 ### Step 6.2: Verify Installation
 ```bash
-# Check that docker is installed
+# Check what user you're logged in as
+whoami
+
+# If it shows "ssm-user" or "root", switch to ubuntu user:
+sudo su - ubuntu
+
+# If it already shows "ubuntu", you're good!
+
+# Verify docker is installed
 docker --version
 
-# Check docker compose
-docker compose --version
+# Check docker compose (built into Docker now)
+docker compose version
 
-# Switch to ubuntu user if needed
-sudo su - ubuntu
+# Verify docker works without sudo (should not give permission error)
+docker ps
+
+# Check s3fs is installed
+which s3fs
+s3fs --version
 ```
 
 ### Step 6.3: Configure S3 Access
@@ -275,7 +285,7 @@ sudo s3fs openrivercam-video /mnt/s3-storage \
     -o iam_role=auto \
     -o allow_other \
     -o use_cache=/tmp/s3fs \
-    -o url=https://s3.ap-southeast-1.amazonaws.com
+    -o url=https://s3.us-east-1.amazonaws.com
 
 # If this works, skip to "Verify mount works" below
 ```
@@ -294,7 +304,7 @@ sudo s3fs openrivercam-video /mnt/s3-storage \
     -o passwd_file=/home/ubuntu/.passwd-s3fs \
     -o allow_other \
     -o use_cache=/tmp/s3fs \
-    -o url=https://s3.ap-southeast-1.amazonaws.com
+    -o url=https://s3.us-east-1.amazonaws.com
 ```
 
 #### Verify mount works:
@@ -309,10 +319,29 @@ rm /mnt/s3-storage/test.txt
 
 # Add to fstab for persistence (choose the option that worked)
 # For IAM role:
-echo "openrivercam-video /mnt/s3-storage fuse.s3fs _netdev,allow_other,use_cache=/tmp/s3fs,iam_role=auto,url=https://s3.ap-southeast-1.amazonaws.com 0 0" | sudo tee -a /etc/fstab
+echo "openrivercam-video /mnt/s3-storage fuse.s3fs _netdev,allow_other,use_cache=/tmp/s3fs,iam_role=auto,url=https://s3.us-east-1.amazonaws.com 0 0" | sudo tee -a /etc/fstab
 
 # OR for access keys:
-echo "openrivercam-video /mnt/s3-storage fuse.s3fs _netdev,allow_other,use_cache=/tmp/s3fs,passwd_file=/home/ubuntu/.passwd-s3fs,url=https://s3.ap-southeast-1.amazonaws.com 0 0" | sudo tee -a /etc/fstab
+echo "openrivercam-video /mnt/s3-storage fuse.s3fs _netdev,allow_other,use_cache=/tmp/s3fs,passwd_file=/home/ubuntu/.passwd-s3fs,url=https://s3.us-east-1.amazonaws.com 0 0" | sudo tee -a /etc/fstab
+```
+
+#### Test persistence with reboot:
+```bash
+# Reboot the server to test if S3 mounts automatically
+sudo reboot
+
+# Wait 1-2 minutes, then reconnect via Session Manager
+
+# After reconnecting, switch to ubuntu user
+sudo su - ubuntu
+
+# Now verify S3 mounted automatically
+df -h | grep s3
+ls -la /mnt/s3-storage/
+
+# If not mounted, check for errors
+sudo mount -a
+journalctl -xe | grep s3fs
 ```
 
 ### Step 6.4: Create AWS Access Keys (Only if Option A didn't work)
@@ -345,193 +374,149 @@ sudo chown -R ubuntu:ubuntu LiveORC
 cd LiveORC
 ```
 
-### Step 7.2: Create Environment Configuration
+### Step 7.2: Configure LiveORC for External Storage
 ```bash
-# Create environment file
-cat > .env << 'EOF'
-# Database Configuration
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=SecurePassword123!
-POSTGRES_DB=liveorc
+# LiveORC uses command-line arguments, not .env files
+# We'll configure it to use our mounted S3 storage
 
-# Storage Configuration
-STORAGE_PATH=/mnt/s3-storage
-VIDEO_PATH=/mnt/s3-storage/videos
-RESULTS_PATH=/mnt/s3-storage/results
+# Create a startup script for LiveORC with our configuration
+cat > start-liveorc.sh << 'EOF'
+#!/bin/bash
+# LiveORC startup with mounted S3 storage
 
-# Server Configuration
-SERVER_HOST=0.0.0.0
-SERVER_PORT=8000
+cd /opt/LiveORC
 
-# API Keys (generate these)
-API_KEY_SUKABUMI_01=your_generated_key_here
-API_KEY_JAKARTA_01=another_generated_key_here
+# Start LiveORC with external storage mounted at /mnt/s3-storage
+./liveorc.sh start \
+  --storage-dir /mnt/s3-storage \
+  --hostname YOUR_DOMAIN_OR_IP \
+  --port 8000 \
+  --detached
 
-# Domain Configuration
-DOMAIN_NAME=liveorc.yourdomain.com
+echo "LiveORC started with S3 storage at /mnt/s3-storage"
 EOF
+
+chmod +x start-liveorc.sh
 ```
 
-### Step 7.3: Generate API Keys
+### Step 7.3: Test LiveORC is Working
 ```bash
-# Generate secure API keys for each station
-echo "Station 1 API Key:"
-openssl rand -hex 32
+# Start LiveORC using the script
+./start-liveorc.sh
 
-echo "Station 2 API Key:"
-openssl rand -hex 32
-
-# Update the .env file with your generated keys
-nano .env
-```
-
-### Step 7.4: Obtain SSL Certificate
-```bash
-# Stop any existing web services
-sudo systemctl stop apache2 nginx 2>/dev/null || true
-
-# Get SSL certificate (replace with your actual domain)
-sudo certbot certonly --standalone \
-    -d liveorc.yourdomain.com \
-    --email your-email@example.com \
-    --agree-tos \
-    --non-interactive
-
-# Verify certificate was created
-sudo ls -la /etc/letsencrypt/live/liveorc.yourdomain.com/
-```
-
-### Step 7.5: Configure Nginx for HTTPS
-```bash
-# Create nginx configuration
-cat > nginx.conf << 'EOF'
-server {
-    listen 443 ssl http2;
-    server_name liveorc.yourdomain.com;
-    
-    ssl_certificate /etc/letsencrypt/live/liveorc.yourdomain.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/liveorc.yourdomain.com/privkey.pem;
-    
-    # SSL Configuration
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384;
-    ssl_prefer_server_ciphers off;
-    
-    # Security headers
-    add_header X-Frame-Options DENY;
-    add_header X-Content-Type-Options nosniff;
-    add_header X-XSS-Protection "1; mode=block";
-    
-    client_max_body_size 100M;  # Allow large video uploads
-    
-    location / {
-        proxy_pass http://localhost:8000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        
-        # WebSocket support
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        
-        # Timeouts for large uploads
-        proxy_connect_timeout 60s;
-        proxy_send_timeout 60s;
-        proxy_read_timeout 60s;
-    }
-}
-
-server {
-    listen 80;
-    server_name liveorc.yourdomain.com;
-    return 301 https://$server_name$request_uri;
-}
-EOF
-```
-
-### Step 7.6: Create Docker Compose Configuration
-```bash
-# Create or modify docker compose.yml
-cat > docker compose.yml << 'EOF'
-version: '3.8'
-
-services:
-  db:
-    image: postgis/postgis:14-3.2
-    environment:
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
-    restart: unless-stopped
-
-  redis:
-    image: redis:7-alpine
-    command: redis-server --appendonly yes
-    volumes:
-      - redis_data:/data
-    restart: unless-stopped
-
-  liveorc:
-    image: localdevices/liveorc:latest
-    environment:
-      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
-      - STORAGE_PATH=${STORAGE_PATH}
-      - VIDEO_PATH=${VIDEO_PATH}
-      - RESULTS_PATH=${RESULTS_PATH}
-    volumes:
-      - /mnt/s3-storage:/mnt/s3-storage
-    ports:
-      - "8000:8000"
-    depends_on:
-      - db
-      - redis
-    restart: unless-stopped
-
-  nginx:
-    image: nginx:alpine
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf
-      - /etc/letsencrypt:/etc/letsencrypt:ro
-    depends_on:
-      - liveorc
-    restart: unless-stopped
-
-volumes:
-  postgres_data:
-  redis_data:
-EOF
-```
-
-### Step 7.7: Start LiveORC Services
-```bash
-# Start all services
-docker compose up -d
-
-# Check status
-docker compose ps
+# Check if services are running
+docker ps
 
 # View logs
-docker compose logs -f
+./liveorc.sh logs
 ```
 
-### Step 7.8: Set Up SSL Auto-Renewal
+### Step 7.4: Configure SSL with LiveORC
+
+LiveORC includes **automatic SSL certificate management** using Let's Encrypt. No manual certificate installation or renewal scripts are needed!
+
+**How LiveORC manages SSL certificates:**
+- ✅ **Automatic provisioning** via Let's Encrypt
+- ✅ **Automatic renewal** every 90 days  
+- ✅ **Domain validation** handled internally
+- ✅ **No manual intervention** required
+
+**Prerequisites for SSL:**
+- Domain name pointed to your server's public IP
+- Ports 80 (temporary) and 443 accessible for domain validation
+
 ```bash
-# Create renewal script
-sudo tee /etc/cron.d/certbot-renew << 'EOF'
-0 0,12 * * * root certbot renew --quiet && cd /opt/LiveORC && docker compose restart nginx
+# Stop LiveORC if running
+./liveorc.sh stop
+
+# Update the startup script to include SSL
+cat > start-liveorc.sh << 'EOF'
+#!/bin/bash
+# LiveORC startup with mounted S3 storage and SSL
+
+cd /opt/LiveORC
+
+# Start LiveORC with SSL enabled (replace with your actual domain)
+./liveorc.sh start \
+  --storage-dir /mnt/s3-storage \
+  --hostname liveorc.yourdomain.com \
+  --ssl \
+  --port 8000 \
+  --detached
+
+echo "LiveORC started with SSL and S3 storage"
 EOF
 
-# Test the renewal process
-sudo certbot renew --dry-run
+# Start LiveORC with SSL
+./start-liveorc.sh
+
+# Monitor SSL certificate provisioning (may take 2-3 minutes)
+./liveorc.sh logs | grep -i ssl
+```
+
+**Certificate Renewal:**
+LiveORC automatically renews Let's Encrypt certificates before expiration. No manual steps needed!
+
+
+
+### Step 7.5: Set Up Auto-Start Service
+```bash
+# Create systemd service for auto-start on boot
+sudo tee /etc/systemd/system/liveorc.service << 'EOF'
+[Unit]
+Description=LiveORC Server
+After=network.target docker.service
+Requires=docker.service
+
+[Service]
+Type=forking
+WorkingDirectory=/opt/LiveORC
+ExecStart=/opt/LiveORC/start-liveorc.sh
+ExecStop=/opt/LiveORC/liveorc.sh stop
+Restart=on-failure
+RestartSec=30
+User=ubuntu
+Group=ubuntu
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# Enable and start the service
+sudo systemctl daemon-reload
+sudo systemctl enable liveorc.service
+sudo systemctl start liveorc.service
+
+# Check service status
+sudo systemctl status liveorc.service
+
+# Test auto-start with reboot
+sudo reboot
+
+# Wait 2-3 minutes, then reconnect via Session Manager
+
+# After reconnecting, switch to ubuntu user
+sudo su - ubuntu
+
+# Verify LiveORC started automatically
+sudo systemctl status liveorc.service
+docker ps
+cd /opt/LiveORC && ./liveorc.sh status
+```
+
+### Step 7.6: Verify LiveORC is Running
+```bash
+# Check if LiveORC containers are running
+docker ps
+
+# View LiveORC logs
+./liveorc.sh logs
+
+# Check LiveORC status
+./liveorc.sh status
+
+# Test health endpoint (replace with your domain/IP)
+curl -k https://liveorc.yourdomain.com/health
 ```
 
 ---
@@ -668,12 +653,12 @@ curl -k -X POST https://liveorc.yourdomain.com/upload \
 **Daily Checks:**
 ```bash
 # Check system status
-docker compose ps
+docker ps
 df -h  # Check disk space
 free -h  # Check memory
 
 # Check recent logs
-docker compose logs --tail=50
+./liveorc.sh logs
 
 # Check LiveORC dashboard
 curl -k https://liveorc.yourdomain.com/health
@@ -684,11 +669,11 @@ curl -k https://liveorc.yourdomain.com/health
 # Update system packages
 sudo apt update && sudo apt upgrade -y
 
-# Check SSL certificate expiry
-sudo certbot certificates
+# Check LiveORC status
+./liveorc.sh status
 
-# Backup database
-docker compose exec db pg_dump -U postgres liveorc > backup_$(date +%Y%m%d).sql
+# Backup data (LiveORC handles database internally)
+# S3 storage is already backed up automatically
 
 # Clean Docker images
 docker system prune -f
@@ -713,21 +698,20 @@ aws s3 ls s3://openrivercam-video --recursive --human-readable --summarize
 #### Issue: "Can't connect to LiveORC website"
 **Solutions:**
 1. Check security group allows HTTPS (443) from 0.0.0.0/0
-2. Verify Elastic IP is associated with instance
-3. Check DNS A record points to correct IP
-4. Verify nginx container is running: `docker compose ps`
+2. Check DNS A record points to correct IP
+3. Verify LiveORC containers are running: `docker ps`
+4. Check LiveORC logs: `./liveorc.sh logs`
 
 #### Issue: "SSL certificate errors"
 **Solutions:**
 ```bash
-# Check certificate status
-sudo certbot certificates
+# Check LiveORC SSL configuration
+./liveorc.sh logs | grep -i ssl
 
-# Regenerate certificate
-sudo certbot certonly --standalone -d liveorc.yourdomain.com --force-renewal
+# Restart LiveORC to reload SSL
+./liveorc.sh restart
 
-# Restart nginx
-docker compose restart nginx
+# LiveORC handles SSL certificates internally
 ```
 
 #### Issue: "S3 mount not working"
@@ -750,7 +734,7 @@ tail -f /var/log/syslog | grep s3fs
 **Solutions:**
 1. Check API key is correct
 2. Verify network connectivity from field station
-3. Check LiveORC logs: `docker compose logs liveorc`
+3. Check LiveORC logs: `./liveorc.sh logs`
 4. Verify S3 permissions in IAM role
 
 #### Issue: "High AWS costs"
@@ -764,18 +748,18 @@ tail -f /var/log/syslog | grep s3fs
 **Solutions:**
 ```bash
 # Check logs
-docker compose logs service_name
+./liveorc.sh logs
 
 # Check system resources
 df -h
 free -h
 
-# Restart specific service
-docker compose restart service_name
+# Restart LiveORC
+./liveorc.sh restart
 
-# Full restart
-docker compose down
-docker compose up -d
+# Full stop and start
+./liveorc.sh stop
+./liveorc.sh start
 ```
 
 ---
@@ -790,43 +774,34 @@ docker compose up -d
 3. Actions → Monitor and troubleshoot → Manage detailed monitoring
 4. Enable detailed monitoring
 
-**Set up automated backups:**
+**Set up monitoring:**
 ```bash
-# Create backup script
-sudo tee /usr/local/bin/backup-liveorc.sh << 'EOF'
+# Create monitoring script
+sudo tee /usr/local/bin/monitor-liveorc.sh << 'EOF'
 #!/bin/bash
 DATE=$(date +%Y%m%d_%H%M%S)
 cd /opt/LiveORC
 
-# Backup database
-docker compose exec -T db pg_dump -U postgres liveorc | gzip > /tmp/liveorc_backup_${DATE}.sql.gz
+# Check if LiveORC is running
+if ! ./liveorc.sh status > /dev/null 2>&1; then
+  echo "$DATE: LiveORC not running, attempting restart" >> /var/log/liveorc-monitor.log
+  ./liveorc.sh start
+fi
 
-# Upload to S3
-aws s3 cp /tmp/liveorc_backup_${DATE}.sql.gz s3://openrivercam-video/backups/
+# Check S3 mount
+if ! mountpoint -q /mnt/s3-storage; then
+  echo "$DATE: S3 not mounted, attempting remount" >> /var/log/liveorc-monitor.log
+  sudo mount -a
+fi
 
-# Clean local backup
-rm /tmp/liveorc_backup_${DATE}.sql.gz
-
-# Keep only last 7 days of backups in S3
-aws s3 ls s3://openrivercam-video/backups/ --recursive | \
-  while read -r line; do
-    filename=$(echo $line | awk '{print $4}')
-    if [[ "$filename" == *.sql.gz ]]; then
-      file_date=$(echo $filename | grep -o '[0-9]\{8\}_[0-9]\{6\}')
-      if [[ -n "$file_date" ]]; then
-        days_old=$(( ($(date +%s) - $(date -d "${file_date:0:8} ${file_date:9:2}:${file_date:11:2}:${file_date:13:2}" +%s)) / 86400 ))
-        if [[ $days_old -gt 7 ]]; then
-          aws s3 rm "s3://openrivercam-video/$filename"
-        fi
-      fi
-    fi
-  done
+# Log system status
+echo "$DATE: System check completed" >> /var/log/liveorc-monitor.log
 EOF
 
-chmod +x /usr/local/bin/backup-liveorc.sh
+chmod +x /usr/local/bin/monitor-liveorc.sh
 
-# Add to crontab for daily backups
-echo "0 2 * * * root /usr/local/bin/backup-liveorc.sh" | sudo tee -a /etc/crontab
+# Add to crontab for regular monitoring
+echo "*/15 * * * * root /usr/local/bin/monitor-liveorc.sh" | sudo tee -a /etc/crontab
 ```
 
 ---
@@ -866,12 +841,12 @@ If you encounter issues:
 
 1. **Check the troubleshooting section** above
 2. **Review AWS CloudWatch logs** for error messages
-3. **Check LiveORC logs** with `docker compose logs`
+3. **Check LiveORC logs** with `./liveorc.sh logs`
 4. **Post issues** on the LiveORC GitHub repository
 5. **AWS Support** can help with infrastructure issues
 
 **Emergency contacts:**
 - AWS Support: Use your AWS Console support center
-- System logs: `journalctl -f` and `docker compose logs -f`
+- System logs: `journalctl -f` and `./liveorc.sh logs`
 
 Good luck with your river monitoring project! 🌊📊
