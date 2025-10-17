@@ -16,7 +16,7 @@ This guide will walk you through deploying Live OpenRiverCam (LiveORC) on AWS. Y
 - Basic familiarity with terminal/command line
 
 **Estimated time:** 2-3 hours  
-**Monthly cost:** $84-89 depending on retention (can be reduced to $55-65 with reserved instances)
+**Monthly cost:** $80-85 depending on retention (can be reduced to $51-61 with reserved instances)
 
 ---
 
@@ -146,14 +146,11 @@ This guide will walk you through deploying Live OpenRiverCam (LiveORC) on AWS. Y
    - Heavy processing happens on Raspberry Pi at field stations
    - Easy to upgrade to c6i.xlarge later if workload increases
 
-### Step 4.4: Create Key Pair (for emergency SSH access)
+### Step 4.4: Key Pair Configuration
 1. Under "Key pair (login)"
-2. Click "Create new key pair"
-3. **Key pair name:** `liveorc-keypair`
-4. **Key pair type:** RSA
-5. **Private key file format:** .pem
-6. Click "Create key pair"
-7. **Important:** Save the downloaded .pem file securely
+2. Select **"Proceed without a key pair"**
+   - We're using Session Manager, not SSH
+   - More secure - no SSH keys to manage or lose!
 
 ### Step 4.5: Configure Network Settings
 1. Click "Edit" next to "Network settings"
@@ -161,14 +158,14 @@ This guide will walk you through deploying Live OpenRiverCam (LiveORC) on AWS. Y
 3. **Security group name:** `LiveORC-Security-Group`
 4. **Description:** `Security group for LiveORC server`
 5. **Inbound security group rules:**
-   - Rule 1: Type: SSH, Port: 22, Source: My IP
-   - Rule 2: Type: HTTPS, Port: 443, Source: Anywhere (0.0.0.0/0)
-   - Rule 3: Type: HTTP, Port: 80, Source: Anywhere (0.0.0.0/0) 
+   - Rule 1: Type: HTTPS, Port: 443, Source: Anywhere (0.0.0.0/0)
+   - Rule 2: Type: HTTP, Port: 80, Source: Anywhere (0.0.0.0/0) 
      - **Note:** HTTP only needed for SSL certificate validation, can be removed after setup
+   - **NO SSH RULE** - We'll use Session Manager instead (more secure!)
 
 ### Step 4.6: Configure Storage
 1. Under "Configure storage"
-2. Change storage size to **100 GB**
+2. Change storage size to **50 GB**
 3. **Storage type:** gp3
 4. Leave other settings as default
 
@@ -182,20 +179,25 @@ This guide will walk you through deploying Live OpenRiverCam (LiveORC) on AWS. Y
 apt-get update -y
 apt-get upgrade -y
 
-# Install AWS CLI and Session Manager
-snap install aws-cli --classic
-snap install amazon-ssm-agent --classic
-systemctl enable snap.amazon-ssm-agent.amazon-ssm-agent.service
-systemctl start snap.amazon-ssm-agent.amazon-ssm-agent.service
+# Install AWS CLI v2
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+apt-get install -y unzip
+unzip awscliv2.zip
+./aws/install
+rm -rf awscliv2.zip aws/
+
+# Install Session Manager Agent
+curl "https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/debian_amd64/amazon-ssm-agent.deb" -o "amazon-ssm-agent.deb"
+dpkg -i amazon-ssm-agent.deb
+systemctl enable amazon-ssm-agent
+systemctl start amazon-ssm-agent
+rm amazon-ssm-agent.deb
 
 # Install Docker
 curl -fsSL https://get.docker.com -o get-docker.sh
 sh get-docker.sh
 usermod -aG docker ubuntu
 
-# Install Docker Compose
-curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-chmod +x /usr/local/bin/docker-compose
 
 # Install other dependencies
 apt-get install -y s3fs git certbot
@@ -248,46 +250,72 @@ chown ubuntu:ubuntu /opt/liveorc
 4. Click "Connect"
 5. You should now have a terminal session
 
-**Alternative: SSH Connection**
-```bash
-# If you prefer SSH (from your computer)
-chmod 400 /path/to/liveorc-keypair.pem
-ssh -i /path/to/liveorc-keypair.pem ubuntu@YOUR-ELASTIC-IP
-```
+**Note:** No SSH access is configured - Session Manager is more secure and works from anywhere!
 
 ### Step 6.2: Verify Installation
 ```bash
 # Check that docker is installed
 docker --version
 
-# Check docker-compose
-docker-compose --version
+# Check docker compose
+docker compose --version
 
 # Switch to ubuntu user if needed
 sudo su - ubuntu
 ```
 
 ### Step 6.3: Configure S3 Access
+
+**First, we need to get AWS access keys. Two options:**
+
+#### Option A: Use EC2 Instance Profile (Recommended - No Keys Needed!)
 ```bash
-# Create credentials file (replace with your actual keys)
-echo "ACCESS_KEY:SECRET_KEY" > ~/.passwd-s3fs
+# The EC2 role already has S3 permissions, so use IAM role credentials
+sudo s3fs openrivercam-video /mnt/s3-storage \
+    -o iam_role=auto \
+    -o allow_other \
+    -o use_cache=/tmp/s3fs \
+    -o url=https://s3.ap-southeast-1.amazonaws.com
+
+# If this works, skip to "Verify mount works" below
+```
+
+#### Option B: Create Access Keys (If Option A doesn't work)
+**Skip to Step 6.4 below to create access keys first, then come back here**
+
+After creating keys in Step 6.4, use them:
+```bash
+# Create credentials file with YOUR actual keys from Step 6.4
+echo "YOUR_ACCESS_KEY_ID:YOUR_SECRET_ACCESS_KEY" > ~/.passwd-s3fs
 chmod 600 ~/.passwd-s3fs
 
-# Test S3 mount
+# Mount with credentials
 sudo s3fs openrivercam-video /mnt/s3-storage \
     -o passwd_file=/home/ubuntu/.passwd-s3fs \
     -o allow_other \
     -o use_cache=/tmp/s3fs \
     -o url=https://s3.ap-southeast-1.amazonaws.com
+```
 
-# Verify mount works
+#### Verify mount works:
+```bash
+# Check if mount succeeded
 ls -la /mnt/s3-storage
 
-# Add to fstab for persistence
+# Create test file
+echo "test" > /mnt/s3-storage/test.txt
+ls -la /mnt/s3-storage/
+rm /mnt/s3-storage/test.txt
+
+# Add to fstab for persistence (choose the option that worked)
+# For IAM role:
+echo "openrivercam-video /mnt/s3-storage fuse.s3fs _netdev,allow_other,use_cache=/tmp/s3fs,iam_role=auto,url=https://s3.ap-southeast-1.amazonaws.com 0 0" | sudo tee -a /etc/fstab
+
+# OR for access keys:
 echo "openrivercam-video /mnt/s3-storage fuse.s3fs _netdev,allow_other,use_cache=/tmp/s3fs,passwd_file=/home/ubuntu/.passwd-s3fs,url=https://s3.ap-southeast-1.amazonaws.com 0 0" | sudo tee -a /etc/fstab
 ```
 
-### Step 6.4: Create AWS Access Keys (if needed)
+### Step 6.4: Create AWS Access Keys (Only if Option A didn't work)
 1. In AWS Console, go to IAM
 2. Click "Users" in left sidebar
 3. Click "Create user"
@@ -425,8 +453,8 @@ EOF
 
 ### Step 7.6: Create Docker Compose Configuration
 ```bash
-# Create or modify docker-compose.yml
-cat > docker-compose.yml << 'EOF'
+# Create or modify docker compose.yml
+cat > docker compose.yml << 'EOF'
 version: '3.8'
 
 services:
@@ -486,20 +514,20 @@ EOF
 ### Step 7.7: Start LiveORC Services
 ```bash
 # Start all services
-docker-compose up -d
+docker compose up -d
 
 # Check status
-docker-compose ps
+docker compose ps
 
 # View logs
-docker-compose logs -f
+docker compose logs -f
 ```
 
 ### Step 7.8: Set Up SSL Auto-Renewal
 ```bash
 # Create renewal script
 sudo tee /etc/cron.d/certbot-renew << 'EOF'
-0 0,12 * * * root certbot renew --quiet && cd /opt/LiveORC && docker-compose restart nginx
+0 0,12 * * * root certbot renew --quiet && cd /opt/LiveORC && docker compose restart nginx
 EOF
 
 # Test the renewal process
@@ -517,14 +545,20 @@ sudo certbot renew --dry-run
 4. Check that there are no SSL certificate warnings
 
 ### Step 8.1.5: Remove HTTP Access (Security Hardening)
-Once HTTPS is working, remove the HTTP rule for better security:
+Once HTTPS is working, remove the HTTP rule:
 
 1. Go to **EC2** → **Security Groups**
 2. Select `LiveORC-Security-Group`
 3. Click **Inbound rules** tab
 4. Find the HTTP (port 80) rule
 5. Click **Delete** to remove it
-6. **Result:** Only HTTPS traffic allowed (more secure)
+6. **Result:** Only HTTPS traffic allowed
+
+**Final Security State:**
+- ✅ NO SSH port (never opened!)
+- ✅ NO HTTP port (removed after setup)
+- ✅ Only port 443 (HTTPS) exposed
+- ✅ Access via Session Manager only
 
 ### Step 8.2: Test API Endpoint
 ```bash
@@ -634,12 +668,12 @@ curl -k -X POST https://liveorc.yourdomain.com/upload \
 **Daily Checks:**
 ```bash
 # Check system status
-docker-compose ps
+docker compose ps
 df -h  # Check disk space
 free -h  # Check memory
 
 # Check recent logs
-docker-compose logs --tail=50
+docker compose logs --tail=50
 
 # Check LiveORC dashboard
 curl -k https://liveorc.yourdomain.com/health
@@ -654,7 +688,7 @@ sudo apt update && sudo apt upgrade -y
 sudo certbot certificates
 
 # Backup database
-docker-compose exec db pg_dump -U postgres liveorc > backup_$(date +%Y%m%d).sql
+docker compose exec db pg_dump -U postgres liveorc > backup_$(date +%Y%m%d).sql
 
 # Clean Docker images
 docker system prune -f
@@ -681,7 +715,7 @@ aws s3 ls s3://openrivercam-video --recursive --human-readable --summarize
 1. Check security group allows HTTPS (443) from 0.0.0.0/0
 2. Verify Elastic IP is associated with instance
 3. Check DNS A record points to correct IP
-4. Verify nginx container is running: `docker-compose ps`
+4. Verify nginx container is running: `docker compose ps`
 
 #### Issue: "SSL certificate errors"
 **Solutions:**
@@ -693,7 +727,7 @@ sudo certbot certificates
 sudo certbot certonly --standalone -d liveorc.yourdomain.com --force-renewal
 
 # Restart nginx
-docker-compose restart nginx
+docker compose restart nginx
 ```
 
 #### Issue: "S3 mount not working"
@@ -716,7 +750,7 @@ tail -f /var/log/syslog | grep s3fs
 **Solutions:**
 1. Check API key is correct
 2. Verify network connectivity from field station
-3. Check LiveORC logs: `docker-compose logs liveorc`
+3. Check LiveORC logs: `docker compose logs liveorc`
 4. Verify S3 permissions in IAM role
 
 #### Issue: "High AWS costs"
@@ -730,18 +764,18 @@ tail -f /var/log/syslog | grep s3fs
 **Solutions:**
 ```bash
 # Check logs
-docker-compose logs service_name
+docker compose logs service_name
 
 # Check system resources
 df -h
 free -h
 
 # Restart specific service
-docker-compose restart service_name
+docker compose restart service_name
 
 # Full restart
-docker-compose down
-docker-compose up -d
+docker compose down
+docker compose up -d
 ```
 
 ---
@@ -765,7 +799,7 @@ DATE=$(date +%Y%m%d_%H%M%S)
 cd /opt/LiveORC
 
 # Backup database
-docker-compose exec -T db pg_dump -U postgres liveorc | gzip > /tmp/liveorc_backup_${DATE}.sql.gz
+docker compose exec -T db pg_dump -U postgres liveorc | gzip > /tmp/liveorc_backup_${DATE}.sql.gz
 
 # Upload to S3
 aws s3 cp /tmp/liveorc_backup_${DATE}.sql.gz s3://openrivercam-video/backups/
@@ -832,12 +866,12 @@ If you encounter issues:
 
 1. **Check the troubleshooting section** above
 2. **Review AWS CloudWatch logs** for error messages
-3. **Check LiveORC logs** with `docker-compose logs`
+3. **Check LiveORC logs** with `docker compose logs`
 4. **Post issues** on the LiveORC GitHub repository
 5. **AWS Support** can help with infrastructure issues
 
 **Emergency contacts:**
 - AWS Support: Use your AWS Console support center
-- System logs: `journalctl -f` and `docker-compose logs -f`
+- System logs: `journalctl -f` and `docker compose logs -f`
 
 Good luck with your river monitoring project! 🌊📊
