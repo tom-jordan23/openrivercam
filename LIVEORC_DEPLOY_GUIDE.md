@@ -1,6 +1,15 @@
 # Live OpenRiverCam AWS Deployment Guide
 ## Complete Step-by-Step Instructions for Beginners
 
+### ⚠️ DEPLOYMENT STATUS NOTICE
+**As of October 17, 2024:** The LiveORC server has been successfully deployed and is running with s3fs mounted storage. The following optional steps have NOT been completed:
+- ❌ **Step 2.2**: S3 bucket lifecycle policy for automatic 90-day deletion
+- ❌ **Step 7.5**: Systemd service for auto-start on reboot
+- ❌ **Phase 9**: CloudWatch monitoring setup
+- ❌ **Step 9.2**: Billing alerts configuration
+
+The server is operational without these features, but they should be configured for production use.
+
 ### 📋 Overview
 This guide will walk you through deploying Live OpenRiverCam (LiveORC) on AWS. You'll set up a server that can receive video data from field stations and process it for river flow analysis.
 
@@ -53,7 +62,7 @@ This guide will walk you through deploying Live OpenRiverCam (LiveORC) on AWS. Y
 6. Leave other settings as default
 7. Click "Create bucket"
 
-### Step 2.2: Configure Bucket Lifecycle (Auto-delete old videos)
+### Step 2.2: Configure Bucket Lifecycle (Auto-delete old videos) *** NOT YET COMPLETED ***
 1. Click on your newly created bucket name
 2. Go to the "Management" tab
 3. Click "Create lifecycle rule"
@@ -200,9 +209,9 @@ usermod -aG docker ubuntu
 
 
 # Install other dependencies
-apt-get install -y s3fs git
+apt-get install -y git s3fs
 
-# Create S3 mount point only
+# Create S3 mount point
 mkdir -p /mnt/s3-storage
 ```
 
@@ -269,95 +278,43 @@ docker compose version
 # Verify docker works without sudo (should not give permission error)
 docker ps
 
-# Check s3fs is installed
+# Verify AWS CLI is installed
+aws --version
+
+# Verify s3fs is installed
 which s3fs
 s3fs --version
 ```
 
-### Step 6.3: Configure S3 Access
+### Step 6.3: Mount S3 Bucket with s3fs using IAM Role
 
-**First, we need to get AWS access keys. Two options:**
+Since the EC2 instance already has an IAM role with S3 access (from Step 3), we can mount S3 without creating additional credentials:
 
-#### Option A: Use EC2 Instance Profile (Recommended - No Keys Needed!)
 ```bash
-# The EC2 role already has S3 permissions, so use IAM role credentials
+# Mount S3 bucket using IAM role authentication
 sudo s3fs openrivercam-video /mnt/s3-storage \
-    -o iam_role=auto \
-    -o allow_other \
-    -o use_cache=/tmp/s3fs \
-    -o url=https://s3.us-east-1.amazonaws.com
+  -o iam_role=auto \
+  -o allow_other \
+  -o use_cache=/tmp/s3fs \
+  -o url=https://s3.us-east-1.amazonaws.com
 
-# If this works, skip to "Verify mount works" below
-```
-
-#### Option B: Create Access Keys (If Option A doesn't work)
-**Skip to Step 6.4 below to create access keys first, then come back here**
-
-After creating keys in Step 6.4, use them:
-```bash
-# Create credentials file with YOUR actual keys from Step 6.4
-echo "YOUR_ACCESS_KEY_ID:YOUR_SECRET_ACCESS_KEY" > ~/.passwd-s3fs
-chmod 600 ~/.passwd-s3fs
-
-# Mount with credentials
-sudo s3fs openrivercam-video /mnt/s3-storage \
-    -o passwd_file=/home/ubuntu/.passwd-s3fs \
-    -o allow_other \
-    -o use_cache=/tmp/s3fs \
-    -o url=https://s3.us-east-1.amazonaws.com
-```
-
-#### Verify mount works:
-```bash
-# Check if mount succeeded
-ls -la /mnt/s3-storage
-
-# Create test file
-echo "test" > /mnt/s3-storage/test.txt
-ls -la /mnt/s3-storage/
-rm /mnt/s3-storage/test.txt
-
-# Add to fstab for persistence (choose the option that worked)
-# For IAM role:
-echo "openrivercam-video /mnt/s3-storage fuse.s3fs _netdev,allow_other,use_cache=/tmp/s3fs,iam_role=auto,url=https://s3.us-east-1.amazonaws.com 0 0" | sudo tee -a /etc/fstab
-
-# OR for access keys:
-echo "openrivercam-video /mnt/s3-storage fuse.s3fs _netdev,allow_other,use_cache=/tmp/s3fs,passwd_file=/home/ubuntu/.passwd-s3fs,url=https://s3.us-east-1.amazonaws.com 0 0" | sudo tee -a /etc/fstab
-```
-
-#### Test persistence with reboot:
-```bash
-# Reboot the server to test if S3 mounts automatically
-sudo reboot
-
-# Wait 1-2 minutes, then reconnect via Session Manager
-
-# After reconnecting, switch to ubuntu user
-sudo su - ubuntu
-
-# Now verify S3 mounted automatically
+# Verify mount worked
 df -h | grep s3
 ls -la /mnt/s3-storage/
 
-# If not mounted, check for errors
+# Test write access
+echo "test" > /mnt/s3-storage/test.txt
+cat /mnt/s3-storage/test.txt
+rm /mnt/s3-storage/test.txt
+
+# Add to fstab for persistence
+echo "openrivercam-video /mnt/s3-storage fuse.s3fs _netdev,allow_other,use_cache=/tmp/s3fs,iam_role=auto,url=https://s3.us-east-1.amazonaws.com 0 0" | sudo tee -a /etc/fstab
+
+# Test persistence
 sudo mount -a
-journalctl -xe | grep s3fs
 ```
 
-### Step 6.4: Create AWS Access Keys (Only if Option A didn't work)
-1. In AWS Console, go to IAM
-2. Click "Users" in left sidebar
-3. Click "Create user"
-4. **User name:** `liveorc-s3-user`
-5. Click "Next"
-6. **Attach policies:** Select "AmazonS3FullAccess"
-7. Click "Create user"
-8. Click on the new user
-9. Go to "Security credentials" tab
-10. Click "Create access key"
-11. Choose "Application running on AWS compute service"
-12. Click "Next" → "Create access key"
-13. **Important:** Copy the Access Key ID and Secret Access Key
+**Note:** The `iam_role=auto` option tells s3fs to use the EC2 instance's IAM role credentials automatically. No access keys needed!
 
 ---
 
@@ -374,29 +331,29 @@ sudo chown -R ubuntu:ubuntu LiveORC
 cd LiveORC
 ```
 
-### Step 7.2: Configure LiveORC for External Storage
+### Step 7.2: Configure LiveORC for Mounted S3 Storage
 ```bash
-# LiveORC uses command-line arguments, not .env files
-# We'll configure it to use our mounted S3 storage
-
-# Create a startup script for LiveORC with our configuration
+# Create a startup script for LiveORC with mounted storage
 cat > start-liveorc.sh << 'EOF'
 #!/bin/bash
 # LiveORC startup with mounted S3 storage
 
 cd /opt/LiveORC
 
-# Start LiveORC with external storage mounted at /mnt/s3-storage
+# Start LiveORC with mounted storage directory
 ./liveorc.sh start \
-  --storage-dir /mnt/s3-storage \
   --hostname YOUR_DOMAIN_OR_IP \
   --port 8000 \
+  --storage-local \
+  --storage-dir /mnt/s3-storage \
   --detached
 
-echo "LiveORC started with S3 storage at /mnt/s3-storage"
+echo "LiveORC started with mounted S3 storage at /mnt/s3-storage"
 EOF
 
 chmod +x start-liveorc.sh
+
+echo "Edit start-liveorc.sh to replace YOUR_DOMAIN_OR_IP with your actual domain or IP"
 ```
 
 ### Step 7.3: Test LiveORC is Working
@@ -408,7 +365,7 @@ chmod +x start-liveorc.sh
 docker ps
 
 # View logs
-./liveorc.sh logs
+docker logs liveorc_webapp
 ```
 
 ### Step 7.4: Configure SSL with LiveORC
@@ -438,10 +395,11 @@ cd /opt/LiveORC
 
 # Start LiveORC with SSL enabled (replace with your actual domain)
 ./liveorc.sh start \
-  --storage-dir /mnt/s3-storage \
   --hostname liveorc.yourdomain.com \
   --ssl \
   --port 8000 \
+  --storage-local \
+  --storage-dir /mnt/s3-storage \
   --detached
 
 echo "LiveORC started with SSL and S3 storage"
@@ -450,27 +408,52 @@ EOF
 # Start LiveORC with SSL
 ./start-liveorc.sh
 
+# Check if LiveORC started successfully
+docker ps
+
 # Monitor SSL certificate provisioning (may take 2-3 minutes)
-./liveorc.sh logs | grep -i ssl
+# First check if containers are running
+docker ps
+
+# View LiveORC webapp logs to see SSL setup progress
+docker logs liveorc_webapp
+
+# Check for any startup errors
+docker logs liveorc_webapp | grep -i error
+
+# Monitor SSL certificate provisioning specifically
+docker logs liveorc_webapp | grep -i ssl
 ```
 
 **Certificate Renewal:**
 LiveORC automatically renews Let's Encrypt certificates before expiration. No manual steps needed!
 
+**Troubleshooting SSL Setup:**
+- Use `docker logs liveorc_webapp` to view actual LiveORC logs
+- Check `docker ps` to verify containers are running
+- SSL certificate provisioning can take 2-5 minutes for Let's Encrypt domain validation
+- Ensure your domain's DNS A record points to this server's public IP
+- Port 80 must be accessible for Let's Encrypt domain validation
 
 
-### Step 7.5: Set Up Auto-Start Service
+
+### Step 7.5: Set Up Auto-Start Service *** NOT YET COMPLETED ***
 ```bash
 # Create systemd service for auto-start on boot
 sudo tee /etc/systemd/system/liveorc.service << 'EOF'
 [Unit]
 Description=LiveORC Server
-After=network.target docker.service
+After=network.target docker.service local-fs.target
 Requires=docker.service
+Wants=local-fs.target
 
 [Service]
 Type=forking
 WorkingDirectory=/opt/LiveORC
+Environment=HOME=/home/ubuntu
+Environment=USER=ubuntu
+Environment=AWS_DEFAULT_REGION=us-east-1
+ExecStartPre=/bin/sleep 10
 ExecStart=/opt/LiveORC/start-liveorc.sh
 ExecStop=/opt/LiveORC/liveorc.sh stop
 Restart=on-failure
@@ -481,6 +464,9 @@ Group=ubuntu
 [Install]
 WantedBy=multi-user.target
 EOF
+
+# First stop any manually running LiveORC instance
+./liveorc.sh stop
 
 # Enable and start the service
 sudo systemctl daemon-reload
@@ -501,8 +487,31 @@ sudo su - ubuntu
 # Verify LiveORC started automatically
 sudo systemctl status liveorc.service
 docker ps
-cd /opt/LiveORC && ./liveorc.sh status
+
+# If the service failed, check logs for troubleshooting
+sudo journalctl -u liveorc.service -f
+
+# Common issues and solutions:
+# 1. S3 mount not ready: Service waits for S3 mount before starting
+# 2. Storage endpoint errors: Fixed by disabling MinIO environment variables
+# 3. Permission issues: Service runs as ubuntu user with proper environment
 ```
+
+**Understanding LiveORC Storage Backend Configuration:**
+
+LiveORC supports multiple storage backend modes:
+1. **MinIO mode** (default): Creates virtualized MinIO storage bucket at http://storage:9000/
+2. **Local filesystem mode**: Uses `--storage-local` to write to local folders
+3. **Cloud storage mode**: Uses `--storage-host`, `--storage-port`, etc. for external storage services
+
+**Our Approach: S3FS Mounted Filesystem**
+
+We use s3fs to mount the S3 bucket as a local filesystem:
+- **s3fs** mounts the S3 bucket at `/mnt/s3-storage`
+- **`--storage-local`** flag tells LiveORC to use filesystem mode
+- **`--storage-dir /mnt/s3-storage`** specifies the mount point
+
+This approach allows LiveORC to write directly to S3 through the filesystem interface.
 
 ### Step 7.6: Verify LiveORC is Running
 ```bash
@@ -510,10 +519,10 @@ cd /opt/LiveORC && ./liveorc.sh status
 docker ps
 
 # View LiveORC logs
-./liveorc.sh logs
+docker logs liveorc_webapp
 
 # Check LiveORC status
-./liveorc.sh status
+docker ps
 
 # Test health endpoint (replace with your domain/IP)
 curl -k https://liveorc.yourdomain.com/health
@@ -583,54 +592,9 @@ journalctl -f
 
 ---
 
-## 📱 Phase 9: Configure Field Station
+## 🔍 Phase 9: Monitoring and Maintenance *** NOT YET COMPLETED ***
 
-### Step 9.1: Raspberry Pi Configuration
-Create this configuration file on your Raspberry Pi:
-
-```bash
-# On Raspberry Pi: /home/pi/.openrivercam/config.yaml
-station:
-  name: sukabumi-01
-  location: "Sukabumi City, Indonesia"
-  
-server:
-  url: https://liveorc.yourdomain.com/upload
-  api_key: your_generated_api_key_here
-  verify_ssl: true
-  timeout: 120
-  retry_attempts: 3
-  retry_delay: 300
-  
-video:
-  duration: 60
-  interval: 900  # 15 minutes
-  resolution: [1920, 1080]
-  codec: h264
-  bitrate: 5000000
-  
-connectivity:
-  check_interval: 60
-  reconnect_delay: 300
-```
-
-### Step 9.2: Test Field Station Connection
-```bash
-# From Raspberry Pi, test connectivity
-curl -k https://liveorc.yourdomain.com/health
-
-# Test with API key
-curl -k -X POST https://liveorc.yourdomain.com/upload \
-  -H "Authorization: Bearer your_api_key_here" \
-  -H "Content-Type: application/json" \
-  -d '{"test": "connection"}'
-```
-
----
-
-## 🔍 Phase 10: Monitoring and Maintenance
-
-### Step 10.1: Set Up CloudWatch Monitoring
+### Step 9.1: Set Up CloudWatch Monitoring *** NOT YET COMPLETED ***
 1. In AWS Console, go to CloudWatch
 2. Click "Dashboards" → "Create dashboard"
 3. **Dashboard name:** `LiveORC-Monitoring`
@@ -640,7 +604,7 @@ curl -k -X POST https://liveorc.yourdomain.com/upload \
    - S3 Bucket Size
    - EC2 Status Checks
 
-### Step 10.2: Create Billing Alerts
+### Step 9.2: Create Billing Alerts *** NOT YET COMPLETED ***
 1. In CloudWatch, go to "Alarms"
 2. Click "Create alarm"
 3. Select "Billing" → "Total Estimated Charge"
@@ -648,7 +612,7 @@ curl -k -X POST https://liveorc.yourdomain.com/upload \
 5. Create SNS topic for notifications
 6. Add your email address
 
-### Step 10.3: Regular Maintenance Tasks
+### Step 9.3: Regular Maintenance Tasks
 
 **Daily Checks:**
 ```bash
@@ -658,7 +622,7 @@ df -h  # Check disk space
 free -h  # Check memory
 
 # Check recent logs
-./liveorc.sh logs
+docker logs liveorc_webapp
 
 # Check LiveORC dashboard
 curl -k https://liveorc.yourdomain.com/health
@@ -670,7 +634,7 @@ curl -k https://liveorc.yourdomain.com/health
 sudo apt update && sudo apt upgrade -y
 
 # Check LiveORC status
-./liveorc.sh status
+docker ps
 
 # Backup data (LiveORC handles database internally)
 # S3 storage is already backed up automatically
@@ -689,164 +653,3 @@ aws s3 ls s3://openrivercam-video --recursive --human-readable --summarize
 # Check for security updates
 ```
 
----
-
-## 🆘 Troubleshooting Guide
-
-### Common Issues and Solutions
-
-#### Issue: "Can't connect to LiveORC website"
-**Solutions:**
-1. Check security group allows HTTPS (443) from 0.0.0.0/0
-2. Check DNS A record points to correct IP
-3. Verify LiveORC containers are running: `docker ps`
-4. Check LiveORC logs: `./liveorc.sh logs`
-
-#### Issue: "SSL certificate errors"
-**Solutions:**
-```bash
-# Check LiveORC SSL configuration
-./liveorc.sh logs | grep -i ssl
-
-# Restart LiveORC to reload SSL
-./liveorc.sh restart
-
-# LiveORC handles SSL certificates internally
-```
-
-#### Issue: "S3 mount not working"
-**Solutions:**
-```bash
-# Check credentials
-cat ~/.passwd-s3fs
-
-# Remount S3
-sudo umount /mnt/s3-storage
-sudo s3fs openrivercam-video /mnt/s3-storage \
-  -o passwd_file=/home/ubuntu/.passwd-s3fs \
-  -o allow_other
-
-# Check logs
-tail -f /var/log/syslog | grep s3fs
-```
-
-#### Issue: "Videos not uploading from field station"
-**Solutions:**
-1. Check API key is correct
-2. Verify network connectivity from field station
-3. Check LiveORC logs: `./liveorc.sh logs`
-4. Verify S3 permissions in IAM role
-
-#### Issue: "High AWS costs"
-**Solutions:**
-1. Check S3 storage usage
-2. Consider Reserved Instances for EC2
-3. Verify lifecycle policies are working
-4. Monitor data transfer costs
-
-#### Issue: "Container won't start"
-**Solutions:**
-```bash
-# Check logs
-./liveorc.sh logs
-
-# Check system resources
-df -h
-free -h
-
-# Restart LiveORC
-./liveorc.sh restart
-
-# Full stop and start
-./liveorc.sh stop
-./liveorc.sh start
-```
-
----
-
-## 📊 Performance Optimization
-
-### Step 10.4: Optimize for Production
-
-**Enable CloudWatch detailed monitoring:**
-1. Go to EC2 console
-2. Select your instance
-3. Actions → Monitor and troubleshoot → Manage detailed monitoring
-4. Enable detailed monitoring
-
-**Set up monitoring:**
-```bash
-# Create monitoring script
-sudo tee /usr/local/bin/monitor-liveorc.sh << 'EOF'
-#!/bin/bash
-DATE=$(date +%Y%m%d_%H%M%S)
-cd /opt/LiveORC
-
-# Check if LiveORC is running
-if ! ./liveorc.sh status > /dev/null 2>&1; then
-  echo "$DATE: LiveORC not running, attempting restart" >> /var/log/liveorc-monitor.log
-  ./liveorc.sh start
-fi
-
-# Check S3 mount
-if ! mountpoint -q /mnt/s3-storage; then
-  echo "$DATE: S3 not mounted, attempting remount" >> /var/log/liveorc-monitor.log
-  sudo mount -a
-fi
-
-# Log system status
-echo "$DATE: System check completed" >> /var/log/liveorc-monitor.log
-EOF
-
-chmod +x /usr/local/bin/monitor-liveorc.sh
-
-# Add to crontab for regular monitoring
-echo "*/15 * * * * root /usr/local/bin/monitor-liveorc.sh" | sudo tee -a /etc/crontab
-```
-
----
-
-## 🎉 Congratulations!
-
-You've successfully deployed Live OpenRiverCam on AWS! Your system is now ready to:
-
-✅ Receive video uploads from field stations  
-✅ Process river flow data  
-✅ Store videos with automatic 3-month rotation  
-✅ Provide secure HTTPS access  
-✅ Monitor system health  
-
-### Next Steps:
-1. Configure your field stations to upload to your server
-2. Set up monitoring alerts
-3. Consider cost optimization with Reserved Instances
-4. Plan for scaling if adding more field stations
-
-### Support Resources:
-- LiveORC Documentation: https://github.com/localdevices/LiveORC
-- AWS Documentation: https://docs.aws.amazon.com/
-- Community Forums: Check the LiveORC GitHub issues
-
-**Remember to:**
-- Monitor your AWS costs regularly
-- Keep your system updated
-- Back up your data
-- Review security settings periodically
-
----
-
-## 📞 Getting Help
-
-If you encounter issues:
-
-1. **Check the troubleshooting section** above
-2. **Review AWS CloudWatch logs** for error messages
-3. **Check LiveORC logs** with `./liveorc.sh logs`
-4. **Post issues** on the LiveORC GitHub repository
-5. **AWS Support** can help with infrastructure issues
-
-**Emergency contacts:**
-- AWS Support: Use your AWS Console support center
-- System logs: `journalctl -f` and `./liveorc.sh logs`
-
-Good luck with your river monitoring project! 🌊📊
