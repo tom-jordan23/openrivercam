@@ -1,6 +1,6 @@
 # SURVEY_PROCESS.md
 One-Day River Survey SOP (Points-Only) — **ArduSimple + Android + GNSS Master → SW Maps**  
-**CRS:** WGS84 (EPSG:4326, default in SW Maps) • **Heights in field:** Ellipsoidal (meters)  
+**CRS:** UTM Zone 48 South (EPSG:32748) • **Heights in field:** Ellipsoidal (meters)  
 **Goal:** Collect high-quality points for cross-sections and bank/control features with **centimeter-level relative accuracy** and **0.25–0.5 m global alignment** to OSM/satellite **after a simple PPP translation**.
 
 ---
@@ -42,9 +42,12 @@ bed_Z = GNSS_Z_ellipsoidal − pole_height_tip_to_ARP
 ---
 
 ## 3) Night-Before Prep (5–10 min)
+**What:** Prepare hardware, phone, and app settings; set up your project fields so capture is consistent.
+**Why:** Small setup time saves hours in the field and ensures attribute names match the QGIS workflow.
+
 1) Charge base, rover, radios, phone; pack bipod, steel tape/laser, notebook.  
 2) Android → Enable **Developer Options** → **Select mock location app = GNSS Master**.  
-3) SW Maps → keep **WGS84 default**; display **Decimal degrees** with 7–8 decimals.  
+3) SW Maps → set project CRS to **UTM Zone 48S (EPSG:32748)**; verify project units show **meters** (UTM).  
 4) Create SW Maps **point attributes** for QGIS use later:  
    - `sect_id` (e.g., `XS_01`)  
    - `pt_role` (`LB`, `RB`, `BED`, `WSE`, `CTRL`, `CP`)  
@@ -57,6 +60,9 @@ bed_Z = GNSS_Z_ellipsoidal − pole_height_tip_to_ARP
 ---
 
 ## 4) **Base Setup for Clean Basemap Alignment (0.25–0.5 m target)**
+**What:** Fix a stable local frame for the day and start long raw logging at the base.
+**Why:** A short survey-in locks your relative geometry; long RINEX logging enables PPP so your survey aligns to imagery within ~0.25–0.5 m.
+
 **Why:** RTK gives cm-level **relative** accuracy; **absolute** alignment to OSM/satellite depends on the **base coordinate**. Without NTRIP, the reliable path to **0.25–0.5 m** is to do a short survey-in **and** log raw data for PPP.
 
 ### 4.1 Site & mark
@@ -97,7 +103,7 @@ bed_Z = GNSS_Z_ellipsoidal − pole_height_tip_to_ARP
 1. Connect base F9P to the laptop via **USB** (note the COM port).  
 2. Open **u-center** → **Receiver** → **Connection** → select the COM port.  
 3. **Enable raw messages** (if not already): **View → Messages (F9)** → UBX → RXM → **RAWX** & **SFRBX** → set **Rate = 1** (on the used port, e.g., USB).  
-4. Start logging: **File → Log → Start** (choose **UBX** binary). Let it run **6–12 h**.  
+4. Start logging: **File → Log → Start** (choose **UBX** binary). Let it run **6–12 h**.  **do not forget to disable any power saving features that would cause the logging station to stop logging**
 5. Afterward, **File → Log → Stop**. Convert to RINEX: **Tools → Convert to RINEX** (or use **RTKLIB convbin**). Save RINEX, and note antenna height + times.
 
 **Route C — RTKLIB (Windows/Linux/Raspberry Pi)**  
@@ -120,6 +126,9 @@ bed_Z = GNSS_Z_ellipsoidal − pole_height_tip_to_ARP
 ---
 
 ## 5) Rover → Android (Mock Location)
+**What:** Connect the rover to the phone via Bluetooth and let GNSS Master feed precise positions to SW Maps.
+**Why:** SW Maps sees the rover as the phone GPS, avoiding app-specific drivers and keeping setup simple.
+
 1) Pair Android **Bluetooth** with the **rover**.  
 2) Open **GNSS Master** → Receiver: **Bluetooth** → select rover; verify live sats/PDOP/status.  
 3) Toggle **Mock Location ON**.  
@@ -129,10 +138,17 @@ bed_Z = GNSS_Z_ellipsoidal − pole_height_tip_to_ARP
 ---
 
 ## 6) SW Maps Project (Points-Only)
-1) **New Project** (WGS84 default).  
-2) **GPS Source:** **Device internal GPS** (this uses the GNSS Master mock).  
-3) **Heights:** Ellipsoidal (meters).  
-4) **Point collection:** Averaging **by time**; enter 20/60/120–180 s per point.  
+**What:** Create a **UTM 48S** project and a point layer with averaging-by-time.
+**Why:** Working natively in meters avoids mistakes when applying translations and computing elevations.
+
+1) **New Project** → **Coordinate System:** search **UTM** and pick **WGS 84 / UTM zone 48S (EPSG:32748)**.
+2) **GPS Source:** **Device internal GPS** (this uses the GNSS Master mock). SW Maps will transform incoming lat/lon to UTM on the fly.
+3) **Heights:** Ellipsoidal (meters). Ensure **Use orthometric/geoid height** is **OFF**.
+4) **Point collection:** Averaging **by time**; enter 20/60/120–180 s per point.
+
+### Why meters (UTM) for calculations
+- **What:** Keep the whole project in a **projected CRS (UTM)** so all offsets and translations are in **meters**.
+- **Why:** Degrees aren’t constant distances; UTM prevents scale/sign errors when you apply ΔE/ΔN.
 
 ### 6.1 **Create the point attributes (step-by-step)**
 > Menu names vary slightly by version; the flow is the same.
@@ -159,10 +175,18 @@ bed_Z = GNSS_Z_ellipsoidal − pole_height_tip_to_ARP
 7. **Averaging setting:** **Settings → Data Capture → GPS Averaging → By Time** (you’ll enter per-point 20/60/120–180 s).  
 8. **Heights:** **Settings → Location** → ensure **Use orthometric/geoid height** is **OFF** so elevation is **ellipsoidal** (meters).  
 9. **Live stats:** enable showing **PDOP / Sats / Accuracy** on the capture screen to help crews pass the quality gate.
+### Why meters (UTM) for calculations
+- **What:** When you compute deltas/offsets after the field, switch to a **projected CRS** like **UTM Zone 48S (EPSG:32748)**.
+- **Why:** WGS84 uses **degrees**, which are not constant distances. Working in UTM guarantees **meters**, preventing scale/sign mistakes during the PPP translation.
+  - You’ll do this in Section 11 when computing **ΔE/ΔN/ΔZ**.
+
 
 ---
 
 ## 7) Create a **Check Point (CP)**
+**What:** Measure the same nearby mark at start/mid/end of day.
+**Why:** Confirms your day’s stability (receiver, base, radio, crew technique) without needing external control.
+
 1) Pick open-sky spot 20–50 m from base; **mark it**.  
 2) Pole plumb (bipod); confirm **quality gate**.  
 3) Record **CP_START** with **60 s** averaging; fill attributes.  
@@ -171,6 +195,9 @@ bed_Z = GNSS_Z_ellipsoidal − pole_height_tip_to_ARP
 ---
 
 ## 8) Collecting Points (Banks/Controls/Features)
+**What:** Capture points using time-averaging and offsets where needed near water.
+**Why:** Offsets avoid multipath while preserving correct feature locations; averaging reduces random noise.
+
 **Avoid multipath:** When marking bank edges, stand **2–3 m back** from water and store an **offset** to the true feature (distance + bearing).
 
 **Per point workflow**
@@ -183,6 +210,9 @@ bed_Z = GNSS_Z_ellipsoidal − pole_height_tip_to_ARP
 ---
 
 ## 9) River Cross-Section by Pole (Points-Only)
+**What:** Walk a transect from LB to RB, logging bed stations and pole heights at each stop.
+**Why:** Provides bed profile geometry for hydraulics; per-station pole height lets you convert antenna heights to bed elevations.
+
 **Plan:** Choose a straight reach. Define `sect_id` (e.g., `XS_01`). Mark **LB** and **RB** on firm ground. Choose safe station spacing (e.g., 1–2 m).
 
 **Pole height logic:** record `pole_h_m` (tip→ARP) **per station**. Later in QGIS:  
@@ -199,6 +229,9 @@ bed_Z = GNSS_Z_ellipsoidal − pole_h_m
 ---
 
 ## 10) Midday & End-of-Day QA
+**What:** Re-occupy the CP and review outliers before packing up.
+**Why:** Catches drift or mistakes early so you can re-shoot while still on site.
+
 - **Midday:** re-occupy **CP** (60 s). Target **≤ 2 cm H / ≤ 3–4 cm V** vs CP_START. If worse: re-level, back away from metal/vehicles, check base/radio, extend averages.  
 - **End-of-day:** re-occupy **CP_END** (60 s).  
 - Export SW Maps **points** (CSV/GeoJSON/SHZ) with all attributes.  
@@ -208,28 +241,57 @@ bed_Z = GNSS_Z_ellipsoidal − pole_h_m
 ---
 
 ## 11) After the Field — QGIS Steps (PPP Translation + Bed Z)
-### 11.1 PPP the base
-- Run **PPP** on the base **RINEX** (6–12 h). You get a **precise base coordinate** (Lat/Lon/Z_ellipsoid).
 
-### 11.2 Compute translation (ΔE, ΔN, ΔZ)
-1) In QGIS, create points for **Field base** (from survey-in) and **PPP base**.  
-2) Reproject both to **UTM Zone 48S (EPSG:32748)**.  
-3) Compute **ΔE, ΔN, ΔZ = PPP_base − Field_base** (meters).
+**What & Why:** Use the base’s PPP solution to get a precise global position, compute a **meter-based** translation (ΔE, ΔN, ΔZ) between the **field base** and the **PPP base**, and apply that translation to **all survey points**. Then subtract **pole height** to get **bed elevations**. Keeping the project in **UTM** means all steps are in **meters** end-to-end.
 
-### 11.3 Shift all survey points
-1) Reproject your **survey points** to **EPSG:32748**.  
-2) Use **Vector ► Translate (Move, shift)** to apply **ΔE** (East), **ΔN** (North).  
-3) For elevations, add **ΔZ** to Z (either now or when computing bed_Z).  
-4) (Optional) Reproject back to **WGS84** for delivery.
+### 11.1 PPP the base — get a precise base coordinate
+- **What:** Run **PPP** on the base’s **RINEX (6–12 h)** to obtain a precise **Lat/Lon/Z (ellipsoidal)** for the base.
+- **Why:** Short survey-in can carry meter-level bias; PPP removes clock/orbit/ionosphere biases, giving a solid global tie.
+- **Keep:** `Lat_ppp, Lon_ppp, Z_ppp`, antenna ARP height, PPP frame/epoch, uncertainties.
 
-### 11.4 Compute bed elevation
-- Add a field `bed_Z` and calculate:  
+### 11.2 Bring base points into UTM and compute ΔE/ΔN/ΔZ
+- **What:** Create two base points: **Field base** (from the 5‑min survey‑in) and **PPP base** (from PPP). If they arrive as lat/lon, import as **WGS84** and then **Save As → EPSG:32748**. Read their **Easting (E)**, **Northing (N)**, and Z to compute:
+  - **ΔE = E_ppp − E_field**
+  - **ΔN = N_ppp − N_field**
+  - **ΔZ = Z_ppp − Z_field**
+- **Why:** We need the pure meter translation between the two base positions in the same projected CRS.
+
+**Steps:**
+1) Add `Field_Base` and `PPP_Base` layers.
+2) Ensure both are in **EPSG:32748** (Save As if needed).
+3) Use **Identify** or add `$x`, `$y` fields to read E/N; note Z values; compute ΔE/ΔN/ΔZ.
+
+### 11.3 Shift all survey points in UTM
+- **What:** Apply **ΔE/ΔN** to the entire survey to create `Survey_UTM_shifted`. Add **ΔZ** to the altitude field.
+- **Why:** This fixes absolute placement without changing any relative distances/slopes.
+
+**Steps:**
+1) Ensure your survey layer is **EPSG:32748** (if not, **Save As → EPSG:32748**).
+2) **Vector ► Geoprocessing ► Translate (Move, shift)** → Input = survey layer → **Offset X = ΔE**, **Offset Y = ΔN** → Output = `Survey_UTM_shifted`.
+3) If Z is an attribute (e.g., `Z_ellipsoid`), add a new field `Z_ellipsoid_shifted`:
+   - Field Calculator: `"Z_ellipsoid" + <DeltaZ>`
+   If Z is in geometry only, calculate a field as `$z + <DeltaZ>`.
+
+### 11.4 Compute bed elevation (subtract pole height)
+- **What:** Convert antenna heights to **bed elevations** using your recorded pole height per station.
+- **Why:** The antenna is above the bed by `pole_h_m`; removing it yields the true bed.
+
+**Steps:**
+1) Confirm `pole_h_m` exists per point.
+2) Field Calculator → new/updated field `bed_Z`:
 ```
-bed_Z = Z_ellipsoid + ΔZ  − pole_h_m
+bed_Z = "Z_ellipsoid_shifted" - "pole_h_m"
 ```
-(or compute `Z_ellipsoid + ΔZ` first, then subtract `pole_h_m` per point).
+If you skipped PPP: use `"Z_ellipsoid" - "pole_h_m"` (vertical may have a constant bias).
 
-**Result:** Visual alignment to OSM/satellite typically **0.25–0.5 m**, while internal geometry remains at cm-level.
+### 11.5 (Optional) Deliverables in WGS84
+- **What:** If a client needs WGS84, you can **Save As → EPSG:4326** after all UTM work is done.
+- **Why:** Web maps often prefer WGS84, but doing the math in UTM avoids degree/meter confusion.
+
+### 11.6 Sanity checks
+- Overlay the result on high‑quality imagery; expect **~0.25–0.5 m** visual agreement.
+- Confirm CP start/mid/end repeatability **≤ 2 cm H / ≤ 3–4 cm V**.
+- Archive ΔE/ΔN/ΔZ, PPP report, antenna ARP height, and CRS details.
 
 ---
 
@@ -244,7 +306,7 @@ bed_Z = Z_ellipsoid + ΔZ  − pole_h_m
 ```
 Date/Time:
 Crew:
-CRS: WGS84 (EPSG 4326) | Heights: Ellipsoidal (m)
+CRS: UTM 48S (EPSG 32748) | Heights: Ellipsoidal (m)
 
 BASE
 - Ant model: ________   ARP ht: _______ m
