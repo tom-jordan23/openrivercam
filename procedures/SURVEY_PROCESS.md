@@ -45,7 +45,7 @@ bed_Z = GNSS_Z_ellipsoidal − pole_height_tip_to_ARP
 1) Charge base, rover, radios, phone; pack bipod, steel tape/laser, notebook.  
 2) Android → Enable **Developer Options** → **Select mock location app = GNSS Master**.  
 3) SW Maps → keep **WGS84 default**; display **Decimal degrees** with 7–8 decimals.  
-4) Create SW Maps **point attributes** for QGIS use later (see **Section 6.1** for step‑by‑step).  
+4) Create SW Maps **point attributes** for QGIS use later:  
    - `sect_id` (e.g., `XS_01`)  
    - `pt_role` (`LB`, `RB`, `BED`, `WSE`, `CTRL`, `CP`)  
    - `station` (integer along section: LB=0 → … → RB=last)  
@@ -71,7 +71,7 @@ bed_Z = GNSS_Z_ellipsoidal − pole_height_tip_to_ARP
 - **Do not** re-average or move the base afterward.
 
 ### 4.4 Log raw data for PPP (RINEX)
-- **Start base RINEX logging (1 Hz)** and **leave it running 6–12 hours** while you work (how‑to in **Section 4.5**).  
+- **Start base RINEX logging (1 Hz)** and **leave it running 6–12 hours** while you work (how-to in **Section 4.5**).  
 - This enables a precise base coordinate later, giving a **single translation** you’ll apply to all rover points in QGIS.
 
 > **Fallback if PPP isn’t possible later:** survey-in **30–60 min** (typ. ~0.8–1.5 m absolute bias). Usable, but visual alignment may still look off against imagery.
@@ -93,9 +93,9 @@ bed_Z = GNSS_Z_ellipsoidal − pole_height_tip_to_ARP
 3. Leave it running all day; avoid power loss.  
 4. After the survey, **power down**, remove the card, and copy the **RINEX** (or raw) files to your laptop/storage. Keep the **start/stop times** and **antenna height** with the files.
 
-**Route B — Windows Laptop with u‑blox u‑center (UBX → RINEX)**  
+**Route B — Windows Laptop with u-blox u-center (UBX → RINEX)**  
 1. Connect base F9P to the laptop via **USB** (note the COM port).  
-2. Open **u‑center** → **Receiver** → **Connection** → select the COM port.  
+2. Open **u-center** → **Receiver** → **Connection** → select the COM port.  
 3. **Enable raw messages** (if not already): **View → Messages (F9)** → UBX → RXM → **RAWX** & **SFRBX** → set **Rate = 1** (on the used port, e.g., USB).  
 4. Start logging: **File → Log → Start** (choose **UBX** binary). Let it run **6–12 h**.  
 5. Afterward, **File → Log → Stop**. Convert to RINEX: **Tools → Convert to RINEX** (or use **RTKLIB convbin**). Save RINEX, and note antenna height + times.
@@ -114,7 +114,7 @@ bed_Z = GNSS_Z_ellipsoidal − pole_height_tip_to_ARP
 
 **Data hygiene**  
 - Use **UTC** timestamps where possible.  
-- Record: **Base Lat/Lon/Z (survey‑in)**, **antenna ARP height**, **start/stop (local & UTC)**, **receiver/antenna models**.  
+- Record: **Base Lat/Lon/Z (survey-in)**, **antenna ARP height**, **start/stop (local & UTC)**, **receiver/antenna models**.  
 - Back up the RINEX to two places.
 
 ---
@@ -134,7 +134,7 @@ bed_Z = GNSS_Z_ellipsoidal − pole_height_tip_to_ARP
 3) **Heights:** Ellipsoidal (meters).  
 4) **Point collection:** Averaging **by time**; enter 20/60/120–180 s per point.  
 
-### 6.1 **Create the point attributes (step‑by‑step)**
+### 6.1 **Create the point attributes (step-by-step)**
 > Menu names vary slightly by version; the flow is the same.
 
 1. Open **SW Maps** → **New Project** → confirm **WGS84**.  
@@ -156,7 +156,7 @@ bed_Z = GNSS_Z_ellipsoidal − pole_height_tip_to_ARP
    - `offset_to` — **Text with Pick List** → values: `water_edge, bank_top, centerline`  
    - `notes` — **Text (multiline)**  
 6. Save the layer schema.  
-7. **Averaging setting:** **Settings → Data Capture → GPS Averaging → By Time** (you’ll enter per‑point 20/60/120–180 s).  
+7. **Averaging setting:** **Settings → Data Capture → GPS Averaging → By Time** (you’ll enter per-point 20/60/120–180 s).  
 8. **Heights:** **Settings → Location** → ensure **Use orthometric/geoid height** is **OFF** so elevation is **ellipsoidal** (meters).  
 9. **Live stats:** enable showing **PDOP / Sats / Accuracy** on the capture screen to help crews pass the quality gate.
 
@@ -269,3 +269,69 @@ WSE: method __________  time ________  notes __________________
 ---
 
 **Version:** 2025-10-25 • **Target alignment:** 0.25–0.5 m to OSM/satellite via PPP translation • **Project:** OpenRiverCam
+
+---
+
+## 14) Attribute Dictionary (what each field means & how we use it in QGIS)
+
+These match the fields you create in **SW Maps** (see Section 6.1). Keeping names consistent makes the QGIS steps straightforward.
+
+| Field | Type | Meaning | How it’s used in QGIS |
+|---|---|---|---|
+| `sect_id` | Text | Cross‑section identifier (e.g., `XS_01`) | Group and label stations to build profiles per section. |
+| `pt_role` | Pick list | Point role: `LB` (left bank), `BED` (bed station), `RB` (right bank), `WSE` (water surface), `CTRL` (control), `CP` (check point) | Filter/symbolize; bed profiles use `BED`; `LB/RB` mark ends; `CP` used for repeatability checks. |
+| `station` | Integer | Order along the cross‑section (LB=0 → 1,2,… → RB=last) | Sort for plotting; derive chainage later if needed. |
+| `avg_s` | Integer (s) | Averaging time used at capture | QA context: longer averages expected near bridges/canopy. |
+| `PDOP` | Decimal | Sky geometry (lower = better) | QA filtering (e.g., drop PDOP > 2.5). |
+| `sats` | Integer | Satellites used | QA: low counts explain noise; flag outliers. |
+| `sigmaH_cm` | Decimal | Reported horizontal precision (cm) | QA threshold and symbology. |
+| `sigmaV_cm` | Decimal | Reported vertical precision (cm) | QA threshold affecting confidence in bed Z. |
+| `pole_h_m` | Decimal (m) | **Tip→ARP** pole height used for the shot | **Subtract from ellipsoidal Z** (after PPP ΔZ) to compute **bed_Z**. |
+| `offset_m` | Decimal (m) | Distance from where you stood to the true feature | Optional geometric correction using bearing, or just metadata. |
+| `offset_bearing_deg` | Decimal (°) | Bearing of the offset (0–360, clockwise from north) | With `offset_m`, can place adjusted points if desired. |
+| `offset_to` | Pick list | What the offset references (`water_edge`, `bank_top`, `centerline`) | Metadata/documentation. |
+| `notes` | Text | Free text | Context for obstacles, special methods. |
+| `Z_ellipsoid`* | Decimal (m) | Height stored by SW Maps (ellipsoidal) | Add **ΔZ** (PPP shift) to get `Z_ellipsoid_shifted`. |
+| `Z_ellipsoid_shifted` | Decimal (m) | Post‑PPP corrected ellipsoidal height | Subtract `pole_h_m` to get `bed_Z`. |
+| `bed_Z` | Decimal (m) | Computed bed elevation (ellipsoidal) | Use for profiles/analysis; convert to orthometric later if needed. |
+
+\* Some exports store Z only in the geometry (not as a column). In QGIS you can reference it with `$z` or copy it into a field using the Field Calculator.
+
+---
+
+## 15) Pole Height Correction (clear steps for crew & desk)
+
+**Why:** The GNSS height you record is at the antenna (**ARP**). For **bed elevations**, subtract the **pole height** (tip→ARP) you recorded at each bed station.
+
+### In the field (notes only)
+- Always record `pole_h_m` (tip→ARP) **for each bed shot**. If pole length changes, update the value before you press “Collect.”
+
+### In QGIS — with PPP translation (recommended)
+1. Apply the **PPP translation** (ΔE, ΔN, ΔZ) as described in *PPP_TRANSLATION.md* or Section 11.  
+2. Ensure you have a field `Z_ellipsoid_shifted` that equals your ellipsoidal Z **after ΔZ was added**.  
+   - If Z is an attribute field (e.g., `Z_ellipsoid`):  
+     ```
+     Z_ellipsoid_shifted = "Z_ellipsoid" + <DeltaZ>
+     ```
+   - If Z is only in geometry:  
+     ```
+     Z_ellipsoid_shifted = $z + <DeltaZ>
+     ```
+3. Compute **bed_Z** (ellipsoidal) by subtracting the pole height:  
+   ```
+   bed_Z = "Z_ellipsoid_shifted" - "pole_h_m"
+   ```
+
+### In QGIS — without PPP (fallback if you didn’t log RINEX)
+- Skip ΔZ and compute:  
+  ```
+  bed_Z = "Z_ellipsoid" - "pole_h_m"    # or $z - "pole_h_m" if Z is in geometry
+  ```
+- **Note:** Absolute vertical may be biased, but **relative** bed shapes remain valid.
+
+### (Optional) Sea‑level heights later
+- After PPP/pole correction, if you need orthometric (sea‑level) heights, subtract geoid undulation `N`:  
+  ```
+  bed_Z_orthometric = bed_Z - geoid_undulation
+  ```
+  (Use a geoid model plugin or raster; document which geoid you used.)
