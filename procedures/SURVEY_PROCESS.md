@@ -117,6 +117,9 @@ Your goal is a continuous **6–12 hour** base log. Pick your tool.
 4. **Send**.
 
 **C) RTCM3 out on radio port (UART2)**  
+
+**Note:** If you purchase the base and rover as a kit from Ardusimple, this step will be done at the factory. You will only need to do this step if you purchased the base and rover separately.
+
 1. **UBX‑CFG‑PRT** → **Target: UART2**, **Baud = 115200**, **Protocol out = RTCM3** → **Send**.  
 2. **UBX‑CFG‑MSG** (on **UART2**) enable at ~1 Hz: **RTCM 1005** (ARP), **1077** (GPS MSM7), **1087** (GLONASS MSM7), **1097** (Galileo MSM7), **1127** (BeiDou MSM7). Also **1230** at 0.2–1 Hz. (Trim constellations if bandwidth is tight.)
 
