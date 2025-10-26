@@ -1,14 +1,20 @@
 # Live OpenRiverCam AWS Deployment Guide
-## Complete Step-by-Step Instructions for Beginners
+## Complete Step-by-Step Instructions
 
 ### ⚠️ DEPLOYMENT STATUS NOTICE
-**As of October 17, 2024:** The LiveORC server has been successfully deployed and is running with s3fs mounted storage. The following optional steps have NOT been completed:
+**As of October 18, 2024:** The LiveORC server has been successfully deployed and is running with systemd-managed s3fs mounted storage. 
+
+**✅ Completed:**
+- ✅ **Step 7.5**: Systemd service configuration with proper s3fs mount dependencies
+- ✅ **Step 9.1**: Basic EC2 instance monitoring with email alerts via SNS
+- ✅ **Auto-start reliability**: Server restarts properly after reboot with working S3 storage
+
+**❌ Remaining optional steps:**
 - ❌ **Step 2.2**: S3 bucket lifecycle policy for automatic 90-day deletion
-- ❌ **Step 7.5**: Systemd service for auto-start on reboot
-- ❌ **Phase 9**: CloudWatch monitoring setup
+- ❌ **Step 9.1**: Custom website health monitoring (basic EC2 monitoring active)
 - ❌ **Step 9.2**: Billing alerts configuration
 
-The server is operational without these features, but they should be configured for production use.
+The server is fully operational with reliable auto-start capabilities and basic monitoring. Custom health monitoring can be completed later if desired.
 
 ### 📋 Overview
 This guide will walk you through deploying Live OpenRiverCam (LiveORC) on AWS. You'll set up a server that can receive video data from field stations and process it for river flow analysis.
@@ -286,12 +292,12 @@ which s3fs
 s3fs --version
 ```
 
-### Step 6.3: Mount S3 Bucket with s3fs using IAM Role
+### Step 6.3: Configure S3 Bucket Mount with systemd
 
-Since the EC2 instance already has an IAM role with S3 access (from Step 3), we can mount S3 without creating additional credentials:
+Since the EC2 instance already has an IAM role with S3 access (from Step 3), we'll create a systemd mount unit for reliable s3fs mounting. This approach ensures proper startup dependencies and is the recommended method for Docker services that depend on mounted storage.
 
 ```bash
-# Mount S3 bucket using IAM role authentication
+# Test s3fs mount manually first
 sudo s3fs openrivercam-video /mnt/s3-storage \
   -o iam_role=auto \
   -o allow_other \
@@ -307,14 +313,89 @@ echo "test" > /mnt/s3-storage/test.txt
 cat /mnt/s3-storage/test.txt
 rm /mnt/s3-storage/test.txt
 
-# Add to fstab for persistence
-echo "openrivercam-video /mnt/s3-storage fuse.s3fs _netdev,allow_other,use_cache=/tmp/s3fs,iam_role=auto,url=https://s3.us-east-1.amazonaws.com 0 0" | sudo tee -a /etc/fstab
+# Unmount for systemd configuration
+sudo umount /mnt/s3-storage
 
-# Test persistence
-sudo mount -a
+# Create systemd mount unit for reliable startup
+sudo tee /etc/systemd/system/mnt-s3\\x2dstorage.mount << 'EOF'
+[Unit]
+Description=S3 Storage Mount for LiveORC
+Documentation=https://github.com/s3fs-fuse/s3fs-fuse
+Requires=network-online.target
+After=network-online.target
+Before=docker.service
+
+[Mount]
+What=openrivercam-video
+Where=/mnt/s3-storage
+Type=fuse.s3fs
+Options=_netdev,allow_other,use_cache=/tmp/s3fs,iam_role=auto,url=https://s3.us-east-1.amazonaws.com
+
+[Install]
+WantedBy=remote-fs.target
+EOF
+
+# Create mount verification script
+sudo tee /usr/local/bin/verify-s3mount.sh << 'EOF'
+#!/bin/bash
+# Verify S3 mount is working before starting dependent services
+
+check_mount() {
+    local mount_point="$1"
+    
+    # Check if mountpoint exists and is mounted
+    if ! mountpoint -q "$mount_point"; then
+        echo "Mount point $mount_point not mounted"
+        return 1
+    fi
+    
+    # Test write access
+    if ! touch "$mount_point/.test" 2>/dev/null; then
+        echo "Mount point $mount_point not writable"
+        return 1
+    fi
+    
+    rm -f "$mount_point/.test"
+    echo "Mount point $mount_point verified successfully"
+    return 0
+}
+
+check_mount "/mnt/s3-storage" || exit 1
+EOF
+
+sudo chmod +x /usr/local/bin/verify-s3mount.sh
+
+# Configure Docker service to allow mount propagation
+sudo mkdir -p /etc/systemd/system/docker.service.d
+sudo tee /etc/systemd/system/docker.service.d/override.conf << 'EOF'
+[Unit]
+RequiresMountsFor=/mnt/s3-storage
+After=mnt-s3\\x2dstorage.mount
+Requires=mnt-s3\\x2dstorage.mount
+
+[Service]
+# Remove MountFlags=slave to allow mount propagation to containers
+MountFlags=
+EOF
+
+# Enable and start the mount
+sudo systemctl daemon-reload
+sudo systemctl enable mnt-s3\\x2dstorage.mount
+sudo systemctl start mnt-s3\\x2dstorage.mount
+
+# Verify the mount is working
+sudo systemctl status mnt-s3\\x2dstorage.mount
+/usr/local/bin/verify-s3mount.sh
+
+# Test that Docker can see the mount
+sudo systemctl restart docker
+df -h | grep s3
 ```
 
-**Note:** The `iam_role=auto` option tells s3fs to use the EC2 instance's IAM role credentials automatically. No access keys needed!
+**Note:** 
+- The systemd mount unit name uses escaped characters (`\\x2d` for `-`) to handle special characters in the path
+- The `RequiresMountsFor=` directive ensures Docker waits for the S3 mount to be ready
+- Removing `MountFlags=slave` allows containers to see host mounts
 
 ---
 
@@ -437,23 +518,27 @@ LiveORC automatically renews Let's Encrypt certificates before expiration. No ma
 
 
 
-### Step 7.5: Set Up Auto-Start Service *** NOT YET COMPLETED ***
+### Step 7.5: Set Up Auto-Start Service
 ```bash
-# Create systemd service for auto-start on boot
+# Create systemd service for auto-start on boot with proper mount dependencies
 sudo tee /etc/systemd/system/liveorc.service << 'EOF'
 [Unit]
-Description=LiveORC Server
-After=network.target docker.service local-fs.target
-Requires=docker.service
-Wants=local-fs.target
+Description=LiveORC Server with S3 Storage
+Documentation=https://github.com/localdevices/LiveORC
+RequiresMountsFor=/mnt/s3-storage
+After=docker.service mnt-s3\x2dstorage.mount
+Requires=docker.service mnt-s3\x2dstorage.mount
+AssertPathIsMountPoint=/mnt/s3-storage
 
 [Service]
-Type=forking
+Type=oneshot
+RemainAfterExit=yes
+TimeoutStartSec=300
 WorkingDirectory=/opt/LiveORC
 Environment=HOME=/home/ubuntu
 Environment=USER=ubuntu
 Environment=AWS_DEFAULT_REGION=us-east-1
-ExecStartPre=/bin/sleep 10
+ExecStartPre=/usr/local/bin/verify-s3mount.sh
 ExecStart=/opt/LiveORC/start-liveorc.sh
 ExecStop=/opt/LiveORC/liveorc.sh stop
 Restart=on-failure
@@ -476,6 +561,11 @@ sudo systemctl start liveorc.service
 # Check service status
 sudo systemctl status liveorc.service
 
+# Verify all components are working
+sudo systemctl status mnt-s3\\x2dstorage.mount
+docker ps
+/usr/local/bin/verify-s3mount.sh
+
 # Test auto-start with reboot
 sudo reboot
 
@@ -484,34 +574,51 @@ sudo reboot
 # After reconnecting, switch to ubuntu user
 sudo su - ubuntu
 
-# Verify LiveORC started automatically
+# Verify complete startup sequence worked
+sudo systemctl status mnt-s3\\x2dstorage.mount
+sudo systemctl status docker.service
 sudo systemctl status liveorc.service
 docker ps
 
-# If the service failed, check logs for troubleshooting
+# If any service failed, check logs for troubleshooting
+sudo journalctl -u mnt-s3\\x2dstorage.mount -f
+sudo journalctl -u docker.service -f
 sudo journalctl -u liveorc.service -f
 
-# Common issues and solutions:
-# 1. S3 mount not ready: Service waits for S3 mount before starting
-# 2. Storage endpoint errors: Fixed by disabling MinIO environment variables
-# 3. Permission issues: Service runs as ubuntu user with proper environment
+# Key improvements in this configuration:
+# 1. RequiresMountsFor=/mnt/s3-storage: Ensures S3 mount is ready
+# 2. AssertPathIsMountPoint=/mnt/s3-storage: Fails if mount missing
+# 3. ExecStartPre verification: Tests mount before starting LiveORC
+# 4. Proper dependency chain: mount → docker → liveorc
+# 5. Type=oneshot with RemainAfterExit: Better for Docker Compose services
 ```
 
-**Understanding LiveORC Storage Backend Configuration:**
+**Understanding the Complete Startup Sequence:**
+
+Our configuration creates a robust dependency chain:
+1. **Network comes online** → network-online.target
+2. **S3 storage mounts** → mnt-s3-storage.mount 
+3. **Docker service starts** → docker.service (with mount dependency)
+4. **Mount verified** → verify-s3mount.sh script
+5. **LiveORC starts** → liveorc.service
+
+**LiveORC Storage Backend Configuration:**
 
 LiveORC supports multiple storage backend modes:
 1. **MinIO mode** (default): Creates virtualized MinIO storage bucket at http://storage:9000/
-2. **Local filesystem mode**: Uses `--storage-local` to write to local folders
+2. **Local filesystem mode**: Uses `--storage-local` to write to local folders  
 3. **Cloud storage mode**: Uses `--storage-host`, `--storage-port`, etc. for external storage services
 
-**Our Approach: S3FS Mounted Filesystem**
+**Our Approach: Systemd-Managed S3FS Mounted Filesystem**
 
-We use s3fs to mount the S3 bucket as a local filesystem:
-- **s3fs** mounts the S3 bucket at `/mnt/s3-storage`
+We use systemd to reliably mount the S3 bucket as a local filesystem:
+- **systemd mount unit** ensures reliable s3fs mounting with proper network dependencies
+- **s3fs** mounts the S3 bucket at `/mnt/s3-storage` using IAM role authentication
 - **`--storage-local`** flag tells LiveORC to use filesystem mode
 - **`--storage-dir /mnt/s3-storage`** specifies the mount point
+- **Mount verification** ensures the filesystem is working before LiveORC starts
 
-This approach allows LiveORC to write directly to S3 through the filesystem interface.
+This approach provides the reliability of systemd dependency management while allowing LiveORC to write directly to S3 through the filesystem interface.
 
 ### Step 7.6: Verify LiveORC is Running
 ```bash
@@ -538,30 +645,40 @@ curl -k https://liveorc.yourdomain.com/health
 3. You should see the LiveORC dashboard
 4. Check that there are no SSL certificate warnings
 
-### Step 8.1.5: Remove HTTP Access (Security Hardening)
-Once HTTPS is working, remove the HTTP rule:
+### Step 8.1.5: HTTP to HTTPS Redirect (Optional)
+LiveORC automatically redirects HTTP traffic to HTTPS, so you can optionally keep the HTTP port open for convenience:
 
+**Current Security State:**
+- ✅ NO SSH port (never opened!)
+- ✅ HTTP port 80 (redirects to HTTPS)
+- ✅ HTTPS port 443 (main access)
+- ✅ Access via Session Manager only
+
+**To remove HTTP access** (if desired for maximum security):
 1. Go to **EC2** → **Security Groups**
-2. Select `LiveORC-Security-Group`
+2. Select `LiveORC-Security-Group`  
 3. Click **Inbound rules** tab
 4. Find the HTTP (port 80) rule
 5. Click **Delete** to remove it
-6. **Result:** Only HTTPS traffic allowed
 
-**Final Security State:**
-- ✅ NO SSH port (never opened!)
-- ✅ NO HTTP port (removed after setup)
-- ✅ Only port 443 (HTTPS) exposed
-- ✅ Access via Session Manager only
-
-### Step 8.2: Test API Endpoint
+### Step 8.2: Test API Endpoints
 ```bash
-# Test health endpoint
-curl -k https://liveorc.yourdomain.com/health
+# Test main application (should show LiveORC interface)
+curl -k https://liveorc.yourdomain.com/
 
-# Test with API key
-curl -k https://liveorc.yourdomain.com/api/v1/status \
-  -H "Authorization: Bearer your_api_key_here"
+# Test API root (should show available endpoints)
+curl -k https://liveorc.yourdomain.com/api/
+
+# Check LiveORC container logs for any startup issues
+docker logs liveorc_webapp | tail -20
+
+# Check for any errors in the logs
+docker logs liveorc_webapp | grep -i error
+
+# If the web interface isn't loading, check all containers
+docker ps
+docker logs liveorc_webapp
+docker logs liveorc_db
 ```
 
 ### Step 8.3: Verify S3 Storage
@@ -594,15 +711,172 @@ journalctl -f
 
 ## 🔍 Phase 9: Monitoring and Maintenance *** NOT YET COMPLETED ***
 
-### Step 9.1: Set Up CloudWatch Monitoring *** NOT YET COMPLETED ***
-1. In AWS Console, go to CloudWatch
-2. Click "Dashboards" → "Create dashboard"
-3. **Dashboard name:** `LiveORC-Monitoring`
-4. Add widgets for:
-   - EC2 CPU Utilization
-   - EC2 Network In/Out
-   - S3 Bucket Size
-   - EC2 Status Checks
+### Step 9.1: Set Up CloudWatch Website Health Monitoring *** NOT YET COMPLETED ***
+
+#### Create SNS Topic for Email Notifications
+1. In AWS Console, go to **Simple Notification Service (SNS)**
+2. Click **Topics** → **Create topic**
+3. **Type:** Standard
+4. **Name:** `LiveORC-Alerts`
+5. **Display name:** `LiveORC System Alerts`
+6. Click **Create topic**
+7. Click **Create subscription**
+8. **Protocol:** Email
+9. **Endpoint:** your-email@domain.com
+10. Click **Create subscription**
+11. Check your email and confirm the subscription
+
+#### Create EC2 Instance Health Monitoring
+1. In AWS Console, go to **CloudWatch**
+2. Click **Alarms** → **Create alarm**
+3. Click **Select metric**
+4. Choose **EC2** → **Per-Instance Metrics**
+5. Find your LiveORC instance and select **StatusCheckFailed**
+6. Click **Select metric**
+7. **Statistic:** Maximum
+8. **Period:** 5 minutes
+9. **Threshold type:** Static
+10. **Condition:** Greater than 0
+11. **Datapoints to alarm:** 2 out of 2
+12. **Missing data treatment:** Treat as breaching threshold
+13. **Notification:** Select existing SNS topic `LiveORC-Alerts`
+14. **Alarm name:** `LiveORC-Instance-Failed`
+15. **Description:** `LiveORC EC2 instance has failed status checks`
+16. Click **Create alarm**
+
+#### Create Application-Level Health Check (Manual Script)
+Create a simple monitoring script on your EC2 instance:
+
+```bash
+# Create health check script
+sudo tee /usr/local/bin/liveorc-health-check.sh << 'EOF'
+#!/bin/bash
+# LiveORC Health Check Script
+
+LOG_FILE="/var/log/liveorc-health.log"
+TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
+
+# Function to log messages
+log_message() {
+    echo "[$TIMESTAMP] $1" >> "$LOG_FILE"
+}
+
+# Check if containers are running
+if ! docker ps | grep -q "liveorc_webapp"; then
+    log_message "ERROR: LiveORC webapp container is not running"
+    exit 1
+fi
+
+# Check website response (follow redirects)
+HTTP_CODE=$(curl -s -L -o /dev/null -w "%{http_code}" https://openrivercam.endlessprojects.info/ || echo "000")
+
+if [ "$HTTP_CODE" != "200" ]; then
+    log_message "ERROR: Website returned HTTP $HTTP_CODE"
+    exit 1
+fi
+
+log_message "SUCCESS: All health checks passed"
+exit 0
+EOF
+
+sudo chmod +x /usr/local/bin/liveorc-health-check.sh
+
+# Create cron job to run every 5 minutes
+echo "*/5 * * * * root /usr/local/bin/liveorc-health-check.sh" | sudo tee -a /etc/crontab
+
+# Test the health check
+sudo /usr/local/bin/liveorc-health-check.sh
+```
+
+#### Create Custom CloudWatch Metric for Website Health
+```bash
+# Install AWS CLI if not already installed (should be from user data)
+# Create script to send custom metrics
+sudo tee /usr/local/bin/send-health-metric.sh << 'EOF'
+#!/bin/bash
+# Send health check results to CloudWatch
+
+INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
+
+# Run health check
+if /usr/local/bin/liveorc-health-check.sh; then
+    HEALTH_VALUE=1
+else
+    HEALTH_VALUE=0
+fi
+
+# Send metric to CloudWatch
+aws cloudwatch put-metric-data \
+    --namespace "LiveORC/Health" \
+    --metric-data MetricName=WebsiteHealth,Value=$HEALTH_VALUE,Unit=Count,Dimensions=InstanceId=$INSTANCE_ID \
+    --region us-east-1
+EOF
+
+sudo chmod +x /usr/local/bin/send-health-metric.sh
+
+# Update cron to also send CloudWatch metrics
+sudo sed -i 's|/usr/local/bin/liveorc-health-check.sh|/usr/local/bin/liveorc-health-check.sh \&\& /usr/local/bin/send-health-metric.sh|' /etc/crontab
+```
+
+#### Create CloudWatch Alarm for Custom Health Metric
+
+**First, generate the custom metrics:**
+```bash
+# Run the health check and metric scripts manually first
+sudo /usr/local/bin/liveorc-health-check.sh
+sudo /usr/local/bin/send-health-metric.sh
+
+# Wait 5-10 minutes for metrics to appear in CloudWatch
+```
+
+**Then create the alarm:**
+1. In CloudWatch, go to **Alarms** → **Create alarm**
+2. Click **Select metric**
+3. Look for **All metrics** tab, then:
+   - If you see **LiveORC** namespace: Click **LiveORC** → **Health** → **WebsiteHealth**
+   - If no custom metrics appear yet: Use **EC2** → **Per-Instance Metrics** → **CPUUtilization** as a temporary alternative
+4. Select your instance metric
+5. **Statistic:** Average
+6. **Period:** 5 minutes
+7. **Threshold type:** Static
+8. **Condition:** 
+   - For WebsiteHealth: Lower than 1
+   - For CPUUtilization: Greater than 90 (as alternative)
+9. **Datapoints to alarm:** 2 out of 2
+10. **Missing data treatment:** Treat as breaching threshold
+11. **Notification:** Select existing SNS topic `LiveORC-Alerts`
+12. **Alarm name:** `LiveORC-Health-Monitor`
+13. **Description:** `LiveORC health monitoring alarm`
+14. Click **Create alarm**
+
+**Note:** Custom metrics may take 5-15 minutes to appear in CloudWatch after first run. If you don't see the LiveORC/Health namespace immediately, start with EC2 instance metrics and add custom health metrics later.
+
+#### Create Additional CloudWatch Dashboard
+1. In CloudWatch, click **Dashboards** → **Create dashboard**
+2. **Dashboard name:** `LiveORC-Monitoring`
+3. Click **Add widget** and add:
+   - **Line graph:** EC2 CPU Utilization (select your LiveORC instance)
+   - **Line graph:** EC2 Network In/Out (select your LiveORC instance)
+   - **Number:** Synthetics canary success rate
+   - **Line graph:** S3 bucket size (if available)
+4. Arrange widgets and click **Save dashboard**
+
+#### Test the Monitoring Setup
+```bash
+# Temporarily stop LiveORC to test alerting
+docker stop liveorc_webapp
+
+# Wait 10-15 minutes for alert to trigger
+# You should receive an email notification
+
+# Restart LiveORC to clear the alert
+docker start liveorc_webapp
+```
+
+**Expected Notifications:**
+- 📧 **Email alert** when website is down for 10+ minutes
+- 📧 **Recovery email** when website comes back online
+- 📊 **Dashboard view** of all system metrics in one place
 
 ### Step 9.2: Create Billing Alerts *** NOT YET COMPLETED ***
 1. In CloudWatch, go to "Alarms"

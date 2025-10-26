@@ -52,7 +52,7 @@ bed_Z = Z_ellipsoid_shifted − pole_h_m
 2) Android → Enable **Developer Options** → **Select mock location app = GNSS Master**.  
 3) SW Maps → set project CRS to **UTM 48S (EPSG:32748)**; verify units are **meters**.  
 4) Prepare SW Maps **point attributes** (you’ll create them in §6.1).  
-   - `sect_id`, `pt_role`, `station`, `avg_s`, `PDOP`, `sats`, `sigmaH_cm`, `sigmaV_cm`,  
+   - `station`, `avg_s`,   
      `pole_h_m`, `offset_m`, `offset_bearing_deg`, `offset_to`, `notes`.
 
 ---
@@ -161,6 +161,7 @@ Your goal is a continuous **6–12 hour** base log. Pick your tool.
 2) **GPS Source:** **Device internal GPS** (uses the GNSS Master mock). SW Maps converts incoming lat/lon to UTM on the fly.  
 3) **Heights:** Ellipsoidal (meters). Ensure **Use orthometric/geoid height** is **OFF**.  
 4) **Point collection:** Averaging **by time**; enter **20/60/120–180 s** per point.
+5) **Set Pole Height:** In GNSS dialog, set instrument height to the length of the survey pole.
 
 ### Why meters (UTM) for calculations
 - **What:** Keep the whole project in a **projected CRS (UTM)** so all offsets and translations are in **meters**.  
@@ -169,18 +170,11 @@ Your goal is a continuous **6–12 hour** base log. Pick your tool.
 ### 6.1 Create the point attributes (step-by-step)
 1. **Menu (☰) ► Layers** → tap your **Point** layer.  
 2. **Fields / Attributes** → **Add Field**:  
-   - `sect_id` — **Text** (e.g., `XS_01`)  
-   - `pt_role` — **Text w/ Pick List**: `LB, RB, BED, WSE, CTRL, CP`  
    - `station` — **Integer** (LB=0 → 1,2,… → RB=last)  
    - `avg_s` — **Integer** (default 60)  
-   - `PDOP` — **Decimal (1)**  
-   - `sats` — **Integer**  
-   - `sigmaH_cm` — **Decimal (1)**  
-   - `sigmaV_cm` — **Decimal (1)**  
-   - `pole_h_m` — **Decimal (3)** (e.g., 2.150)  
    - `offset_m` — **Decimal (2)** (default 0.00)  
    - `offset_bearing_deg` — **Decimal (1)** (0–360; default 0.0)  
-   - `offset_to` — **Text w/ Pick List**: `water_edge, bank_top, centerline`  
+   - `offset_to` — **Text**
    - `notes` — **Text (multiline)**  
 3. **Averaging:** **Settings ► Data Capture ► GPS Averaging ► By Time**.  
 4. **Live stats:** enable **PDOP / Sats / Accuracy** on capture screen.
@@ -206,22 +200,21 @@ Per point
 1) Pole plumb; verify **FIX** and **quality gate**.  
 2) Averaging: **20 s** (open) • **60 s** (near water/trees) • **120–180 s** (bridges/heavy canopy).  
 3) If offsetting: set `offset_m`, `offset_bearing_deg`, `offset_to="water_edge"` (or relevant).  
-4) Save with clear `sect_id`, `pt_role`, `station`, and notes.  
+4) Save with clear `station`, and notes.  
 5) Tricky spots: take a **second occupation** ≥20–30 min later (60 s). Accept if within **≤2 cm H / ≤3 cm V**.
 
 ---
 
 ## 9) River Cross-Section by Pole (points-only)
-**What:** Walk LB→RB, logging bed stations and pole heights at each stop.  
+**What:** Walk LB→RB, logging bed stations and pole heights at each stop. **Do this two times:** once for a discharge cross section and again for a water level cross section.
 **Why:** Produces bed profile geometry for hydraulics.
 
 Planning: pick a straight reach. Define `sect_id` (e.g., `XS_01`). Mark **LB**/**RB** on firm ground. Choose safe station spacing (e.g., 1–2 m).
 
 Steps
-1) **LB:** stand 2–3 m back; collect **60 s**. Offset to water edge if needed. `pt_role=LB`, `station=0`.  
-2) **Across channel:** at each station: plant **pole tip on bed**, keep bubble centered; verify **FIX**; average **60–120 s** (or **120–180 s** under bridges); record **`pole_h_m`**; save `pt_role=BED`, `station` 1,2,3…  
-3) **RB:** same as LB; `pt_role=RB`, `station=last`.  
-4) **Optional WSE:** capture `pt_role=WSE` at the water surface (note method/time).
+1) **LB:** stand 2–3 m back; collect **60 s**. Offset to water edge if needed.
+2) **Across channel:** at each station: plant **pole tip on bed**, keep bubble centered; verify **FIX**; average **60–120 s** (or **120–180 s** under bridges); record `station` 1,2,3…  
+4) **Water Level:** Create a separate SWMaps layer to capture the water level at the time of the survey. The water level must be in the same coordinate system as the rest of the survey. If you are using a survey pole, you must read the water level manually and then add it to the UTM altitude you get from collecting this point.
 
 ---
 
@@ -267,7 +260,7 @@ Steps
 3) If Z is an attribute (e.g., `Z_ellipsoid`): Field Calculator → `Z_ellipsoid_shifted = "Z_ellipsoid" + <DeltaZ>`  
    If Z is geometry-only: `Z_ellipsoid_shifted = $z + <DeltaZ>`.
 
-### 11.4 Compute bed elevation (subtract pole height)
+### 11.4 Compute bed elevation (subtract pole height) - maybe we don't need this if SWMaps handles 'instrument height' correctly.
 - **What:** Convert antenna heights to **bed elevations** using your recorded pole height per station.  
 - **Why:** The antenna sits above the bed by `pole_h_m`.
 
