@@ -1,0 +1,20 @@
+{
+	"ptBox_mode" : "M",
+	"reboot_timeout" : 30,		
+	"//reboot_timeout" : "time before reboot to cycle mode in minutes, permitted range [5-45]",
+	"cycle_period" : 15,				
+	"//cycle_period range" : "cycle period in minutes, permitted values [5, 10, 15, 20, 30]",
+	"start_time" : 0830,
+	"//start_time" : "Hour of the day at which recording is started, permitted range [0001-1200]",
+	"night_time" : 1830,
+	"//night_time" : "Hour of the day at which recording is stopped, permitted range [1201-2400]",
+	"video_length" : 5,
+	"IR_mode" : "ON",		
+	"//IR_mode" : "IR night mode enable to record during night time, permitted values [ON, OFF]",
+	"cycle_period_IR" : 30,				
+	"//cycle_period_IR range" : "cycle period in minutes, permitted values [5, 10, 15, 20, 30]"	
+}
+
+
+
+
