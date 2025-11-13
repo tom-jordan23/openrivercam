@@ -1,5 +1,5 @@
 {
-	"ptBox_mode" : "C",
+	"ptBox_mode" : "M",
 	"reboot_timeout" : 30,		
 	"//reboot_timeout" : "time before reboot to cycle mode in minutes, permitted range [5-45]",
 	"cycle_period" : 30,				

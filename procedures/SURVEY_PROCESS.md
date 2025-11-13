@@ -162,6 +162,16 @@ Your goal is a continuous **6–12 hour** base log. Pick your tool.
 3) **Heights:** Ellipsoidal (meters). Ensure **Use orthometric/geoid height** is **OFF**.  
 4) **Point collection:** Averaging **by time**; enter **20/60/120–180 s** per point.
 5) **Set Pole Height:** In GNSS dialog, set instrument height to the length of the survey pole.
+6) **Create Map Layers:** set up separate layers for each of the following survey elements:
+   - Camera Field of View (FOV)
+   - Area of Study
+   - Camera Location
+   - Control Point Survey
+   - Discharge Cross Section
+   - Level Cross Section with Gauge
+   - Level Cross Section without Gauge
+   - Water Level
+
 
 ### Why meters (UTM) for calculations
 - **What:** Keep the whole project in a **projected CRS (UTM)** so all offsets and translations are in **meters**.  
