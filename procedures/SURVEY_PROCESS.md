@@ -177,20 +177,27 @@
 ## 10) PPP & Data Processing
 
 ### Step 1: Convert UBX to RINEX
-**Using RTKLIB RTKCONV (Recommended):**
-- [ ] Download and install RTKLIB (free software)
-- [ ] Launch RTKCONV application
-- [ ] Input file: Select base station .ubx log file
-- [ ] Output directory: Choose location for RINEX files
-- [ ] Format: Select RINEX 2.xx or 3.xx
-- [ ] Click "Convert" → Creates .obs and .nav files
-- [ ] Verify both observation (.obs) and navigation (.nav) files created
+**Using RTKLIB CONVBIN (Command Line):**
+- [ ] Open command prompt/terminal in directory with UBX file
+- [ ] Run: `convbin -od -os -oi -ot -f 1 your_file.ubx`
+  - `-od`: Output observation data (.obs)
+  - `-os`: Output satellite ephemeris (.nav)
+  - `-oi`: Output ionosphere parameters
+  - `-ot`: Output time parameters
+  - `-f 1`: RINEX version 1 format
+- [ ] Alternative for specific time range: `convbin -od -os -ts 2024/11/14 10:00:00 -te 2024/11/14 18:00:00 your_file.ubx`
+- [ ] Verify .obs and .nav files created successfully
 
-**Alternative - U-Center Method:**
-- [ ] If UBX file contains RXM-RAWX/SFRBX messages (F9P receivers)
-- [ ] Use u-center to verify raw data messages are present
-- [ ] Export via Tools → Convert to RINEX (if available in version)
-- [ ] Note: Older u-center versions may not have direct RINEX export
+**If CONVBIN fails - Try RTKCONV GUI:**
+- [ ] Launch RTKCONV, Input File: select .ubx file
+- [ ] Options → Set "Input Format" to "u-blox UBX"
+- [ ] Set "Output Format" to "RINEX OBS/NAV"
+- [ ] Click Convert
+
+**Troubleshooting:**
+- [ ] Ensure UBX file contains RXM-RAWX and RXM-SFRBX messages
+- [ ] Try different RINEX versions (-f 2 or -f 3) if conversion fails
+- [ ] Check file permissions and disk space
 
 ### Step 2: PPP Processing  
 **Submit for Processing (Indonesia Location):**
