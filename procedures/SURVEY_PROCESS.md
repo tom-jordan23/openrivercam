@@ -176,13 +176,21 @@
 
 ## 10) PPP & Data Processing
 
-### Step 1: Extract Base Station RINEX
-**U-Center RINEX Export:**
-- [ ] Open base station UBX log file in u-center
-- [ ] File → RINEX Converter → Select UBX file
-- [ ] Output: RINEX 2.11 or 3.03 format
-- [ ] Ensure observation interval matches logging (1s typical)
-- [ ] Export to .obs file for PPP processing
+### Step 1: Convert UBX to RINEX
+**Using RTKLIB RTKCONV (Recommended):**
+- [ ] Download and install RTKLIB (free software)
+- [ ] Launch RTKCONV application
+- [ ] Input file: Select base station .ubx log file
+- [ ] Output directory: Choose location for RINEX files
+- [ ] Format: Select RINEX 2.xx or 3.xx
+- [ ] Click "Convert" → Creates .obs and .nav files
+- [ ] Verify both observation (.obs) and navigation (.nav) files created
+
+**Alternative - U-Center Method:**
+- [ ] If UBX file contains RXM-RAWX/SFRBX messages (F9P receivers)
+- [ ] Use u-center to verify raw data messages are present
+- [ ] Export via Tools → Convert to RINEX (if available in version)
+- [ ] Note: Older u-center versions may not have direct RINEX export
 
 ### Step 2: PPP Processing  
 **Submit for Processing (Indonesia Location):**
