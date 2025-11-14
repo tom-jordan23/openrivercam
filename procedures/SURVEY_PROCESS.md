@@ -185,9 +185,14 @@
 - [ ] Export to .obs file for PPP processing
 
 ### Step 2: PPP Processing  
-**Submit for Processing:**
-- [ ] Upload RINEX file to an online PPP service like AUSPOS or CSRS-PPP service
-- [ ] Processing options: Static, 24-hour session preferred
+**Submit for Processing (Indonesia Location):**
+- [ ] **AUSPOS (Recommended):** Upload RINEX to https://www.ga.gov.au/auspos
+  - Global service, works well for Asia-Pacific region
+  - Processes data from anywhere on Earth using APREF network
+  - Free service provided by Geoscience Australia
+- [ ] **Alternative:** GAPS (https://gaps.gge.unb.ca) or magicPPP (http://magicgnss.gmv.com/ppp)
+- [ ] Processing options: Static, minimum 2-hour session (24-hour preferred for best accuracy)
+- [ ] Expected accuracy: 2-4cm with adequate observation time
 - [ ] Download results: coordinates in WGS84 geographic
 - [ ] Convert to UTM Zone 48S (EPSG:32748) using coordinate conversion tool
 
