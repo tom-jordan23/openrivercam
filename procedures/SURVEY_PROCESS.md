@@ -27,7 +27,7 @@
 - [C. Base Station u-center Config](#appendix-c-base-station-u-center-config)
 - [D. Sample Video Collection](#appendix-d-sample-video-collection)
 - [E. Troubleshooting](#appendix-e-troubleshooting)
-- [F. Field Reference Card](#appendix-f-field-reference-card)
+
 
 ---
 
