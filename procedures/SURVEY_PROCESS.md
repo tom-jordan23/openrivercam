@@ -133,7 +133,7 @@
 
 **Measurement:**
 - [ ] Survey water surface elevation with rover pole
-- [ ] Touch pole to water surface, maintain RTK FIX
+- [ ] **Note depth on pole**, maintain RTK FIX
 - [ ] Record in Water Level layer with flow conditions
 - [ ] Take multiple measurements if water is moving
 - [ ] Document measurement method and accuracy
