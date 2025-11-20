@@ -205,6 +205,13 @@
   - Global service, works well for Asia-Pacific region
   - Processes data from anywhere on Earth using APREF network
   - Free service provided by Geoscience Australia
+  - **Antenna Selection:** Choose closest match from available options:
+    - TRM29659.00 (Trimble multiband, good generic choice)
+    - SEPCHOKE_MC (Septentrio choke ring, multiband)
+    - LEIAT504GG (Leica multiband)
+    - TWIVC6150 (Tallysman multiband)
+    - Or select "Unknown" if no close match available
+  - **Antenna Height:** Measure from ground to antenna phase center (bottom of antenna)
 - [ ] **Alternative:** GAPS (https://gaps.gge.unb.ca) or magicPPP (http://magicgnss.gmv.com/ppp)
 - [ ] Processing options: Static, minimum 2-hour session (24-hour preferred for best accuracy)
 - [ ] Expected accuracy: 2-4cm with adequate observation time
