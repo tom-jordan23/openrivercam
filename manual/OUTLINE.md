@@ -107,3 +107,6 @@
 - Camera locator: [Calculating Camera Placement](https://docs.google.com/spreadsheets/d/1SKKfQRSXkeM2f6ueMxSa490PAB0ZW5w8ZF80bUu0O50/edit?gid=200643796#gid=200643796)
 - Site Selection Notes for Sukabumi City: https://docs.google.com/spreadsheets/d/1SKKfQRSXkeM2f6ueMxSa490PAB0ZW5w8ZF80bUu0O50/edit?gid=0#gid=0
 - LSPIV guide: (in this directory)
+- ORC Github repos: https://github.com/localdevices
+- Non-contact river flow with ORC in Africa: https://wmo.int/sites/default/files/2023-10/casestudies_tahmo.pdf
+
