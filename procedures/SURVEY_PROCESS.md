@@ -174,7 +174,7 @@
 
 # POST-PROCESSING
 
-## 10) PPP & Data Processing
+## 10) Post-Processing & Coordinate Correction
 
 ### Step 1: Convert UBX to RINEX
 **Using RTKLIB CONVBIN (Command Line):**
@@ -199,11 +199,12 @@
 - [ ] Try different RINEX versions (-f 2 or -f 3) if conversion fails
 - [ ] Check file permissions and disk space
 
-### Step 2: PPP Processing  
-**Submit for Processing (Indonesia Location):**
-- [ ] **AUSPOS (Recommended):** Upload RINEX to https://www.ga.gov.au/auspos
-  - Global service, works well for Asia-Pacific region
-  - Processes data from anywhere on Earth using APREF network
+### Step 2: Precise Positioning Service Processing
+**Submit for Processing:**
+- [ ] **AUSPOS (Recommended for Asia-Pacific):** Upload RINEX to https://www.ga.gov.au/auspos
+  - Network-based processing using APREF + IGS reference stations
+  - Optimized for Indonesia and Southeast Asia region
+  - Processes GPS L1/L2 only (other constellations ignored)
   - Free service provided by Geoscience Australia
   - **Antenna Selection:** Choose closest match from available options:
     - TRM29659.00 (Trimble multiband, good generic choice)
@@ -212,16 +213,18 @@
     - TWIVC6150 (Tallysman multiband)
     - Or select "Unknown" if no close match available
   - **Antenna Height:** Measure from ground to antenna phase center (bottom of antenna)
-- [ ] **Alternative:** GAPS (https://gaps.gge.unb.ca) or magicPPP (http://magicgnss.gmv.com/ppp)
-- [ ] Processing options: Static, minimum 2-hour session (24-hour preferred for best accuracy)
-- [ ] Expected accuracy: 2-4cm with adequate observation time
+- [ ] **Alternatives (True PPP with Multi-GNSS):**
+  - CSRS-PPP: https://webapp.csrs-scrs.nrcan-rncan.gc.ca/geod/tools-outils/ppp.php (fastest convergence with PPP-AR)
+  - GAPS: https://gaps.gge.unb.ca (cross-validation, academic)
+- [ ] Processing options: Static, 6-8 hours recommended (24-hour optimal)
+- [ ] Expected accuracy: 2-5cm horizontal, 5-10cm vertical (6-8 hour session)
 - [ ] Download results: coordinates in WGS84 geographic
-- [ ] Convert to UTM Zone 48S (EPSG:32748) using coordinate conversion tool
+- [ ] Convert to your UTM zone using coordinate conversion tool
 
-**Record PPP Results:**
-- [ ] PPP coordinates: E_ppp, N_ppp, Z_ppp (UTM 48S)
+**Record Processing Results:**
+- [ ] Corrected coordinates: E_corrected, N_corrected, Z_corrected (in your UTM zone)
 - [ ] Survey-in coordinates: E_survey, N_survey, Z_survey
-- [ ] Calculate translation: ΔE = E_ppp - E_survey, ΔN = N_ppp - N_survey, ΔZ = Z_ppp - Z_survey
+- [ ] Calculate translation: ΔE = E_corrected - E_survey, ΔN = N_corrected - N_survey, ΔZ = Z_corrected - Z_survey
 
 ### Step 3: Apply Corrections in QGIS
 **Data Import:**
