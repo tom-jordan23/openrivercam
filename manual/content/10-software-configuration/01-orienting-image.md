@@ -4,13 +4,7 @@ This section begins the critical process of configuring OpenRiverCam software to
 
 Image orientation is the first configuration step. The camera may be mounted at various angles, and the PtBox needs to know how the image is oriented relative to the river flow. Proper orientation ensures velocity vectors point in correct directions and coordinates align with surveyed ground control points.
 
-By the end of this section, you will be able to:
-- Access the PtBox web interface for configuration
-- Load sample video collected during survey
-- Assess current image orientation
-- Apply rotation or flip transformations as needed
-- Verify orientation matches field conditions
-- Save orientation configuration for operational use
+Upon completion of this section, practitioners will possess the ability to access the PtBox web interface for configuration, load sample video collected during survey operations, assess current image orientation, apply rotation or flip transformations as required, verify that orientation matches field conditions, and save orientation configuration for operational deployment.
 
 **Reference:** This connects directly to Section 9.8 (Sample Video Collection) and precedes Section 10.2 (Adding Control Points).
 

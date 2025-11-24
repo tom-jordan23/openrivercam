@@ -2,193 +2,63 @@
 
 ## Overview
 
-After installing the camera, it is critical to verify that the field of view (FOV) covers the required area for water level measurement and surface velocity monitoring. This section describes procedures for capturing test images, assessing FOV coverage, physically marking FOV boundaries in the field, and verifying staff gauge visibility. Proper FOV assessment ensures accurate measurements and helps field teams understand the camera's viewing area.
+After installing the camera, it is critical to verify that the field of view (FOV) covers the required area for water level measurement and surface velocity monitoring (Muste et al., 2008). This section describes procedures for capturing test images, assessing FOV coverage, physically marking FOV boundaries in the field, and verifying staff gauge visibility. Proper FOV assessment ensures accurate measurements and helps field teams understand the camera's viewing area. The time required for this procedure is approximately 2-3 hours.
 
-**Time Required:** 2-3 hours
-
-**Prerequisites:**
-- Camera installed and powered (Section 8.3)
-- Network connectivity to camera established
-- Camera aimed at target area
-- Staff gauge installed and visible
-- Access to river/stream bank safe
+The following prerequisites must be met before beginning FOV assessment. First, the camera must be installed and powered as described in Section 8.3. Network connectivity to the camera must be established, and the camera must be aimed at the target area. The staff gauge must be installed and visible within the camera's field of view. Finally, safe access to the river or stream bank must be available for field personnel to conduct the assessment work.
 
 ## Safety Considerations
 
-**SAFETY WARNINGS:**
+Field personnel conducting FOV assessment work must observe critical safety protocols when working near water bodies (ISO, 2019). Working near water presents significant drowning risk, particularly on unstable banks or when working close to the water's edge. Personnel must wear life jackets or personal flotation devices during all activities near water. River banks and wet rocks present slippery surfaces that require appropriate non-slip footwear with good traction.
 
-- **Water Safety:** Working near water presents drowning risk. Wear life jacket if working close to water's edge or on unstable banks.
-- **Slippery Surfaces:** River banks and wet rocks are slippery. Use appropriate footwear with good traction.
-- **Flash Floods:** Be aware of upstream conditions. Cease work immediately if water level rises unexpectedly.
-- **Electrical Hazards:** Camera system is powered. Avoid contact with electrical components.
-- **Wildlife and Vegetation:** Be aware of local hazards (snakes, insects, poisonous plants).
+Flash flood risk requires constant awareness of upstream weather and flow conditions. Field personnel must cease work immediately if water levels rise unexpectedly or if weather conditions deteriorate. The camera system is electrically powered, creating electrical hazards that require personnel to avoid contact with electrical components. Local wildlife and vegetation hazards, including snakes, insects, and poisonous plants, necessitate appropriate precautions and awareness.
 
-**Personal Protective Equipment (PPE):**
-- Life jacket or personal flotation device (if working near water)
-- Non-slip footwear (water shoes or boots)
-- Long pants and sleeves (protection from vegetation)
-- Hat and sunscreen
-- Insect repellent (if applicable)
-- First aid kit accessible
+Personal protective equipment (PPE) requirements include life jackets or personal flotation devices when working near water, non-slip footwear such as water shoes or boots, and long pants and sleeves for protection from vegetation. Personnel should wear hats and sunscreen for sun protection, apply insect repellent as applicable to local conditions, and ensure first aid kits are accessible at all times during field operations.
 
 ## Equipment and Tools Checklist
 
-**Computer Equipment:**
-- Laptop or tablet with network capability
-- Network cable (if accessing camera via wired connection)
-- Portable WiFi router (if camera has wireless capability)
-- Power bank or extra battery for laptop
-- USB drive (for storing test images)
-- Camera configuration software or web browser
+Field personnel must assemble comprehensive equipment before beginning FOV assessment activities. Computer equipment requirements include a laptop or tablet with network capability, network cables for wired camera connections, and portable WiFi routers if the camera has wireless capability. Personnel should bring power banks or extra batteries for laptop computers, USB drives for storing test images, and appropriate camera configuration software or web browsers for accessing camera interfaces.
 
-**Field Marking Equipment:**
-- Survey flags or stakes (brightly colored, minimum 10)
-- Flagging tape (bright colors: orange, pink, or yellow)
-- Measuring tape (30-50 meters)
-- Range finder or laser distance meter
-- Permanent markers
-- Spray paint (optional, for semi-permanent marking)
-- Whiteboard or marking board (for creating reference markers)
-- Camera tripod (for ground-level photography)
-- Smartphone or camera (for documentation)
+Field marking equipment comprises survey flags or stakes in bright colors (minimum 10 units), flagging tape in highly visible colors such as orange, pink, or yellow, and measuring tapes ranging from 30 to 50 meters in length. Range finders or laser distance meters enable accurate distance measurement. Permanent markers, optional spray paint for semi-permanent marking, whiteboards or marking boards for creating reference markers, camera tripods for ground-level photography, and smartphones or cameras for documentation complete the field marking toolkit.
 
-**Documentation Materials:**
-- Field notebook and pencils
-- Site map or sketch
-- Clipboard
-- Camera/smartphone for photos
-- GPS unit or GPS-enabled smartphone
-- Forms for recording FOV coordinates
-
-**Safety and Utility:**
-- Life jacket
-- First aid kit
-- Water and snacks
-- Sun protection
-- Communication device (radio or phone)
-- Rope (if accessing difficult areas)
+Documentation materials include field notebooks and pencils, site maps or sketches, clipboards, cameras or smartphones for photographs, GPS units or GPS-enabled smartphones, and standardized forms for recording FOV coordinates (Wheaton et al., 2010). Safety and utility equipment comprises life jackets, first aid kits, water and snacks, sun protection items, communication devices such as radios or phones, and rope for accessing difficult areas.
 
 ## Step 1: Initial Test Image Capture
 
 ### 1.1 Access Camera Live View
 
-**Procedure:**
+Personnel must first establish connection to the camera system to access the live view interface. The operator connects the laptop to the camera network, opens a web browser, and navigates to the camera's IP address. After logging in with the credentials configured in Section 8.3, the operator navigates to the live view page to begin image assessment.
 
-1. **Connect to Camera:**
-   - Connect laptop to camera network
-   - Open web browser and navigate to camera IP address
-   - Login with credentials configured in Section 8.3
-   - Navigate to live view page
+Camera operation verification requires the operator to confirm that the live video stream displays correctly and that image quality is acceptable for monitoring purposes. The frame rate must be smooth without significant lag or stuttering. The operator should check for any error messages or warnings that might indicate system problems.
 
-2. **Verify Camera Operation:**
-   - Confirm live video stream is displaying
-   - Check image quality is acceptable
-   - Verify frame rate is smooth
-   - Look for any error messages or warnings
-
-3. **Optimize Display:**
-   - Maximize browser window for best viewing
-   - Disable any overlays or on-screen information that obscure view
-   - Ensure display refresh rate is adequate
-   - Adjust browser zoom if needed to see details
-
-**Quality Check:**
-- Live stream is clear and stable
-- Full image frame is visible on screen
-- No error messages
-- Able to see staff gauge in image
+Display optimization involves maximizing the browser window for optimal viewing, disabling any overlays or on-screen information that obscure the view, ensuring adequate display refresh rate, and adjusting browser zoom as needed to examine details clearly. Quality checks confirm that the live stream is clear and stable, the full image frame is visible on screen without cropping, no error messages appear, and the staff gauge is visible within the image frame.
 
 ### 1.2 Capture Reference Images
 
-**Purpose:** Create baseline images under current conditions for assessment.
+Reference image capture creates baseline images under current conditions for comprehensive assessment (Perks et al., 2016). The operator captures images at the current water level by taking snapshots or saving frames from the live stream. Images should be saved with descriptive filenames following the recommended format YYYY-MM-DD_HHMM_baseline.jpg, and the operator must record the current water level reading from the gauge in the field notes.
 
-**Procedure:**
+Documentation of current conditions includes recording the time of capture, weather conditions, lighting conditions, water surface conditions such as calm, ripples, or waves, and any obstructions or issues visible in the image. Multiple image capture involves taking images at 5-10 minute intervals, capturing at least 5 images for thorough assessment, varying lighting conditions when possible to test camera performance under different scenarios, and noting any changes in image quality that occur with changing environmental conditions.
 
-1. **Capture Images at Current Water Level:**
-   - Take snapshot or save frame from live stream
-   - Save image with descriptive filename
-   - Recommended format: `YYYY-MM-DD_HHMM_baseline.jpg`
-   - Record current water level reading from gauge: _____ m
-
-2. **Note Current Conditions:**
-   - Time of capture: _____
-   - Weather: _____
-   - Lighting conditions: _____
-   - Water surface conditions: _____ (calm, ripples, waves, etc.)
-   - Any obstructions or issues visible: _____
-
-3. **Capture Multiple Images:**
-   - Take images at 5-10 minute intervals
-   - Capture at least 5 images for assessment
-   - Vary lighting conditions if possible (cloudy vs. sunny)
-   - Note any changes in image quality with changing conditions
-
-**Save Images:**
-- Store images on laptop
-- Copy to USB drive for backup
-- Include images in installation documentation
-- Upload to project folder if remote access available
+Image storage procedures require the operator to store images on the laptop, copy files to USB drives for backup, include images in installation documentation, and upload to project folders when remote access is available. This redundant storage approach ensures data preservation and accessibility for analysis and documentation purposes.
 
 ### 1.3 Assess Image Quality
 
-**Image Quality Checklist:**
+**Image Quality Assessment:**
 
-**Clarity and Focus:**
-- [ ] Staff gauge markings are sharp and readable
-- [ ] Numbers on gauge are legible at full resolution
-- [ ] Water surface texture is visible (for velocity tracking)
-- [ ] Background features are adequately sharp
+Image quality assessment begins with clarity and focus verification. Operators must confirm that staff gauge markings appear sharp and readable in captured images, with gauge numbers legible at full resolution. Water surface texture must be visible to enable velocity tracking, and background features should demonstrate adequate sharpness (Muste et al., 2008). Exposure and lighting conditions require careful evaluation to ensure the image is neither overexposed with blown out highlights nor underexposed with lost shadow detail. Adequate contrast between the gauge and background must exist, with no significant glare or reflections obscuring gauge visibility.
 
-**Exposure and Lighting:**
-- [ ] Image is not overexposed (blown out highlights)
-- [ ] Image is not underexposed (lost shadow detail)
-- [ ] Adequate contrast between gauge and background
-- [ ] No significant glare or reflections obscuring gauge
+Field of view coverage assessment verifies that the entire staff gauge remains visible, including both the highest and lowest marks. Adequate margins above and below the gauge must exist to accommodate water level variation. Sufficient horizontal coverage for surface velocity measurement is essential, and the image should show no vignetting or dark corners that would limit usable area (Perks et al., 2016).
 
-**Field of View Coverage:**
-- [ ] Entire staff gauge is visible (highest and lowest marks)
-- [ ] Adequate margin above and below gauge (for water level variation)
-- [ ] Sufficient horizontal coverage for surface velocity measurement
-- [ ] No vignetting or dark corners in image
-
-**Issues to Note:**
-- Areas of poor visibility
-- Reflections or glare
-- Obstructions (vegetation, debris)
-- Perspective distortion
-- Any other quality concerns
-
-**If Image Quality Issues Found:**
-- Adjust camera settings (exposure, focus)
-- Reposition camera if necessary
-- Address obstructions
-- Install sunshade or adjust existing shade
-- Refer to troubleshooting in Section 8.3
+Operators must document any quality issues identified during assessment. Areas of poor visibility, reflections or glare, obstructions from vegetation or debris, perspective distortion, and any other quality concerns require documentation for future reference and troubleshooting. When image quality issues are identified, operators should adjust camera settings including exposure and focus, reposition the camera if necessary, address physical obstructions, install or adjust sunshades, and refer to troubleshooting procedures detailed in Section 8.3.
 
 ## Step 2: Field of View Boundary Determination
 
 ### 2.1 Understand Field of View Geometry
 
-**Key Concepts:**
+Field of view (FOV) represents the area visible to the camera, defined by horizontal and vertical angles determined by lens focal length and sensor size (Hauet et al., 2008). Wider angle lenses produce larger FOV coverage, while telephoto lenses create smaller, more focused FOV areas. Understanding FOV geometry is essential for accurate spatial measurement and monitoring coverage assessment.
 
-**Field of View (FOV):**
-- The area visible to the camera, defined by horizontal and vertical angles
-- FOV depends on lens focal length and sensor size
-- Wider angle lenses = larger FOV
-- Telephoto lenses = smaller FOV
+FOV calculations at a given distance D follow standard geometric relationships. Horizontal FOV width equals 2 × D × tan(horizontal_angle / 2), while vertical FOV height equals 2 × D × tan(vertical_angle / 2). For example, a camera with 60° horizontal FOV positioned 15 meters from the river produces horizontal coverage of 2 × 15 × tan(30°) = 17.3 meters.
 
-**FOV Calculation:**
-- **Horizontal FOV at distance D:**
-  - Width = 2 × D × tan(horizontal_angle / 2)
-- **Vertical FOV at distance D:**
-  - Height = 2 × D × tan(vertical_angle / 2)
-
-**Example:**
-- Camera with 60° horizontal FOV
-- Distance to river: 15 meters
-- Horizontal coverage: 2 × 15 × tan(30°) = 17.3 meters
-
-**Important:** Actual FOV varies with distance. Objects closer to camera occupy more pixels than distant objects.
+Personnel must recognize that actual FOV varies with distance from the camera. Objects closer to the camera occupy more pixels than distant objects, affecting measurement resolution and accuracy across the monitored area. This geometric relationship influences the placement of ground control points and the interpretation of velocity measurements derived from image analysis.
 
 ### 2.2 Determine FOV Extent on Water Surface
 
@@ -289,23 +159,11 @@ After installing the camera, it is critical to verify that the field of view (FO
 
 **Marker Types:**
 
-**Survey Flags (Temporary):**
-- Use for initial assessment
-- Bright colors visible in images
-- Easy to reposition
-- Replace with permanent markers
+Physical markers for FOV demarcation fall into three categories based on longevity and installation method. Survey flags provide temporary marking suitable for initial assessment, utilizing bright colors visible in camera images with the advantage of easy repositioning. These temporary markers should be replaced with more permanent installations once FOV boundaries are finalized (Wheaton et al., 2010).
 
-**Painted Markers (Semi-Permanent):**
-- Spray paint on rocks or fixed features
-- Bright colors (orange, yellow, pink)
-- Label with "CAMERA FOV" or similar
-- Refresh periodically as paint fades
+Semi-permanent painted markers employ spray paint applied to rocks or other fixed natural features. Bright colors including orange, yellow, or pink ensure visibility, and markers should be labeled with "CAMERA FOV" or similar identification. Paint-based markers require periodic refreshing as weathering causes fading over time.
 
-**Installed Markers (Permanent):**
-- Bright fabric flags on poles
-- PVC pipes painted bright colors
-- Metal or wooden stakes
-- Concrete markers
+Permanent installed markers provide the most durable FOV demarcation. These include bright fabric flags mounted on poles, PVC pipes painted in bright colors, metal or wooden stakes driven into the ground, and concrete markers for maximum permanence. Permanent markers offer long-term reliability but require more substantial installation effort (ISO, 2019).
 
 **Procedure:**
 
@@ -375,26 +233,12 @@ After installing the camera, it is critical to verify that the field of view (FO
 **Purpose:** GCPs are fixed reference points used for georeferencing images and calculating real-world measurements from image coordinates.
 
 **GCP Requirements:**
-- Fixed location (not moving or changing)
-- Clearly identifiable in images
-- Distributed throughout FOV
-- Accessible for surveying
-- Permanent or semi-permanent features
 
-**Good GCP Examples:**
-- Painted marks on rock outcrops
-- Corners of concrete structures
-- Bridge abutments or piers
-- Permanent survey markers
-- Corners of buildings
-- Fixed fence posts or poles
+Effective ground control points must satisfy several critical criteria to ensure measurement accuracy and reliability. GCPs must occupy fixed locations that do not move or change over time, remaining clearly identifiable in all captured images (Muste et al., 2008). Spatial distribution throughout the FOV is essential, with points accessible for surveying using appropriate equipment. Features selected as GCPs should be permanent or semi-permanent in nature to provide consistent reference across the monitoring period (Hauet et al., 2008).
 
-**Poor GCP Examples:**
-- Vegetation (grows and moves)
-- Debris or temporary objects
-- Moving water features
-- Areas prone to erosion
-- Items that may be removed
+Suitable GCP examples include painted marks on stable rock outcrops, corners of concrete structures exhibiting no movement, bridge abutments or piers fixed in position, permanent survey markers installed for geodetic purposes, corners of buildings within the camera view, and fixed fence posts or poles securely anchored. These features provide reliable, unchanging reference points for georeferencing calculations.
+
+Unsuitable GCP examples must be avoided as they compromise measurement accuracy. Vegetation grows and moves with wind and seasonal changes, rendering it unsuitable. Debris or temporary objects may be removed or relocated. Moving water features by definition lack the fixity required for ground control. Areas prone to erosion may shift position over time, and any items that may be intentionally or accidentally removed fail to provide the permanence necessary for long-term monitoring applications (Perks et al., 2016).
 
 **Procedure:**
 

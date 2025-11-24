@@ -2,12 +2,7 @@
 
 OpenRiverCam requires accurate surveying to measure the river cross-section and establish the relationship between water level and cross-sectional area. This surveying must be possible at multiple water levels to fully characterize the channel and develop a reliable rating curve. This section explains why multi-level access is critical and how to assess whether a site provides adequate survey accessibility throughout the year.
 
-By the end of this section, you will be able to:
-- Understand why surveying at multiple water levels is necessary
-- Assess physical accessibility for survey teams
-- Evaluate safety considerations at different flow conditions
-- Plan for permanent marker placement
-- Make informed site selection decisions based on accessibility requirements
+By the end of this section, readers will develop understanding of why surveying at multiple water levels is necessary, develop skills to assess physical accessibility for survey teams, learn to evaluate safety considerations at different flow conditions, gain knowledge for planning permanent marker placement, and acquire the ability to make informed site selection decisions based on accessibility requirements.
 
 ---
 

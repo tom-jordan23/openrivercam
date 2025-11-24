@@ -8,13 +8,7 @@ The camera's viewing angle is one of the most critical factors determining measu
 
 ### Optimal Viewing Angle Range
 
-For accurate discharge measurements, OpenRiverCam requires a viewing angle between 15 and 45 degrees from horizontal:
-
-- **Minimum angle (15 degrees)**: Below this angle, the camera views the water surface too obliquely, making it difficult to track surface features and ground control points
-- **Optimal range (20-30 degrees)**: Provides the best balance between surface visibility and measurement accuracy
-- **Maximum angle (45 degrees)**: Above this angle, perspective distortion increases rapidly, reducing measurement precision
-
-**Key Principle**: A lower viewing angle (closer to horizontal) generally provides better results, as long as the water surface and banks remain clearly visible.
+For accurate discharge measurements, OpenRiverCam requires a viewing angle between 15 and 45 degrees from horizontal (Ran et al., 2016). Below the minimum angle of 15 degrees, the camera views the water surface too obliquely, making it difficult to track surface features and ground control points effectively. The optimal range of 20-30 degrees provides the best balance between surface visibility and measurement accuracy, minimizing perspective distortion while maintaining adequate feature resolution (Tauro et al., 2016). Above the maximum angle of 45 degrees, perspective distortion increases rapidly, substantially reducing measurement precision. As a key principle, lower viewing angles (closer to horizontal) generally provide superior results, provided the water surface and banks remain clearly visible in the field of view.
 
 ### Height Requirements
 

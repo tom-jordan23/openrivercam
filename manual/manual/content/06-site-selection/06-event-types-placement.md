@@ -2,13 +2,7 @@
 
 Not all floods are the same. A rapid flash flood triggered by intense afternoon thunderstorms behaves completely differently from a seasonal flood that rises gradually over two weeks as monsoon rains accumulate. A snowmelt flood follows yet another pattern entirely. Understanding these different flood types is essential for strategic monitoring site placement - because the monitoring requirements for each type are different. This section explains the major flood types you may encounter in humanitarian contexts and how to position monitoring sites to provide effective early warning for each.
 
-By the end of this section, you will be able to:
-- Recognize different flood event types and their characteristics
-- Understand how flood type affects monitoring requirements
-- Position monitoring sites strategically for different event types
-- Integrate river monitoring with rainfall data
-- Coordinate with existing monitoring stations
-- Design effective early warning systems for diverse flood scenarios
+By the end of this section, readers will develop the ability to recognize different flood event types and their distinguishing characteristics, understand how flood type fundamentally affects monitoring requirements, position monitoring sites strategically for different event types, integrate river monitoring systems with rainfall data collection, coordinate effectively with existing monitoring stations, and design comprehensive early warning systems capable of addressing diverse flood scenarios.
 
 ---
 

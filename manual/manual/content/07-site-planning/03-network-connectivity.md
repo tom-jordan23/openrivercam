@@ -8,18 +8,7 @@ OpenRiverCam can operate in various connectivity modes, from continuous internet
 
 ### Data Transmission Needs
 
-**Typical data volumes**:
-- Raw video frames: 1-5 MB per measurement
-- Processed results (velocities, discharge): 10-50 KB per measurement
-- System status and diagnostics: 5-10 KB per transmission
-- Configuration updates: 100-500 KB per update
-
-**Measurement frequency impacts**:
-- Hourly measurements: 50-150 MB per day (with images)
-- Daily measurements: 2-5 MB per day (with images)
-- Results-only transmission: 500 KB - 2 MB per day
-
-**Critical consideration**: Bandwidth and cost requirements depend heavily on whether raw video frames are transmitted or only processed results.
+OpenRiverCam data transmission requirements vary substantially based on the type of data transmitted and measurement frequency. Typical data volumes include raw video frames (1-5 MB per measurement), processed results including velocities and discharge estimates (10-50 KB per measurement), system status and diagnostic information (5-10 KB per transmission), and configuration updates (100-500 KB per update). Measurement frequency substantially impacts total data volumes, with hourly measurements requiring 50-150 MB per day when images are transmitted, daily measurements consuming 2-5 MB per day with images, and results-only transmission (without images) requiring only 500 KB to 2 MB daily. The critical consideration in network planning is that bandwidth and cost requirements depend heavily on whether raw video frames are transmitted to the cloud for processing, or only processed results are sent after local computation (Le Coz et al., 2016).
 
 ### Real-Time vs. Batch Transmission
 

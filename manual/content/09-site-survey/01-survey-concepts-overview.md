@@ -1,17 +1,10 @@
 # 9.1 Survey Concepts Overview
 
-This section bridges the conceptual understanding you gained in Chapter 5 with the practical field procedures you will execute during site surveys. Chapter 5 explained the "why" of RTK surveying - now we begin the "how."
+This section bridges the conceptual understanding presented in Chapter 5 with the practical field procedures required for executing site surveys. Chapter 5 provided the theoretical foundations of RTK surveying, establishing the rationale for measurement approaches. This chapter transitions to the practical implementation of those concepts in field operations.
 
-Before stepping into the field with equipment, it is essential to review the key concepts that will guide your survey work. This section recaps the critical principles from Chapter 5 and explains how they translate into the specific procedures documented in SURVEY_PROCESS.md.
+Before deploying equipment to field sites, it is essential to review the key concepts that will guide survey work. This section recapitulates the critical principles from Chapter 5 and explains how they translate into specific field procedures. Understanding the relationships between coordinate systems, reference frames, accuracy requirements, and quality standards enables field personnel to make informed decisions during survey execution (Takasu & Yasuda, 2009).
 
-By the end of this section, you will understand:
-- How coordinate systems determine where your data lives
-- Why UTM zone selection matters for your site
-- The critical decision between local and global reference frames
-- What RTK fix accuracy requirements mean in practice
-- How the PPP workflow improves your survey results
-- The quality standards that ensure reliable measurements
-- How Chapter 5 concepts connect to Chapter 9 procedures
+Field personnel completing this section will understand how coordinate systems determine spatial data representation, why UTM zone selection affects measurement accuracy for specific sites, the critical distinction between local and global reference frames, what RTK fix accuracy requirements mean for practical field operations, how the PPP workflow improves survey results through post-processing, the quality standards that ensure reliable measurements, and how theoretical concepts from Chapter 5 connect to practical procedures in Chapter 9.
 
 ---
 
@@ -19,21 +12,13 @@ By the end of this section, you will understand:
 
 ### Why Coordinate Systems Matter
 
-Every point you survey needs a coordinate - a numerical description of where it exists in space. Without a consistent coordinate system, your survey points would be meaningless numbers with no relationship to each other or to the real world.
+Spatial data requires numerical representation through coordinate systems that provide the framework for describing positions on Earth's surface (Snyder, 1987). Every surveyed point requires coordinates that numerically describe its spatial location. Without a consistent coordinate system, survey points would consist of meaningless numbers lacking relationships to each other or to real-world positions.
 
-**Recall from Section 5.7:**
-Coordinate systems provide the framework for describing positions on Earth. For OpenRiverCam, we typically use UTM (Universal Transverse Mercator), which divides the world into zones and provides coordinates in meters East (Easting) and meters North (Northing) from a zone-specific origin.
+As detailed in Section 5.7, coordinate systems establish the mathematical framework for position description. For OpenRiverCam applications, the Universal Transverse Mercator (UTM) coordinate system is typically employed. UTM divides the world into zones and provides coordinates in meters East (Easting) and meters North (Northing) from zone-specific origins (Hofmann-Wellenhof et al., 2007).
 
-**Why UTM for river monitoring:**
-- Coordinates in meters (intuitive for distance calculations)
-- Minimal distortion within a zone (accurate for local measurements)
-- Compatible with most GIS software and mapping tools
-- Widely used in humanitarian and engineering contexts
+UTM is preferred for river monitoring applications for several reasons. First, UTM coordinates are expressed in meters, providing intuitive units for distance calculations. Second, UTM projections minimize distortion within each zone, ensuring accurate local measurements. Third, UTM coordinates are compatible with most GIS software and mapping tools, facilitating data integration. Fourth, UTM systems are widely adopted in humanitarian and engineering contexts, promoting interoperability.
 
-**The practical reality:**
-When you survey a ground control point and record position as (E=685432.15, N=9456782.33, Z=142.45), those numbers only have meaning within a specific coordinate system. The same physical location might be (685432, 9456782) in UTM Zone 48S or (42.5°N, 123.4°E) in geographic coordinates - different numbers describing the same place.
-
-**Your job during survey:** Ensure all measurements use the same coordinate system throughout.
+The practical implications of coordinate system selection require careful consideration. When field personnel survey a ground control point and record its position as (E=685432.15, N=9456782.33, Z=142.45), those numerical values possess meaning only within a specific coordinate system. The same physical location might be represented as (685432, 9456782) in UTM Zone 48S or as (42.5°N, 123.4°E) in geographic coordinates. These represent different numerical descriptions of identical positions. Field personnel must ensure all measurements use the same coordinate system throughout survey operations to maintain data consistency and accuracy.
 
 ### UTM Zone Selection for Your Site
 

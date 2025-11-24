@@ -15,13 +15,7 @@ Camera installation is a critical phase that directly impacts image quality, mea
 
 ## Safety Considerations
 
-**SAFETY WARNINGS:**
-
-- **Working at Height:** Use appropriate fall protection when installing cameras on poles or elevated structures. Never work alone on elevated installations.
-- **Electrical Hazards:** Camera may receive power. Verify power is disconnected before making electrical connections.
-- **Weather Exposure:** Do not install cameras in rain, high winds, or lightning conditions.
-- **Tool Safety:** Use tools appropriate for the task. Secure all tools when working at height.
-- **Heavy Equipment:** Camera housings can be heavy. Use proper lifting techniques and get assistance when needed.
+Camera installation requires adherence to several critical safety protocols to protect personnel and equipment. Working at height necessitates use of appropriate fall protection when installing cameras on poles or elevated structures, and installers must never work alone on elevated installations. Electrical hazards exist because cameras may receive power during installation, requiring verification that power is disconnected before making electrical connections. Weather exposure limitations prohibit camera installation in rain, high winds, or lightning conditions, as these conditions compromise both safety and installation quality. Tool safety requires use of tools appropriate for each specific task and secure attachment of all tools when working at height to prevent dropped object hazards. Camera housings can be heavy (typically 2-5 kg but potentially more with weatherproofing), requiring proper lifting techniques and assistance when needed to prevent injury.
 
 **Personal Protective Equipment (PPE):**
 - Hard hat

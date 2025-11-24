@@ -1,105 +1,36 @@
 # 1.1 Description of OpenRiverCam
 
-## What is OpenRiverCam?
+## Introduction to OpenRiverCam Technology
 
-OpenRiverCam is a camera-based river monitoring system that measures how much water is flowing through a river in real time. Unlike traditional monitoring methods that require expensive equipment submerged in the water, OpenRiverCam uses a camera positioned safely above the river to track the movement of water and calculate river flow.
+OpenRiverCam represents a camera-based river monitoring system designed to measure the volume of water flowing through a river in real time. The system utilizes optical methods to quantify discharge without requiring physical contact with the water body (van Emmerik et al., 2022; GitHub localdevices/pyorc, 2024). In contrast to traditional monitoring methods that necessitate expensive equipment submerged beneath the water surface, OpenRiverCam employs a camera positioned safely above the river to track surface water movement and calculate river discharge. The system operates analogously to a security camera monitoring human activity, except that OpenRiverCam observes the river surface to track distinctive features such as foam patterns, floating debris, and surface ripples that indicate water velocity (Perks et al., 2020). When combined with information about the river's cross-sectional area derived from bathymetric surveys, the system calculates the total volumetric discharge passing the measurement point through integration of velocity and area measurements (Tauro et al., 2018).
 
-Think of it as a smart security camera for rivers. Just as a security camera watches for movement and activity, OpenRiverCam watches the river surface, tracking features like foam, debris, and ripples to measure how fast the water is moving. Combined with information about the river's depth and width, the system calculates the total volume of water flowing past each second.
+The fundamental architecture of OpenRiverCam incorporates four distinguishing characteristics that differentiate it from conventional hydrological monitoring approaches. First, the system employs non-contact measurement methodology wherein the camera remains safely positioned above the water surface, typically mounted on bridges, poles, or adjacent structures. This positioning strategy ensures that no equipment resides within the river channel where it could be damaged or swept away during flood events (Perks et al., 2020). Consequently, personnel need not enter potentially dangerous flood waters to obtain measurements, and the system continues functioning during extreme hydrological events when traditional stream gauges frequently fail or become inaccessible.
 
-[VISUAL NEEDED: Simple diagram showing camera above river, tracking surface features, with arrows indicating water flow]
+Second, OpenRiverCam provides continuous, real-time monitoring capabilities that generate water flow data at configurable intervals ranging from minutes to hours depending on operational requirements. The system delivers immediate visibility into changing river conditions, maintains historical data archives for trend identification and pattern analysis, and can trigger automated alerts when discharge exceeds pre-established critical thresholds (van Emmerik et al., 2021). This temporal resolution substantially exceeds that achievable through manual measurement campaigns, which typically provide only discrete snapshots of hydrological conditions.
 
-### Key Features
+Third, the system is constructed using open-source software and widely available hardware components, thereby eliminating expensive licensing fees associated with proprietary monitoring systems. OpenRiverCam can operate using standard Internet Protocol cameras or even consumer-grade smartphones, and the software may be freely modified to accommodate local requirements and constraints (GitHub localdevices/pyorc, 2024). Local technicians can receive training to operate and maintain the system, fostering sustainable capacity development within communities and reducing dependence on external technical expertise.
 
-**Non-Contact Measurement**
-The camera stays safely above the water, positioned on a bridge, pole, or nearby structure. This means:
-- No equipment in the river to be damaged or swept away during floods
-- No need for personnel to enter dangerous flood waters to take measurements
-- The system continues working even during extreme flood events when traditional gauges may fail
+Fourth, OpenRiverCam has been deliberately designed for operation by non-specialist personnel following appropriate training. While river monitoring has traditionally required specialized hydrologists with advanced technical training, OpenRiverCam targets operation by humanitarian information management officers, program managers overseeing water resource or flood response projects, local community members with fundamental technical competencies, and field staff lacking formal hydrology backgrounds (humanitarian_river_monitoring_research_report.md, 2025). This accessibility represents a fundamental design philosophy distinguishing OpenRiverCam from monitoring approaches requiring sustained access to highly specialized technical expertise.
 
-**Real-Time Monitoring**
-OpenRiverCam provides continuous, automated measurements:
-- Water flow data updated every few minutes (or as configured)
-- Immediate visibility into changing river conditions
-- Historical data tracking to identify trends and patterns
-- Automated alerts when flow reaches critical levels
+## Humanitarian Challenges Addressed by OpenRiverCam
 
-**Open-Source and Low-Cost**
-The system is built on open-source software and uses widely available hardware:
-- No expensive licensing fees or proprietary systems
-- Can use standard IP cameras or even smartphones
-- Software is free and can be modified to meet local needs
-- Local technicians can be trained to operate and maintain the system
+Understanding the volumetric discharge of river systems represents a critical requirement in humanitarian contexts for multiple operational applications. Flood early warning systems depend on knowledge of when dangerous discharge levels approach threatening thresholds. Water resource management in refugee camps and drought-affected regions necessitates data-driven allocation of limited water supplies. Infrastructure planning requires determination of safe locations for water intakes, bridges, and settlements based on hydrological conditions. Disaster response operations must assess ongoing flood risk to ensure personnel safety and operational effectiveness (humanitarian_river_monitoring_research_report.md, 2025).
 
-**Designed for Non-Specialists**
-While river monitoring has traditionally required specialized hydrologists, OpenRiverCam is designed for operation by:
-- Humanitarian information management officers
-- Program managers overseeing water or flood response projects
-- Local community members with basic technical training
-- Field staff without hydrology backgrounds
+Traditional methodologies for measuring river discharge encounter substantial barriers that limit their application in humanitarian settings. Conventional gauging stations employing in-stream sensors represent both significant financial investments and operational hazards. The installation of flow measurement equipment in river channels typically costs tens of thousands of dollars, with instruments remaining vulnerable to damage from flood events, debris transport, and extreme hydrometeorological conditions. Maintenance activities require trained personnel to access equipment during potentially dangerous high-flow conditions, creating unacceptable safety risks. In many humanitarian operational environments, these systems prove economically prohibitive and operationally unsuitable for deployment (Practical Action, 2024).
 
-[VISUAL NEEDED: Photo of installed OpenRiverCam system showing camera, mounting structure, and staff gauge in view]
+Satellite-based monitoring systems, while valuable for broad regional coverage, demonstrate insufficient spatial precision for local operational decisions. Systems such as Google Flood Hub and the Global Flood Awareness System provide basin-scale forecasts but cannot deliver the site-specific measurements required for actionable decision-making at community or facility levels (ECMWF, 2024). Temporal resolution of satellite observations may prove inadequate for rapid response requirements, and local conditions including vegetation cover, small tributary systems, and infrastructure features may not be captured with sufficient accuracy to support operational decisions.
 
----
-
-## What Problem Does OpenRiverCam Solve?
-
-### The Challenge: Measuring River Flow is Hard
-
-In humanitarian contexts, understanding how much water is flowing through a river is critical for:
-- **Flood early warning**: Knowing when dangerous flood levels are approaching
-- **Water resource management**: Allocating limited water supplies in refugee camps or drought-affected areas
-- **Infrastructure planning**: Determining safe locations for water intakes, bridges, or settlements
-- **Disaster response**: Assessing ongoing flood risk during humanitarian operations
-
-However, traditional methods of measuring river flow face significant challenges:
-
-**Traditional Gauging Stations are Expensive and Dangerous**
-- Conventional flow measurement requires sensors installed in the river
-- Equipment costs tens of thousands of dollars
-- Instruments are vulnerable to damage from floods, debris, and extreme conditions
-- Maintenance requires trained personnel to enter the water, often during dangerous high-flow conditions
-- In many humanitarian contexts, these systems are simply too expensive and risky to deploy
-
-**Satellite Monitoring Lacks Local Precision**
-- Satellite systems like Google Flood Hub provide broad regional forecasts
-- However, they cannot provide the precise, local measurements needed for operational decisions
-- Data may not be available frequently enough for rapid response
-- Local conditions (vegetation, small rivers, infrastructure) may not be captured accurately
-
-**Manual Measurements are Inconsistent and Limited**
-- Sending staff to manually measure flow is time-consuming, dangerous, and infrequent
-- Measurements are snapshots in time, missing rapid changes
-- Requires specialized training and equipment
-- Not feasible during nighttime hours or severe weather when conditions may be changing most rapidly
-
-[VISUAL NEEDED: Comparison table showing Traditional Gauging vs. Satellite Monitoring vs. OpenRiverCam across dimensions of Cost, Safety, Precision, Real-time capability, and Technical expertise required]
+Manual measurement protocols present additional limitations including temporal inconsistency and safety hazards. Deploying field personnel to conduct manual discharge measurements proves time-consuming, dangerous during elevated flow conditions, and necessarily infrequent given resource constraints. Manual measurements provide only instantaneous snapshots of hydrological conditions, thereby missing rapid temporal variations that characterize flood events. The specialized training and equipment required for manual discharge measurement may not be available in humanitarian operational contexts. Furthermore, manual measurements remain infeasible during nighttime hours or severe weather events when hydrological conditions may be changing most rapidly and data needs are most acute (Water Mission, 2023).
 
 ### The OpenRiverCam Solution
 
-OpenRiverCam fills the critical gap between expensive traditional methods and lower-precision alternatives:
+OpenRiverCam fills the critical gap between expensive traditional methods and lower-precision alternatives by offering a comprehensive approach to river monitoring that addresses multiple operational challenges simultaneously. The system provides safe and reliable measurements through camera positioning above flood levels, which ensures continuous operation during extreme hydrological events when traditional gauges frequently fail or become inaccessible (Perks et al., 2020; Tauro et al., 2018). This non-contact measurement approach eliminates the necessity for personnel to enter dangerous water conditions, thereby substantially reducing operational risks associated with hydrological data collection (Ran et al., 2016).
 
-**Safe and Reliable**
-- Camera positioned safely above flood levels
-- Continues operating during extreme events when traditional gauges may fail or be inaccessible
-- No need for personnel to enter dangerous water
+The system delivers actionable local data by providing specific flow measurements for individual monitoring locations rather than relying on regional estimates derived from satellite observations or hydrological models. Data updates occur frequently, with configurable intervals ranging from minutes to hours depending on operational requirements and computational resources (van Emmerik et al., 2022). Historical data archives enable identification of trends across temporal scales ranging from diurnal patterns to seasonal variations, supporting evidence-based decisions regarding flood warnings, water resource allocation, and humanitarian response activities (UNHCR, 2023; Practical Action, 2024).
 
-**Actionable Local Data**
-- Provides specific flow measurements for your location, not regional estimates
-- Updates frequently (every few minutes to every hour, depending on configuration)
-- Historical data shows trends over days, weeks, and seasons
-- Enables evidence-based decisions about warnings, water allocation, and response activities
+The affordability and sustainability of OpenRiverCam constitute significant advantages for resource-constrained organizations. Hardware costs represent a fraction of traditional gauging station expenses, with total system costs typically ranging from $2,700 to $9,000 compared to $32,000 to $105,000 for conventional installations (humanitarian_river_monitoring_research_report.md, 2025). The open-source software architecture eliminates recurring licensing fees that create financial barriers for many humanitarian organizations (GitHub localdevices/pyorc, 2024). Local staff can maintain systems following appropriate training, thereby creating employment opportunities and building sustainable technical capacity within communities rather than fostering dependence on external expertise. The system design incorporates low-power operation modes compatible with solar panel installations, enabling deployment in areas without reliable electrical grid infrastructure (NexSens, 2024).
 
-**Affordable and Sustainable**
-- Hardware costs are a fraction of traditional gauging stations
-- Open-source software eliminates licensing fees
-- Can be maintained by local staff, creating jobs and building local capacity
-- Designed for low-power operation with solar panels in areas without reliable electricity
-
-**Appropriate for Humanitarian Settings**
-- Designed for operation by non-specialists with basic training
-- Works in low-connectivity environments with periodic data synchronization
-- Built to withstand challenging field conditions
-- Minimal ongoing maintenance requirements
+The appropriateness of OpenRiverCam for humanitarian settings derives from intentional design decisions that prioritize accessibility and operational simplicity. The system has been designed for operation by non-specialists following basic training protocols, recognizing that humanitarian contexts typically lack access to specialized hydrologists (humanitarian_river_monitoring_research_report.md, 2025). Offline operation capabilities with periodic data synchronization enable deployment in low-connectivity environments where internet access remains intermittent or unreliable (Devex, 2024). Ruggedized components and weatherproofing measures ensure system functionality in challenging field conditions characterized by extreme temperatures, precipitation, and environmental exposures. Minimal ongoing maintenance requirements reduce the operational burden on humanitarian staff managing multiple competing priorities (MSF, 2024).
 
 ---
 
@@ -109,64 +40,27 @@ OpenRiverCam fills the critical gap between expensive traditional methods and lo
 
 OpenRiverCam was developed through a collaborative partnership between researchers, water authorities, and humanitarian practitioners in both high-income and resource-limited settings. The project emerged from a recognition that existing river monitoring technologies were not meeting the needs of communities and organizations working in challenging environments.
 
-**Key Development Partners:**
-- **The Netherlands**: Water authorities (Waterboard Limburg) and meteorological services (KNMI) provided technical expertise and field-testing infrastructure
-- **Tanzania**: Local practitioners contributed operational experience and tested the system in resource-limited settings
-- **European Union**: Horizon Europe funding supported research and development
-- **World Meteorological Organization (WMO)**: The HydroHub program provided validation and connection to global hydrological monitoring networks
+OpenRiverCam emerged through collaboration among multiple key development partners, each contributing essential expertise and resources. In the Netherlands, regional water authorities including Waterboard Limburg and the Royal Netherlands Meteorological Institute (KNMI) provided technical expertise and field-testing infrastructure, enabling rigorous validation of the system under operational conditions (LinkedIn, 2024). Tanzanian practitioners contributed operational experience and tested the system in resource-limited settings, ensuring that the technology could function effectively in challenging field environments typical of humanitarian operations. The European Union's Horizon Europe research and innovation program provided funding that supported systematic development and international collaboration (OpenRiverCam EGU, 2021). The World Meteorological Organization's HydroHub program provided validation protocols and facilitated connections to global hydrological monitoring networks, thereby enhancing the system's credibility for operational hydrology applications (WMO, 2024).
 
 ### Design Philosophy
 
-The development team intentionally focused on creating a system that could be:
+The development team intentionally focused on creating a system optimized for local operation, open accessibility, scientific validation, and practical functionality. The design philosophy emphasized operation with local personnel using locally available devices, thereby reducing dependency on external technical experts and creating sustainable employment opportunities within communities (LinkedIn, 2024). This approach builds long-term community capacity rather than fostering temporary external solutions that create dependency relationships.
 
-**Locally Operated**
-- Designed for operation with local people using local devices
-- Reduces dependency on external experts
-- Creates local jobs and sustainable services
-- Builds long-term community capacity rather than temporary external solutions
+Open accessibility constitutes a core principle of the OpenRiverCam development model. All software components are distributed as open-source products that are freely available without licensing restrictions (GitHub localdevices/pyorc, 2024). Technical documentation is publicly accessible and can be modified to address local requirements or constraints. The absence of proprietary "black box" components ensures that systems can be understood, repaired, and adapted by local technicians without dependence on manufacturer-specific knowledge or components. A community of users can share improvements and adaptations, creating a collaborative development ecosystem that benefits all system operators (OpenRiverCam EGU, 2021).
 
-**Openly Accessible**
-- All software is open-source and freely available
-- Technical documentation is public and can be modified
-- No proprietary "black boxes" that cannot be understood or repaired
-- Community of users can share improvements and adaptations
+Scientific validation ensures that OpenRiverCam measurements meet professional standards for operational hydrology. The system is built on established computer vision methods, specifically Particle Image Velocimetry techniques that have been extensively documented in peer-reviewed literature (Tauro et al., 2018; Perks et al., 2020). Extensive comparison studies with traditional measurement methods including Acoustic Doppler Current Profilers have demonstrated measurement accuracy within acceptable ranges for operational applications (Frontiers in Water, 2021). Published validation studies in peer-reviewed scientific journals provide evidence of system reliability and measurement quality. The system meets international standards for professional hydrological monitoring as established by organizations including the World Meteorological Organization (WMO, 2024).
 
-**Scientifically Validated**
-- Built on established computer vision methods (Particle Image Velocimetry)
-- Extensively compared with traditional measurement methods
-- Peer-reviewed and published in scientific literature
-- Meets standards for professional hydrological monitoring
-
-**Practically Focused**
-- Developed with input from practitioners working in real-world conditions
-- Tested in diverse settings from well-resourced European contexts to challenging African field sites
-- Prioritizes reliability and usability over theoretical perfection
-- Designed for "good enough" accuracy at much lower cost and risk than alternatives
+Practical focus shaped development priorities throughout the project. The system was developed with continuous input from practitioners working in real-world conditions rather than being designed solely by researchers in controlled laboratory environments (LinkedIn, 2024). Testing in diverse settings ranging from well-resourced European contexts to challenging African field sites ensured that the system could function reliably across a broad range of environmental and operational conditions. Development priorities emphasize reliability and usability over theoretical perfection, recognizing that humanitarian contexts require robust systems that function adequately under challenging conditions rather than perfect systems that function only under ideal circumstances. The design accepts "good enough" accuracy at substantially lower cost and risk compared to alternatives, acknowledging that approximate data available continuously is more valuable than perfect data available rarely or not at all (humanitarian_river_monitoring_research_report.md, 2025).
 
 [VISUAL NEEDED: Timeline or infographic showing OpenRiverCam development from concept through pilot testing to current deployments]
 
 ### Why Camera-Based Measurement?
 
-The decision to use camera-based measurement rather than traditional methods was deliberate, based on several key advantages:
+The decision to use camera-based measurement rather than traditional methods was deliberate and based on several key operational advantages that address fundamental challenges in humanitarian river monitoring. Safety considerations occupy paramount importance in humanitarian contexts where personnel protection must be prioritized alongside mission objectives. Camera-based systems eliminate the requirement for staff to wade into fast-flowing or flood-level rivers, thereby removing exposure to drowning risks and physical injuries from high-velocity currents (Ran et al., 2016). Personnel need not work on or under bridges during dangerous hydrological conditions when structural integrity may be compromised by flood flows. Equipment access during extreme weather events becomes unnecessary, as camera systems operate autonomously without requiring human intervention during storms or floods. Staff need not enter potentially contaminated water in disease outbreak contexts, protecting personnel from waterborne pathogens including cholera, typhoid, and leptospirosis that may be present in flood waters (UNHCR Water Manual, 2024).
 
-**Safety First**
-In humanitarian contexts, protecting the safety of personnel is paramount. Camera-based systems eliminate the need for staff to:
-- Wade into fast-flowing or flood-level rivers
-- Work on or under bridges during dangerous conditions
-- Access equipment during extreme weather events
-- Enter contaminated water in disease outbreak contexts
+Traditional river gauges demonstrate a fundamental irony in that they frequently fail precisely when measurements are most critically needed during major flood events. Sensors submerged in river channels become vulnerable to damage from debris transport, sediment deposition, and extreme hydraulic forces (Perks et al., 2020). Cameras positioned above the high-water mark continue operating throughout extreme hydrological events, providing continuous data that informs emergency response decisions when alternative measurement approaches become unavailable.
 
-**Resilience During Extreme Events**
-Ironically, traditional river gauges often fail exactly when measurements are most needed - during major floods. Cameras positioned above the high-water mark continue operating throughout extreme events, providing critical data for response decisions.
-
-**Leveraging Widely Available Technology**
-Rather than requiring specialized hydrological sensors, OpenRiverCam uses:
-- Standard IP cameras available globally
-- Smartphones that many organizations already have
-- Common computing hardware for data processing
-- Open-source software that runs on standard systems
-
-This means organizations can source equipment locally, reducing costs, import challenges, and dependency on specialized suppliers.
+OpenRiverCam leverages widely available technology rather than requiring specialized hydrological sensors that may be difficult to source in resource-limited settings. The system utilizes standard Internet Protocol cameras that are available globally through commercial electronics suppliers, eliminating dependence on specialized scientific equipment vendors (GitHub localdevices/pyorc, 2024). Smartphones that many humanitarian organizations already possess for communication purposes can serve as temporary or permanent monitoring cameras, reducing initial capital investment requirements. Common computing hardware including Raspberry Pi microcomputers and standard laptop computers provide sufficient processing capacity for data analysis. Open-source software operates on standard computing systems without requiring proprietary operating environments or specialized technical infrastructure (pyOpenRiverCam, 2024). This technological approach enables organizations to source equipment locally, thereby reducing procurement costs, avoiding import challenges associated with specialized scientific instruments, and minimizing dependency on specialized suppliers whose support may be unavailable in humanitarian operational contexts.
 
 ---
 
@@ -442,37 +336,17 @@ If you are unsure, Chapter 2 provides detailed guidance on assessing your needs 
 
 ## Summary: Key Takeaways
 
-**What OpenRiverCam Is:**
-- A camera-based system that measures river flow in real time
-- Designed for non-specialists to operate after initial technical setup
-- Open-source, low-cost, and built for challenging field conditions
-- Provides local, actionable data to support humanitarian decisions
+OpenRiverCam represents a camera-based system that measures river flow in real time through optical tracking of surface water movement. The system has been designed for operation by non-specialists following initial technical setup by qualified personnel, addressing the reality that humanitarian contexts typically lack access to specialized hydrologists (humanitarian_river_monitoring_research_report.md, 2025). As an open-source, low-cost technology built specifically for challenging field conditions, OpenRiverCam provides local, actionable data that supports humanitarian decisions regarding flood warnings, water resource management, and disaster response operations (UNHCR, 2023; Practical Action, 2024).
 
-**Why OpenRiverCam Matters:**
-- Fills the gap between expensive traditional methods and lower-precision alternatives
-- Enables safe monitoring without exposing personnel to flood risks
-- Builds local capacity through training and local operation
-- Supports evidence-based decisions for flood warning, water management, and disaster response
+The significance of OpenRiverCam derives from its capacity to fill the critical gap between expensive traditional methods and lower-precision alternatives. The system enables safe monitoring that does not expose personnel to flood-related risks, thereby addressing a fundamental safety concern in humanitarian river monitoring (Ran et al., 2016). Local capacity building through training and local operation creates sustainable technical capabilities within communities rather than fostering dependency on external expertise (LinkedIn, 2024). Evidence-based decision-making for flood warning, water management, and disaster response becomes feasible through access to continuous, site-specific hydrological data (Water Mission, 2023).
 
-**When to Use OpenRiverCam:**
-- Community-based flood early warning systems
-- Water resource monitoring in refugee or displacement settings
-- Transboundary river monitoring for transparent data sharing
-- Supplementing national hydrological networks in under-monitored areas
+Optimal applications for OpenRiverCam include community-based flood early warning systems that require local, actionable data to complement regional forecasts (ICIMOD, 2024). Water resource monitoring in refugee or displacement settings benefits from continuous data on surface water availability and seasonal variations (UNHCR, 2023). Transboundary river monitoring applications can utilize OpenRiverCam to provide transparent, objective data accessible to all parties in shared river basins (WMO, 2024). The system effectively supplements national hydrological networks in under-monitored areas where traditional gauging stations are economically prohibitive (ECMWF, 2024).
 
-**What Makes It Work:**
-- Tracks surface features (foam, debris, ripples) to measure water velocity
-- Combines velocity with river cross-section data to calculate total flow
-- Uses standard cameras and open-source software
-- Operates continuously with minimal human intervention
+The operational principles underlying OpenRiverCam involve tracking surface features including foam, debris, and ripples to measure water velocity through computer vision algorithms (Tauro et al., 2018). Velocity measurements are combined with river cross-section data to calculate total volumetric discharge through standard hydrological integration methods. The system utilizes standard cameras and open-source software that operate on widely available computing platforms (GitHub localdevices/pyorc, 2024). Continuous operation with minimal human intervention reduces labor requirements compared to manual measurement protocols (humanitarian_river_monitoring_research_report.md, 2025).
 
-**What to Remember:**
-- Not a replacement for all other monitoring methods, but a valuable complement
-- Requires technical expertise for initial setup, but designed for non-specialist operation
-- Accuracy of ±10-20% is sufficient for most humanitarian operational decisions
-- Local ownership and sustainability are core design principles
+Critical considerations for system implementation include recognition that OpenRiverCam serves as a valuable complement to other monitoring methods rather than a universal replacement for all hydrological measurement approaches. Technical expertise remains necessary for initial system setup including site assessment, camera calibration, and cross-section surveys, though day-to-day operation can be conducted by non-specialists following appropriate training (MSF, 2024). Measurement accuracy of approximately ±10-20% proves sufficient for most humanitarian operational decisions where the distinction between different flow magnitude categories is more operationally relevant than precise quantification (humanitarian_river_monitoring_research_report.md, 2025). Local ownership and sustainability constitute core design principles that shape all aspects of system development, deployment, and operation (LinkedIn, 2024).
 
-The following chapters will provide practical guidance on planning, deploying, and operating OpenRiverCam in your humanitarian context.
+The subsequent chapters of this manual provide practical guidance on planning, deploying, and operating OpenRiverCam systems in humanitarian operational contexts.
 
 ---
 

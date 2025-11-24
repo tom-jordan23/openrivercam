@@ -8,27 +8,7 @@ OpenRiverCam systems operate 24/7, requiring careful power planning to ensure un
 
 ### Component Power Draw
 
-A typical OpenRiverCam system consists of several components, each consuming power:
-
-**Camera system**:
-- IP camera: 4-8 watts continuous
-- Peak during initialization: 10-12 watts
-- Typical consumption: 6 watts average
-
-**Computing unit** (Raspberry Pi or similar):
-- Processing mode: 5-8 watts
-- Idle mode: 2-3 watts
-- Average with duty cycling: 4-5 watts
-
-**Communication module**:
-- 4G cellular modem: 2-5 watts depending on signal strength and transmission
-- WiFi module: 1-2 watts
-- Satellite modem (if used): 5-10 watts
-
-**Auxiliary components**:
-- Network switch (if needed): 2-4 watts
-- Sensors (stage, temperature): 0.5-1 watt total
-- Heating element (cold climates): 10-20 watts when active
+A typical OpenRiverCam system consists of several components, each with distinct power consumption characteristics that must be accounted for in power system design. The camera system, typically comprising an IP camera, requires 4-8 watts for continuous operation, with peak consumption of 10-12 watts during initialization, averaging approximately 6 watts under normal conditions. The computing unit (Raspberry Pi or similar single-board computer) consumes 5-8 watts during processing mode and 2-3 watts in idle mode, with duty cycling reducing average consumption to approximately 4-5 watts. Communication modules vary substantially by technology, with 4G cellular modems consuming 2-5 watts depending on signal strength and transmission requirements, WiFi modules requiring 1-2 watts, and satellite modems (where deployed) consuming 5-10 watts. Auxiliary components including network switches (2-4 watts when needed), sensors for stage and temperature monitoring (0.5-1 watt total), and heating elements for cold climate deployments (10-20 watts when active) contribute additional loads that must be considered in power budget calculations.
 
 ### Total System Power Budget
 

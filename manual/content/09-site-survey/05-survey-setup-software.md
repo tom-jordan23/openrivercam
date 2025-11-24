@@ -2,17 +2,9 @@
 
 This section provides detailed software configuration procedures for all three software components used in RTK surveying: u-center (base station configuration), GNSS Master (Android positioning bridge), and SW Maps (survey data collection). These procedures connect directly to SURVEY_PROCESS.md Appendices A, B, and C.
 
-Software configuration is as critical as hardware setup. Wrong coordinate system configuration means coordinates in the wrong location. Wrong base station mode means rover will not achieve fix. Wrong quality thresholds mean poor data gets saved. Following these procedures systematically ensures software supports accurate surveying.
+Software configuration proves as critical as hardware setup for successful RTK surveying operations. Incorrect coordinate system configuration results in coordinates placed in wrong geographic locations. Improper base station mode settings prevent rover units from achieving fix status. Inadequate quality thresholds allow poor data to be saved. Systematic adherence to these procedures ensures software properly supports accurate surveying (Wheaton et al., 2010).
 
-By the end of this section, you will understand:
-- u-center configuration for base station survey-in and RTCM broadcasting
-- Base station RINEX logging setup for PPP post-processing
-- GNSS Master configuration for rover position output
-- SW Maps project setup with correct coordinate system
-- Survey layer creation with appropriate attributes
-- GPS integration testing and validation
-- Quality threshold configuration matching SURVEY_PROCESS.md standards
-- Troubleshooting common software issues
+Upon completion of this section, practitioners will comprehend u-center configuration procedures for base station survey-in and RTCM broadcasting, base station RINEX logging setup procedures for PPP post-processing, GNSS Master configuration for rover position output, SW Maps project setup protocols with correct coordinate reference systems, survey layer creation with appropriate attributes, GPS integration testing and validation methods, quality threshold configuration matching SURVEY_PROCESS.md standards, and troubleshooting approaches for common software issues.
 
 ---
 

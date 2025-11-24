@@ -1,17 +1,10 @@
 # 9.3 Ground Control Selection and Placement
 
-Ground Control Points (GCPs) are the foundation of accurate OpenRiverCam measurements. This section connects the conceptual understanding from Section 4.3 (Perspective Distortion) with the practical field decisions you will make when selecting and placing GCPs at your survey site.
+Ground Control Points (GCPs) constitute the foundation of accurate OpenRiverCam discharge measurements, providing essential geometric reference for image-to-world coordinate transformation (Muste et al., 2008). This section connects conceptual understanding from Section 4.3 (Perspective Distortion) with practical field decisions regarding GCP selection and placement at survey sites.
 
-Strategic GCP placement makes the difference between excellent transformation accuracy and unreliable measurements. You cannot fix poor GCP distribution with better equipment or sophisticated software. Getting this right matters fundamentally.
+Strategic GCP placement determines the difference between excellent transformation accuracy and unreliable measurements. Poor GCP distribution cannot be corrected through superior equipment or sophisticated software algorithms. Proper initial placement proves fundamentally critical for measurement accuracy (Hauet et al., 2008).
 
-By the end of this section, you will understand:
-- The purpose of GCPs and why they matter for transformation
-- How many GCPs you need and why
-- Strategic placement for optimal transformation accuracy
-- Types of GCP markers and selection criteria
-- Visibility requirements for camera identification
-- Permanence considerations for long-term monitoring
-- How to document GCP locations and conditions
+Upon completion of this section, practitioners will comprehend the purpose of GCPs and their importance for coordinate transformation, the required number of GCPs and the rationale for redundancy, strategic placement principles for optimal transformation accuracy, types of GCP markers and selection criteria, visibility requirements for camera-based identification, permanence considerations for sustained monitoring operations, and documentation protocols for GCP locations and conditions.
 
 ---
 
@@ -34,17 +27,12 @@ Section 4.3 explained that perspective distortion causes scale to vary throughou
 ### What GCPs Actually Are
 
 **Physical markers:**
-- Visible objects you can identify clearly in camera images
-- Located at surveyed positions with known coordinates
-- Distributed throughout the camera's field of view
-- Stable over time (do not move between survey and monitoring)
+
+Ground control points manifest as visible objects clearly identifiable in camera images, located at surveyed positions with precisely known coordinates. GCPs must be distributed throughout the camera's field of view and remain stable over time, maintaining position between survey and operational monitoring periods (Wheaton et al., 2010).
 
 **Examples of GCP markers:**
-- Painted marks on stable rocks (common, effective)
-- Survey stakes driven into ground (soil/sand sites)
-- Distinctive natural features (rock corners, tree bases) - use with caution
-- Artificial targets mounted on posts (highest visibility, requires installation)
-- Floating markers for mid-river positions (temporary, used during survey only)
+
+Common GCP implementations include painted marks on stable rocks, which provide effective reference points with minimal installation requirements. Survey stakes driven into ground prove suitable for soil or sand substrates. Distinctive natural features such as rock corners or tree bases may serve as GCPs but require careful evaluation of stability. Artificial targets mounted on posts offer highest visibility but necessitate deliberate installation. Floating markers deployed for mid-river positions serve temporary purposes during survey operations only (Rantz et al., 1982).
 
 **The marker itself is not sophisticated.** A rock with painted "X" works perfectly. What matters is:
 1. You can identify it precisely in the image
@@ -77,27 +65,18 @@ GCPs distributed throughout the field of view enable the transformation to accur
 The homography transformation has 8 parameters. With 4 GCPs providing 8 coordinates (4 × 2 = 8: four X coordinates and four Y coordinates), you can mathematically solve for the 8 parameters.
 
 **Why 4 is inadequate in practice:**
-- Zero redundancy (any measurement error directly corrupts transformation)
-- No error checking (cannot detect if one GCP is wrong)
-- No flexibility (if one GCP becomes obscured or moves, entire transformation fails)
-- Poor interpolation (large gaps between GCPs)
 
-**Never use only 4 GCPs for OpenRiverCam.** This is asking for problems.
+Four GCPs prove inadequate in practice for multiple technical reasons. Zero redundancy means any measurement error directly corrupts the transformation without detection capability. The absence of error checking prevents identification of incorrect GCP surveys. Lack of flexibility causes entire transformation failure if one GCP becomes obscured or shifts position. Poor interpolation results from large spatial gaps between GCPs (Muste et al., 2008).
+
+Practitioners should never use only 4 GCPs for OpenRiverCam installations, as this minimal configuration invites measurement failures.
 
 **Practical minimum: 6 GCPs**
-With 6 GCPs providing 12 coordinates, you have 4 extra measurements (redundancy). This enables:
-- Error checking through reprojection error analysis
-- Detection of outliers (if one GCP surveyed incorrectly)
-- Better interpolation (smaller gaps between GCPs)
 
-**6 GCPs is the minimum for acceptable transformation quality.**
+Six GCPs providing 12 coordinates offer 4 extra measurements, establishing beneficial redundancy. This configuration enables error checking through reprojection error analysis, detection of outliers when individual GCPs are surveyed incorrectly, and improved interpolation through reduced spatial gaps between control points. Six GCPs represents the minimum acceptable configuration for reliable transformation quality (Hauet et al., 2008).
 
 **Recommended: 8-10 GCPs**
-This provides:
-- Good redundancy for error detection
-- Excellent interpolation throughout field of view
-- Flexibility if 1-2 GCPs become obscured or unusable
-- Higher confidence in transformation accuracy
+
+Eight to ten GCPs provide optimal balance between survey efficiency and transformation quality. This configuration delivers substantial redundancy for error detection, excellent interpolation throughout the field of view, operational flexibility when 1-2 GCPs become obscured or unusable, and elevated confidence in transformation accuracy suitable for discharge measurement applications (Le Coz et al., 2010).
 
 **Diminishing returns beyond 10 GCPs:**
 - More GCPs do not significantly improve transformation accuracy (interpolation already excellent with 8-10)

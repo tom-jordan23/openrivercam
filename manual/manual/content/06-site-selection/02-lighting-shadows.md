@@ -2,12 +2,7 @@
 
 A camera-based measurement system lives or dies by lighting conditions. Even with excellent tracers and perfect flow characteristics, poor lighting can make the water surface invisible to the camera. This section provides practical guidance for evaluating lighting conditions at potential sites and understanding how lighting affects measurement quality throughout the day and across seasons.
 
-By the end of this section, you will be able to:
-- Recognize optimal and problematic lighting conditions
-- Assess how sun angle affects measurement quality
-- Evaluate shadow impacts on the camera field of view
-- Predict seasonal lighting variations
-- Make informed site selection decisions based on lighting requirements
+By the end of this section, practitioners will be able to recognize optimal and problematic lighting conditions, assess how sun angle affects measurement quality, evaluate shadow impacts on the camera field of view, predict seasonal lighting variations, and make informed site selection decisions based on lighting requirements.
 
 ---
 
@@ -15,13 +10,9 @@ By the end of this section, you will be able to:
 
 ### The Camera's Challenge
 
-Human eyes are remarkably adaptable. You can see clearly in bright sunlight, at dusk, and even in dim indoor lighting. Your brain automatically adjusts to varying light levels and compensates for glare.
+Human eyes are remarkably adaptable, allowing clear vision in bright sunlight, at dusk, and even in dim indoor lighting as the brain automatically adjusts to varying light levels and compensates for glare (Shapley & Enroth-Cugell, 1984).
 
-Cameras are less forgiving. While modern cameras have improved dynamic range and light sensitivity, they still struggle with:
-- **Extreme contrast:** Very bright and very dark areas in the same image
-- **Direct glare:** Sunlight reflecting directly into the lens
-- **Insufficient light:** Low-light conditions that create grainy, low-contrast images
-- **Rapidly changing conditions:** Clouds passing causing sudden brightness changes
+Cameras prove less forgiving despite improvements in dynamic range and light sensitivity. They struggle with extreme contrast between very bright and very dark areas in the same image, direct glare from sunlight reflecting into the lens, insufficient light that creates grainy low-contrast images, and rapidly changing conditions as clouds pass and cause sudden brightness changes.
 
 For OpenRiverCam to track surface features, the camera must produce clear images showing distinct tracers against the water surface. Poor lighting undermines this in multiple ways.
 
@@ -30,21 +21,16 @@ For OpenRiverCam to track surface features, the camera must produce clear images
 ### How Lighting Affects Tracer Visibility
 
 **Good lighting conditions:**
-- Tracers (foam, debris, ripples) appear as distinct features
-- Sufficient contrast between tracers and water surface
-- Even illumination across the field of view
-- Camera captures clear, high-quality images
-- Software can reliably track features
+
+Under good lighting conditions, tracers (foam, debris, and ripples) appear as distinct features with sufficient contrast between tracers and the water surface. Even illumination across the field of view enables the camera to capture clear, high-quality images that software can reliably track.
 
 **Poor lighting conditions:**
-- Glare washes out surface details
-- Shadows obscure parts of the field of view
-- Extreme contrast between bright and shadowed areas
-- Camera adjusts exposure for bright areas, making shadowed areas too dark (or vice versa)
-- Features that are physically present become invisible to the camera
+
+Poor lighting conditions cause glare to wash out surface details, shadows to obscure parts of the field of view, and extreme contrast to develop between bright and shadowed areas. The camera adjusts exposure for either bright or dark areas, making the other zone unusable. Consequently, features that are physically present become invisible to the camera.
 
 **Critical insight:**
-You can have excellent tracers on the water surface, but if lighting makes them invisible to the camera, they might as well not exist. Lighting assessment is equally important as tracer assessment.
+
+Excellent tracers on the water surface become effectively non-existent if lighting makes them invisible to the camera. Lighting assessment holds equal importance to tracer assessment in site selection.
 
 ---
 
@@ -56,12 +42,7 @@ You can have excellent tracers on the water surface, but if lighting makes them 
 
 **Best case scenario: Overcast days**
 
-Cloudy skies create diffuse lighting - sunlight scattered by clouds illuminates the scene evenly from all directions. This produces:
-- No harsh shadows
-- Minimal glare on water surface
-- Even exposure across the entire field of view
-- Excellent contrast between tracers and water surface
-- Consistent conditions throughout the day
+Cloudy skies create diffuse lighting as sunlight scattered by clouds illuminates the scene evenly from all directions. This produces no harsh shadows, minimal glare on the water surface, even exposure across the entire field of view, excellent contrast between tracers and water surface, and consistent conditions throughout the day.
 
 **Why this works:**
 Water surface texture, foam, and debris all become more visible when illumination is even. There are no bright spots (sun glare) or dark spots (shadows) to confuse the camera's exposure settings.
@@ -78,18 +59,14 @@ Deployment occurred during Indonesia's late dry season, which typically has morn
 
 **Second-best scenario: Early morning or late afternoon**
 
-When the sun is low on the horizon (within 2 hours of sunrise or sunset), several beneficial effects occur:
-- Sunlight strikes the water at a low angle, reducing direct reflection into a camera positioned above the river
-- Longer shadows can actually enhance feature visibility by creating depth contrast
-- Light intensity is moderate, not overwhelming camera sensors
+When the sun is low on the horizon (within 2 hours of sunrise or sunset), several beneficial effects occur. Sunlight strikes the water at a low angle, reducing direct reflection into a camera positioned above the river. Longer shadows can actually enhance feature visibility by creating depth contrast. Light intensity remains moderate rather than overwhelming camera sensors.
 
 **Why this works:**
 Low-angle sun creates favorable geometry. Direct reflection (glare) bounces away from a camera looking downward, rather than into the lens.
 
 **Limitations:**
-- Only available for limited hours per day
-- Requires matching measurement timing to favorable lighting (not suitable for continuous monitoring)
-- Shadows can still be problematic if they cross the measurement area
+
+This condition is only available for limited hours per day and requires matching measurement timing to favorable lighting, making it unsuitable for continuous monitoring. Shadows can still prove problematic if they cross the measurement area.
 
 **Practical implication:**
 Useful for manual verification measurements - schedule field surveys for early morning or late afternoon when possible.
@@ -98,11 +75,7 @@ Useful for manual verification measurements - schedule field surveys for early m
 
 **Surprisingly good conditions**
 
-Light rain creates excellent measurement conditions:
-- Clouds provide diffuse lighting
-- Rain droplets on the water surface create texture and trackable features
-- Surface is activated with micro-ripples and patterns
-- No glare
+Light rain creates excellent measurement conditions as clouds provide diffuse lighting, rain droplets on the water surface create texture and trackable features, the surface becomes activated with micro-ripples and patterns, and glare is eliminated.
 
 **Why this works:**
 Rain both improves lighting (cloud cover) and enhances tracers (surface texture). Light rain is often the optimal combination of favorable conditions.
@@ -125,21 +98,15 @@ Camera housings should protect the lens from rain. Ensure any selected site allo
 
 **The most common lighting problem**
 
-When sunlight reflects directly off the water surface into the camera lens, glare overwhelms the image. This happens when:
-- Sun angle positions the reflection directly toward the camera
-- Water surface is relatively calm (acts like a mirror)
-- Camera is positioned to view the reflection path
+When sunlight reflects directly off the water surface into the camera lens, glare overwhelms the image. This happens when the sun angle positions the reflection directly toward the camera, the water surface is relatively calm (acting like a mirror), and the camera is positioned to view the reflection path.
 
 **Visual result:**
-- Bright white or silver area on the water surface
-- No visible features in the glare zone
-- Camera exposes for the bright glare, making non-glare areas too dark
-- Or camera exposes for normal areas, making glare zone completely blown out (pure white)
+
+The visual result includes a bright white or silver area on the water surface with no visible features in the glare zone. The camera either exposes for the bright glare (making non-glare areas too dark) or exposes for normal areas (making the glare zone completely blown out to pure white).
 
 **When this occurs:**
-- **Midday:** Sun high overhead, especially problematic when camera is also positioned high (bridge mounting)
-- **Specific times of day:** When sun angle aligns with camera viewing angle (varies by season and camera orientation)
-- **Calm water:** Glare is worst on smooth surfaces; some texture or ripples scatter light and reduce glare
+
+Glare problems occur at midday when the sun is high overhead, particularly problematic when the camera is also positioned high (such as bridge mounting). Glare also develops at specific times of day when sun angle aligns with camera viewing angle (varying by season and camera orientation). Calm water produces the worst glare on smooth surfaces, while texture or ripples scatter light and reduce glare intensity.
 
 **Glare zones:**
 Glare is often localized - affecting one part of the field of view while other areas remain visible. If glare covers 20-30% of the measurement area, the remaining 70-80% may still provide useful data. If glare covers the entire field of view, measurement becomes impossible during that period.
@@ -330,10 +297,7 @@ When possible, select camera mounting points (bridges, structures, banks) that a
 - May be unusable during sunrise (viewing east) or sunset (viewing west)
 
 **When this orientation is necessary:**
-Sometimes river orientation and accessible mounting points leave no choice. If you must use east-west viewing:
-- Prefer viewing direction that avoids sun during peak measurement hours (e.g., if afternoon data is most important, view east to avoid afternoon sun)
-- Accept that certain times of day will have poor conditions
-- Document limitations clearly
+Sometimes river orientation and accessible mounting points leave no choice. When east-west viewing must be used, practitioners should prefer viewing directions that avoid sun during peak measurement hours (for example, if afternoon data is most important, viewing east avoids afternoon sun), accept that certain times of day will have poor conditions, and document limitations clearly.
 
 ### Adjustable Mounting
 
@@ -438,15 +402,12 @@ Shadows are often the most site-specific lighting challenge. Use this framework 
 From the planned camera position, identify all potential shadow sources:
 
 **Natural features:**
-- [ ] Trees on river banks (note species - deciduous vs. evergreen)
-- [ ] Steep banks or cliffs
-- [ ] Overhanging vegetation
+
+Practitioners should identify trees on river banks (noting species as deciduous versus evergreen), steep banks or cliffs, and overhanging vegetation.
 
 **Built structures:**
-- [ ] Bridges or overpasses
-- [ ] Buildings
-- [ ] Towers, poles, or other vertical structures
-- [ ] Camera mounting structure itself
+
+Built structure assessment should include bridges or overpasses, buildings, towers, poles, or other vertical structures, and the camera mounting structure itself.
 
 **Document:**
 Sketch or photograph the field of view with shadow sources labeled.
@@ -456,17 +417,16 @@ Sketch or photograph the field of view with shadow sources labeled.
 During site visit, observe when and where shadows fall:
 
 **Timing:**
-- [ ] What time do shadows enter the measurement area?
-- [ ] How long do shadows persist?
-- [ ] Do shadows cover the entire area or only portions?
+
+Practitioners should determine what time shadows enter the measurement area, how long shadows persist, and whether shadows cover the entire area or only portions.
 
 **Movement:**
-- [ ] Are shadows stationary or moving (sun angle changing)?
-- [ ] How quickly do shadow patterns change?
+
+Observation should note whether shadows are stationary or moving (as sun angle changes) and how quickly shadow patterns change.
 
 **Coverage:**
-- [ ] What percentage of the measurement area is shadowed?
-- [ ] Are shadows consistent (entire area shaded) or creating high contrast (part shaded, part lit)?
+
+Assessment should quantify what percentage of the measurement area is shadowed and whether shadows are consistent (entire area shaded) or creating high contrast (part shaded, part lit).
 
 **Document:**
 Note times and extent of shadow coverage. Take photographs showing shadow patterns.
@@ -476,14 +436,12 @@ Note times and extent of shadow coverage. Take photographs showing shadow patter
 Consider how shadow patterns will change seasonally:
 
 **Deciduous trees:**
-- Summer: Full foliage creates dense shadows
-- Winter: No leaves, shadows minimal or absent
-- Spring/Fall: Partial shading
+
+Deciduous trees create dense shadows from full foliage in summer, produce minimal or absent shadows in winter without leaves, and generate partial shading in spring and fall.
 
 **Sun angle effects:**
-- Low winter sun creates long shadows from small obstacles
-- High summer sun creates short shadows or none from low obstacles
-- Shadow direction rotates seasonally
+
+Low winter sun creates long shadows from small obstacles, while high summer sun creates short shadows or none from low obstacles. Shadow direction rotates seasonally as the sun's path changes.
 
 **Assessment:**
 Will seasonal changes improve or worsen shadow conditions? If current site visit shows problematic shadows but occurs during the worst season (e.g., summer when trees have full foliage), conditions may improve seasonally. If current visit shows good conditions but is during the best season, conditions may worsen.
@@ -495,16 +453,12 @@ Will seasonal changes improve or worsen shadow conditions? If current site visit
 Not all shadows are problematic. Assess whether observed shadows will significantly degrade measurement quality:
 
 **Acceptable shadow conditions:**
-- [ ] Entire measurement area consistently shaded (no high contrast)
-- [ ] Shadows cover <20% of area and are in low-priority zones
-- [ ] Shadows present only during early morning or late afternoon (outside peak measurement hours)
-- [ ] Seasonal changes will reduce shadow problems during critical monitoring period
+
+Shadow conditions are acceptable when the entire measurement area is consistently shaded (producing no high contrast), shadows cover less than 20% of area and are in low-priority zones, shadows are present only during early morning or late afternoon (outside peak measurement hours), or seasonal changes will reduce shadow problems during the critical monitoring period.
 
 **Problematic shadow conditions:**
-- [ ] Shadows create sharp light/dark boundaries through the center of the measurement area
-- [ ] Shadows cover >50% of area during peak measurement hours
-- [ ] Moving shadows create constantly changing conditions
-- [ ] Critical monitoring season has worst shadow conditions
+
+Shadow conditions prove problematic when shadows create sharp light and dark boundaries through the center of the measurement area, shadows cover more than 50% of area during peak measurement hours, moving shadows create constantly changing conditions, or the critical monitoring season has the worst shadow conditions.
 
 **Decision:**
 Based on this assessment, rate the site:
@@ -620,32 +574,24 @@ Use this checklist when evaluating lighting conditions at a potential site:
 ### Daytime Lighting Assessment
 
 **Optimal conditions present?**
-- [ ] Frequent overcast conditions (diffuse lighting)
-- [ ] Site experiences many hours of favorable lighting daily
-- [ ] Camera orientation minimizes glare (north-south viewing preferred)
+
+Practitioners should determine whether frequent overcast conditions (diffuse lighting) occur, whether the site experiences many hours of favorable lighting daily, and whether camera orientation minimizes glare (north-south viewing preferred).
 
 **Glare evaluation:**
-- [ ] Observe water surface at multiple times - when does glare appear?
-- [ ] What percentage of measurement area is affected by glare?
-- [ ] How many hours per day is glare problematic?
-- [ ] Can camera position be adjusted to reduce glare?
+
+Glare evaluation requires observing the water surface at multiple times to determine when glare appears, what percentage of the measurement area is affected by glare, how many hours per day glare is problematic, and whether camera position can be adjusted to reduce glare.
 
 **Shadow evaluation:**
-- [ ] Identify all shadow sources (vegetation, structures)
-- [ ] Observe shadow patterns at different times
-- [ ] Estimate seasonal shadow changes
-- [ ] What percentage of area is shadowed during peak measurement hours?
-- [ ] Are shadows consistent (acceptable) or creating high contrast (problematic)?
+
+Shadow evaluation involves identifying all shadow sources (vegetation and structures), observing shadow patterns at different times, estimating seasonal shadow changes, quantifying what percentage of area is shadowed during peak measurement hours, and determining whether shadows are consistent (acceptable) or creating high contrast (problematic).
 
 **Daily lighting cycle:**
-- [ ] How many hours of good lighting occur per day?
-- [ ] Are unfavorable periods predictable and consistent?
-- [ ] Do favorable periods align with monitoring priorities?
+
+Assessment of the daily lighting cycle should determine how many hours of good lighting occur per day, whether unfavorable periods are predictable and consistent, and whether favorable periods align with monitoring priorities.
 
 **Seasonal lighting variation:**
-- [ ] What latitude is the site (determines magnitude of seasonal variation)?
-- [ ] Will seasonal sun angle changes create new glare or shadow problems?
-- [ ] Are winter daylight hours adequate?
+
+Seasonal lighting variation assessment requires determining the site latitude (which determines magnitude of seasonal variation), whether seasonal sun angle changes will create new glare or shadow problems, and whether winter daylight hours are adequate.
 
 ### Scoring Framework
 
@@ -742,7 +688,8 @@ Lighting assessment must be integrated with evaluations of tracers (Section 6.1)
 ### Decision Matrix Approach
 
 **Example scenario:**
-You are comparing two potential sites:
+
+Consider a comparison between two potential sites:
 
 **Site A:**
 - Tracers: Excellent (8/9 points)

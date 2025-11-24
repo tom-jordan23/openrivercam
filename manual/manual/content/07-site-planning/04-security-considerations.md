@@ -8,28 +8,7 @@ OpenRiverCam deployments face various security threats depending on location, co
 
 ### Common Security Threats
 
-**Equipment theft**:
-- Motivation: Resale value of electronics and solar panels
-- Risk level: Highest in economically stressed areas, low governance contexts
-- Target components: Solar panels, batteries, cameras, cellular modems
-- Impact: Complete system loss, high replacement cost
-
-**Vandalism**:
-- Motivation: Curiosity, boredom, anti-authority sentiment, targeted destruction
-- Risk level: Variable by location and community relations
-- Target components: Camera lens, cables, housing, mounting structure
-- Impact: System damage, repair costs, data gaps
-
-**Tampering**:
-- Motivation: Misunderstanding equipment purpose, fear of surveillance
-- Risk level: Higher where equipment purpose unclear to community
-- Actions: Adjusting camera angle, disconnecting cables, covering lens
-- Impact: Invalid data, system malfunction
-
-**Conflict-related damage**:
-- Context: Active conflict zones, civil unrest, ethnic tensions
-- Risk factors: Mistaken for surveillance, collateral damage, targeted by parties
-- Impact: Complete loss, personnel safety concerns
+OpenRiverCam deployments face several distinct categories of security threats that must be addressed through appropriate protective measures. Equipment theft, motivated by the resale value of electronics and solar panels, presents the highest risk in economically stressed areas and contexts with weak governance, targeting solar panels, batteries, cameras, and cellular modems with the potential for complete system loss and substantial replacement costs (Harvey et al., 2019). Vandalism, driven by curiosity, boredom, anti-authority sentiment, or targeted destruction, presents variable risk depending on location and community relations, typically targeting camera lenses, cables, housing, and mounting structures with resultant system damage, repair costs, and data gaps. Tampering, often resulting from misunderstanding of equipment purpose or fears of surveillance, occurs at higher rates where equipment purpose remains unclear to communities, manifesting as adjustments to camera angles, cable disconnections, or lens covering that invalidate data and cause system malfunctions. In active conflict zones, civil unrest, or areas with ethnic tensions, conflict-related damage presents additional risks where equipment may be mistaken for surveillance infrastructure, suffer collateral damage, or be targeted deliberately by conflicting parties, potentially resulting in complete loss and raising personnel safety concerns during installation and maintenance activities.
 
 ### Risk Assessment Process
 

@@ -2,13 +2,7 @@
 
 Site selection is not just about finding a location where OpenRiverCam can function technically. Strategic site selection means choosing a location that will provide the right information to answer your specific questions. A flood warning system, water resource management program, and transboundary river monitoring effort all need river flow data - but they need measurements from different locations to be useful. This section explains how your monitoring objectives shape where you should place measurement sites.
 
-By the end of this section, you will be able to:
-- Align site selection with study objectives
-- Understand catchment representation and what a site "tells you"
-- Evaluate upstream vs. downstream placement strategically
-- Consider tributary influences on measurements
-- Plan multi-site monitoring networks
-- Recognize when one site is insufficient for your needs
+By the end of this section, readers will acquire the skills to align site selection with specific study objectives, understand catchment representation and what individual sites reveal about watershed conditions, evaluate upstream versus downstream placement decisions strategically, consider tributary influences on measurements, develop competence in planning multi-site monitoring networks, and recognize situations when single-site monitoring proves insufficient for meeting project objectives.
 
 ---
 

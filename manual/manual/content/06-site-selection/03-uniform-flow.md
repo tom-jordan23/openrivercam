@@ -2,12 +2,7 @@
 
 OpenRiverCam measures surface velocity at one location and combines it with cross-sectional area to calculate discharge (Q = v × A). This approach assumes that the measured velocity represents the average flow through the entire cross-section. For this assumption to be valid, flow must be relatively uniform across the measurement area. This section explains what uniform flow means, why it matters, and how to identify suitable cross-sections during site selection.
 
-By the end of this section, you will be able to:
-- Understand what constitutes uniform flow
-- Recognize flow patterns that indicate good cross-sections
-- Identify flow complications that degrade measurement accuracy
-- Evaluate channel characteristics for measurement suitability
-- Make informed site selection decisions based on flow uniformity
+By the end of this section, readers will develop the capacity to understand what constitutes uniform flow conditions, recognize flow patterns that indicate suitable cross-sections, identify flow complications that degrade measurement accuracy, evaluate channel characteristics for measurement suitability, and make informed site selection decisions based on flow uniformity principles.
 
 ---
 
@@ -69,44 +64,17 @@ Select measurement locations where flow is organized, predictable, and relativel
 
 ### Characteristic 1: Parallel Flow Lines
 
-**What this means:**
-Water moves in generally parallel paths downstream. Flow lines (the paths that water parcels follow) run parallel to each other and parallel to the banks.
-
-**Visual indicators:**
-- Foam lines run straight downstream, not crossing each other
-- Floating debris moves in predictable straight paths
-- No swirling or spiraling patterns on the surface
-
-**Why this matters:**
-Parallel flow indicates that velocity is organized and consistent across the width. Each part of the cross-section contributes proportionally to discharge.
+Uniform flow conditions require that water moves in generally parallel paths downstream, with flow lines (the paths that water parcels follow) running parallel to each other and to the banks (Rantz et al., 1982). Visual indicators of parallel flow include foam lines running straight downstream without crossing each other, floating debris moving in predictable straight paths, and the absence of swirling or spiraling patterns on the surface. Parallel flow indicates that velocity is organized and consistent across the width, with each part of the cross-section contributing proportionally to discharge. This characteristic is fundamental to the assumption that surface velocity measurements represent average cross-sectional conditions (Hauet et al., 2008).
 
 [VISUAL PLACEHOLDER: Photo of river with parallel foam lines running straight downstream, annotated to show parallel flow paths]
 
 ### Characteristic 2: Consistent Depth Across Width
 
-**What this means:**
-The riverbed profile is relatively smooth across the cross-section. While the center is typically deeper than the edges (normal for natural channels), there are no sudden drops, pools, or shallow bars that create extreme depth variation.
-
-**Visual indicators:**
-- Water surface appears relatively level across the width (accounting for slight bank height differences)
-- No visible shallow bars or deep pools within the cross-section
-- Flow appears to be moving at similar pace across the width
-
-**Why this matters:**
-Extreme depth variations create velocity variations. Very shallow areas have slow flow (friction with bed), very deep areas may have fast flow. Moderate, consistent depth creates more uniform velocity distribution.
+Suitable measurement cross-sections exhibit relatively smooth riverbed profiles across their width (Turnipseed & Sauer, 2010). While the center is typically deeper than the edges in natural channels, extreme depth variations such as sudden drops, deep pools, or shallow bars should be absent. Visual indicators include a water surface that appears relatively level across the width (accounting for slight bank height differences), no visible shallow bars or deep pools within the cross-section, and flow that appears to move at similar pace across the width. Extreme depth variations create corresponding velocity variations, with very shallow areas exhibiting slow flow due to increased bed friction, while very deep areas may have fast flow (Chow, 1959). Moderate, consistent depth promotes more uniform velocity distribution across the measurement cross-section.
 
 ### Characteristic 3: Straight or Gently Curving Reach
 
-**What this means:**
-The measurement cross-section is located in a straight section of river, or in a very gentle curve (large radius). Avoid tight bends.
-
-**Visual indicators:**
-- Looking upstream and downstream, the river runs straight for at least 5-10 channel widths
-- If there is curvature, it is gradual (you can barely notice it)
-- Banks are parallel, not converging or diverging
-
-**Why this matters:**
-In curves, flow accelerates on the outside of the bend and slows on the inside. This creates cross-sectional velocity variation. Straight reaches have more uniform flow.
+Optimal measurement locations are situated in straight river sections or in reaches with very gentle curvature (Herschy, 2009). The reach should exhibit straightness for at least 5-10 channel widths both upstream and downstream of the measurement cross-section. If curvature exists, it should be gradual enough to be barely perceptible, with banks remaining parallel rather than converging or diverging. This geometric requirement addresses the fundamental hydraulic principle that in river bends, centrifugal forces cause flow to accelerate on the outside of the bend while slowing on the inside, creating substantial cross-sectional velocity variation (Leopold et al., 1964). Straight reaches naturally produce more uniform flow distributions suitable for velocity-based discharge measurement.
 
 [VISUAL PLACEHOLDER: Overhead satellite or diagram view showing straight river reach (preferred) vs. tight bend (avoid)]
 

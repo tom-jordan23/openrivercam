@@ -14,13 +14,7 @@ Solar power systems provide reliable, independent power for OpenRiverCam install
 
 ## Safety Considerations
 
-**CRITICAL SAFETY WARNINGS:**
-
-- **Electrical Hazards:** Solar panels generate electricity whenever exposed to light. Cover panels completely during installation or work during low-light conditions.
-- **Fall Protection:** Use appropriate fall protection when working at height. Never work alone on elevated installations.
-- **Battery Safety:** Lead-acid batteries contain sulfuric acid and generate explosive hydrogen gas during charging. Wear eye protection and ensure adequate ventilation.
-- **Lightning Protection:** Proper grounding is essential. Improper installation increases lightning strike risk.
-- **Tool Safety:** Use insulated tools rated for electrical work. Verify tools are in good condition.
+Several critical safety warnings must be understood and followed during solar power installation. Electrical hazards are present because solar panels generate electricity whenever exposed to light, requiring that panels be covered completely during installation or that work be performed during low-light conditions. Fall protection is mandatory when working at height, and installers must never work alone on elevated installations. Battery safety considerations require awareness that lead-acid batteries contain sulfuric acid and generate explosive hydrogen gas during charging, necessitating eye protection and adequate ventilation during all battery work (IEC, 2016). Proper grounding is essential to reduce lightning strike risk, as improper installation substantially increases this hazard. Tool safety requires use of insulated tools rated for electrical work and verification that all tools are in good condition before use.
 
 **Personal Protective Equipment (PPE) Required:**
 - Safety glasses or goggles
