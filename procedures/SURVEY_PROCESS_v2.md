@@ -1,4 +1,4 @@
-# RIVER SURVEY PROCEDURE: A PRACTICAL GUIDE
+# RIVER SURVEY PROCEDURE FOR OPENRIVERCAM DEPLOYMENTS
 
 **Equipment:** ArduSimple RTK + Android + GNSS Master + SW Maps
 **Target Accuracy:** Centimeter-level relative positioning, ~0.25m absolute via PPP
@@ -8,9 +8,7 @@
 
 ### Why We Need Survey-Grade Positioning
 
-River flow measurements from video rely on a precise chain of data transformations. The camera captures moving water as pixels. Software converts those pixels into real-world velocities. Those velocities integrate across the channel to produce discharge estimates. Each step in this chain amplifies errors from the previous step.
-
-The amplification matters. A 5cm error in ground control point position translates to velocity errors of 5-10 cm/s. Those velocity errors compound into discharge uncertainties of 10-20%. For river monitoring applications where management decisions depend on accurate flow data, these errors accumulate into decisions based on flawed information.
+River flow measurements from video rely on a precise chain of data transformations. The camera captures moving water as pixels. Software converts those pixels into real-world velocities. Those velocities integrate across the channel to produce discharge estimates. Each step in this chain amplifies errors from the previous step. A 5cm error in ground control point position translates to velocity errors of 5-10 cm/s. Those velocity errors compound into discharge uncertainties of 10-20%. 
 
 Survey-grade positioning prevents this error cascade. When you measure ground control points with centimeter accuracy, you establish a foundation that maintains precision through the entire processing chain. The camera transformation becomes reliable. The velocity calculations stay within acceptable bounds. The discharge estimates support confident decision-making.
 
@@ -84,7 +82,7 @@ Every field day must meet these thresholds. Missing any single criterion comprom
 
 **Why Different Standards:** Canal environments often present challenging satellite visibility due to vegetation, terrain, or structures. The relaxed thresholds acknowledge these constraints while maintaining acceptable accuracy for discharge measurements. Standard environments should achieve optimal accuracy since nothing prevents it. Applying canal thresholds in open environments wastes the opportunity for better precision.
 
-**Understanding PDOP:** Position Dilution of Precision measures satellite geometry quality. PDOP multiplies your receiver's base precision to produce actual position error. With 1cm receiver precision and PDOP of 2.5, expect ~2.5cm actual error. PDOP above 6 means satellites cluster in one part of the sky—weak geometry that amplifies errors. PDOP below 2 indicates excellent satellite distribution across the sky dome.
+**Understanding PDOP:** Position Dilution of Precision (PDOP) measures satellite geometry quality. PDOP multiplies your receiver's base precision to produce actual position error. With 1cm receiver precision and PDOP of 2.5, expect ~2.5cm actual error. PDOP above 6 means satellites cluster in one part of the sky—weak geometry that amplifies errors. PDOP below 2 indicates excellent satellite distribution across the sky dome.
 
 **Why 10 Seconds:** RTK solutions can briefly achieve FIX status, then lose it. Requiring 10 seconds of stable FIX ensures the solution is robust, not a momentary convergence. This prevents recording points just as the solution degrades.
 
@@ -174,7 +172,7 @@ The Universal Transverse Mercator system divides Earth into 60 north-south zones
 
 ## 2) Equipment Check
 
-Battery failure represents the most common field day problem that ends the survey. Most other equipment issues can be addressed with available alternatives. Dead batteries provide no alternative and end the day. Calculate your power budget conservatively—the base station might run 8-12 hours, the rover 6-8 hours, the Android device 4-6 hours with screen on. Add backup capacity because cold weather reduces battery performance and you'll use more power than expected.
+ Calculate your power budget conservatively—the base station might run 8-12 hours, the rover 6-8 hours, the Android device 4-6 hours with screen on. Add backup capacity because cold weather reduces battery performance and you'll use more power than expected.
 
 **Power Systems:**
 - [ ] Base station: Full charge + backup battery
@@ -182,12 +180,12 @@ Battery failure represents the most common field day problem that ends the surve
 - [ ] Android: 100% + power bank
 - [ ] All USB cables tested
 
-**Cable Testing:** USB cables fail silently. They look fine but have broken data lines. Test every cable you'll use by verifying data transfer, not just charging. A cable that charges a device might not support the USB serial communication the rover needs.
+**Cable Testing:** Test every cable you'll use by verifying data transfer, not just charging. A cable that charges a device might not support the USB serial communication the rover needs.
 
 **Physical Equipment:**
-- [ ] Survey poles (primary + backup), bipod
+- [ ] Survey poles (primary + backup), bipod if available
 - [ ] Steel tape measure, markers
-- [ ] Base tripod, antenna cables
+- [ ] Base tripod (if vailable), antenna cables
 - [ ] Waterproof notebook, pencils
 
 **Redundancy Philosophy:** Bring backup survey poles. If you drop your primary pole in the river or damage it on rocks, you need a replacement immediately. The same applies to markers, notebooks, and anything else that's small, inexpensive, and critical to operations if lost. Base equipment is large and expensive—you won't carry a backup tripod—so inspect it carefully before leaving.
@@ -209,11 +207,11 @@ Trees, buildings, vehicles, and terrain create reflections—multipath errors th
 ### Site Selection
 - [ ] Open sky >15° above horizon, >10m from metal/vehicles
 - [ ] Stable ground, accessible for monitoring
-- [ ] For canals: High ground >20m from water
+- [ ] For canals: High ground >20m from water (or as close as possible)
 
 **Elevation Mask (15°):** Satellites near the horizon transmit signals through more atmosphere—more delay, more error. The elevation angle cutoff rejects these poor-quality signals. Some receivers allow configuring this mask. Keep it at 10-15° for balanced coverage and quality.
 
-**Metal and Water Setback:** Radio waves reflect off conductive surfaces. Park your vehicle 10+ meters away. If that's not possible, place the base on the opposite side from the work area so reflected signals don't contaminate measurements. Position the base well away from canal water—at least 20m—to avoid water surface reflections.
+**Metal and Water Setback:** Radio waves reflect off conductive surfaces. Park your vehicle 10+ meters away. If that's not possible, place the base on the opposite side from the work area so reflected signals don't contaminate measurements. Position the base well away from canal water—at least 20m if possible—to avoid water surface reflections.
 
 **Accessibility:** You need to monitor this base station periodically throughout the day. If RINEX logging stops, corrections halt, or power fails, you must know immediately. Place the base where you can check it without interrupting survey work.
 
@@ -298,7 +296,7 @@ Photogrammetric transformation errors increase with distance from the nearest GC
 - [ ] Survey camera position with rover
 - [ ] Record height, direction, tilt angle
 
-**Why Survey Camera Position:** Knowing the camera's exact position enables direct georeferencing as a backup approach. If something goes wrong with GCP-based transformation—too few visible points, poor distribution, measurement errors—you can fall back to camera position and orientation. This redundancy provides insurance against field mistakes.
+**Why Survey Camera Position:** Knowing the camera's exact position and orientation helps to reconstruct the scene when sorting through GIS points later. Ensuring that you have points for the camera and field of view can help you spot any survey locations that are outside the camera's view, etc.
 
 **Recording Geometry:** Note the camera height above ground, compass direction it faces, and tilt angle. These parameters help reconstruct the viewing geometry during processing and support quality control checks. If calculated GCP positions don't align with observed camera geometry, something went wrong—either the GCP measurements or the processing.
 
@@ -308,7 +306,7 @@ Photogrammetric transformation errors increase with distance from the nearest GC
 - [ ] Survey each control point after video
 - [ ] Use Ground Control Points layer
 
-**Minimum Six Points:** Photogrammetric transformation solves for camera position, orientation, and lens distortion. This requires at least 6 ground control points with known 3D coordinates. More points improve the solution robustness and allow detecting outliers. Aim for 8-10 GCPs for reliable transformation.
+**Minimum Six Points:** Photogrammetric transformation solves for camera position, orientation, and lens distortion. This requires at least 6 ground control points with known 3D coordinates. More points improve the solution robustness and allow detecting outliers. Aim for 8-10 GCPs for reliable transformation. Having extras also allows you to discard points that don't resolve well in configuration.
 
 **Survey After Video:** You need the video to show where the targets are positioned while the water is flowing. Survey the targets after recording because you'll spend 60+ seconds per point and can't leave the camera running that long. This sequence ensures the video captures representative flow conditions while the survey achieves required precision.
 
@@ -342,7 +340,7 @@ Discharge calculations integrate velocity across the cross-sectional area. Area 
 
 **Pole Depth Recording:** You're measuring the water surface, not the pole tip. Hold the pole vertically with the tip submerged some distance below the surface. Note exactly where the water line crosses the pole. Measure this depth later with a tape measure. The water surface elevation equals the surveyed pole position minus the pole height measurement plus the depth below water.
 
-The math matters: `Water_Surface_Elevation = GPS_Position_Z - Pole_Height + Depth_Below_Surface`. Get the signs right or your water level will be wrong by twice the depth measurement.
+Calculate the water level in azimuthal altitude (meters): `Water_Surface_Elevation = GPS_Position_Z - Pole_Height + Depth_Below_Surface`. Altitude (Z) will be displayed by default in Azimuth meters in SWMaps, so you can just subtract the pole height and then add back the submerged pole depth to get water surface level.
 
 **RTK FIX Requirement:** This measurement needs the same accuracy as ground control points. Wait for stable RTK FIX, verify PDOP ≤2.5 and satellites ≥12, then occupy the position for 60 seconds. Don't shortcut this measurement because it affects every depth calculation.
 
@@ -399,6 +397,7 @@ You're creating a spatial model of the channel bed. Models work best with evenly
 - [ ] Establish LB/RB reference points on stable ground
 - [ ] Plan station spacing (1-2m typical)
 - [ ] Document section ID, flow conditions
+- [ ] Plan to conduct two cross sections - one for discharge and another for water level
 
 **Reference Points:** Mark clear left bank and right bank endpoints. Survey these with the rover to establish precise coordinates. They serve as anchor points for the cross-section and enable returning to the same transect line in future surveys. If you're monitoring temporal changes, you need to measure the same cross-section each time—these reference points make that possible.
 
@@ -408,11 +407,12 @@ You're creating a spatial model of the channel bed. Models work best with evenly
 
 ### Collection
 - [ ] Walk LB → RB systematically
+- [ ] Capture all water levels at both banks
 - [ ] Each station: verify quality gates, 60-120s averaging
 - [ ] Record station number, point role, water depth
 - [ ] Measure pole height tip-to-ARP each shot
 
-**Systematic Traverse:** Start at left bank and walk toward right bank, measuring at planned intervals. Don't skip stations because they're difficult to reach or in deep water. Those difficult stations often represent important geometric features. If a station is truly impossible to measure safely, document why and interpolate carefully during processing.
+**Systematic Traverse:** Start at left bank and walk toward right bank, measuring at planned intervals. Don't skip stations because they're difficult to reach or in deep water. Those difficult stations often represent important geometric features. If a station is truly impossible to measure safely using a pole, a bathymetric survey with sonar and gps might be a better approach.
 
 **Quality Verification:** Check RTK FIX status, PDOP, and satellite count before every point. Don't assume conditions remain good just because the previous point worked. Satellite geometry changes continuously, and local obstructions affect each position differently.
 
@@ -429,7 +429,7 @@ The survey isn't complete until you've verified data quality, backed up files, a
 ### Final Checks
 - [ ] Re-measure CP_END, calculate total drift
 - [ ] Stop RINEX logging, record end time
-- [ ] Export SW Maps data (CSV + native format)
+- [ ] Export SW Maps data (CSV + geopackage)
 - [ ] Multiple backups on different devices
 - [ ] Document any deviations from protocol
 
@@ -501,7 +501,7 @@ Your base station recorded raw observations in u-blox UBX format. This proprieta
 
 ## Step 2: Precise Positioning Service Processing
 
-Precise positioning services process your base station observations to determine accurate global coordinates. These services use precise satellite orbit and clock products combined with reference station networks to achieve 2-5cm absolute accuracy.
+Precise positioning services process your base station observations to determine accurate global coordinates. These services use precise satellite orbit and clock products combined with reference station networks to achieve 2-5cm absolute accuracy. Make sure that you select a provider that serves your geographic area. AUSPOS is a service provided by the Australian Government that serves southeast Asia.
 
 ### Understanding AUSPOS Processing
 
@@ -638,7 +638,7 @@ QGIS provides tools for spatial data management, coordinate transformation, and 
 
 **Field Calculator:** This QGIS tool creates new attribute fields using calculations based on existing fields. You're adding the PPP translation to each coordinate. The x_coord and y_coord fields contain the original survey-in-based coordinates from the field. Adding ΔE and ΔN shifts them to PPP-corrected coordinates.
 
-**Bed Elevation Calculation:** Your rover measured the pole tip position, not the bed. Subtract the pole height to get bed elevation. This calculation provides the critical data for cross-section analysis and discharge calculations. Verify the math—a wrong sign turns a subtraction into an addition and puts your bed above the water surface.
+**Bed Elevation Calculation:** Your rover measured the pole tip position, not the bed. Subtract the pole height to get bed elevation. This calculation provides the critical data for cross-section analysis and discharge calculations. NOTE: If you took survey points without the pole, make sure that you do not correct those points. 
 
 **Geometry Update:** The point features still have their original coordinates. Use the "Update Geometry" tool (or "Translate" tool in Processing Toolbox) to shift them by ΔE, ΔN, ΔZ. Now the point positions and attribute coordinates match and reflect PPP-corrected values.
 
@@ -648,7 +648,7 @@ QGIS provides tools for spatial data management, coordinate transformation, and 
 
 ## Step 4: Export for PtBox
 
-PtBox software processes the survey data to support velocity analysis and discharge calculations. It expects a simple XYZ format—three columns containing Easting, Northing, and Elevation for each point.
+PtBox software processes the survey data to support velocity analysis and discharge calculations. It expects a simple XYZ format—three columns containing UTM coordinates (meters) and Elevation for each point.
 
 ### Create XYZ Point Cloud
 - [ ] Select cross-section and control point layers from corrected GeoPackage
