@@ -15,11 +15,13 @@ Design a solar-powered monitoring station that captures video of river flow for 
 - Specify case/heatsink needs for tropical operation
 
 #### Camera System
-- High-quality camera module compatible with Raspberry Pi 5
-- Weatherproof housing with optical clarity
+- **Two (2) sealed IP67/IP68 cameras** - Factory-sealed units (primary approach to eliminate humidity/fogging issues)
+- **Connectivity options:**
+  - USB connection (5m native, up to 30m with active repeater, 100m via USB-over-Ethernet)
+  - WiFi connection (for sites where cables cannot be run)
 - Field of view suitable for river monitoring (typically 20-50m width)
 - Low-light performance for dawn/dusk operation
-- Anti-condensation measures for lens clarity
+- **Fallback option:** Active dehumidification for cameras and/or compute enclosure if sealed cameras prove unsuitable
 
 #### Power Management
 - Solar panel sizing for continuous operation (consider latitude ~6°S)
@@ -35,10 +37,11 @@ Design separate connectivity solutions with individual pricing:
 - **Satellite Connectivity**: Satellite modems, directional antennas, subscription hardware
 
 #### Environmental Protection
-- **Weatherproof enclosure** rated for tropical conditions
-- **Humidity control** - active dehumidification or desiccant systems
-- **Ventilation** without compromising waterproofing
+- **Weatherproof enclosure** rated for tropical conditions (for computing/power components)
+- **Sealed camera mounting** - separate mounting for IP67/IP68 camera units (qty: 2)
 - **Mounting hardware** for pole or structure installation
+- **USB/power cable routing** - weatherproof cable glands and conduit
+- **Optional dehumidification** - active humidity control for compute enclosure and/or cameras (fallback option)
 
 #### Grounding & Lightning Protection
 - **Grounding systems** - rods, conductors, and connections
@@ -130,10 +133,10 @@ Computing Platform,Raspberry Pi 5 8GB,ARM Cortex-A76 8GB RAM WiFi6 BT5.0,1,80.00
 
 **BOM Categories to Include:**
    - Computing Platform (Pi 5, storage, cooling)
-   - Camera System (module, housing, optics)
+   - Camera System (2x sealed IP67/IP68 cameras, USB extension/repeater or WiFi bridge, mounting)
    - Power Management (solar, battery, charge controller)
    - Connectivity Options (separate pricing for WiFi, Cellular, Satellite)
-   - Environmental Protection (enclosure, humidity control, mounting)
+   - Environmental Protection (enclosure for computing/power, cable glands, mounting)
    - Grounding & Lightning Protection (rods, arrestors, surge protection)
    - Security & Anti-Theft (tamper-evident, locks, intrusion detection)
    - Monitoring & Control (watchdog, indicators)
@@ -153,8 +156,6 @@ Computing Platform,Raspberry Pi 5 8GB,ARM Cortex-A76 8GB RAM WiFi6 BT5.0,1,80.00
    - Upgrade path considerations between tiers
 
 3. **Tiered Environmental Design Solutions**:
-   - Basic vs. advanced condensation prevention strategies
-   - Humidity management approaches by budget level
    - Thermal management solutions (passive vs. active)
    - Weatherproofing methodology variations
    - Grounding and lightning protection by budget tier

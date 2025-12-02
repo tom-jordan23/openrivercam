@@ -10,18 +10,37 @@ Build a weatherproof, solar-powered monitoring station that can operate autonomo
 
 ### Primary Components
 - **Raspberry Pi 5** - Main computing platform
-- **High-quality camera module** - For video capture of river flow
-- **4G cellular connectivity** - For data transmission to remote servers
-- **Solar power system** - Primary power source for autonomous operation
-- **Battery backup** - For continuous operation during low-light periods
-- **Weatherproof enclosure** - Protection against Indonesian tropical climate
+- **Two (2) sealed IP67/IP68 cameras** - Factory-sealed cameras with USB or wireless connectivity (eliminates fogging/humidity issues)
+- **4G cellular or WiFi connectivity** - For data transmission to remote servers
+- **Solar power system** - Primary power source for autonomous operation (50-100% overbuilt for adverse weather)
+- **LiFePO4 battery** - Long-life, environmentally friendly, no toxic materials
+- **Weatherproof enclosure** - Protection for computing/power components
 
-### Environmental Challenges
-- **High humidity** - Tropical jungle environment requires active humidity management
-- **Condensation prevention** - Camera lens must remain clear for accurate readings
+### Design Principles
+- **Overbuild power:** 50-100% headroom for rainy season/winter cloud cover
+- **Green choices:** LiFePO4 batteries (no lead, no acid, recyclable), solar primary power
+- **Reliability first:** Excess capacity is cheap insurance for remote deployments
+
+### Camera Strategy: Sealed Units (Primary Approach)
+The system requires **two cameras** per station. The preferred approach uses factory-sealed IP67/IP68 cameras that connect via:
+- **USB** - Most reliable for data integrity (up to 5m native, 30m with active repeater, 100m via USB-over-Ethernet)
+- **WiFi** - Better for sites where cables cannot be run (use P2P wireless bridge for extended range)
+
+**Advantages of sealed cameras:**
+- Factory sealing eliminates condensation and fogging issues
+- No desiccant maintenance required
+- Industrial-grade environmental protection
+- Simplified enclosure design (only computing/power needs protection)
+
+**Fallback option:** Active dehumidification remains available for both cameras and compute enclosure if sealed camera options prove unsuitable for specific requirements.
+
+**Next step:** Supplier research for sealed IP67/IP68 USB and WiFi cameras suitable for outdoor river monitoring (quantity: 2 per station).
+
+### Environmental Considerations
 - **Temperature variation** - System must handle day/night temperature swings
 - **Weather resistance** - Must withstand heavy rainfall and storms
 - **Remote deployment** - System must operate without maintenance for extended periods
+- **Camera placement** - Sealed camera can be mounted separately from main enclosure
 
 ### Operational Requirements
 - **Power cycling capability** - Automated system reboot and power management
