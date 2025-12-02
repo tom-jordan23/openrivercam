@@ -29,7 +29,7 @@ This document defines the official specifications for the RC-Box river monitorin
 
 ## Design Principles
 
-All component and design decisions must adhere to these three core principles:
+All component and design decisions must adhere to these core principles:
 
 ### Principle 1: Widely Available Components with Good Community Support
 
