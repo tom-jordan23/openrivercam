@@ -1,8 +1,8 @@
 # RC-Box Design Specifications
 
 **Document Status:** Authoritative Specification
-**Version:** 1.0
-**Last Updated:** 2024-12-01
+**Version:** 1.1
+**Last Updated:** 2024-12-03
 
 This document defines the official specifications for the RC-Box river monitoring hardware platform. Use this as the reference when comparing parts and suppliers.
 
@@ -16,14 +16,16 @@ This document defines the official specifications for the RC-Box river monitorin
 4. [Power System Specifications](#power-system-specifications)
 5. [Power Management & Scheduling](#power-management--scheduling)
 6. [IR Spotlight System](#ir-spotlight-system)
-7. [Enclosure Configurations](#enclosure-configurations)
-8. [Cable Glands & Connectors](#cable-glands--connectors)
-9. [Environmental Protection](#environmental-protection)
-10. [Anti-Theft & Tamper Detection](#anti-theft--tamper-detection)
-11. [Grounding & Surge Protection](#grounding--surge-protection)
-12. [International Shipping & Customs](#international-shipping--customs)
-13. [Bill of Materials Summary](#bill-of-materials-summary)
-14. [Supplier Evaluation Criteria](#supplier-evaluation-criteria)
+7. [Data Logger & Sensor Integration](#data-logger--sensor-integration)
+8. [Enclosure Configurations](#enclosure-configurations)
+9. [Cable Glands & Connectors](#cable-glands--connectors)
+10. [Environmental Protection](#environmental-protection)
+11. [Anti-Theft & Tamper Detection](#anti-theft--tamper-detection)
+12. [Grounding & Surge Protection](#grounding--surge-protection)
+13. [International Shipping & Customs](#international-shipping--customs)
+14. [Stereo Camera System (Stretch Goal)](#stereo-camera-system-stretch-goal)
+15. [Bill of Materials Summary](#bill-of-materials-summary)
+16. [Supplier Evaluation Criteria](#supplier-evaluation-criteria)
 
 ---
 
@@ -310,15 +312,24 @@ If sealed cameras prove unsuitable, active dehumidification system required:
 
 Infrared illumination for night recording. Cameras must be IR-sensitive (NoIR type or equivalent).
 
+### Design Philosophy: Commodity Parts Only
+
+Per Principle 1, the IR control system must use **widely available, easily replaceable components**. The solution uses:
+- Standard 5V USB relay module (triggered by Pi power state)
+- Photoresistor relay module (automatic dusk/dawn sensing)
+- No custom electronics, no specialized programming
+
+This creates a two-stage control: spotlight only turns on when **both** the Pi is awake **and** it's dark outside.
+
 ### IR Spotlight Specifications
 
 | Specification | Requirement |
 |---------------|-------------|
 | Wavelength | 850nm (preferred) or 940nm |
-| Power | 10-20W |
+| Power | 20-30W |
 | Voltage | 12V DC |
 | Beam angle | 60-90° flood |
-| Range | 30-60m (100-200ft) |
+| Range | 50-80m (supports rivers up to 30m wide) |
 | IP rating | IP65 minimum |
 | Control | External (no built-in photosensor) |
 | Mounting | Adjustable bracket |
@@ -327,25 +338,328 @@ Infrared illumination for night recording. Cameras must be IR-sensitive (NoIR ty
 - 850nm: Better range, faint red glow visible at LEDs - **recommended for river monitoring**
 - 940nm: Invisible, 30-40% less range - only for covert applications
 
-### Control System
+### Control System: Two-Stage Commodity Approach
 
-| Component | Specification |
-|-----------|---------------|
-| Relay module | 5V coil, 12V/10A contacts minimum |
-| Control signal | GPIO from Witty Pi 4 or Pi |
-| Flyback diode | 1N4007 across relay coil |
-| Power source | 12V from main battery via fused connection |
-| Fuse | 5A inline fuse |
+The IR spotlight control uses two commodity modules in series:
+
+#### Stage 1: USB Power Relay
+
+A 5V relay module powered by Pi USB port. When Pi wakes up, USB provides power; relay closes. When Pi shuts down, USB power drops; relay opens.
+
+| Component | Specification | Example Products |
+|-----------|---------------|------------------|
+| USB relay module | 5V coil, SPDT contacts, 10A+ rating | HiLetgo 5V relay module, Tolako 5V relay |
+| Power source | Pi USB-A port (5V, 500mA available) | Any USB-A port |
+| Wiring | USB → relay coil; relay contacts in 12V circuit | |
+
+**Key Point:** No GPIO programming required. USB power presence = relay closed.
+
+#### Stage 2: Photoresistor Light Sensor Relay
+
+A 12V light-sensing relay module that only passes power when ambient light is below threshold (darkness).
+
+| Component | Specification | Example Products |
+|-----------|---------------|------------------|
+| Photoresistor relay module | 12V input, adjustable light threshold, 10A contacts | XH-M131, HiLetgo light sensor relay |
+| Light threshold | Adjustable potentiometer (set for dusk level) | |
+| Sensor placement | External to enclosure, pointed at sky | Needs weatherproofing |
+
+**Adjustment:** Turn potentiometer to set the light level at which relay activates. Test at dusk to calibrate.
+
+### Control Circuit Wiring
+
+```
+                              [12V from Terminal Block]
+                                        │
+                                  [Fuse 5A]
+                                        │
+                    ┌───────────────────┴───────────────────┐
+                    │                                       │
+             [Stage 1: USB Relay]                   [Photoresistor
+              Powered by Pi USB                      Module Power]
+                    │                                       │
+              [Relay Contacts]                    [Light Sensor Relay]
+               (N.O. closes                        (closes when dark)
+              when Pi is ON)                              │
+                    │                                       │
+                    └───────────┬───────────────────────────┘
+                                │
+                        [Both stages in series]
+                                │
+                         [IR Spotlight]
+                                │
+                              [GND]
+
+
+    LOGIC TABLE:
+    ┌─────────────┬───────────┬────────────────┐
+    │ Pi Power    │ Daylight  │ IR Spotlight   │
+    ├─────────────┼───────────┼────────────────┤
+    │ OFF         │ Day       │ OFF            │
+    │ OFF         │ Night     │ OFF            │
+    │ ON          │ Day       │ OFF            │
+    │ ON          │ Night     │ ON             │
+    └─────────────┴───────────┴────────────────┘
+```
+
+### Detailed Wiring Diagram
+
+```
+[Pi 5 USB-A Port]
+        │
+        │ (USB cable, cut to expose 5V and GND wires)
+        │
+   ┌────┴────┐
+   │  5V+    │───────────────► [5V Relay Module VCC]
+   │  GND    │───────────────► [5V Relay Module GND]
+   └─────────┘                         │
+                                [Relay Coil]
+                                       │
+                               [Relay Contacts: COM, NO, NC]
+                                       │
+                                    (use NO - Normally Open)
+                                       │
+                              ┌────────┴────────┐
+                              │                 │
+                         [12V+ In]        [12V+ Out to
+                    (from fused            Photoresistor
+                     terminal block)        Module]
+                                              │
+                                     [Photoresistor Module]
+                                     (12V light-sensing relay)
+                                              │
+                              ┌───────────────┴───────────────┐
+                              │                               │
+                     [Photoresistor                    [Relay Contacts]
+                      (external sensor)]                      │
+                                                    [12V+ Out to
+                                                     IR Spotlight]
+                                                              │
+                                                       [IR Spotlight]
+                                                         (12V)
+                                                              │
+                                                           [GND]
+                                                    (common with battery)
+```
+
+### Photoresistor Sensor Placement
+
+The light sensor must be positioned to detect ambient daylight:
+
+| Requirement | Implementation |
+|-------------|----------------|
+| Location | Outside enclosure, pointed at sky (not at spotlight!) |
+| Weatherproofing | Potted in clear epoxy, or inside small clear dome |
+| Cable | 2-wire extension from module (can be 1-5m) |
+| Mounting | On enclosure top, or on separate bracket facing up |
+| Protection | Avoid direct sunlight on sensor (can cause false readings); north-facing ideal |
+
+**Alternative:** Some photoresistor modules include the sensor on the PCB. These can be mounted inside an enclosure with a clear window, or use a separate weatherproof light sensor with cable.
+
+### Component Specifications
+
+#### USB 5V Relay Module
+
+| Specification | Requirement |
+|---------------|-------------|
+| Coil voltage | 5V DC |
+| Coil current | <100mA (must work with USB 500mA limit) |
+| Contact rating | 10A @ 12V DC minimum |
+| Contact type | SPDT (use N.O. contacts) |
+| Size | Compact (~30x30mm typical) |
+| Optoisolation | Optional but preferred |
+
+**Example products:**
+- HiLetgo 5V 1-channel relay module (~$2)
+- Tolako 5V relay module (~$3)
+- SunFounder 5V relay module (~$4)
+
+#### Photoresistor Light Sensor Relay Module
+
+| Specification | Requirement |
+|---------------|-------------|
+| Input voltage | 12V DC |
+| Output | Relay contacts, 10A minimum |
+| Light sensor | Photoresistor (LDR) with adjustable threshold |
+| Threshold adjustment | Potentiometer on board |
+| Mode | Configurable: output ON when dark (required) |
+| Operating temperature | -20°C to +50°C |
+
+**Example products:**
+- XH-M131 12V Light Control Switch (~$3)
+- HiLetgo 12V Photoresistor Relay Module (~$4)
+- Geekcreit Light Sensor Switch Module (~$3)
+
+**Note:** Some modules default to "ON when bright" - verify the module can be configured for "ON when dark" or has a mode switch.
 
 ### Power Budget
 
-| Component | Power | Daily Energy (at 20% duty cycle) |
-|-----------|-------|----------------------------------|
-| 12W IR spotlight | 12W | 40-60 Wh |
-| Relay coil | 0.5W | 1.5-2.5 Wh |
-| **Total** | 12.5W | **42-63 Wh/day** |
+| Component | Power | Daily Energy (at 20% duty cycle, 50% at night) |
+|-----------|-------|------------------------------------------------|
+| 25W IR spotlight | 25W | 40-60 Wh (only runs when Pi ON + dark) |
+| 5V relay coil | 0.3W | 0.5-1 Wh |
+| Photoresistor module | 0.1W | 2.4 Wh (24h standby) |
+| **Total** | 25.4W active | **43-64 Wh/day** |
 
 *Already included in power system headroom calculations.*
+
+### Bill of Materials: IR Spotlight Control
+
+| Component | Qty | Est. Cost | Notes |
+|-----------|-----|-----------|-------|
+| 850nm IR flood light (12V, 20-30W, IP65) | 1-2 | $40-80 | One per camera, or single wide-angle |
+| 5V USB relay module (10A contacts) | 1 | $2-4 | Powered by Pi USB |
+| 12V photoresistor relay module (XH-M131 or equiv) | 1 | $3-5 | Light sensor, adjustable threshold |
+| USB-A cable (for cutting) | 1 | $2 | Salvage 5V/GND wires |
+| 1N4007 diode | 2 | $0.20 | Flyback protection (one per relay) |
+| 18AWG wire (red/black) | 3m | $2 | 12V power runs |
+| 5A inline fuse + holder | 1 | $3 | IR circuit protection |
+| M16 IP68 cable gland | 1 | $3 | IR power cable entry |
+| Weatherproof enclosure for photoresistor | 1 | $5 | Clear dome or potted sensor |
+| **Total** | | **$60-105** | |
+
+---
+
+## Data Logger & Sensor Integration
+
+### Purpose
+
+RC-Box stations are often deployed alongside other hydrological instruments. This section specifies how to connect **commercial off-the-shelf sensors and data loggers** using standard interfaces.
+
+### Design Philosophy
+
+Per Principle 1 (Widely Available Components):
+- **Use commercial sensors** - No custom sensor development; buy proven equipment
+- **Standard interfaces only** - RS485/Modbus is the primary protocol
+- **Commodity adapters** - USB-RS485 adapters available worldwide for ~$10-20
+- **Time-series logging** - RC-Box logs sensor data locally; ORC software integration is a future project
+
+**What RC-Box provides:**
+- RS485/Modbus interface via USB adapter
+- 12V power output for sensors (from main battery)
+- Local time-series data storage
+- Data available for future ORC software integration
+
+**What RC-Box does NOT do (yet):**
+- Process or analyze sensor data
+- Display sensor data in ORC interface
+- Trigger alerts based on sensor readings
+
+---
+
+### Standard Interface: RS485 / Modbus RTU
+
+RS485/Modbus is the industry standard for environmental sensors. Most commercial rain gauges, weather stations, and water level sensors support this interface.
+
+| Specification | Requirement |
+|---------------|-------------|
+| Physical layer | RS485 differential signaling |
+| Protocol | Modbus RTU |
+| Connector | Screw terminal block (A+, B-, GND, 12V+) |
+| Adapter | USB-RS485 (commodity module) |
+
+#### Interface Hardware
+
+| Component | Specification | Example Products |
+|-----------|---------------|------------------|
+| USB-RS485 adapter | USB to RS485 converter | DSD TECH SH-U10, Waveshare USB-RS485 |
+| Terminal block | 4-position screw terminal | Standard DIN rail mount |
+| Termination resistor | 120Ω at end of bus | Built into many adapters |
+
+#### Wiring
+
+```
+[RC-Box Enclosure]
+        │
+   [USB-RS485 Adapter] ──── [Pi USB Port]
+        │
+   [Terminal Block]
+    A+ B- GND 12V+
+     │  │   │   │
+     │  │   │   └──── [From 12V terminal block]
+     │  │   │
+[4-wire shielded cable to sensor(s)]
+     │  │   │
+     A+ B- GND ─────── [Commercial Sensor]
+```
+
+---
+
+### Supported Commercial Equipment
+
+Any Modbus RTU sensor can be connected. Common categories:
+
+#### Rain Gauges
+
+| Type | Output | Example Products |
+|------|--------|------------------|
+| Tipping bucket with Modbus | RS485 | Texas Electronics TR-525M, Onset RG3-M |
+| Tipping bucket (pulse) | Contact closure | Many manufacturers (requires pulse counter) |
+
+#### Weather Stations
+
+| Type | Output | Example Products |
+|------|--------|------------------|
+| Compact all-in-one | RS485/Modbus | Lufft WS-series, Gill MaxiMet |
+| Modular stations | RS485/Modbus | Davis Vantage Pro2 (with adapter), Campbell Scientific |
+
+#### Water Level Sensors
+
+| Type | Output | Example Products |
+|------|--------|------------------|
+| Pressure transducer | RS485/Modbus | In-Situ Level TROLL, Keller Series 36 |
+| Ultrasonic | RS485/Modbus | Senix ToughSonic |
+
+---
+
+### Data Logging
+
+RC-Box logs all sensor readings locally as time-series data.
+
+| Specification | Requirement |
+|---------------|-------------|
+| Storage format | CSV or JSON files |
+| Timestamp | ISO 8601 UTC |
+| Storage location | Local SSD alongside video data |
+| Retention | Same as video data retention policy |
+
+**Future integration:** Logged sensor data will be accessible to ORC software for display and analysis. This integration is a separate project.
+
+---
+
+### Power Budget
+
+| Component | Power | Notes |
+|-----------|-------|-------|
+| USB-RS485 adapter | 0.2W | From Pi USB |
+| Typical Modbus sensor | 0.1-0.5W | When polled |
+| Weather station | 0.5-2W | Continuous |
+| **Total sensor system** | **1-3W** | Add to power budget |
+
+---
+
+### Cable Entry Points
+
+Add sensor cable entry to enclosure:
+
+| Entry | Cable/Connection | Gland Size | Type |
+|-------|-----------------|------------|------|
+| Sensor RS485 | 4-wire shielded (A+, B-, GND, 12V+) | M16 or M20 | IP68 compression |
+
+---
+
+### Bill of Materials: Sensor Interface
+
+| Component | Qty | Est. Cost | Notes |
+|-----------|-----|-----------|-------|
+| USB-RS485 adapter | 1 | $10-20 | DSD TECH or Waveshare |
+| 4-position screw terminal block | 1 | $2 | For sensor connection |
+| 120Ω termination resistor | 1 | $0.50 | End of RS485 bus |
+| 4-wire shielded cable | varies | $1/m | Belden 9842 or equivalent |
+| M16 IP68 cable gland | 1 | $3 | Sensor cable entry |
+| **Interface total** | | **$20-30** | Sensors purchased separately |
+
+**Note:** Sensors are purchased separately based on site requirements. RC-Box provides the standard interface; sensor selection is a deployment decision.
 
 ---
 
@@ -961,6 +1275,191 @@ Common HS codes for RC-Box components (verify with customs broker):
 
 ---
 
+## Stereo Camera System (Stretch Goal)
+
+### Purpose
+
+The two-camera RC-Box configuration can potentially be used as a stereo vision system to **improve the survey process only**. This does not replace or modify the LSPIV flow measurement approach - ORC's core velocity measurement will continue to use the existing single-camera LSPIV method.
+
+**Stereo capability is specifically for:**
+1. **Survey assistance** - Help derive cross-section geometry and GCP positions
+2. **Survey validation** - Cross-check manual survey measurements for errors
+3. **Survey simplification** - Reduce the number of manual measurements required during site setup
+
+**Stereo capability is NOT for:**
+- Replacing LSPIV velocity measurement
+- Real-time 3D flow analysis
+- Changing how ORC processes video for discharge calculation
+
+**Status:** STRETCH GOAL - Experimental capability for survey process improvement research.
+
+### Technical Requirements for Stereo Vision
+
+Stereo photogrammetry requires precise synchronization between cameras to capture the same moment in time.
+
+| Requirement | Specification | Why It Matters |
+|-------------|---------------|----------------|
+| Shutter synchronization | <1ms difference | Moving water surface must be captured at same instant |
+| Known baseline | ±1mm accuracy | Distance between cameras affects depth calculation |
+| Known orientation | ±0.1° accuracy | Camera angles must be precisely calibrated |
+| Overlapping field of view | 60-80% overlap | Stereo matching requires common features |
+| Consistent exposure | Same settings both cameras | Brightness differences complicate matching |
+
+### Synchronization Approaches
+
+#### Option 1: Hardware-Synchronized Camera Modules (Recommended if Available)
+
+Some camera modules expose hardware sync signals that allow frame-accurate synchronization.
+
+| Camera Type | Sync Capability | Notes |
+|-------------|-----------------|-------|
+| Arducam Stereo Camera HAT | Hardware sync, 2x cameras | Designed for stereo; requires Pi Camera ports |
+| Sony IMX477 (HQ Camera) | XVS/XHS sync pins exposed | Can be synchronized with external trigger |
+| Sony IMX296 (Global Shutter) | XVS sync pin | Global shutter eliminates rolling shutter artifacts |
+| Sony IMX708 (Pi Camera V3) | No external sync | NOT suitable for stereo without modification |
+
+**Arducam Solutions:**
+- [Arducam 12MP Synchronized Stereo Camera](https://www.arducam.com/product/arducam-12mp-synchronized-stereo-camera-bundle-kit-for-raspberry-pi/) - IMX477 based
+- [Arducam Global Shutter Stereo](https://www.arducam.com/product/arducam-1mp-global-shutter-synchronized-stereo-camera-bundle-kit-for-raspberry-pi/) - IMX296 based
+
+**Connection:** Requires MIPI CSI interface, NOT USB. Would require different camera approach than main RC-Box design.
+
+#### Option 2: Software Synchronization with USB Cameras
+
+USB cameras can be triggered as close as possible in software, but true synchronization is limited.
+
+| Approach | Synchronization Accuracy | Feasibility |
+|----------|--------------------------|-------------|
+| Sequential capture | 50-100ms typical | Water movement visible between frames |
+| Threaded capture | 10-50ms typical | Better but still visible motion |
+| V4L2 multi-open | 5-20ms | Depends on USB bandwidth |
+| External trigger (if supported) | <1ms | Requires specific camera models |
+
+**Conclusion:** Software synchronization with standard USB cameras is likely **inadequate** for moving water stereo imaging.
+
+#### Option 3: High-Speed Burst with Interpolation
+
+Capture high-frame-rate video from both cameras and select the closest matching frames.
+
+| Parameter | Requirement |
+|-----------|-------------|
+| Frame rate | 60fps or higher per camera |
+| Maximum sync error | 1/60s = 16ms at 60fps |
+| USB bandwidth | ~24 Mbps per camera at 1080p60 |
+
+**Feasibility:** May work for slow-moving water, but reduces effective resolution and increases processing complexity.
+
+### Survey Process Improvement Potential
+
+If stereo vision is achieved, it could assist the survey process in several ways. **Note:** This is about improving site setup and calibration, not changing how ORC measures flow.
+
+#### Current Survey Requirements
+
+1. Ground Control Points (GCPs) - minimum 6 visible in camera view
+2. GCP survey with RTK GPS or total station (sub-cm accuracy)
+3. Cross-section survey at water level
+4. Manual entry of survey data into ORC software
+
+#### How Stereo Could Help
+
+| Survey Task | Current Approach | Stereo Assistance |
+|-------------|------------------|-------------------|
+| GCP positioning | Manual survey each point | Validate surveyed positions; detect transcription errors |
+| Cross-section geometry | Wading or boat survey | Assist with bank geometry above water line |
+| Camera orientation | Manual calculation | Derive from stereo calibration |
+| Scale reference | Measured distance in scene | Cross-check with stereo-derived distances |
+| Setup verification | Re-survey if doubts | Quick stereo check before leaving site |
+
+**What stereo will NOT do:**
+- Measure underwater bathymetry (water surface reflects/refracts)
+- Replace the need for at least some survey measurements (need reference scale)
+- Work automatically without calibration
+
+**Realistic expectations:**
+- Accuracy depends on baseline length, camera resolution, and distance to subject
+- At 10m distance with 0.5m baseline and 1080p cameras, theoretical accuracy is ~5-10cm
+- Useful for error detection and reducing (not eliminating) survey effort
+- Primary value: catch mistakes that would otherwise require a return visit
+
+### Error Detection Capabilities
+
+Even if stereo measurements are less accurate than traditional survey, they can detect errors:
+
+| Error Type | Detection Method |
+|------------|------------------|
+| GCP mismatch | Compare stereo-derived GCP positions to entered values |
+| Scale error | Compare stereo-derived distances to survey distances |
+| Orientation error | Compare stereo horizon to expected level |
+| Camera movement | Detect change in stereo geometry over time |
+
+**Value:** Catch survey errors that would otherwise propagate to flow calculations.
+
+### Implementation Path
+
+#### Phase 1: Feasibility Assessment (No Hardware Changes)
+
+1. Research USB cameras with external trigger support
+2. Test software synchronization accuracy with current hardware concept
+3. Evaluate if moving water matching is achievable
+4. Determine minimum accuracy requirements for useful stereo
+
+**Deliverable:** Go/no-go decision on stereo capability
+
+#### Phase 2: Hardware Selection (If Go)
+
+1. Select synchronized camera solution (likely Arducam MIPI or triggered USB)
+2. Design mounting bracket with fixed, calibrated baseline
+3. Source calibration targets and procedures
+4. Update enclosure design for new camera connection
+
+**Deliverable:** Updated hardware specification for stereo configuration
+
+#### Phase 3: Software Development (If Go)
+
+1. Implement synchronized capture
+2. Implement stereo calibration routine
+3. Implement stereo matching for water surface
+4. Implement 3D reconstruction
+5. Integrate with ORC survey workflow
+
+**Deliverable:** Stereo survey software module
+
+### Stereo Camera Bill of Materials (Tentative)
+
+**Note:** These components are for evaluation only. Final selection pending feasibility assessment.
+
+| Component | Qty | Est. Cost | Notes |
+|-----------|-----|-----------|-------|
+| Arducam Stereo Camera HAT | 1 | $80-150 | Includes 2x synchronized cameras |
+| OR: IMX296 global shutter cameras | 2 | $100 each | With sync cable |
+| Stereo mounting bracket | 1 | $30-50 | Custom or 3D printed |
+| Calibration target (checkerboard) | 1 | $15 | For initial calibration |
+| Longer MIPI cables (300mm) | 2 | $10 | Camera positioning flexibility |
+| **Total** | | **$150-350** | Evaluation kit |
+
+### Risks and Mitigations
+
+| Risk | Likelihood | Impact | Mitigation |
+|------|------------|--------|------------|
+| Water surface too challenging for stereo | Medium | High | Test with actual river footage early |
+| USB sync accuracy insufficient | High | High | Require hardware sync from start |
+| Accuracy insufficient for survey replacement | Medium | Medium | Position as error detection, not survey replacement |
+| Added complexity not worth benefit | Low | Medium | Keep as optional configuration |
+| MIPI cameras don't fit IP67 housing concept | Medium | High | Research sealed MIPI camera options or waterproof adapters |
+
+### Conclusion
+
+Stereo camera capability for survey assistance is a **useful experimental feature** worth exploring. The main challenges are:
+1. Achieving adequate synchronization with commodity hardware
+2. Stereo matching on static scene elements (banks, GCPs) - water surface matching is NOT required for survey use
+3. Maintaining IP67 sealing with MIPI camera connections
+
+**Key insight:** Since we only need stereo for surveying the static scene (not tracking moving water), synchronization requirements may be less stringent than initially assessed. A single synchronized frame capture during setup may be sufficient.
+
+**Recommendation:** Pursue as research effort in parallel with main RC-Box development. Do not block main product on stereo capability. Focus initial experiments on static scene reconstruction for GCP and bank geometry validation.
+
+---
+
 ## Bill of Materials Summary
 
 ### Configuration A: Two-Box System
@@ -1100,6 +1599,7 @@ When comparing suppliers, evaluate against these criteria:
 | Version | Date | Changes |
 |---------|------|---------|
 | 1.0 | 2024-12-01 | Initial specification based on design decisions |
+| 1.1 | 2024-12-03 | Added: IR spotlight commodity control (USB relay + photoresistor); Data logger & sensor integration (RS485/Modbus, rainfall, weather station); Stereo camera stretch goal |
 
 ---
 
