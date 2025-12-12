@@ -33,8 +33,11 @@ flowchart TB
     end
 
     subgraph Cameras["Camera System"]
+        MOUNT["Rigid Stereo Mount<br/>(300mm baseline)"]
         CAM1["📷 Camera 1<br/>IP67/IP68 Sealed"]
         CAM2["📷 Camera 2<br/>IP67/IP68 Sealed"]
+        MOUNT --- CAM1
+        MOUNT --- CAM2
     end
 
     subgraph IRSystem["IR Spotlight System"]
@@ -91,6 +94,96 @@ flowchart TB
     TAMPER --> ALARM
     VIBRATION --> ALARM
     ALARM --> SIREN
+```
+
+---
+
+## Camera Mount System
+
+Rigid stereo mount with fixed baseline - cameras are NOT independently adjustable.
+
+```mermaid
+flowchart TB
+    subgraph Mounting["Pole Mounting"]
+        POLE["Utility Pole<br/>75-150mm diameter"]
+        CLAMP["Pole Clamp<br/>(stainless steel)"]
+    end
+
+    subgraph Adjustment["Single Adjustment Point"]
+        SWIVEL["Pan/Tilt Swivel<br/>with Locking Lever"]
+    end
+
+    subgraph RigidAssembly["Rigid Stereo Assembly<br/>(NO individual camera adjustment)"]
+        BAR["Aluminum Stereo Bar<br/>300mm baseline"]
+        SHADE["Integrated Sun Shade"]
+
+        subgraph CamLeft["Camera 1"]
+            CAM1["IP67/IP68<br/>Sealed Camera"]
+            THREAD1["1/4-20 Mount"]
+        end
+
+        subgraph CamRight["Camera 2"]
+            CAM2["IP67/IP68<br/>Sealed Camera"]
+            THREAD2["1/4-20 Mount"]
+        end
+    end
+
+    subgraph Cables["Cable Management"]
+        CLIP1["Cable Clips"]
+        USB1["USB to Pi"]
+        USB2["USB to Pi"]
+    end
+
+    POLE --> CLAMP
+    CLAMP --> SWIVEL
+    SWIVEL --> BAR
+    BAR --> SHADE
+    BAR --> THREAD1 --> CAM1
+    BAR --> THREAD2 --> CAM2
+    CAM1 --> CLIP1 --> USB1
+    CAM2 --> CLIP1 --> USB2
+```
+
+### Mount Side View
+
+```mermaid
+flowchart LR
+    subgraph SideView["Side View - Aiming Direction →"]
+        POLE2["║<br/>║<br/>║<br/>Pole"]
+        CLAMP2["┃<br/>Clamp"]
+        SWIVEL2["◉<br/>Swivel"]
+        BAR2["════════════<br/>Stereo Bar"]
+        SHADE2["▔▔▔▔▔▔▔▔▔▔<br/>Sun Shade"]
+        CAM_A["◯ Cam1"]
+        CAM_B["◯ Cam2"]
+    end
+
+    POLE2 --- CLAMP2 --- SWIVEL2 --- BAR2
+    BAR2 --- SHADE2
+    BAR2 --- CAM_A
+    BAR2 --- CAM_B
+```
+
+### Key Design Points
+
+```mermaid
+flowchart TB
+    subgraph Principle["Design Principle"]
+        P1["Both cameras MUST<br/>maintain fixed geometry"]
+        P2["Only ONE adjustment point<br/>(the swivel)"]
+        P3["Baseline is FIXED<br/>after manufacturing"]
+    end
+
+    subgraph Why["Why Fixed Geometry?"]
+        W1["Consistent video framing"]
+        W2["Future stereo survey capability"]
+        W3["Simplified field setup"]
+        W4["No drift over time"]
+    end
+
+    P1 --> W1
+    P2 --> W2
+    P3 --> W3 & W4
 ```
 
 ---

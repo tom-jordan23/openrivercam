@@ -13,19 +13,20 @@ This document defines the official specifications for the RC-Box river monitorin
 1. [Design Principles](#design-principles)
 2. [System Overview](#system-overview)
 3. [Camera Specifications](#camera-specifications)
-4. [Power System Specifications](#power-system-specifications)
-5. [Power Management & Scheduling](#power-management--scheduling)
-6. [IR Spotlight System](#ir-spotlight-system)
-7. [Data Logger & Sensor Integration](#data-logger--sensor-integration)
-8. [Enclosure Configurations](#enclosure-configurations)
-9. [Cable Glands & Connectors](#cable-glands--connectors)
-10. [Environmental Protection](#environmental-protection)
-11. [Anti-Theft & Tamper Detection](#anti-theft--tamper-detection)
-12. [Grounding & Surge Protection](#grounding--surge-protection)
-13. [International Shipping & Customs](#international-shipping--customs)
-14. [Stereo Camera System (Stretch Goal)](#stereo-camera-system-stretch-goal)
-15. [Bill of Materials Summary](#bill-of-materials-summary)
-16. [Supplier Evaluation Criteria](#supplier-evaluation-criteria)
+4. [Camera Mount System](#camera-mount-system)
+5. [Power System Specifications](#power-system-specifications)
+6. [Power Management & Scheduling](#power-management--scheduling)
+7. [IR Spotlight System](#ir-spotlight-system)
+8. [Data Logger & Sensor Integration](#data-logger--sensor-integration)
+9. [Enclosure Configurations](#enclosure-configurations)
+10. [Cable Glands & Connectors](#cable-glands--connectors)
+11. [Environmental Protection](#environmental-protection)
+12. [Anti-Theft & Tamper Detection](#anti-theft--tamper-detection)
+13. [Grounding & Surge Protection](#grounding--surge-protection)
+14. [International Shipping & Customs](#international-shipping--customs)
+15. [Stereo Camera System (Stretch Goal)](#stereo-camera-system-stretch-goal)
+16. [Bill of Materials Summary](#bill-of-materials-summary)
+17. [Supplier Evaluation Criteria](#supplier-evaluation-criteria)
 
 ---
 
@@ -199,6 +200,99 @@ If sealed cameras prove unsuitable, active dehumidification system required:
 - Type 4A molecular sieve desiccant (100g per housing)
 - 12V 5W lens heater with thermostat
 - Anti-fog coating
+
+---
+
+## Camera Mount System
+
+### Design Requirement: Fixed Stereo Geometry
+
+Both cameras must be mounted on a **single rigid bracket** that maintains fixed geometric relationship. This is required for:
+- Consistent video framing between cameras
+- Future stereo survey capability (see [Stereo Camera System](#stereo-camera-system-stretch-goal))
+- Simplified field setup (aim once, both cameras aligned)
+
+**Cameras are NOT independently adjustable.** The entire mount assembly is aimed as a unit.
+
+### Mount Specifications
+
+| Specification | Requirement |
+|---------------|-------------|
+| Camera spacing (baseline) | 200-500mm (adjustable at manufacturing, fixed in field) |
+| Camera alignment | Parallel optical axes, ±0.5° |
+| Material | Powder-coated aluminum or stainless steel |
+| Mounting interface | 1/4"-20 tripod thread per camera |
+| Pole attachment | Adjustable clamp for 75-150mm (3-6") poles |
+| Adjustment | Pan, tilt, rotation of entire assembly |
+| Locking | Positive locking mechanism (no drift over time) |
+| Cable routing | Integrated cable clips or channel |
+| IP rating | Mounting hardware outdoor rated (stainless fasteners) |
+
+### Mount Design Concept
+
+```
+        [Pole Clamp]
+             │
+        [Swivel Joint]
+        (pan/tilt/lock)
+             │
+    ┌────────┴────────┐
+    │   RIGID BAR     │
+    │  (fixed length) │
+    └────────┬────────┘
+        ┌────┴────┐
+        │         │
+    [Cam 1]   [Cam 2]
+
+    Both cameras point same direction
+    Baseline is fixed after manufacturing
+    Only the swivel joint is adjustable
+```
+
+### Baseline Selection
+
+The camera baseline (spacing) affects stereo capability:
+
+| Baseline | Best For | Trade-off |
+|----------|----------|-----------|
+| 200mm | Narrow rivers (<10m), close subjects | Lower depth precision at distance |
+| 300mm | Medium rivers (10-20m) | Good balance |
+| 500mm | Wide rivers (20-30m), distant subjects | Larger mount, harder to transport |
+
+**Recommendation:** Standardize on 300mm baseline for general use. This provides reasonable stereo geometry for rivers up to 20m wide while keeping the mount compact.
+
+### Reference Designs
+
+Similar rigid stereo mounts used in:
+- **StereoPi** - Raspberry Pi stereo camera projects
+- **ZED stereo cameras** - Commercial stereo vision systems
+- **Photogrammetry rigs** - Aerial survey camera mounts
+
+### Sun Shade
+
+The mount should include an integrated sun shade to:
+- Reduce lens flare
+- Minimize thermal stress on cameras
+- Protect from direct rain
+
+| Specification | Requirement |
+|---------------|-------------|
+| Coverage | Both cameras shaded |
+| Material | Aluminum or UV-stable plastic |
+| Color | Black (non-reflective) or white (heat rejection) |
+| Design | Does not obstruct camera field of view |
+
+### Bill of Materials: Camera Mount
+
+| Component | Qty | Est. Cost | Notes |
+|-----------|-----|-----------|-------|
+| Rigid stereo bar (aluminum, 300mm) | 1 | $20-40 | Custom or off-shelf camera rail |
+| 1/4"-20 camera mount screws | 2 | $2 | Stainless steel |
+| Ball head or pan/tilt mount | 1 | $25-50 | Heavy-duty with locking |
+| Pole clamp (75-150mm range) | 1 | $15-30 | Stainless or galvanized |
+| Sun shade bracket | 1 | $10-20 | Aluminum |
+| Cable clips | 4 | $2 | Adhesive or screw-mount |
+| **Total** | | **$75-145** | |
 
 ---
 

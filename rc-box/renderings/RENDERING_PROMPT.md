@@ -11,7 +11,7 @@ Product rendering of a solar-powered river monitoring station mounted on a 4-inc
 
 - A white rectangular IP67 weatherproof enclosure (approximately 400x300x200mm) with visible cable glands, a small OLED status display on the front, and a red PMI (Palang Merah Indonesia / Indonesian Red Cross) logo printed on the enclosure
 - A 100W monocrystalline solar panel mounted above the enclosure at a 30-degree angle
-- Two small cylindrical weatherproof cameras (black, IP68 rated) on adjustable articulating arms extending from the pole, pointed downward toward water
+- Two small cylindrical weatherproof cameras (black, IP68 rated) mounted on a single rigid aluminum stereo bar (approximately 300mm wide) with an integrated sun shade, the entire assembly attached to a single pan/tilt swivel mount extending from the pole, pointed downward toward water
 - A compact rectangular IR floodlight mounted below the cameras
 - External cellular antenna (black whip style) mounted on top
 
@@ -71,18 +71,20 @@ MC4 solar connectors enter through weatherproof glands at the top. Clean profess
 
 ---
 
-## 5. Camera Mount Detail
+## 5. Camera Mount Detail - Rigid Stereo Bar
 
 ```
-Close-up product photograph of a weatherproof industrial camera mounted on an adjustable articulating arm. The camera is:
+Close-up product photograph of a rigid stereo camera mount system. The assembly consists of:
 
-- Cylindrical black housing, approximately 50mm diameter x 100mm long
-- IP68 rated with visible sealed lens window
-- Mounted on a ball-joint bracket with locking lever
-- USB cable exits from the back through a sealed gland
-- Small sun shade/hood above the lens
+- A horizontal aluminum bar (approximately 300mm long, powder-coated black or silver) serving as the stereo baseline
+- Two identical cylindrical black weatherproof cameras (IP68 rated, approximately 50mm diameter x 100mm long) mounted at each end of the bar
+- Both cameras point in exactly the same direction with parallel optical axes
+- An integrated sun shade/hood spanning the full width of the bar, protecting both camera lenses
+- USB cables exit from the back of each camera, routed along the bar with cable clips
+- The bar attaches to a single heavy-duty pan/tilt swivel mount with a prominent locking lever
+- The swivel mount connects to a stainless steel pole clamp
 
-The mounting arm is made of powder-coated aluminum, attached to a pole clamp. The arm has multiple pivot points allowing pan, tilt, and rotation adjustment. Background shows blurred outdoor/river environment. Professional product photography, emphasizing rugged durability and adjustability.
+The design emphasizes that both cameras move together as a single unit - there are no individual camera adjustments. The only adjustment point is the central swivel. Clean product photography on white background, showing the mount from a 3/4 angle to reveal both cameras and the rigid bar construction. Professional industrial design aesthetic.
 ```
 
 ---
@@ -95,7 +97,7 @@ Wide environmental photograph of a river monitoring station deployed at a tropic
 - A galvanized steel pole (about 3 meters tall) installed on a concrete pad on the riverbank
 - Solar panel at the top angled toward the sun
 - White weatherproof enclosure with red PMI (Indonesian Red Cross) logo mounted mid-pole
-- Two cameras on articulating arms pointing toward the river
+- Two cameras mounted together on a rigid stereo bar with sun shade, pointing toward the river
 - IR spotlight visible below cameras
 - A separate small rain gauge on a shorter pole nearby
 
@@ -121,7 +123,7 @@ RIGHT SIDE: "Combined Configuration"
 - Simpler installation with fewer external cables
 - Label indicating "Combined Unit"
 
-Both configurations show the same external components: solar panel on top, two cameras on arms, cellular antenna. Clean diagram-style product rendering with white background, showing the two options side by side for comparison. Professional, technical illustration style.
+Both configurations show the same external components: solar panel on top, rigid stereo camera bar with two cameras, cellular antenna. Clean diagram-style product rendering with white background, showing the two options side by side for comparison. Professional, technical illustration style.
 ```
 
 ---
@@ -160,10 +162,11 @@ The image conveys 24/7 autonomous operation in remote locations. Moody, document
 
 ## Notes
 
-These prompts describe the RC-Box as specified in DESIGN_SPECS.md v1.1. Key visual elements:
+These prompts describe the RC-Box as specified in DESIGN_SPECS.md v1.2. Key visual elements:
 
-- White/light gray IP67 enclosures
-- Black IP68 sealed cameras
+- White/light gray IP67 enclosures with red PMI logo
+- Black IP68 sealed cameras on rigid stereo mount (300mm baseline)
+- Cameras are NOT independently adjustable - single pan/tilt swivel for entire assembly
 - Monocrystalline solar panel
 - Galvanized steel pole mounting
 - Tropical/river environment context
