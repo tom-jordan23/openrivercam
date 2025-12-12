@@ -1,0 +1,158 @@
+Category,Component,Specification,Qty,Unit_Cost_USD,Total_USD,Primary_Supplier,Alternative_Supplier,Part_Number,Notes,Supply_Risk,Lead_Time_Days
+,,,,,,,,,,,,
+SCENARIO 1: DIGIKEY PRIMARY + LOCAL SOLAR,,,,,,,,,,,,
+"Strategy: Single international electronics supplier (DigiKey) for 80% of components, local in-country sourcing for solar/battery",,,,,,,,,,,,
+"Best for: Technical teams, established solar markets, global humanitarian deployment",,,,,,,,,,,,
+,,,,,,,,,,,,
+COMPUTING CORE,,,,,,,,,,,,
+Computing,Raspberry Pi 5 4GB,ARM Cortex-A76 2.4GHz quad-core WiFi6 BT5.0,1,70.00,70.00,DigiKey,Mouser,SC1111,Dec 2025 price increase (+$10); same-day shipping available,LOW,1-3
+Computing,Raspberry Pi 5 8GB (Alternative),ARM Cortex-A76 2.4GHz quad-core WiFi6 BT5.0 8GB,1,95.00,95.00,DigiKey,Mouser,SC1112,For multi-camera or advanced processing applications,LOW,1-3
+Computing,Industrial MicroSD 64GB,UHS-I U3 industrial temp -40C to 85C,1,40.00,40.00,DigiKey,Mouser,SDCE/64GB,Kingston industrial grade; pSLC mode available,LOW,1-3
+Computing,M.2 SSD 512GB + USB Adapter,SATA SSD for video buffer (3+ weeks storage),1,55.00,55.00,DigiKey,Amazon,Various,Optional - for extended local storage,LOW,3-7
+,,,,,,,,,,,,
+POWER MANAGEMENT HAT,,,,,,,,,,,,
+Power HAT,Witty Pi 4,RTC wake/sleep scheduling ±2ppm accuracy,1,30.00,30.00,UUGear Direct,Adafruit,WP4,Pi 5 compatible (software v4.2+); EU shipping 3-7 days,LOW,3-7
+Power HAT,Witty Pi 5 HAT+ (Alternative),HAT+ Mode 1 compliant 5A current delivery,1,45.00,45.00,UUGear Direct,The Pi Hut,WP5+,Newer design specifically for Pi 5,LOW,3-7
+Power HAT,Waveshare UPS HAT (B) (Alternative),5A output pogo pin connection multi-protection,1,35.00,35.00,Waveshare,Amazon,UPS-HAT-B,No GPIO conflicts; battery <67mm length,LOW,5-10
+Power HAT,DFRobot FIT0992 (Alternative),4x18650 UPS 5.1V 5A auto power management,1,53.00,53.00,DFRobot,Electromaker,FIT0992,Do NOT use 18650 with built-in protection circuit,LOW,5-10
+,,,,,,,,,,,,
+CAMERAS (IP67/IP68 SEALED),,,,,,,,,,,,
+Camera,ELP 1080P IP67 USB Dome Camera,OV2710 CMOS 30/60/120fps 850nm IR night vision,2,47.00,94.00,Amazon,SVPRO Direct,ELP-USBFHD01M-DL36,Factory sealed - eliminates fogging issues,LOW,3-7
+Camera,ELP 720P IP67 (Budget Alternative),OV9712 720P 30fps IR LEDs IP67,2,37.00,74.00,Amazon,SVPRO Direct,Various,Lower cost option for budget deployments,LOW,3-7
+Camera,Arducam B0304 12MP (Premium),IMX708 sensor 75° FOV USB UVC plug-and-play,2,75.00,150.00,Arducam Direct,DigiKey,B0304,Higher resolution; contact Arducam for IP67 housing options,MEDIUM,5-10
+Camera,USB Active Extension 5m,USB 2.0 active repeater outdoor rated,2,20.00,40.00,DigiKey,Amazon,Various,For camera placement flexibility,LOW,3-5
+Camera,USB Active Extension 30m (Long Run),USB 2.0 active repeater with power 30m,2,40.00,80.00,DigiKey,Tripp Lite,U330-10M,For remote camera placement; requires 5V power injection,LOW,3-5
+,,,,,,,,,,,,
+ENCLOSURES (IP67),,,,,,,,,,,,
+Enclosure,Hammond 1555F Compute Box,IP67 polycarbonate 120x90x60mm wall mount,1,45.00,45.00,DigiKey,Mouser,1555FF17GY,DIN rail mount tabs included; -40C to +110C,LOW,3-5
+Enclosure,Hammond 1555F Large (Alternative),IP67 polycarbonate 160x160x60mm,1,55.00,55.00,DigiKey,Mouser,1555HF17GY,Larger option for additional components,LOW,3-5
+Enclosure,Polycase WQ Series (Alternative),IP67 NEMA 4X polycarbonate outdoor,1,50.00,50.00,Polycase Direct,DigiKey,WQ-xx,USA manufactured; custom sizing available,LOW,5-10
+Enclosure,LeMotech IP67 Junction Box (Budget),ABS/PC 200x120x75mm clear lid option,1,25.00,25.00,Amazon,LeMotech Direct,Various,Budget option; includes cable glands,LOW,2-3
+,,,,,,,,,,,,
+IP67 CONNECTORS & GLANDS,,,,,,,,,,,,
+Connector,M20 Cable Glands IP68 (5-pack),Nylon PA66 UV stabilized 6-12mm cable OD,1,15.00,15.00,DigiKey,Mouser,Amphenol LTW,For DC power and solar cables,LOW,3-5
+Connector,M16 Cable Glands IP68 (6-pack),Nylon PA66 UV stabilized 4-8mm cable OD,1,12.00,12.00,DigiKey,Mouser,Various,For USB and smaller cables,LOW,3-5
+Connector,M12 Cable Glands IP68 (4-pack),Nylon PA66 UV stabilized 3-6mm cable OD,1,10.00,10.00,DigiKey,Mouser,Various,For antenna cables and sensors,LOW,3-5
+Connector,GORE Vent M12 IP68,ePTFE membrane pressure equalization,2,12.00,24.00,DigiKey,Amphenol LTW,VENT-PS1,Critical for preventing condensation; one per enclosure,LOW,3-5
+Connector,Blanking Plugs M12/M16/M20 (assorted),IP68 rated nylon plugs,1,8.00,8.00,DigiKey,Amazon,Various,For unused enclosure holes,LOW,3-5
+,,,,,,,,,,,,
+WIRING & PROTECTION,,,,,,,,,,,,
+Wiring,Terminal Blocks 10A (6-pack),Phoenix Contact or equivalent DIN rail mount,1,15.00,15.00,DigiKey,Mouser,Various,For clean power distribution,LOW,3-5
+Wiring,DIN Rail 35mm (2x 150mm),Standard 35mm mounting rail,1,8.00,8.00,DigiKey,Amazon,Various,For internal component mounting,LOW,3-5
+Protection,TVS Diodes 5.5V (10-pack),Bourns SMAJ5.0A surge protection,1,8.00,8.00,DigiKey,Mouser,SMAJ5.0A,5V rail protection,LOW,3-5
+Protection,Polyfuse 3A (5-pack),Resettable PTC fuse,1,5.00,5.00,DigiKey,Mouser,Various,Overcurrent protection,LOW,3-5
+Protection,20A Blade Fuse + Holder,Automotive style inline fuse,2,5.00,10.00,DigiKey,Amazon,Various,Main power protection,LOW,3-5
+Wiring,Wire Kit 12/14/18 AWG,Marine grade tinned copper assorted,1,35.00,35.00,DigiKey,Amazon,Alpha Wire,50ft assorted for power and signal,LOW,3-5
+,,,,,,,,,,,,
+IR ILLUMINATION,,,,,,,,,,,,
+IR Light,850nm IR Flood 12-LED IP67,90° flood 100ft range 12V DC photocell auto,1,28.00,28.00,Amazon,Univivi/AUTENS,Various,Auto on at night; aluminum housing,LOW,2-5
+IR Light,850nm IR Flood 15-LED (Higher Power),90° flood 130ft range 12V DC,1,35.00,35.00,Amazon,OHWOAI,Various,For extended range requirements,LOW,2-5
+IR Control,5V USB Relay Module,SPDT 10A contacts Pi-controlled,1,4.00,4.00,Amazon,DigiKey,Various,Software control of IR light,LOW,2-5
+IR Control,12V Photoresistor Relay,XH-M131 auto on/off at darkness,1,5.00,5.00,Amazon,AliExpress,XH-M131,Hardware backup for light sensing,LOW,2-5
+,,,,,,,,,,,,
+MOUNTING HARDWARE,,,,,,,,,,,,
+,,,,,,,,,,,,
+Stereo Camera Mount,,,,,,,,,,,,
+Mounting,Aluminum Stereo Bar 300mm,6061 aluminum flat bar 300x25x6mm powder coated,1,25.00,25.00,Amazon,McMaster-Carr,Various,300mm baseline for stereo camera pair; drill 1/4"-20 holes at ends,LOW,3-7
+Mounting,Ball Head Mount 1/4"-20 (2x),360° rotation aluminum alloy weatherproof,2,18.00,36.00,Amazon,SmallRig,SmallRig 2059,For camera adjustment; one per camera on stereo bar,LOW,3-5
+Mounting,Pan/Tilt Swivel Mount Heavy Duty,Central pivot for stereo bar assembly locking lever,1,35.00,35.00,Amazon,RAM Mounts,RAM-B-201U,Single adjustment point for both cameras,LOW,3-7
+Mounting,Pole Clamp for Swivel Mount,Stainless steel fits 2-4in OD poles,1,25.00,25.00,Amazon,RAM Mounts,RAM-B-231ZU,Connects swivel mount to utility pole,LOW,3-7
+Mounting,Sun Shade for Stereo Bar,Aluminum hood 350mm wide protects both lenses,1,20.00,20.00,Amazon,Custom/3D Print,Various,Reduces lens heating and glare; mount above cameras,LOW,5-10
+,,,,,,,,,,,,
+Enclosure Pole Mounting,,,,,,,,,,,,
+Mounting,Stainless Steel Hose Clamps 4-6in,304 SS worm drive adjustable for pole mount,4,4.00,16.00,Amazon,Home Depot,Various,For mounting enclosures to utility poles 3-6in diameter,LOW,2-5
+Mounting,Stainless Steel Banding Kit,3/4in SS banding + buckles for larger poles,1,35.00,35.00,Amazon,McMaster-Carr,Various,Alternative for poles >6in or square posts,LOW,3-7
+Mounting,Rubber Pole Padding,EPDM strips prevent slip and protect pole,1,12.00,12.00,Amazon,Home Depot,Various,Place between clamps and pole,LOW,2-5
+Mounting,L-Bracket Heavy Duty (pair),Stainless steel 90° bracket for enclosure,2,15.00,30.00,DigiKey,Amazon,Various,Attach enclosure to pole clamps,LOW,3-5
+,,,,,,,,,,,,
+Solar Panel Mounting,,,,,,,,,,,,
+Mounting,Solar Panel Tilt Bracket Set,Adjustable 0-60° aluminum universal mount,1,35.00,35.00,Amazon,Renogy,Various,Angle bracket for optimal sun exposure; fits 50-200W panels,LOW,3-7
+Mounting,Solar Panel Pole Mount Kit,Side-of-pole mount for 100-200W panels,1,55.00,55.00,Amazon,Renogy,RNG-KIT-POLE,Alternative to tilt bracket for pole installations,LOW,5-10
+Mounting,U-Bolts Stainless Steel 2-4in,For attaching solar mount to pole,4,5.00,20.00,Amazon,Home Depot,Various,Match to pole diameter,LOW,2-5
+,,,,,,,,,,,,
+Internal Component Mounting,,,,,,,,,,,,
+Mounting,DIN Rail 35mm (2x 200mm),Standard 35mm mounting rail aluminum,2,8.00,16.00,DigiKey,Amazon,Various,For Pi mounting plates and terminal blocks,LOW,3-5
+Mounting,Raspberry Pi DIN Rail Mount,35mm DIN adapter for Pi 5,1,12.00,12.00,Amazon,DigiKey,Various,Secures Pi to DIN rail,LOW,3-5
+Mounting,Standoffs M2.5 Nylon Kit,Assorted lengths for PCB mounting,1,8.00,8.00,DigiKey,Amazon,Various,For HATs and boards not on DIN rail,LOW,3-5
+Mounting,Velcro Industrial Strength,Heavy duty for battery and controller mounting,1,12.00,12.00,Amazon,Home Depot,Various,Secondary retention for components,LOW,2-5
+,,,,,,,,,,,,
+LOCAL SOURCING (SOLAR/BATTERY) - PRICES VARY BY REGION,,,,,,,,,,,,
+Solar,100W Monocrystalline Panel,18V nominal MC4 connectors 10yr warranty,1,80.00,80.00,LOCAL SUPPLIER,Renogy/Amazon,Various,"Source locally to avoid shipping; price varies $60-150",VARIES,LOCAL
+Solar,200W Monocrystalline (High Capacity),18V nominal MC4 connectors,1,140.00,140.00,LOCAL SUPPLIER,Renogy/Amazon,Various,For high-demand or cloudy region deployments,VARIES,LOCAL
+Battery,LiFePO4 12V 50Ah,Built-in BMS 2000+ cycles -20C to 60C,1,200.00,200.00,LOCAL SUPPLIER,Redodo/LiTime,Various,"Source locally - DG shipping complications; price varies $130-300",VARIES,LOCAL
+Battery,LiFePO4 12V 100Ah (High Capacity),Built-in BMS 4000+ cycles extended backup,1,300.00,300.00,LOCAL SUPPLIER,Redodo/Battle Born,Various,For extended autonomy requirements,VARIES,LOCAL
+Charge Controller,MPPT 20-30A LiFePO4 Compatible,Victron/Renogy/EPEver 12V/24V auto >95% efficiency,1,90.00,90.00,LOCAL SUPPLIER,Victron Distributor,Various,"Victron SmartSolar preferred; price $60-130",VARIES,LOCAL
+,,,,,,,,,,,,
+ANTI-THEFT & TAMPER DETECTION,,,,,,,,,,,,
+Security,Plunger Tamper Switch N.C.,Detects enclosure opening,2,8.00,16.00,DigiKey,Amazon,Various,One per enclosure,LOW,3-5
+Security,Vibration Sensor Adjustable,Detects prying/movement,1,15.00,15.00,Amazon,DigiKey,Various,Adjustable sensitivity,LOW,3-5
+Security,12V Piezo Siren 110dB IP65,Weatherproof audible alarm,1,25.00,25.00,Amazon,DigiKey,Various,Local deterrent,LOW,3-5
+Security,Security Screws Torx T20 (kit),Tamper-resistant fasteners,1,12.00,12.00,DigiKey,Amazon,Various,For enclosure and mounting,LOW,3-5
+,,,,,,,,,,,,
+GROUNDING & SURGE,,,,,,,,,,,,
+Grounding,Ground Lug Kit,Copper bonding lugs for enclosures,2,6.00,12.00,DigiKey,Home Depot,Various,One per enclosure,LOW,3-5
+Grounding,Ground Wire 10 AWG Green/Yellow,25ft solid copper,1,15.00,15.00,DigiKey,Home Depot,Various,Equipment grounding,LOW,3-5
+Grounding,Ground Rod 8ft Copper,Copper-bonded steel rod,1,25.00,25.00,LOCAL SUPPLIER,Home Depot,Various,Source locally due to weight/size,VARIES,LOCAL
+Surge,DC Surge Protector 12V,Solar input protection,1,20.00,20.00,DigiKey,Amazon,Various,MC4 or terminal connection,LOW,3-5
+Surge,Coax Surge Protector N-Type,Antenna line protection,1,15.00,15.00,DigiKey,Amazon,Various,If using external cellular/WiFi antenna,LOW,3-5
+,,,,,,,,,,,,
+HIGH HUMIDITY / TROPICAL CLIMATE PACKAGE (OPTIONAL),,,,,,,,,,,,
+"Required for: Indonesia, SE Asia monsoon, Amazon basin, Congo basin, and other >80% RH environments",,,,,,,,,,,,
+"Protects: Pi 5, power HAT, charge controller, relay modules, and all enclosure electronics",,,,,,,,,,,,
+"Note: Sealed IP67/IP68 cameras handle their own condensation - this package protects the ENCLOSURE electronics",,,,,,,,,,,,
+,,,,,,,,,,,,
+Enclosure Electronics Protection System,,,,,,,,,,,,
+Humidity,Silicone Heater Pad 75x150mm 25W,12V adhesive for enclosure wall - sized for compute box,1,25.00,25.00,Amazon,Keenovo,Various,Mount on interior wall near Pi; keeps electronics above dew point,LOW,3-7
+Humidity,Silicone Heater Pad 100x200mm 40W,12V adhesive for power box (if Config A two-box),1,35.00,35.00,Amazon,Keenovo,Various,Protects charge controller and power electronics; Config A only,LOW,3-7
+Humidity,STC-1000 Digital Thermostat 12V,Temperature controller -50C to 110C 10A relay,1,15.00,15.00,Amazon,eBay,STC-1000,Activates heaters when temp <25C; prevents condensation at night,LOW,2-5
+Humidity,STC-1000 Second Unit (Config A),Second thermostat for power box,1,15.00,15.00,Amazon,eBay,STC-1000,Config A two-box needs independent control; skip for Config B,LOW,2-5
+Humidity,DHT22 Temperature/Humidity Sensor,Digital I2C for Pi monitoring 0-100% RH,2,8.00,16.00,DigiKey,Amazon,DHT22/AM2302,One per enclosure; software alerts if humidity >70%,LOW,3-5
+Humidity,Molecular Sieve Desiccant Type 4A 200g,Works at >90% RH (silica gel fails >60% RH),4,12.00,48.00,Amazon,Industrial suppliers,Type 4A,2 per enclosure; replace every 3-6 months in tropics,LOW,3-7
+Humidity,GORE-TEX Vent M12 (additional 2x),Extra pressure equalization for humid climates,2,12.00,24.00,DigiKey,Amphenol LTW,VENT-PS1,Second vent per enclosure improves humid airflow,LOW,3-5
+Humidity,Humidity Indicator Cards (20-pack),Color-change visual check 10-60% RH range,1,12.00,12.00,Amazon,Uline,Various,Place inside enclosure; check without opening,LOW,2-5
+Humidity,Conformal Coating Spray,Silicone coating for PCB protection,1,18.00,18.00,DigiKey,Amazon,MG Chemicals,Apply to exposed PCB connections; water resistance,LOW,3-5
+,,,,,,,,,,,,
+Tropical Electronics Spares Kit,,,,,,,,,,,,
+Spares,Spare Heater Pad 75x150mm,Replacement compute box heater,1,25.00,25.00,Amazon,Keenovo,Various,Field replacement,LOW,3-7
+Spares,Spare Heater Pad 100x200mm,Replacement power box heater (Config A),1,35.00,35.00,Amazon,Keenovo,Various,Config A only; skip for Config B combined box,LOW,3-7
+Spares,Spare Desiccant Type 4A 1kg,12+ month supply for tropical deployment,1,35.00,35.00,Amazon,Industrial,Type 4A,Bulk molecular sieve for field replacement,LOW,3-7
+Spares,Spare GORE Vents M12 (4x),Replacement pressure vents,4,12.00,48.00,DigiKey,Amphenol,VENT-PS1,Vents clog in dusty/humid; stock extras,LOW,3-5
+Spares,Spare DHT22 Sensors (2x),Replacement humidity sensors,2,8.00,16.00,DigiKey,Amazon,DHT22,Sensors can fail in high humidity,LOW,3-5
+,,,,,,,,,,,,
+HIGH HUMIDITY PACKAGE COSTS,,,,,,,,,,,,
+Package,Config B (Combined Box) Essential,1 heater + thermostat + sensors + desiccant + vents + coating,,,158.00,,,,Single enclosure protection,,
+Package,Config A (Two-Box) Essential,2 heaters + 2 thermostats + sensors + desiccant + vents + coating,,,208.00,,,,Both enclosures protected,,
+Package,Tropical Spares Kit (Config B),Heater + desiccant + vents + sensors,,,124.00,,,,6-12 month field supply,,
+Package,Tropical Spares Kit (Config A),2 heaters + desiccant + vents + sensors,,,159.00,,,,6-12 month field supply,,
+Package,TOTAL Config B + Spares,Combined box deployment,,,282.00,,,,Recommended for Indonesia/SE Asia/Amazon,,
+Package,TOTAL Config A + Spares,Two-box deployment,,,367.00,,,,Recommended for Indonesia/SE Asia/Amazon,,
+,,,,,,,,,,,,
+POWER BUDGET NOTE,,,,,,,,,,,,
+"Enclosure heaters add 80-150 Wh/day depending on configuration and climate",,,,,,,,,,,,
+"For tropical: Minimum 100W solar + 100Ah battery (vs 50W/50Ah for temperate)",,,,,,,,,,,,
+"Heaters run primarily at night when temperature drops cause condensation",,,,,,,,,,,,
+,,,,,,,,,,,,
+CONSUMABLES & ASSEMBLY,,,,,,,,,,,,
+Consumables,Silicone Sealant Tube,RTV silicone for waterproofing,1,12.00,12.00,DigiKey,Amazon,Various,For cable gland threads and seams,LOW,3-5
+Consumables,Dielectric Grease 100g,For connector weatherproofing,1,10.00,10.00,DigiKey,Amazon,Various,Prevents corrosion in connections,LOW,3-5
+Consumables,Cable Ties Assorted (500pc),UV-resistant nylon,1,15.00,15.00,DigiKey,Amazon,Various,Cable management,LOW,3-5
+Consumables,Heat Shrink Assorted (kit),Marine grade adhesive-lined,1,18.00,18.00,DigiKey,Amazon,Various,Waterproof wire terminations,LOW,3-5
+Consumables,Labels Weatherproof,Vinyl labels for identification,1,8.00,8.00,Amazon,DigiKey,Various,Component and wire labeling,LOW,3-5
+,,,,,,,,,,,,
+,,,,,,,,,,,,
+COST SUMMARY - SCENARIO 1,,,,,,,,,,,,
+,,,,,,,,,,,,
+Configuration,Description,DigiKey,Local Solar,Amazon,Total,,,,,,,
+Budget Build,Pi5 4GB + ELP 720P cameras + 50Ah + 100W,385,280,95,760,,,Uses budget camera option,,,,
+Standard Build,Pi5 4GB + ELP 1080P cameras + 50Ah + 100W,410,280,105,795,,,Recommended configuration,,,,
+Enhanced Build,Pi5 8GB + ELP 1080P cameras + 100Ah + 200W,455,440,120,1015,,,Extended autonomy,,,,
+Premium Build,Pi5 8GB + Arducam cameras + 100Ah + 200W + Victron,510,560,120,1190,,,Maximum reliability,,,,
+,,,,,,,,,,,,
+SUPPLIER SUMMARY,,,,,,,,,,,,
+DigiKey,Primary electronics supplier - 170+ countries - same day shipping - 8 regional support centers,,,,,,,https://www.digikey.com,,,,
+Mouser,Alternative electronics - 170+ countries - Foreign Trade Zone customs pre-clearance,,,,,,,https://www.mouser.com,,,,
+UUGear,Witty Pi direct - EU based - ships worldwide,,,,,,,https://www.uugear.com,,,,
+Arducam,Camera modules direct - ships internationally,,,,,,,https://www.arducam.com,,,,
+Polycase,USA manufactured enclosures - ships internationally,,,,,,,https://www.polycase.com,,,,
+Amazon Business,Commodity items - 100+ countries - DDP shipping available,,,,,,,https://business.amazon.com,,,,
+Local Suppliers,Solar panels and LiFePO4 batteries - source in deployment country to avoid DG shipping,,,,,,,Varies by region,,,,

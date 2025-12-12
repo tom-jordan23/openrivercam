@@ -1,0 +1,162 @@
+Category,Component,Specification,Qty,Unit_Cost_USD,Total_USD,Primary_Supplier,Alternative_Supplier,Part_Number,Product_Link,Notes,Supply_Risk,Lead_Time_Days
+,,,,,,,,,,,,,
+SCENARIO 2: MOUSER PRIMARY + VICTRON POWER (PREMIUM RELIABILITY),,,,,,,,,,,,,
+"Strategy: Mouser for electronics (global reach), Victron via distributor network for premium power system",,,,,,,,,,,,
+"Best for: Critical long-term deployments (5+ years), harsh environments, need remote monitoring",,,,,,,,,,,,
+,,,,,,,,,,,,,
+COMPUTING CORE,,,,,,,,,,,,,
+Computing,Raspberry Pi 5 4GB,ARM Cortex-A76 2.4GHz quad-core WiFi6 BT5.0,1,70.00,70.00,Mouser,DigiKey,SC1111,https://www.mouser.com/ProductDetail/Raspberry-Pi/SC1111,Foreign Trade Zone - customs cleared in-flight,LOW,1-3
+Computing,Raspberry Pi 5 8GB,ARM Cortex-A76 2.4GHz quad-core 8GB LPDDR4X,1,95.00,95.00,Mouser,DigiKey,SC1112,https://www.mouser.com/ProductDetail/Raspberry-Pi/SC1112,For advanced processing applications,LOW,1-3
+Computing,Industrial MicroSD 64GB,Kingston SDCE industrial -40C to 85C 30TBW,1,42.00,42.00,Mouser,DigiKey,SDCE/64GB,https://www.mouser.com/ProductDetail/Kingston/SDCE-64GB,pSLC mode for extended write endurance,LOW,1-3
+Computing,M.2 NVMe SSD 256GB,Industrial temp NVMe for extended storage,1,65.00,65.00,Mouser,DigiKey,Various,https://www.mouser.com/c/semiconductors/memory/solid-state-drives-ssd/,Optional high-speed local storage,LOW,3-5
+,,,,,,,,,,,,,
+POWER MANAGEMENT HAT,,,,,,,,,,,,,
+Power HAT,Witty Pi 5 HAT+,HAT+ Mode 1 5A delivery RTC scheduling,1,45.00,45.00,UUGear,The Pi Hut,WP5HAT+,https://www.uugear.com/product/witty-pi-5/,Fifth generation - Pi 5 optimized,LOW,3-7
+Power HAT,Waveshare PoE HAT (F),802.3af/at PoE+ 5V 5A with cooling fan,1,35.00,35.00,Waveshare,Amazon,POE-HAT-F,https://www.waveshare.com/poe-hat-f.htm,Alternative: single cable power+data,LOW,5-10
+Power HAT,52Pi UPS Gen 6 (Alternative),2x18650 + 3 external packs PikaPython scripting,1,55.00,55.00,52Pi Direct,Amazon,UPS-GEN6,https://52pi.com/products/ups-gen6,New Dec 2025 - aluminum heatsink + fan,MEDIUM,7-14
+,,,,,,,,,,,,,
+CAMERAS (IP67/IP68 SEALED),,,,,,,,,,,,,
+Camera,ELP 1080P IP67 USB Dome,OV2710 1080P 30/60/120fps 850nm IR IP67 dome,2,47.00,94.00,Amazon,SVPRO Direct,ELP-USBFHD01M-DL36,https://www.svpro.cc/product/svpro-outdoor-waterproof-ip67-rated-camera-1080p/,Factory sealed eliminates fogging,LOW,3-7
+Camera,Arducam B0304 12MP USB,IMX708 4608x2592 75° FOV UVC driver,2,75.00,150.00,Arducam,Mouser,B0304,https://www.arducam.com/product/12mp-imx708-usb-uvc-camera/,Premium option - contact for IP67 housing,MEDIUM,5-10
+Camera,Industrial IP67 USB Camera,1080P -40C to 70C M12 connector,2,120.00,240.00,Mouser,DigiKey,Various,https://www.mouser.com/c/optoelectronics/cameras/,Industrial grade for extreme environments,LOW,5-10
+Camera,USB 3.0 Active Extension 10m,USB 3.0 repeater with power injection,2,45.00,90.00,Mouser,DigiKey,Various,https://www.mouser.com/c/connectors/usb-connectors/,For extended camera placement,LOW,3-5
+,,,,,,,,,,,,,
+ENCLOSURES (IP67 INDUSTRIAL),,,,,,,,,,,,,
+Enclosure,Serpac I Series IP67,NEMA 4 IP67 UV-stabilized polycarbonate,1,55.00,55.00,Mouser,DigiKey,I-Series,https://www.mouser.com/new/serpac/serpacind/,UL 94 V-2 flammability rating,LOW,3-5
+Enclosure,Hammond 1555HF17GY,IP67/68 polycarbonate 160x160x60mm,1,58.00,58.00,Mouser,DigiKey,1555HF17GY,https://www.hammfg.com/electronics/small-case/plastic/1555f,-40C to +110C IK08 impact rated,LOW,3-5
+Enclosure,Fibox TEMPO IP66/67,Glass-reinforced polyester large format,1,95.00,95.00,Mouser,DigiKey,Various,https://www.mouser.com/manufacturer/fibox/,For combined compute+battery enclosure,LOW,5-10
+,,,,,,,,,,,,,
+VICTRON POWER SYSTEM (VIA AUTHORIZED DISTRIBUTOR),,,,,,,,,,,,,
+Victron,SmartSolar MPPT 100/20,20A 100V PV 12/24V auto 98% efficiency BT,1,89.00,89.00,Victron Distributor,SINES Export,SCC110020160R,https://www.victronenergy.com/solar-charge-controllers/smartsolar-100-20,Built-in Bluetooth VictronConnect app,LOW,3-7
+Victron,SmartSolar MPPT 100/30 (Higher),30A 100V PV 12/24V auto 98% efficiency BT,1,128.00,128.00,Victron Distributor,SINES Export,SCC110030210,https://www.victronenergy.com/solar-charge-controllers/smartsolar-100-30,For larger solar arrays,LOW,3-7
+Victron,SmartShunt 500A/50mV,Battery monitor Bluetooth VRM compatible,1,75.00,75.00,Victron Distributor,SINES Export,SHU500050100,https://www.victronenergy.com/battery-monitors/smart-battery-shunt,Precision SOC monitoring,LOW,3-7
+Victron,Cerbo GX (Optional),System monitoring internet connectivity VRM,1,295.00,295.00,Victron Distributor,Amazon,BPP900450100,https://www.victronenergy.com/communication-centres/cerbo-gx,Full remote monitoring dashboard,LOW,5-10
+Victron,VE.Direct Cable 1.8m,Data cable for SmartSolar to Cerbo,1,18.00,18.00,Victron Distributor,Amazon,ASS030530218,https://www.victronenergy.com/accessories/ve-direct-cable,Required for system integration,LOW,3-5
+,,,,,,,,,,,,,
+VICTRON DISTRIBUTORS (GLOBAL NETWORK),,,,,,,,,,,,,
+Distributor Info,SINES Export (EU Wholesaler),Authorized since 2010 competitive pricing global delivery,,,,,https://www.sines-export.com/victron-energy-distributor-wholesale.html,Volume discounts for professional clients,,,
+Distributor Info,ICMontana (USA),Authorized US distributor,,,,,https://www.icmontana.com/victron-energy/,US-based support,,,
+Distributor Info,Current Connected (USA),Authorized distributor competitive pricing,,,,,https://currentconnected.com/victron-energy/,Fast US shipping,,,
+Distributor Info,Find Local Distributor,Victron official dealer locator,,,,,https://www.victronenergy.com/where-to-buy,Search by country/region,,,
+,,,,,,,,,,,,,
+MOUNTING HARDWARE,,,,,,,,,,,,,
+,,,,,,,,,,,,,
+Stereo Camera Mount,,,,,,,,,,,,,
+Mounting,Aluminum Stereo Bar 300mm,6061 aluminum 300x25x6mm powder coated black,1,25.00,25.00,Amazon,McMaster-Carr,Various,https://www.amazon.com/dp/B07VQGN3PB,300mm baseline for stereo cameras; 1/4"-20 threads at ends,LOW,3-7
+Mounting,Ball Head Mount 1/4"-20,SmallRig 360° aluminum weatherproof,2,18.00,36.00,Amazon,B&H Photo,SmallRig 2059,https://www.amazon.com/SMALLRIG-Camera-Mount-Additional-Screw/dp/B075M336JZ,One per camera - field adjustable,LOW,3-5
+Mounting,Pan/Tilt Swivel Mount,RAM double socket arm with ball base,1,40.00,40.00,Amazon,RAM Mounts,RAM-B-201U,https://www.rammount.com/part/RAM-B-201U,Central pivot point for stereo bar,LOW,3-7
+Mounting,Pole Clamp 2-4in,RAM pipe/rail clamp stainless steel,1,30.00,30.00,Amazon,RAM Mounts,RAM-B-231ZU,https://www.rammount.com/part/RAM-B-231ZU,Attaches swivel mount to utility pole,LOW,3-7
+Mounting,Camera Sun Shade,Aluminum visor 350mm protects both lenses,1,22.00,22.00,Amazon,Custom,Various,https://www.amazon.com/dp/B07VQGN3PB,Reduces glare and lens heating,LOW,5-10
+,,,,,,,,,,,,,
+Enclosure Pole Mounting,,,,,,,,,,,,,
+Mounting,SS Hose Clamps 4-6in,304 stainless worm drive set of 4,1,18.00,18.00,Amazon,Home Depot,Various,https://www.amazon.com/Steelsoft-Fasteners-Stainless-Adjustable-Strapping/dp/B08F2NM8WT,For poles 3-6in OD,LOW,2-5
+Mounting,SS Banding Kit 3/4in,Banding + buckles for large poles,1,38.00,38.00,Amazon,McMaster-Carr,Various,https://www.mcmaster.com/stainless-steel-banding,For poles >6in or square posts,LOW,3-7
+Mounting,EPDM Pole Padding,Rubber strips prevent slip damage,1,12.00,12.00,Amazon,Home Depot,Various,https://www.amazon.com/dp/B07VQGN3PB,Place between clamps and pole,LOW,2-5
+Mounting,L-Brackets Stainless (pair),Heavy duty 90° for enclosure mount,2,15.00,30.00,Mouser,Amazon,Various,https://www.mouser.com/c/hardware/brackets/,Attach enclosure to pole clamps,LOW,3-5
+,,,,,,,,,,,,,
+Solar Panel Mounting,,,,,,,,,,,,,
+Mounting,Solar Tilt Bracket Set,Adjustable 0-60° aluminum fits 50-200W,1,38.00,38.00,Amazon,Renogy,RNG-KIT-TILT,https://www.renogy.com/solar-panel-mounting-brackets/,Universal mounting for flat or roof install,LOW,3-7
+Mounting,Solar Pole Mount Kit,Side-of-pole bracket 100-200W panel,1,58.00,58.00,Renogy,Amazon,RNG-KIT-POLE,https://www.renogy.com/solar-panel-pole-mounting-system/,For pole-only installations,LOW,5-10
+Mounting,U-Bolts SS 2-4in (4x),Stainless steel for pole attachment,4,5.00,20.00,Amazon,Home Depot,Various,https://www.amazon.com/dp/B07VQGN3PB,Match to pole diameter,LOW,2-5
+,,,,,,,,,,,,,
+Internal Component Mounting,,,,,,,,,,,,,
+Mounting,DIN Rail 35mm (2x 200mm),Standard TS35 aluminum rail,2,8.00,16.00,Mouser,DigiKey,Various,https://www.mouser.com/c/connectors/terminal-blocks/din-rail/,Internal component organization,LOW,3-5
+Mounting,Pi 5 DIN Rail Adapter,35mm DIN mount for Raspberry Pi 5,1,15.00,15.00,Amazon,DigiKey,Various,https://www.amazon.com/dp/B07VQGN3PB,Secures Pi to DIN rail inside enclosure,LOW,3-5
+Mounting,M2.5 Standoff Kit Nylon,Assorted heights for PCB mounting,1,10.00,10.00,Mouser,Amazon,Various,https://www.mouser.com/c/electromechanical/hardware/standoffs-spacers/,HAT and board mounting,LOW,3-5
+Mounting,Industrial Velcro Heavy Duty,For battery and controller retention,1,14.00,14.00,Amazon,Home Depot,Various,https://www.amazon.com/dp/B07VQGN3PB,Secondary component retention,LOW,2-5
+,,,,,,,,,,,,,
+LOCAL SOURCING (SOLAR PANELS & BATTERIES),,,,,,,,,,,,,
+Solar,100W Monocrystalline Panel,18V Vmp MC4 connectors aluminum frame,1,80.00,80.00,LOCAL SUPPLIER,Renogy,Various,https://www.renogy.com/100-watt-12-volt-monocrystalline-solar-panel/,Source locally - price $60-150 varies,VARIES,LOCAL
+Solar,200W Monocrystalline Panel,18V Vmp MC4 connectors,1,140.00,140.00,LOCAL SUPPLIER,Renogy,Various,https://www.renogy.com/200-watt-12-volt-monocrystalline-solar-panel/,For cloudy regions or high demand,VARIES,LOCAL
+Battery,LiFePO4 12V 50Ah,Built-in BMS 4000+ cycles,1,180.00,180.00,LOCAL SUPPLIER,Redodo,Various,https://www.redodopower.com/collections/12v-lifepo4-battery,Source locally - DG shipping issues,VARIES,LOCAL
+Battery,LiFePO4 12V 100Ah,Built-in BMS 4000+ cycles 5yr warranty,1,250.00,250.00,LOCAL SUPPLIER,LiTime,Various,https://www.litime.com/products/litime-12v-100ah-lithium-lifepo4-battery,Extended autonomy option,VARIES,LOCAL
+Battery,Battle Born 100Ah (Premium),USA-made UL certified 10yr warranty,1,900.00,900.00,Battle Born Direct,Authorized Dealers,BB10012,https://battlebornbatteries.com/product/12v-lifepo4-deep-cycle-battery/,Mission-critical deployments,LOW,5-10
+,,,,,,,,,,,,,
+IP67 CONNECTORS (MOUSER),,,,,,,,,,,,,
+Connector,JST JWPF IP67 Connectors,2.0mm pitch waterproof 2-6 pos,1,25.00,25.00,Mouser,DigiKey,JWPF Series,https://www.mouser.com/c/connectors/wire-to-board-connectors/?ip+rating=IP67,Compact waterproof interconnects,LOW,3-5
+Connector,M12 A-Code Connectors,Stewart Connector IP67 industrial,4,12.00,48.00,Mouser,DigiKey,Various,https://www.mouser.com/c/connectors/circular-connectors/circular-metric-connectors/,Sensor and power connections,LOW,3-5
+Connector,USB-C IP67 Receptacle,Same Sky USB 3.2 Gen 2 waterproof,2,15.00,30.00,Mouser,DigiKey,Various,https://www.mouser.com/new/cui-devices/ip-rated-usb-connectors/,Panel mount waterproof USB,LOW,3-5
+Connector,Cable Glands M16/M20 Kit,IP68 nylon PA66 UV stabilized,1,25.00,25.00,Mouser,DigiKey,Various,https://www.mouser.com/c/connectors/cable-glands/,Assorted sizes for enclosure,LOW,3-5
+Connector,GORE Protective Vent M12,ePTFE membrane pressure equalization,2,12.00,24.00,Mouser,DigiKey,Amphenol LTW,https://www.gore.com/products/gore-protective-vents,Critical moisture prevention,LOW,3-5
+,,,,,,,,,,,,,
+IR ILLUMINATION,,,,,,,,,,,,,
+IR Light,Univivi 850nm 12-LED IP67,90° flood 100ft aluminum housing 12V,1,28.00,28.00,Amazon,Security stores,U80R,https://www.amazon.com/Univivi-Illuminator-Waterproof-Infrared-Security/dp/B01G6EDOO2,Auto photocell on/off,LOW,2-5
+IR Light,CMVision IR200-198 (Long Range),850nm 196-LED 300ft range IP65,1,55.00,55.00,Amazon,CMVision Direct,IR200-198,https://www.amazon.com/CMVision-Outdoor-Infrared-Illuminator-Security/dp/B0081P8YJG,High power for large areas,LOW,3-7
+IR Control,Relay Module 5V USB,SPDT 10A contacts software controlled,1,5.00,5.00,Amazon,Mouser,Various,https://www.amazon.com/dp/B07BVXT1ZK,Pi GPIO control of IR light,LOW,2-5
+,,,,,,,,,,,,,
+PROTECTION & GROUNDING,,,,,,,,,,,,,
+Protection,Bourns TVS Diode Array,SMAJ series 5V clamp surge protection,1,12.00,12.00,Mouser,DigiKey,SMAJ5.0A,https://www.mouser.com/ProductDetail/Bourns/SMAJ5.0A,Multi-device pack for 5V rails,LOW,3-5
+Protection,TE Connectivity Polyfuse,3A resettable PTC overcurrent,5,2.00,10.00,Mouser,DigiKey,RXEF300,https://www.mouser.com/c/circuit-protection/resettable-fuses-pptc/,Auto-reset overcurrent protection,LOW,3-5
+Grounding,Ground Rod Kit 8ft Copper,Copper-bonded steel rod + clamp,1,28.00,28.00,LOCAL SUPPLIER,Home Depot,Various,https://www.homedepot.com/p/Bonded-Ground-Rod-Kit/,Source locally - heavy/bulky,VARIES,LOCAL
+Grounding,Ground Wire 10 AWG 25ft,Green/yellow insulation solid copper,1,18.00,18.00,Mouser,Home Depot,Various,https://www.mouser.com/c/wire-cable/hook-up-wire/,Equipment grounding conductor,LOW,3-5
+Surge,Victron Battery Protect 65A,Low voltage disconnect programmable,1,55.00,55.00,Victron Distributor,Amazon,BPR000065400,https://www.victronenergy.com/battery-protect,Prevents deep discharge damage,LOW,3-7
+,,,,,,,,,,,,,
+ANTI-THEFT & SECURITY,,,,,,,,,,,,,
+Security,Tamper Switch N.C. Plunger,Enclosure opening detection,2,8.00,16.00,Mouser,DigiKey,Various,https://www.mouser.com/c/electromechanical/switches/pushbutton-switches/,Wired to alarm or Pi GPIO,LOW,3-5
+Security,Vibration/Shock Sensor,Adjustable sensitivity piezo,1,18.00,18.00,Amazon,Mouser,Various,https://www.amazon.com/dp/B07BQJN97R,Detects tampering attempts,LOW,3-5
+Security,12V Siren 120dB IP67,Weatherproof audible alarm,1,30.00,30.00,Amazon,Security stores,Various,https://www.amazon.com/dp/B07WHWHT4Z,Local deterrent,LOW,3-5
+Security,Torx Security Screws Kit,T20/T25 tamper-resistant,1,15.00,15.00,Mouser,Amazon,Various,https://www.mouser.com/c/hardware/screws/,For all external fasteners,LOW,3-5
+,,,,,,,,,,,,,
+HIGH HUMIDITY / TROPICAL CLIMATE PACKAGE (OPTIONAL),,,,,,,,,,,,,
+"Required for: Indonesia, SE Asia monsoon, Amazon basin, Congo basin, >80% RH environments",,,,,,,,,,,,,
+"Protects: Pi 5, Victron controller, power HAT, relay modules - all enclosure electronics",,,,,,,,,,,,,
+"Note: Sealed IP67/IP68 cameras handle their own condensation - this protects ENCLOSURE electronics",,,,,,,,,,,,,
+,,,,,,,,,,,,,
+Enclosure Electronics Protection System,,,,,,,,,,,,,
+Humidity,Silicone Heater Pad 75x150mm 25W,12V adhesive for compute enclosure,1,25.00,25.00,Amazon,Keenovo,Various,https://www.amazon.com/Silicone-Heater-Pad-Heating/dp/B07GXKZ8WQ,Mount near Pi; keeps electronics above dew point,LOW,3-7
+Humidity,Silicone Heater Pad 100x200mm 40W,12V for power box (Config A two-box),1,35.00,35.00,Amazon,Keenovo,Various,https://www.amazon.com/Silicone-Heater-Pad-40W/dp/B07GXKZ8WQ,Protects Victron and power electronics; Config A only,LOW,3-7
+Humidity,STC-1000 Digital Thermostat 12V,-50C to 110C 10A relay NTC probe,1,15.00,15.00,Amazon,eBay,STC-1000,https://www.amazon.com/Thermostat-Controller-STC-1000/dp/B00OXPE8U6,Activates heaters when temp <25C,LOW,2-5
+Humidity,STC-1000 Second Unit (Config A),Second thermostat for power box,1,15.00,15.00,Amazon,eBay,STC-1000,https://www.amazon.com/Thermostat-Controller-STC-1000/dp/B00OXPE8U6,Config A two-box needs independent control,LOW,2-5
+Humidity,DHT22 Temp/Humidity Sensor,Digital I2C for Pi monitoring 0-100% RH,2,10.00,20.00,Mouser,DigiKey,DHT22,https://www.mouser.com/ProductDetail/Adafruit/385,One per enclosure; alerts if >70% RH,LOW,3-5
+Humidity,Molecular Sieve Type 4A 200g,Desiccant works at >90% RH,4,12.00,48.00,Amazon,Industrial,Type 4A,https://www.amazon.com/Molecular-Sieve-4A-Desiccant/dp/B0B1DJGH8W,2 per enclosure; replace every 3-6 months,LOW,3-7
+Humidity,GORE Vent M12 (additional 2x),Extra pressure equalization,2,12.00,24.00,Mouser,DigiKey,Various,https://www.mouser.com/c/connectors/vents/,Second vent per enclosure for humid airflow,LOW,3-5
+Humidity,Humidity Indicator Cards (20),Color-change 10-60% RH range,1,12.00,12.00,Amazon,Uline,Various,https://www.amazon.com/Humidity-Indicator-Cards/dp/B00AQMX4KA,Visual check without opening,LOW,2-5
+Humidity,Conformal Coating Spray,MG Chemicals silicone PCB coating,1,18.00,18.00,Mouser,DigiKey,422B,https://www.mouser.com/ProductDetail/MG-Chemicals/422B-340G,Protect exposed PCB connections,LOW,3-5
+,,,,,,,,,,,,,
+Tropical Electronics Spares Kit,,,,,,,,,,,,,
+Spares,Spare Heater Pad 75x150mm,Replacement compute box heater,1,25.00,25.00,Amazon,Keenovo,Various,https://www.amazon.com/Silicone-Heater-Pad/,Field replacement,LOW,3-7
+Spares,Spare Heater Pad 100x200mm,Replacement power box heater,1,35.00,35.00,Amazon,Keenovo,Various,https://www.amazon.com/Silicone-Heater-Pad-40W/,Config A only,LOW,3-7
+Spares,Spare Desiccant Type 4A 1kg,12+ month tropical supply,1,35.00,35.00,Amazon,Industrial,Type 4A,https://www.amazon.com/Molecular-Sieve-4A-1kg/,Bulk for field service,LOW,3-7
+Spares,Spare GORE Vents M12 (4x),Replacement pressure vents,4,12.00,48.00,Mouser,DigiKey,Various,https://www.mouser.com/c/connectors/vents/,Vents clog in dusty/humid conditions,LOW,3-5
+Spares,Spare DHT22 Sensors (2x),Replacement humidity sensors,2,10.00,20.00,Mouser,DigiKey,DHT22,https://www.mouser.com/ProductDetail/Adafruit/385,Sensors can fail in high humidity,LOW,3-5
+,,,,,,,,,,,,,
+HIGH HUMIDITY PACKAGE COSTS,,,,,,,,,,,,,
+Package,Config B (Combined Box) Essential,1 heater + thermostat + sensors + desiccant + vents + coating,,,162.00,,,,Single enclosure protection,,,
+Package,Config A (Two-Box) Essential,2 heaters + 2 thermostats + sensors + desiccant + vents + coating,,,212.00,,,,Both enclosures protected,,,
+Package,Tropical Spares (Config B),Heater + desiccant + vents + sensors,,,128.00,,,,6-12 month field supply,,,
+Package,Tropical Spares (Config A),2 heaters + desiccant + vents + sensors,,,163.00,,,,6-12 month field supply,,,
+Package,TOTAL Config B + Spares,Combined box deployment,,,290.00,,,,Recommended for tropical,,,
+Package,TOTAL Config A + Spares,Two-box deployment,,,375.00,,,,Recommended for tropical,,,
+,,,,,,,,,,,,,
+POWER BUDGET NOTE,,,,,,,,,,,,,
+"Enclosure heaters add 80-150 Wh/day depending on configuration",,,,,,,,,,,,
+"For tropical: Minimum 100W solar + 100Ah battery",,,,,,,,,,,,
+"Heaters run primarily at night when temp drops cause condensation",,,,,,,,,,,,
+,,,,,,,,,,,,,
+CONSUMABLES,,,,,,,,,,,,,
+Consumables,Silicone Sealant RTV,GE or Dow weatherproof,1,12.00,12.00,Amazon,Home Depot,Various,https://www.amazon.com/dp/B000CPJMZK,Gland threads and seams,LOW,2-5
+Consumables,Dielectric Grease 100g,3M or equivalent,1,10.00,10.00,Amazon,Mouser,Various,https://www.amazon.com/dp/B000AL8VD2,Connector weatherproofing,LOW,2-5
+Consumables,Cable Ties UV-Resistant,Black nylon 500pc assorted,1,15.00,15.00,Mouser,Amazon,Various,https://www.mouser.com/c/wire-cable/cable-management/,Outdoor-rated cable management,LOW,3-5
+Consumables,Heat Shrink Marine Grade,Adhesive-lined assorted,1,20.00,20.00,Mouser,Amazon,Various,https://www.mouser.com/c/wire-cable/heat-shrink-tubing/,Waterproof terminations,LOW,3-5
+,,,,,,,,,,,,,
+,,,,,,,,,,,,,
+COST SUMMARY - SCENARIO 2,,,,,,,,,,,,,
+,,,,,,,,,,,,,
+Configuration,Description,Mouser,Victron,Local Solar,Amazon,Total,,,,,,,
+Standard + Victron,Pi5 4GB + ELP cameras + SmartSolar 100/20 + 50Ah,420,165,260,85,930,,,With battery monitoring,,,,
+Enhanced + Victron,Pi5 8GB + Arducam + SmartSolar 100/30 + 100Ah,520,205,390,95,1210,,,Higher capacity system,,,,
+Premium Full Monitoring,Pi5 8GB + Industrial cam + SmartSolar + Cerbo GX + 100Ah,680,485,390,95,1650,,,Full VRM remote monitoring,,,,
+Mission Critical,Pi5 8GB + Industrial + SmartSolar + Cerbo + Battle Born 100Ah,680,485,1040,95,2300,,,Maximum reliability 10yr warranty,,,,
+,,,,,,,,,,,,,
+SUPPLIER SUMMARY,,,,,,,,,,,,,
+Mouser,Primary electronics - 170+ countries - 20 global support centers - FTZ customs,,,,,,,https://www.mouser.com,,,,
+Victron Energy,Premium power via global distributor network - 5 year warranty - VRM monitoring,,,,,,,https://www.victronenergy.com/where-to-buy,,,,
+SINES Export,Victron EU wholesaler - competitive B2B pricing - global delivery,,,,,,,https://www.sines-export.com,,,,
+Local Suppliers,Solar panels + LiFePO4 batteries - source in-country,,,,,,,Varies by region,,,,
+Amazon Business,Commodity items cameras IR lights - 100+ countries DDP available,,,,,,,https://business.amazon.com,,,,
+,,,,,,,,,,,,,
+VICTRON ADVANTAGES,,,,,,,,,,,,,
+Remote Monitoring,VRM Portal - cloud-based system monitoring from anywhere,,,,,,,https://vrm.victronenergy.com,,,,
+5-Year Warranty,Industry-leading warranty on all Victron products,,,,,,,,,,,
+Global Support,Authorized service partners in most countries,,,,,,,,,,,
+Data Logging,Historical data export for system analysis,,,,,,,,,,,

@@ -1,0 +1,209 @@
+Category,Component,Specification,Qty,Unit_Cost_USD,Total_USD,Primary_Supplier,Alternative_Supplier,Part_Number,Product_Link,Notes,Supply_Risk,Lead_Time_Days
+,,,,,,,,,,,,,
+SCENARIO 4: REGIONAL HUB STRATEGY (HUMANITARIAN DEPLOYMENT),,,,,,,,,,,,,
+"Strategy: Pre-position electronics at regional hubs, source solar/batteries locally in deployment country",,,,,,,,,,,,
+"Best for: Multi-country humanitarian deployments, NGO operations, developing regions",,,,,,,,,,,,
+"Key principle: Ship what crosses borders easily, source locally what doesn't",,,,,,,,,,,,
+,,,,,,,,,,,,,
+REGIONAL HUB LOCATIONS (SUGGESTED),,,,,,,,,,,,,
+Hub,Africa - East,Nairobi Kenya - good logistics infrastructure,,,,African Energy,Various,,https://www.africanenergy.com,Serves 600+ partners across Africa,,,
+Hub,Africa - West,Lagos Nigeria OR Accra Ghana,,,,Local distributors,,,Growing local solar manufacturing (Salpha Energy Nigeria),,,
+Hub,Africa - South,Cape Town OR Johannesburg South Africa,,,,Victron/Renogy SA,Various,,https://www.renogy.com/blog/renogy-launches-in-south-africa/,Renogy recently launched with local warehousing,,,
+Hub,Southeast Asia,Singapore OR Bangkok Thailand,,,,Regional distributors,,,Strong electronics distribution infrastructure,,,
+Hub,South Asia,Mumbai India OR Colombo Sri Lanka,,,,Local/regional,,,Note: India has strict electronics import regulations,,,
+Hub,Latin America,Miami USA (for Caribbean/Central) OR Sao Paulo Brazil,,,,US suppliers + regional,,,Miami serves as Latin America gateway,,,
+,,,,,,,,,,,,,
+PRE-POSITIONED COMPONENTS (SHIP TO HUB),,,,,,,,,,,,,
+,,,,,,,,,,,,,
+COMPUTING CORE - SHIPS EASILY,,,,,,,,,,,,,
+Computing,Raspberry Pi 5 4GB,ARM Cortex-A76 2.4GHz WiFi6 BT5.0,1,70.00,70.00,DigiKey,Mouser,SC1111,https://www.digikey.com/en/products/detail/raspberry-pi/SC1111/21658264,HS Code 8471.50 - Digital processing units,LOW,7-14
+Computing,Raspberry Pi 5 8GB,8GB variant for demanding applications,1,95.00,95.00,DigiKey,Mouser,SC1112,https://www.digikey.com/en/products/detail/raspberry-pi/SC1112/21658265,No import restrictions typical,LOW,7-14
+Computing,Industrial MicroSD 64GB,Kingston SDCE industrial grade,1,40.00,40.00,DigiKey,Mouser,SDCE/64GB,https://www.digikey.com/en/products/detail/kingston/SDCE-64GB/,Small/light - easy to ship,LOW,7-14
+Computing,M.2 SSD 256GB (Optional),Industrial NVMe storage,1,55.00,55.00,DigiKey,Mouser,Various,https://www.digikey.com/en/products/filter/solid-state-drives/380,For extended local storage,LOW,7-14
+,,,,,,,,,,,,,
+POWER MANAGEMENT HAT - SHIPS EASILY,,,,,,,,,,,,,
+Power HAT,Witty Pi 5 HAT+,HAT+ Mode 1 5A RTC scheduling,1,45.00,45.00,UUGear,Adafruit,WP5+,https://www.uugear.com/product/witty-pi-5/,Small package - ships anywhere,LOW,7-14
+Power HAT,DFRobot FIT0992 (Alternative),4x18650 UPS without batteries,1,53.00,53.00,DFRobot,Electromaker,FIT0992,https://www.dfrobot.com/product-2840.html,Ship WITHOUT batteries installed,LOW,7-14
+Power HAT,Waveshare UPS HAT (B),5A pogo pin connection,1,35.00,35.00,Waveshare,Amazon,UPS-HAT-B,https://www.waveshare.com/ups-hat-b.htm,Alternative option,LOW,7-14
+,,,,,,,,,,,,,
+CAMERAS - SHIPS EASILY,,,,,,,,,,,,,
+Camera,ELP 1080P IP67 USB,OV2710 30/60/120fps 850nm IR IP67,2,47.00,94.00,Amazon,SVPRO,ELP-USBFHD01M-DL36,https://www.svpro.cc/product/svpro-outdoor-waterproof-ip67-rated-camera-1080p/,HS Code 8525.80 - Television cameras,LOW,7-14
+Camera,ELP 720P IP67 (Budget),720P IP67 with IR LEDs,2,37.00,74.00,Amazon,SVPRO,Various,https://www.amazon.com/ELP-Waterproof-Outdoor-Camera-Security/,Budget option,LOW,7-14
+Camera,USB Active Extensions,USB 2.0 active repeater 10m,2,25.00,50.00,Amazon,DigiKey,Various,https://www.amazon.com/Cable-Matters-Active-Extension-Meters/,For camera placement,LOW,7-14
+,,,,,,,,,,,,,
+ENCLOSURES - SHIPS WITH SOME WEIGHT,,,,,,,,,,,,,
+Enclosure,Hammond 1555F IP67,Polycarbonate 160x160x60mm,1,55.00,55.00,DigiKey,Mouser,1555HF17GY,https://www.digikey.com/en/products/detail/hammond-manufacturing/1555HF17GY/,HS Code 3926.90 - Plastic articles,LOW,7-14
+Enclosure,LeMotech IP67 (Budget),ABS 200x120x75mm,1,25.00,25.00,Amazon,LeMotech,Various,https://www.amazon.com/LeMotech-Waterproof-Dustproof-Electrical/,Lighter weight option,LOW,7-14
+,,,,,,,,,,,,,
+CONNECTORS & ELECTRONICS - SHIPS EASILY,,,,,,,,,,,,,
+Connector,Cable Glands Kit IP68,M12/M16/M20 assorted nylon,1,18.00,18.00,DigiKey,Amazon,Various,https://www.digikey.com/en/products/filter/cable-glands/594,HS Code 8536.90 - Electrical apparatus,LOW,7-14
+Connector,GORE Vents M12,ePTFE pressure equalization,2,12.00,24.00,DigiKey,Amazon,Various,https://www.digikey.com/en/products/filter/vents/795,Critical for enclosure,LOW,7-14
+Connector,Terminal Blocks Kit,Phoenix Contact or equivalent,1,15.00,15.00,DigiKey,Mouser,Various,https://www.digikey.com/en/products/filter/terminal-blocks/370,Power distribution,LOW,7-14
+Protection,TVS Diodes + Fuses Kit,Surge protection components,1,20.00,20.00,DigiKey,Mouser,Various,https://www.digikey.com/en/products/filter/tvs-diodes/147,Circuit protection,LOW,7-14
+Wiring,Wire Kit 12/14/18 AWG,Marine grade assorted 50ft,1,30.00,30.00,DigiKey,Amazon,Various,https://www.digikey.com/en/products/filter/hook-up-wire/473,Power and signal wiring,LOW,7-14
+,,,,,,,,,,,,,
+IR ILLUMINATION - SHIPS EASILY,,,,,,,,,,,,,
+IR Light,850nm 12-LED IP67,90° flood 100ft 12V Univivi/AUTENS,1,28.00,28.00,Amazon,Security stores,Various,https://www.amazon.com/Univivi-Illuminator-Waterproof-Infrared-Security/dp/B01G6EDOO2,Include 12V power adapter,LOW,7-14
+IR Control,Relay Module 5V,Pi GPIO controlled,1,5.00,5.00,Amazon,DigiKey,Various,https://www.amazon.com/dp/B07BVXT1ZK,Software IR control,LOW,7-14
+,,,,,,,,,,,,,
+SECURITY COMPONENTS - SHIPS EASILY,,,,,,,,,,,,,
+Security,Tamper Switches,N.C. plunger type,2,8.00,16.00,DigiKey,Amazon,Various,https://www.digikey.com/en/products/filter/pushbutton-switches/199,Enclosure intrusion detect,LOW,7-14
+Security,Security Screws Kit,Torx tamper-resistant,1,12.00,12.00,Amazon,DigiKey,Various,https://www.amazon.com/Security-Screws-Tamper-Resistant/,For all fasteners,LOW,7-14
+Security,Siren 12V 120dB,Weatherproof alarm,1,28.00,28.00,Amazon,Security stores,Various,https://www.amazon.com/Siren-Alarm-Outdoor-Waterproof/,Local deterrent,LOW,7-14
+,,,,,,,,,,,,,
+HIGH HUMIDITY / TROPICAL CLIMATE PACKAGE (OPTIONAL),,,,,,,,,,,,,
+"Protects: Pi 5, power HAT, charge controller, relay modules, and all enclosure electronics",,,,,,,,,,,,,
+"Note: Sealed IP67/IP68 cameras handle their own condensation - this package protects the ENCLOSURE electronics",,,,,,,,,,,,,
+"CRITICAL for SE Asia, Indonesia, Amazon, Congo - ship humidity protection to hub",,,,,,,,,,,,,
+"Lesson from Indonesia: Passive desiccant saturates in days at 90%+ RH - active heating required",,,,,,,,,,,,,
+,,,,,,,,,,,,,
+ENCLOSURE ELECTRONICS PROTECTION SYSTEM,,,,,,,,,,,,,
+Pre-Position at Hub (Ships Easily),,,,,,,,,,,,,
+Humidity,Silicone Heater Pad 75x150mm 25W,12V adhesive for compute enclosure wall,1,22.00,22.00,Amazon,Keenovo,Various,https://www.amazon.com/Silicone-Heater-Pad/dp/B07GXKZ8WQ,Sized to protect Pi 5 + HAT + relay modules,LOW,7-14
+Humidity,Silicone Heater Pad 100x200mm 40W,12V adhesive for power enclosure (Config A),1,28.00,28.00,Amazon,Keenovo,Various,https://www.amazon.com/dp/B07L8TLTMN,For two-box Config A - protects charge controller,LOW,7-14
+Humidity,STC-1000 Digital Thermostat 12V,Temperature controller -50C to 110C 10A relay,1,15.00,15.00,Amazon,eBay,STC-1000,https://www.amazon.com/Temperature-Controller-STC-1000/,Activates heater when temp <25C,LOW,7-14
+Humidity,STC-1000 Thermostat (2nd for Config A),Second controller for power box,1,15.00,15.00,Amazon,eBay,STC-1000,https://www.amazon.com/Temperature-Controller-STC-1000/,Each enclosure needs independent control,LOW,7-14
+Humidity,DHT22 Temperature/Humidity Sensor,Digital I2C for Pi monitoring 0-100% RH,1,8.00,8.00,DigiKey,Amazon,DHT22,https://www.digikey.com/en/products/filter/temperature-sensors/,Pi monitors compute enclosure conditions,LOW,7-14
+Humidity,DHT22 Sensor (2nd for Config A),Monitor power enclosure separately,1,8.00,8.00,DigiKey,Amazon,DHT22,https://www.digikey.com/en/products/filter/temperature-sensors/,Wired back to Pi GPIO,LOW,7-14
+Humidity,GORE Vent M12 (additional),Second vent improves airflow,2,12.00,24.00,DigiKey,Amazon,Various,https://www.digikey.com/en/products/filter/vents/795,One extra per enclosure,LOW,7-14
+Humidity,Conformal Coating Spray 200ml,MG Chemicals silicone coating for PCBs,1,18.00,18.00,DigiKey,Amazon,422B-340G,https://www.digikey.com/en/products/detail/mg-chemicals/422B-340G/,Apply to Pi + HAT + relay module PCBs,LOW,7-14
+Humidity,Humidity Indicator Cards (10),Color-change visual check 10-60% range,1,8.00,8.00,Amazon,Uline,Various,https://www.amazon.com/Humidity-Indicator-Cards/,Check without opening enclosure,LOW,7-14
+,,,,,,,,,,,,,
+Tropical Spares (Pre-Position at Hub),,,,,,,,,,,,,
+Spares,Spare Heater Pad 75x150mm,Compute enclosure replacement,1,22.00,22.00,Amazon,Keenovo,Various,https://www.amazon.com/Silicone-Heater-Pad/,Stock at hub for field replacement,LOW,7-14
+Spares,Spare Heater Pad 100x200mm,Power enclosure replacement (Config A),1,28.00,28.00,Amazon,Keenovo,Various,https://www.amazon.com/dp/B07L8TLTMN,Stock at hub for two-box deployments,LOW,7-14
+Spares,Spare GORE Vents M12 (2x),Replacement vents,2,12.00,24.00,DigiKey,Amazon,Various,https://www.digikey.com/en/products/filter/vents/,Vents clog in dusty/humid conditions,LOW,7-14
+Spares,Spare Conformal Coating,Additional PCB protection,1,18.00,18.00,DigiKey,Amazon,422B-340G,https://www.digikey.com/en/products/detail/mg-chemicals/422B-340G/,For field reapplication after repairs,LOW,7-14
+,,,,,,,,,,,,,
+Source Locally (Available in most regions),,,,,,,,,,,,,
+Humidity,Molecular Sieve Type 4A 200g,Works >90% RH (silica gel fails >60%),2,8-15,24.00,LOCAL,Industrial/Chemical,Type 4A,,Industrial suppliers stock; replace every 3-6 months,VARIES,LOCAL
+Humidity,Spare Desiccant 500g Bulk,6-12 month supply,1,15-30,25.00,LOCAL,Industrial/Chemical,Type 4A,,Bulk molecular sieve for field service,VARIES,LOCAL
+,,,,,,,,,,,,,
+HIGH HUMIDITY PACKAGE COSTS,,,,,,,,,,,,,
+Config B (Single Box),Compute enclosure protection,Heater + thermostat + sensor + vents + coating,,,97.00,,,,All electronics in one enclosure,,,
+Config A (Two Box),Compute + Power enclosure protection,Both enclosures fully protected,,,146.00,,,,Separate compute and power boxes,,,
+Pre-Position,Tropical Spares Kit,Replacement parts at hub,,,92.00,,,,Stock for field deployment,,,
+Local Source,Desiccant (initial + spares),Molecular sieve Type 4A,,,49.00,,,,Usually available locally,,,
+TOTAL Config B,Single Box High Humidity Package,All humidity protection,,,238.00,,,,Add to base system for tropical,,,
+TOTAL Config A,Two Box High Humidity Package,All humidity protection,,,287.00,,,,Add to base system for tropical,,,
+,,,,,,,,,,,,,
+POWER BUDGET NOTE FOR TROPICAL DEPLOYMENT,,,,,,,,,,,,,
+"Active heating adds 60-100 Wh/day (Config B) or 80-140 Wh/day (Config A) to power consumption",,,,,,,,,,,,,
+"For tropical deployments: Recommend minimum 100W solar panel and 100Ah battery",,,,,,,,,,,,,
+"Heater runs primarily at night (cooler temps cause condensation)",,,,,,,,,,,,,
+,,,,,,,,,,,,,
+CONSUMABLES - SHIP SOME / SOURCE SOME LOCALLY,,,,,,,,,,,,,
+Consumables,Heat Shrink Marine Kit,Adhesive-lined assorted,1,15.00,15.00,DigiKey,Amazon,Various,https://www.amazon.com/Heat-Shrink-Tubing-Adhesive-Lined/,Hard to find locally - ship,LOW,7-14
+Consumables,Silicone Sealant,RTV tube,1,12.00,12.00,LOCAL,Hardware store,Various,,Often available locally,VARIES,LOCAL
+Consumables,Cable Ties UV,Black nylon outdoor,1,10.00,10.00,LOCAL,Hardware store,Various,,Usually available locally,VARIES,LOCAL
+,,,,,,,,,,,,,
+,,,,,,,,,,,,,
+LOCAL SOURCING (IN DEPLOYMENT COUNTRY),,,,,,,,,,,,,
+,,,,,,,,,,,,,
+SOLAR/BATTERY - SOURCE LOCALLY (DG SHIPPING AVOIDED),,,,,,,,,,,,,
+Solar,100W Mono Panel,18V nominal MC4 connectors,1,60-150,100.00,LOCAL SOLAR,Regional Distributor,Various,,Price varies widely by region,VARIES,LOCAL
+Solar,200W Mono Panel (High),For cloudy regions or high demand,1,100-250,175.00,LOCAL SOLAR,Regional Distributor,Various,,Check local availability,VARIES,LOCAL
+Battery,LiFePO4 12V 50Ah,Built-in BMS 2000+ cycles,1,130-300,200.00,LOCAL SOLAR,African Energy,Various,https://www.africanenergy.com,Avoids DG air shipping - source locally,VARIES,LOCAL
+Battery,LiFePO4 12V 100Ah,Extended capacity option,1,200-450,300.00,LOCAL SOLAR,Regional brands,Various,,Larger markets have multiple brands,VARIES,LOCAL
+Charge Controller,MPPT 20-30A,Victron/EPEver/Local brand,1,60-130,90.00,LOCAL SOLAR,Victron Distributor,Various,https://www.victronenergy.com/where-to-buy,Victron has global distributor network,VARIES,LOCAL
+,,,,,,,,,,,,,
+GROUNDING - SOURCE LOCALLY (HEAVY/BULKY),,,,,,,,,,,,,
+Grounding,Ground Rod 8ft,Copper-bonded steel,1,20-40,30.00,LOCAL,Hardware/Electrical,Various,,Too heavy/long to ship economically,VARIES,LOCAL
+Grounding,Ground Wire 10 AWG,25ft green/yellow,1,10-20,15.00,LOCAL,Hardware/Electrical,Various,,Usually available locally,VARIES,LOCAL
+Grounding,Ground Clamps,Bronze or copper,2,5-10,10.00,LOCAL,Hardware/Electrical,Various,,Source with rod,VARIES,LOCAL
+,,,,,,,,,,,,,
+MOUNTING - SPLIT PRE-POSITION AND LOCAL,,,,,,,,,,,,,
+,,,,,,,,,,,,,
+Pre-Position at Hub (Ships Easily),,,,,,,,,,,,,
+Mounting,Ball Head Mount 1/4"-20,SmallRig 360° aluminum weatherproof,2,18.00,36.00,Amazon,B&H Photo,SmallRig 2059,https://www.amazon.com/SMALLRIG-Camera-Mount-Additional-Screw/dp/B075M336JZ,Ship to hub - one per camera,LOW,7-14
+Mounting,Pan/Tilt Swivel Mount,RAM double socket arm heavy duty,1,40.00,40.00,Amazon,RAM Mounts,RAM-B-201U,https://www.rammount.com/part/RAM-B-201U,Central pivot for stereo bar,LOW,7-14
+Mounting,Pole Clamp 2-4in,RAM pipe clamp stainless steel,1,30.00,30.00,Amazon,RAM Mounts,RAM-B-231ZU,https://www.rammount.com/part/RAM-B-231ZU,Attaches to utility pole,LOW,7-14
+Mounting,DIN Rail 35mm (2x 200mm),Standard mounting rail aluminum,2,8.00,16.00,DigiKey,Amazon,Various,https://www.digikey.com/en/products/filter/din-rails/,For internal component mounting,LOW,7-14
+Mounting,Pi 5 DIN Rail Mount,35mm adapter for Raspberry Pi,1,12.00,12.00,Amazon,DigiKey,Various,https://www.amazon.com/Pi-DIN-Rail-Mount/,Secures Pi inside enclosure,LOW,7-14
+Mounting,M2.5 Standoff Kit,Nylon assorted for PCB mounting,1,8.00,8.00,DigiKey,Amazon,Various,https://www.digikey.com/en/products/filter/standoffs/,For HATs and boards,LOW,7-14
+Mounting,Industrial Velcro,Heavy duty hook and loop,1,12.00,12.00,Amazon,Home Depot,Various,https://www.amazon.com/VELCRO-Industrial/,Component retention backup,LOW,7-14
+,,,,,,,,,,,,,
+Source or Fabricate Locally,,,,,,,,,,,,,
+Mounting,Aluminum Stereo Bar 300mm,6061 aluminum 300x25x6mm or equivalent,1,15-30,25.00,LOCAL,Metal fabricator,Various,,Can be cut and drilled locally from aluminum stock,VARIES,LOCAL
+Mounting,Sun Shade 350mm,Aluminum hood to protect lenses,1,15-25,20.00,LOCAL,Metal fabricator,Various,,Simple bent aluminum - fabricate locally,VARIES,LOCAL
+Mounting,SS Hose Clamps 4-6in,304 stainless worm drive (4x),1,10-20,15.00,LOCAL,Hardware store,Various,,Usually available in hardware stores,VARIES,LOCAL
+Mounting,SS Banding Kit (if needed),For large poles >6in,1,25-45,35.00,LOCAL,Hardware/Industrial,Various,,Alternative to hose clamps,VARIES,LOCAL
+Mounting,Rubber Pole Padding EPDM,Strips between clamps and pole,1,8-15,12.00,LOCAL,Hardware/Auto,Various,,Auto parts stores often stock,VARIES,LOCAL
+Mounting,L-Brackets Stainless (pair),Heavy duty 90° for enclosure,2,10-20,15.00,LOCAL,Hardware store,Various,,Standard hardware item,VARIES,LOCAL
+Mounting,Solar Tilt Bracket,Adjustable angle frame for panel,1,25-50,35.00,LOCAL,Solar supplier,Various,,Often included with local panels,VARIES,LOCAL
+Mounting,U-Bolts SS 2-4in (4x),For pole attachment,4,3-6,20.00,LOCAL,Hardware store,Various,,Match to pole diameter,VARIES,LOCAL
+,,,,,,,,,,,,,
+,,,,,,,,,,,,,
+REGIONAL SOLAR SUPPLIERS,,,,,,,,,,,,,
+,,,,,,,,,,,,,
+AFRICA,,,,,,,,,,,,,
+Supplier,African Energy,Wholesale - 600+ partners - WeCo Lithium - Deye,,,,African Energy,,,https://www.africanenergy.com,Pan-African distribution,,,
+Supplier,Victron SA Distributors,Premium quality - global warranty,,,,Victron Energy,,,https://www.victronenergy.com/where-to-buy,Search South Africa/Kenya/Nigeria,,,
+Supplier,Renogy South Africa,Recent launch - local warehousing,,,,Renogy SA,,,https://www.renogy.com/blog/renogy-launches-in-south-africa/,Check availability,,,
+Supplier,Local Solar Shops,Growing market - quality varies,,,,Various,,,,"Major cities have multiple options - vet carefully",,,
+,,,,,,,,,,,,,
+ASIA,,,,,,,,,,,,,
+Supplier,Victron Asia Distributors,Premium - Singapore/Thailand/Indonesia hubs,,,,Victron Energy,,,https://www.victronenergy.com/where-to-buy,Strong presence in SE Asia,,,
+Supplier,Local Manufacturing,China/Vietnam/Thailand have local production,,,,Various,,,,"Quality ranges - verify certifications",,,
+Supplier,Regional Distributors,"Singapore, Bangkok, Jakarta as distribution hubs",,,,Various,,,,Major brands available,,,
+,,,,,,,,,,,,,
+LATIN AMERICA,,,,,,,,,,,,,
+Supplier,Victron LA Distributors,Premium - Brazil/Mexico/Chile presence,,,,Victron Energy,,,https://www.victronenergy.com/where-to-buy,Growing network,,,
+Supplier,US Import via Miami,Many LA countries import via Miami hub,,,,US Suppliers,,,,"May be cost-effective for some components",,,
+Supplier,Local Solar Industry,Growing domestic markets in Brazil/Mexico,,,,Various,,,,"Increasing local production",,,
+,,,,,,,,,,,,,
+,,,,,,,,,,,,,
+COST SUMMARY - SCENARIO 4 (REGIONAL HUB),,,,,,,,,,,,,
+,,,,,,,,,,,,,
+Component Group,Pre-Position Cost,Local Sourcing Cost,Shipping to Hub,Total Per Unit,Notes,,,,,,,
+Electronics Kit (Pi + HAT + Storage),160,0,25,185,Ships easily - no restrictions,,,,,,,
+Cameras + Extensions,144,0,15,159,HS 8525.80 - no issues,,,,,,,
+Enclosure + Connectors,130,0,20,150,Some weight but ships fine,,,,,,,
+Protection + Wiring,65,0,10,75,Small/light items,,,,,,,
+IR + Security,77,0,10,87,Easy to ship,,,,,,,
+Consumables,30,10,5,45,Split ship/local,,,,,,,
+Solar Panel,0,100-175,0,140,Source locally,,,,,,,
+Battery LiFePO4,0,200-300,0,250,Source locally - DG avoided,,,,,,,
+Charge Controller,0,60-130,0,95,Source locally or Victron dist,,,,,,,
+Grounding,0,45-70,0,55,Source locally - heavy,,,,,,,
+Mounting,0,35-65,0,50,Source/fabricate locally,,,,,,,
+,,,,,,,,,,,,,
+TOTAL ESTIMATES,,,,,,,,,,,,,
+Configuration,Pre-Position,Local Source,Hub Shipping,Grand Total,,,,,,,,,
+Budget Build (50Ah 100W),606,395,85,1086,Standard cameras + basic solar,,,,,,,
+Standard Build (100Ah 200W),606,565,85,1256,Standard cameras + larger solar,,,,,,,
+Enhanced Build (100Ah 200W + Victron),681,665,95,1441,Premium cameras + Victron controller,,,,,,,
+,,,,,,,,,,,,,
+LEAD TIME ESTIMATES BY REGION,,,,,,,,,,,,,
+Region,US to Hub,Hub to Deployment,Local Sourcing,Total Typical,,,,,,,,,
+East Africa (Nairobi),14-21 days,3-7 days,7-14 days,24-42 days,,,,,,,,,
+West Africa (Lagos),21-28 days,5-10 days,7-14 days,33-52 days,,,,,,,,,
+Southern Africa (Cape Town),14-21 days,3-7 days,5-10 days,22-38 days,,,,,,,,,
+Southeast Asia (Singapore),10-14 days,3-7 days,5-10 days,18-31 days,,,,,,,,,
+South Asia (Mumbai),14-21 days,5-10 days,7-14 days,26-45 days,,,,,,,,,
+Latin America (via Miami),7-10 days,7-14 days,7-14 days,21-38 days,,,,,,,,,
+,,,,,,,,,,,,,
+CUSTOMS & IMPORT CONSIDERATIONS,,,,,,,,,,,,,
+Component,HS Code,Typical Duty,Notes,,,,,,,,,
+Raspberry Pi,8471.50,0-5%,Digital processing units - usually low/zero duty,,,,,,,,,
+USB Cameras,8525.80,0-10%,Television cameras - varies by country,,,,,,,,,
+Plastic Enclosures,3926.90,5-15%,Other articles of plastics,,,,,,,,,
+Cable Glands,8536.90,0-10%,Electrical apparatus for connections,,,,,,,,,
+Solar Panels,8541.40,0-25%,Often has import duties/tariffs - source locally,,,,,,,,,
+LiFePO4 Battery,8507.60,5-15%,Lithium-ion accumulators - DG classification for air,,,,,,,,,
+,,,,,,,,,,,,,
+SHIPPING STRATEGY,,,,,,,,,,,,,
+"1. CONSOLIDATE at regional hub before distributing to deployment sites",,,,,,,,,,,,
+"2. USE DDP shipping where possible to pre-pay duties and avoid delays",,,,,,,,,,,,
+"3. MAINTAIN buffer stock at hub for rapid deployment",,,,,,,,,,,,
+"4. WORK WITH experienced freight forwarder familiar with destination country",,,,,,,,,,,,
+"5. DOCUMENT everything - commercial invoice, packing list, certificates of origin",,,,,,,,,,,,
+"6. AVOID shipping batteries by air - use sea freight or source locally",,,,,,,,,,,,
+,,,,,,,,,,,,,
+SUPPLIER SUMMARY,,,,,,,,,,,,,
+DigiKey,Pre-position electronics - 170+ countries - regional support centers,,,,,,,https://www.digikey.com,,,,
+Mouser,Alternative electronics - 170+ countries - FTZ customs,,,,,,,https://www.mouser.com,,,,
+Amazon Business,Cameras and accessories - 100+ countries - DDP available,,,,,,,https://business.amazon.com,,,,
+Victron Energy,Premium power - global distributor network - local support,,,,,,,https://www.victronenergy.com/where-to-buy,,,,
+African Energy,Africa-focused solar wholesale - proven in harsh environments,,,,,,,https://www.africanenergy.com,,,,
+Eurosender,Humanitarian logistics specialist - adverse conditions shipping,,,,,,,https://www.eurosender.com/en/shipping-non-profit-organisations,,,,

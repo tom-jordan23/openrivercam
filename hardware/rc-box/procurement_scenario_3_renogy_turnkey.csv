@@ -1,0 +1,176 @@
+Category,Component,Specification,Qty,Unit_Cost_USD,Total_USD,Primary_Supplier,Alternative_Supplier,Part_Number,Product_Link,Notes,Supply_Risk,Lead_Time_Days
+,,,,,,,,,,,,,
+SCENARIO 3: RENOGY TURNKEY SOLAR + DIGIKEY ELECTRONICS,,,,,,,,,,,,,
+"Strategy: Renogy complete solar kits for plug-and-play power, DigiKey for electronics",,,,,,,,,,,,
+"Best for: Teams without solar expertise, US-accessible deployments, rapid setup",,,,,,,,,,,,
+NOTE: Renogy international shipping limited - may require US forwarding for some regions,,,,,,,,,,,,
+,,,,,,,,,,,,,
+COMPUTING CORE (DIGIKEY),,,,,,,,,,,,,
+Computing,Raspberry Pi 5 4GB,ARM Cortex-A76 2.4GHz quad-core WiFi6 BT5.0,1,70.00,70.00,DigiKey,Mouser,SC1111,https://www.digikey.com/en/products/detail/raspberry-pi/SC1111/21658264,Same-day shipping available,LOW,1-3
+Computing,Raspberry Pi 5 8GB,ARM Cortex-A76 8GB LPDDR4X for demanding apps,1,95.00,95.00,DigiKey,Mouser,SC1112,https://www.digikey.com/en/products/detail/raspberry-pi/SC1112/21658265,For multi-camera or AI workloads,LOW,1-3
+Computing,Industrial MicroSD 64GB,Kingston SDCE industrial grade -40C to 85C,1,40.00,40.00,DigiKey,Mouser,SDCE/64GB,https://www.digikey.com/en/products/detail/kingston/SDCE-64GB/,30TBW endurance rating,LOW,1-3
+Computing,USB-C Power Cable 2m,5A rated industrial quality,1,15.00,15.00,DigiKey,Amazon,Various,https://www.digikey.com/en/products/filter/usb-cables/457,High current delivery cable,LOW,3-5
+,,,,,,,,,,,,,
+POWER MANAGEMENT HAT,,,,,,,,,,,,,
+Power HAT,Witty Pi 4,RTC wake/sleep scheduling ±2ppm Pi 5 compatible,1,30.00,30.00,UUGear,Adafruit,WP4,https://www.uugear.com/product/witty-pi-4/,Software v4.2+ for Pi 5,LOW,3-7
+Power HAT,Witty Pi 5 HAT+,HAT+ Mode 1 up to 5A delivery,1,45.00,45.00,UUGear,The Pi Hut,WP5+,https://www.uugear.com/product/witty-pi-5/,Latest generation - Pi 5 optimized,LOW,3-7
+Power HAT,DFRobot FIT0992 (Alternative),4x18650 UPS HAT 5.1V 5A output,1,53.00,53.00,DFRobot,Electromaker,FIT0992,https://www.dfrobot.com/product-2840.html,Integrated battery backup option,LOW,5-10
+,,,,,,,,,,,,,
+RENOGY COMPLETE SOLAR KITS - TURNKEY SOLUTIONS,,,,,,,,,,,,,
+,,,,,,,,,,,,,
+OPTION A: STARTER KIT (Budget Deployments),,,,,,,,,,,,,
+Renogy Kit,Starter RV Kit N-Type 200W 12V,200W panels + PWM controller + cables + mounts,1,200.00,200.00,Renogy,Amazon,RNG-STARTER-200W,https://www.renogy.com/200w-12v-starter-rv-kit/,23% off through Dec 15 2025 - battery NOT included,LOW,5-10
+Battery Add,Redodo 12V 50Ah LiFePO4,Built-in BMS 4000 cycles 5yr warranty,1,130.00,130.00,Redodo,Amazon,RD1250,https://www.redodopower.com/products/redodo-12v-50ah-lifepo4-battery,Best budget LiFePO4 option,LOW,3-7
+,OPTION A SUBTOTAL (Power System),,,,330.00,,,,,,,
+,,,,,,,,,,,,,
+OPTION B: STANDARD KIT (Recommended),,,,,,,,,,,,,
+Renogy Kit,Premium RV Kit 400W 12V Smart,400W panels + MPPT controller + smart monitoring,1,580.00,580.00,Renogy,Amazon,RNG-KIT-PREMIUM-400,https://www.renogy.com/400w-12v-premium-kit-with-100a-dc-dc/,16% off - battery NOT included,LOW,5-10
+Battery Add,Redodo 12V 100Ah LiFePO4,Built-in BMS 4000 cycles 5yr warranty,1,225.00,225.00,Redodo,Amazon,RD12100,https://www.redodopower.com/products/redodo-12v-100ah-lifepo4-battery,Best value 100Ah option,LOW,3-7
+,OPTION B SUBTOTAL (Power System),,,,805.00,,,,,,,
+,,,,,,,,,,,,,
+OPTION C: COMPLETE KIT WITH BATTERY,,,,,,,,,,,,,
+Renogy Kit,Complete RV Kit 400W + 2.4kWh Battery,400W panels + MPPT + 2x100Ah LiFePO4 + inverter,1,1600.00,1600.00,Renogy,N/A,RNG-KIT-400-COMPLETE,https://www.renogy.com/400w-12-volt-complete-solar-kit-with-two-100ah-lifepo4-batteries/,20% off - all-in-one solution,LOW,7-14
+,OPTION C SUBTOTAL (Power System),,,,1600.00,,,,,,,
+,,,,,,,,,,,,,
+OPTION D: HIGH CAPACITY,,,,,,,,,,,,,
+Renogy Kit,Essential Off-Grid Kit 600W + 3.6kWh,600W panels + MPPT + 3.6kWh LiFePO4,1,1000.00,1000.00,Renogy,N/A,RNG-KIT-600-ESSENTIAL,https://www.renogy.com/600w-12v-essential-off-grid-solar-kit/,For extended cloudy periods,LOW,7-14
+Battery Add,Additional Redodo 100Ah (parallel),Expand to 200Ah total capacity,1,225.00,225.00,Redodo,Amazon,RD12100,https://www.redodopower.com/products/redodo-12v-100ah-lifepo4-battery,Optional capacity expansion,LOW,3-7
+,OPTION D SUBTOTAL (Power System),,,,1225.00,,,,,,,
+,,,,,,,,,,,,,
+CAMERAS (IP67 SEALED),,,,,,,,,,,,,
+Camera,ELP 1080P IP67 USB Dome,OV2710 30/60/120fps 850nm IR night vision,2,47.00,94.00,Amazon,SVPRO,ELP-USBFHD01M-DL36,https://www.svpro.cc/product/svpro-outdoor-waterproof-ip67-rated-camera-1080p/,Factory sealed - eliminates fogging,LOW,3-7
+Camera,ELP 720P IP67 (Budget),720P 30fps IP67 with IR LEDs,2,37.00,74.00,Amazon,SVPRO,Various,https://www.amazon.com/ELP-Waterproof-Outdoor-Camera-Security/dp/B07WVBG2K4,Lower cost option,LOW,3-7
+Camera,Arducam B0304 12MP,IMX708 sensor USB UVC high resolution,2,75.00,150.00,Arducam,DigiKey,B0304,https://www.arducam.com/product/12mp-imx708-usb-uvc-camera/,Premium - may need IP67 housing,MEDIUM,5-10
+Camera,USB Active Extension 10m,USB 2.0 active repeater outdoor rated,2,25.00,50.00,Amazon,DigiKey,Various,https://www.amazon.com/Cable-Matters-Active-Extension-Meters/dp/B00DMFB5OK,For camera placement flexibility,LOW,3-5
+,,,,,,,,,,,,,
+ENCLOSURES,,,,,,,,,,,,,
+Enclosure,Sixfab IP65 Outdoor Enclosure,Polycarbonate 4.9x8.3x2.3in clear lid,1,40.00,40.00,Sixfab,Amazon,IP65-ENC,https://sixfab.com/product/raspberry-pi-ip65-outdoor-iot-project-enclosure/,Includes cable grommets,LOW,5-10
+Enclosure,Hammond 1555F IP67,Polycarbonate 160x160x60mm -40C to 110C,1,55.00,55.00,DigiKey,Mouser,1555HF17GY,https://www.digikey.com/en/products/detail/hammond-manufacturing/1555HF17GY/,Industrial grade IP67/68,LOW,3-5
+Enclosure,LeMotech IP67 Junction (Budget),ABS 200x120x75mm clear lid cable glands,1,25.00,25.00,Amazon,LeMotech,Various,https://www.amazon.com/LeMotech-Waterproof-Dustproof-Electrical-Enclosure/dp/B07PK8K9MB,Budget option with accessories,LOW,2-3
+,,,,,,,,,,,,,
+DC-DC CONVERTER (12V to 5V),,,,,,,,,,,,,
+Converter,12V to 5V 5A Buck Converter,Regulated output low ripple waterproof,1,15.00,15.00,Amazon,DigiKey,Various,https://www.amazon.com/DROK-Converter-Regulator-Transformer-Waterproof/dp/B071Z2S7KT,Powers Pi from 12V battery,LOW,3-5
+Converter,DROK 12V-5V 10A (High Current),For powering additional USB devices,1,22.00,22.00,Amazon,DigiKey,Various,https://www.amazon.com/DROK-Converter-Waterproof-Regulator-Transformer/dp/B00BYTEHQO,Higher capacity option,LOW,3-5
+,,,,,,,,,,,,,
+IR ILLUMINATION,,,,,,,,,,,,,
+IR Light,Univivi 850nm 12-LED IP67,90° flood 100ft range 12V auto on/off,1,28.00,28.00,Amazon,Security stores,U80R,https://www.amazon.com/Univivi-Illuminator-Waterproof-Infrared-Security/dp/B01G6EDOO2,Photocell auto activation,LOW,2-5
+IR Light,AUTENS 850nm 12-LED IP67,90° flood 130ft range photocell,1,30.00,30.00,Amazon,Security stores,Various,https://www.amazon.com/AUTENS-Illuminator-Waterproof-Infrared-Surveillance/dp/B07MG7J5LP,Alternative brand,LOW,2-5
+IR Control,5V Relay Module,Pi GPIO controlled SPDT 10A,1,5.00,5.00,Amazon,DigiKey,Various,https://www.amazon.com/dp/B07BVXT1ZK,Software control of IR,LOW,2-5
+,,,,,,,,,,,,,
+MOUNTING HARDWARE,,,,,,,,,,,,,
+,,,,,,,,,,,,,
+Stereo Camera Mount,,,,,,,,,,,,,
+Mounting,Aluminum Stereo Bar 300mm,6061 aluminum 300x25x6mm powder coated,1,25.00,25.00,Amazon,McMaster-Carr,Various,https://www.amazon.com/Aluminum-Flat-Bar-6061/dp/B07VQGN3PB,300mm baseline for stereo cameras,LOW,3-7
+Mounting,Ball Head Mount 1/4"-20,SmallRig 360° rotation aluminum (2x),2,18.00,36.00,Amazon,B&H Photo,SmallRig 2059,https://www.amazon.com/SMALLRIG-Camera-Mount-Additional-Screw/dp/B075M336JZ,One per camera on stereo bar,LOW,3-5
+Mounting,Pan/Tilt Swivel Mount,Heavy duty central pivot with lock,1,35.00,35.00,Amazon,RAM Mounts,RAM-B-201U,https://www.rammount.com/part/RAM-B-201U,Single adjustment for both cameras,LOW,3-7
+Mounting,Pole Clamp 2-4in,RAM stainless steel pipe clamp,1,28.00,28.00,Amazon,RAM Mounts,RAM-B-231ZU,https://www.rammount.com/part/RAM-B-231ZU,Attaches to utility pole,LOW,3-7
+Mounting,Sun Shade 350mm,Aluminum visor for camera lenses,1,20.00,20.00,Amazon,Custom,Various,https://www.amazon.com/dp/B07VQGN3PB,Reduces glare and heating,LOW,5-10
+,,,,,,,,,,,,,
+Enclosure Pole Mounting,,,,,,,,,,,,,
+Mounting,SS Hose Clamps 4-6in (4x),304 stainless worm drive,1,16.00,16.00,Amazon,Home Depot,Various,https://www.amazon.com/Steelsoft-Fasteners-Stainless-Adjustable/dp/B08F2NM8WT,For 3-6in diameter poles,LOW,2-5
+Mounting,SS Banding Kit 3/4in,Banding + buckles for large poles,1,35.00,35.00,Amazon,McMaster-Carr,Various,https://www.mcmaster.com/stainless-steel-banding,For >6in or square posts,LOW,3-7
+Mounting,EPDM Pole Padding,Rubber strips prevent damage,1,12.00,12.00,Amazon,Home Depot,Various,https://www.homedepot.com/EPDM-rubber,Between clamps and pole,LOW,2-5
+Mounting,L-Brackets Stainless (pair),Heavy duty 90° for enclosure,2,14.00,28.00,Amazon,DigiKey,Various,https://www.amazon.com/Heavy-Duty-L-Bracket/,Mount enclosure to clamps,LOW,3-5
+,,,,,,,,,,,,,
+Solar Panel Mounting (Check if included in Renogy kit),,,,,,,,,,,,,
+Mounting,Solar Tilt Bracket Set,Adjustable 0-60° aluminum,1,35.00,35.00,Amazon,Renogy,Various,https://www.renogy.com/solar-panel-mounting-brackets/,May be included in kit,LOW,3-7
+Mounting,Solar Pole Mount Kit,Side-of-pole 100-200W panels,1,55.00,55.00,Renogy,Amazon,RNG-KIT-POLE,https://www.renogy.com/solar-panel-pole-mounting-system/,For pole installations,LOW,5-10
+Mounting,U-Bolts SS 2-4in (4x),Stainless for pole attachment,4,5.00,20.00,Amazon,Home Depot,Various,https://www.amazon.com/U-Bolt-Stainless/,Match to pole diameter,LOW,2-5
+,,,,,,,,,,,,,
+Internal Component Mounting,,,,,,,,,,,,,
+Mounting,DIN Rail 35mm (2x 200mm),Standard aluminum rail,2,8.00,16.00,DigiKey,Amazon,Various,https://www.digikey.com/en/products/filter/din-rails/,Internal organization,LOW,3-5
+Mounting,Pi 5 DIN Rail Mount,35mm adapter for Raspberry Pi,1,12.00,12.00,Amazon,DigiKey,Various,https://www.amazon.com/Pi-DIN-Rail-Mount/,Secures Pi inside enclosure,LOW,3-5
+Mounting,M2.5 Standoff Kit,Nylon assorted for PCBs,1,8.00,8.00,Amazon,DigiKey,Various,https://www.amazon.com/Standoff-Kit-Nylon/,HAT and board mounting,LOW,3-5
+Mounting,Industrial Velcro,Heavy duty retention,1,12.00,12.00,Amazon,Home Depot,Various,https://www.amazon.com/VELCRO-Industrial/,Component backup retention,LOW,2-5
+,,,,,,,,,,,,,
+CONNECTORS & GLANDS,,,,,,,,,,,,,
+Connector,Cable Glands IP68 Assorted,M12/M16/M20 nylon PA66 kit,1,18.00,18.00,Amazon,DigiKey,Various,https://www.amazon.com/Waterproof-Cable-Glands-IP68-Connectors/dp/B07K7QGQNK,Mixed sizes for enclosure,LOW,2-5
+Connector,GORE Vent M12,ePTFE pressure equalization IP68,2,12.00,24.00,DigiKey,Amazon,Various,https://www.digikey.com/en/products/filter/vents/795,Prevents internal condensation,LOW,3-5
+Connector,MC4 Connectors (if needed),Solar panel connection standard,2,8.00,16.00,Amazon,Renogy,Various,https://www.amazon.com/MC4-Connectors-Pairs-Solar-Panel/dp/B017MN4EBC,May be included in Renogy kit,LOW,2-5
+,,,,,,,,,,,,,
+PROTECTION & GROUNDING,,,,,,,,,,,,,
+Protection,Inline Fuse Holder 20A,Automotive blade style waterproof,2,6.00,12.00,Amazon,DigiKey,Various,https://www.amazon.com/Waterproof-Inline-Fuse-Holder-AWG/dp/B0759LKRB7,Main power protection,LOW,2-5
+Protection,Surge Protector 12V DC,Solar input SPD 10kA,1,25.00,25.00,Amazon,DigiKey,Various,https://www.amazon.com/Surge-Protector-Device-Lightning-Protection/dp/B003BYKZDS,Lightning protection,LOW,3-5
+Grounding,Ground Rod Kit 8ft,Copper-bonded rod + clamp + wire,1,30.00,30.00,Home Depot,Lowes,Various,https://www.homedepot.com/p/BURNDY-Grounding-Kit-with-8-ft-Ground-Rod/,Source locally,VARIES,LOCAL
+,,,,,,,,,,,,,
+ANTI-THEFT,,,,,,,,,,,,,
+Security,Tamper Switches N.C.,Enclosure opening detection,2,8.00,16.00,Amazon,DigiKey,Various,https://www.amazon.com/Tamper-Resistant-Switch-Security-Alarm/dp/B0734YS6R4,Wired to Pi GPIO or alarm,LOW,2-5
+Security,Security Screws Kit,Torx tamper-resistant assorted,1,12.00,12.00,Amazon,DigiKey,Various,https://www.amazon.com/Security-Tamper-Resistant-Screws-Assortment/dp/B07V4GTQSB,For external fasteners,LOW,2-5
+Security,Siren 12V 120dB IP65,Weatherproof audible alarm,1,28.00,28.00,Amazon,Security stores,Various,https://www.amazon.com/Siren-Alarm-Outdoor-Waterproof-120dB/dp/B07WHWHT4Z,Local deterrent,LOW,2-5
+,,,,,,,,,,,,,
+HIGH HUMIDITY / TROPICAL CLIMATE PACKAGE (OPTIONAL),,,,,,,,,,,,,
+"Required for: Indonesia, SE Asia monsoon, Amazon basin, Congo basin, >80% RH",,,,,,,,,,,,,
+"Protects: Pi 5, power HAT, Renogy charge controller, relay modules - all enclosure electronics",,,,,,,,,,,,,
+"Note: Sealed IP67/IP68 cameras handle their own condensation - this protects ENCLOSURE electronics",,,,,,,,,,,,,
+,,,,,,,,,,,,,
+Enclosure Electronics Protection System,,,,,,,,,,,,,
+Humidity,Silicone Heater Pad 75x150mm 25W,12V adhesive for compute enclosure,1,25.00,25.00,Amazon,Keenovo,Various,https://www.amazon.com/Silicone-Heater-Pad-Heating/dp/B07GXKZ8WQ,Mount near Pi; keeps electronics above dew point,LOW,3-7
+Humidity,Silicone Heater Pad 100x200mm 40W,12V for power section (Config A or large combined),1,35.00,35.00,Amazon,Keenovo,Various,https://www.amazon.com/Silicone-Heater-Pad-40W/,Protects Renogy controller; Config A or large Config B,LOW,3-7
+Humidity,STC-1000 Thermostat 12V,Digital temp controller 10A relay NTC probe,1,15.00,15.00,Amazon,eBay,STC-1000,https://www.amazon.com/Temperature-Controller-STC-1000/dp/B00OXPE8U6,Activates heaters when temp <25C,LOW,2-5
+Humidity,STC-1000 Second Unit (if needed),Second thermostat for separate power box,1,15.00,15.00,Amazon,eBay,STC-1000,https://www.amazon.com/Temperature-Controller-STC-1000/dp/B00OXPE8U6,Config A two-box only,LOW,2-5
+Humidity,DHT22 Humidity Sensor,Digital I2C for Pi monitoring 0-100% RH,2,8.00,16.00,Amazon,DigiKey,DHT22,https://www.amazon.com/DHT22-Temperature-Humidity-Sensor/dp/B073F472JL,One per enclosure; alerts if >70% RH,LOW,3-5
+Humidity,Molecular Sieve Type 4A 200g,Works at >90% RH (silica gel fails >60%),4,12.00,48.00,Amazon,Industrial,Type 4A,https://www.amazon.com/Molecular-Sieve-4A-Desiccant/dp/B0B1DJGH8W,2 per enclosure; replace every 3-6 months,LOW,3-7
+Humidity,GORE Vent M12 (additional 2x),Extra pressure equalization,2,12.00,24.00,DigiKey,Amazon,Various,https://www.digikey.com/en/products/filter/vents/795,Second vent per enclosure for humid airflow,LOW,3-5
+Humidity,Humidity Indicator Cards (20),Color-change 10-60% RH range,1,12.00,12.00,Amazon,Uline,Various,https://www.amazon.com/Humidity-Indicator-Cards/dp/B00AQMX4KA,Visual check without opening,LOW,2-5
+Humidity,Conformal Coating Spray,Silicone PCB protection,1,18.00,18.00,Amazon,DigiKey,MG Chemicals,https://www.amazon.com/MG-Chemicals-Silicone-Conformal-Coating/dp/B008O9YIV6,Protect exposed connections,LOW,3-5
+,,,,,,,,,,,,,
+Tropical Electronics Spares Kit,,,,,,,,,,,,,
+Spares,Spare Heater Pad 75x150mm,Replacement compute box heater,1,25.00,25.00,Amazon,Keenovo,Various,https://www.amazon.com/Silicone-Heater-Pad/,Field replacement,LOW,3-7
+Spares,Spare Heater Pad 100x200mm,Replacement power heater,1,35.00,35.00,Amazon,Keenovo,Various,https://www.amazon.com/Silicone-Heater-Pad-40W/,Config A or large Config B,LOW,3-7
+Spares,Spare Desiccant Type 4A 1kg,12+ month tropical supply,1,35.00,35.00,Amazon,Industrial,Type 4A,https://www.amazon.com/Molecular-Sieve-4A-1kg/,Bulk for field service,LOW,3-7
+Spares,Spare GORE Vents (4x),Replacement M12 vents,4,12.00,48.00,DigiKey,Amazon,Various,https://www.digikey.com/en/products/filter/vents/795,Vents clog in dusty/humid,LOW,3-5
+Spares,Spare DHT22 Sensors (2x),Replacement humidity sensors,2,8.00,16.00,Amazon,DigiKey,DHT22,https://www.amazon.com/DHT22-Sensor/,Sensors can fail in humidity,LOW,3-5
+,,,,,,,,,,,,,
+HIGH HUMIDITY PACKAGE COSTS,,,,,,,,,,,,,
+Package,Config B (Combined Box) Essential,1-2 heaters + thermostat + sensors + desiccant + vents + coating,,,173.00,,,,Single/combined enclosure,,,
+Package,Config A (Two-Box) Essential,2 heaters + 2 thermostats + sensors + desiccant + vents + coating,,,223.00,,,,Both enclosures protected,,,
+Package,Tropical Spares (Config B),Heaters + desiccant + vents + sensors,,,159.00,,,,6-12 month field supply,,,
+Package,Tropical Spares (Config A),2 heaters + desiccant + vents + sensors,,,159.00,,,,6-12 month field supply,,,
+Package,TOTAL Config B + Spares,Combined box deployment,,,332.00,,,,Recommended for Indonesia/SE Asia,,,
+Package,TOTAL Config A + Spares,Two-box deployment,,,382.00,,,,Recommended for Indonesia/SE Asia,,,
+,,,,,,,,,,,,,
+POWER BUDGET NOTE,,,,,,,,,,,,,
+"Enclosure heaters add 80-150 Wh/day depending on configuration",,,,,,,,,,,,
+"For tropical: Minimum Renogy 400W kit recommended (vs 200W starter)",,,,,,,,,,,,
+"Heaters run primarily at night when temp drops cause condensation",,,,,,,,,,,,
+,,,,,,,,,,,,,
+CONSUMABLES,,,,,,,,,,,,,
+Consumables,Silicone Sealant,RTV weatherproof tube,1,12.00,12.00,Amazon,Home Depot,Various,https://www.amazon.com/GE-Silicone-Sealant-Clear/dp/B000CPJMZK,Sealing and waterproofing,LOW,2-5
+Consumables,Cable Ties UV-Resistant,Black nylon outdoor 200pc,1,10.00,10.00,Amazon,DigiKey,Various,https://www.amazon.com/Cable-Ties-UV-Resistant-Outdoor/dp/B07D7SDNNJ,Cable management,LOW,2-5
+Consumables,Heat Shrink Adhesive,Marine grade assorted,1,15.00,15.00,Amazon,DigiKey,Various,https://www.amazon.com/Heat-Shrink-Tubing-Adhesive-Lined/dp/B07BNLL5YW,Waterproof terminations,LOW,2-5
+Consumables,Wire 12/14 AWG Assorted,Marine grade tinned copper 50ft,1,25.00,25.00,Amazon,DigiKey,Various,https://www.amazon.com/WindyNation-Tinned-Copper-Wire-Marine/dp/B01A6HQZUG,Power wiring,LOW,2-5
+,,,,,,,,,,,,,
+,,,,,,,,,,,,,
+COST SUMMARY - SCENARIO 3 (RENOGY TURNKEY),,,,,,,,,,,,,
+,,,,,,,,,,,,,
+Configuration,Renogy Kit,DigiKey Electronics,Amazon Accessories,Total System Cost,Notes,,,,,,,
+Budget (Option A),330 (200W + 50Ah),155,180,665,Starter kit + budget cameras,,,,,,,
+Standard (Option B),805 (400W + 100Ah),155,205,1165,Premium kit + standard cameras,,,,,,,
+Complete (Option C),1600 (400W + 200Ah),155,205,1960,All-in-one kit with batteries,,,,,,,
+High Capacity (Option D),1225 (600W + 100Ah),180,220,1625,Extended autonomy,,,,,,,
+,,,,,,,,,,,,,
+RENOGY SHIPPING NOTES,,,,,,,,,,,,,
+US Domestic,Free ground shipping on most products - 3-7 days,,,,,,https://www.renogy.com/Customer-Service-FAQ/How-will-my-order-be-shipped,,,,,
+International,Limited options - check availability - may need US forwarding service,,,,,,,,,,,
+Sales/Promotions,"Regular promotions - ""never buy at full price"" - current 20%+ off through Dec 15 2025",,,,,,,,,,,
+Warranty,5 years product warranty + 25 years performance warranty on panels,,,,,,,,,,,
+,,,,,,,,,,,,,
+SUPPLIER SUMMARY,,,,,,,,,,,,,
+Renogy,Complete solar kits - 100+ countries served - primarily US market,,,,,,,https://www.renogy.com,,,,
+DigiKey,Electronics core - 170+ countries - same day shipping,,,,,,,https://www.digikey.com,,,,
+Redodo,Budget LiFePO4 batteries - ships from US - good availability,,,,,,,https://www.redodopower.com,,,,
+Amazon Business,Cameras IR lights accessories - 100+ countries - DDP available,,,,,,,https://business.amazon.com,,,,
+UUGear,Witty Pi power management - EU based - global shipping,,,,,,,https://www.uugear.com,,,,
+,,,,,,,,,,,,,
+ADVANTAGES OF RENOGY TURNKEY,,,,,,,,,,,,,
+"- All solar components pre-matched and compatible",,,,,,,,,,,,
+"- No solar design expertise required",,,,,,,,,,,,
+"- Single warranty coverage for power system",,,,,,,,,,,,
+"- Installation guides and support included",,,,,,,,,,,,
+"- Proven kits used by RV/off-grid community",,,,,,,,,,,,
+,,,,,,,,,,,,,
+LIMITATIONS,,,,,,,,,,,,,
+"- International shipping limited (US-centric)",,,,,,,,,,,,
+"- Kit may include components not needed for RC-Box",,,,,,,,,,,,
+"- Higher cost than component-level sourcing",,,,,,,,,,,,
+"- Battery DG shipping still applies if ordering internationally",,,,,,,,,,,,
