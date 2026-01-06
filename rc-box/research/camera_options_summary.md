@@ -121,86 +121,35 @@ Running continuously avoids all of this. The tradeoff is higher power consumptio
 
 ---
 
-### Option 2: GoPro Hero 13 + Labs Firmware
+### Option 2: Action Cameras (GoPro, DJI, Insta360)
 
-**Would be great if it didn't overheat.**
+**Factory sealed and low power, but each has significant drawbacks.**
 
-| Spec | Value |
-|------|-------|
-| Camera | [GoPro Hero 13](https://gopro.com/en/us/shop/cameras/hero13-black/CHDHX-131-master.html), ~$400 each |
-| Sealed | IP68 to 10m, factory |
-| Temp range | **-10°C to 35°C** |
-| Power | ~5W recording |
-| Control | BLE/WiFi via [Open GoPro SDK](https://gopro.github.io/OpenGoPro/python_sdk/) |
+Action cameras are attractive because they're factory-sealed IP68, relatively low power (~3-5W), and designed for outdoor use. We evaluated three options:
 
-**The problem:** Indonesia regularly exceeds 35°C. GoPro will overheat and shut down. This isn't a reliability concern - it's a guaranteed failure mode. GoPro's own documentation says the camera shuts down at 50°C internal temp, which is easily reached in direct sunlight at 35°C+ ambient.
+| Camera | Price | Temp Range | Control | Main Problem |
+|--------|-------|------------|---------|--------------|
+| [GoPro Hero 13](https://gopro.com/en/us/shop/cameras/hero13-black/CHDHX-131-master.html) | ~$400 | -10 to 35°C | BLE/WiFi via [Open GoPro SDK](https://gopro.github.io/OpenGoPro/python_sdk/) | **Overheats above 35°C** |
+| [DJI Osmo Action 5 Pro](https://store.dji.com/product/osmo-action-5-pro) | ~$350 | -20 to 45°C | BLE via [ESP32 SDK](https://github.com/dji-sdk/Osmo-GPS-Controller-Demo) | **No Python SDK** |
+| [Insta360 Ace Pro 2](https://store.insta360.com/product/ace-pro-2) | ~$400 | -20 to 45°C | USB ([UVC webcam mode](https://onlinemanual.insta360.com/acepro2/en-us/camera/appuse/webcammode)) | **1080p only in webcam mode** |
 
-Also:
-- USB power trigger has reliability issues (voltage drops, power bank quality)
-- Control requires BLE/WiFi, not wired
-- No direct video capture over USB
+**Why we're not pursuing this path:**
 
-**Total camera + power system: ~$1,030**
+- **GoPro:** 35°C max operating temp is incompatible with Indonesia. Camera shuts down at 50°C internal temp, easily reached in direct sunlight. Also requires BLE/WiFi control (not wired), and USB power trigger has reliability issues.
 
-**Risk: HIGH** - Temperature incompatibility is a showstopper
+- **DJI:** Better thermal management (45°C), but no Python SDK. Would need to build custom ESP32 bridge or reverse-engineer their proprietary BLE protocol. Too much development effort.
 
----
+- **Insta360:** Has USB webcam mode that works as standard UVC device, but limited to 1080p30 (2MP). Too big a resolution tradeoff from our 8MP target. Also untested on Pi, unknown thermal behavior at 40°C+.
 
-### Option 3: DJI Osmo Action 5 Pro
+All three also lack integrated IR for night monitoring.
 
-**Better temp tolerance, but no Python SDK.**
+**Total camera + power system: ~$930-1,030**
 
-| Spec | Value |
-|------|-------|
-| Camera | [DJI Osmo Action 5 Pro](https://store.dji.com/product/osmo-action-5-pro), ~$350 each |
-| Sealed | IP68 to 20m, factory |
-| Temp range | **-20°C to 45°C** |
-| Power | ~5W recording |
-| Control | BLE via [DJI R SDK (ESP32)](https://github.com/dji-sdk/Osmo-GPS-Controller-Demo) |
-
-**The good:** 45°C operating temp actually works for Indonesia. Best thermal management of any action camera - can record 4K/60 continuously without overheating.
-
-**The bad:** No Python SDK. DJI only provides an ESP32 demo using their proprietary BLE protocol. You'd need to either:
-- Build a custom ESP32 bridge that Pi controls via serial
-- Reverse-engineer the protocol for Python
-
-Also, USB power may still drain the internal battery (not true pass-through charging).
-
-**Total camera + power system: ~$980**
-
-**Risk: MEDIUM-HIGH** - Significant development effort for BLE integration
+**Risk: HIGH** - Temperature, SDK, or resolution issues make these unsuitable
 
 ---
 
-### Option 4: Insta360 Ace Pro 2 (USB Webcam Mode)
-
-**Factory sealed, low power, but limited to 1080p.**
-
-| Spec | Value |
-|------|-------|
-| Camera | [Insta360 Ace Pro 2](https://store.insta360.com/product/ace-pro-2), ~$400 each |
-| Sealed | IP68 to 12m, factory |
-| Temp range | **-20°C to 45°C** |
-| Power | ~2-3W in webcam mode (estimated) |
-| Control | USB (appears as [UVC webcam](https://onlinemanual.insta360.com/acepro2/en-us/camera/appuse/webcammode)) |
-
-Insta360 has a USB webcam mode that presents the camera as a standard UVC device. If it works on the Pi, we capture directly with `ffmpeg` - no API needed.
-
-The catch: webcam mode is limited to **1080p30 (2MP)**. Big step down from 8MP.
-
-**Unknowns:**
-- Does it actually work on Raspberry Pi?
-- Can it run continuously on USB power?
-- Does it survive power cycling?
-- Will it overheat at 40°C+ ambient?
-
-**Total camera + power system: ~$1,030**
-
-**Risk: MEDIUM** - Needs testing, and resolution is a significant tradeoff
-
----
-
-### Option 5: Machine Vision Housing + Gore Vent + USB Camera
+### Option 3: Machine Vision Housing + Gore Vent + USB Camera
 
 **Good sealing at low cost, but requires assembly.**
 
@@ -276,7 +225,7 @@ For tropical sites with big temperature swings, continuous pressure equalization
 
 ---
 
-### Option 6: Industrial Nitrogen-Purged Housing + USB Camera
+### Option 4: Industrial Nitrogen-Purged Housing + USB Camera
 
 **Best moisture protection, but expensive and overkill for most sites.**
 
@@ -321,13 +270,11 @@ Features: IP68 submersible, IK10 impact resistance, active heater/blower, 20+ ye
 | Option | Resolution | Sealed | Temp Range | Power | Control |
 |--------|------------|--------|------------|-------|---------|
 | PoE IP Camera (24/7) | 8-12MP | IP67 | -30 to 60°C | 24W | RTSP |
-| GoPro Hero 13 | 27MP | IP68 | -10 to 35°C | 5W | BLE/WiFi |
-| DJI Osmo Action 5 | 40MP | IP68 | -20 to 45°C | 5W | BLE (ESP32) |
-| Insta360 Ace Pro 2 | **2MP*** | IP68 | -20 to 45°C | 2.5W | USB/UVC |
+| Action Cameras | 2-40MP* | IP68 | -20 to 45°C | 3-5W | BLE/USB |
 | Gore Vent Housing + USB | 8MP | IP67 | -20 to 60°C | 2W | USB/UVC |
 | Nitrogen-Purged (Dotworkz) | 8MP | IP68/IK10 | -40 to 60°C | 2W | USB/UVC |
 
-*Webcam mode only; native is 50MP
+*Resolution varies by model and mode; Insta360 webcam mode limited to 2MP
 
 ### Cost (Solar Power)
 
@@ -336,9 +283,7 @@ Features: IP68 submersible, IK10 impact resistance, active heater/blower, 20+ ye
 | Option | Cameras (×2) | Power System | Total |
 |--------|--------------|--------------|-------|
 | PoE IP Camera (24/7) | $260 | $580 | **$840** |
-| GoPro Hero 13 | $800 | $230 | $1,030 |
-| DJI Osmo Action 5 | $700 | $230 | $930 |
-| Insta360 Ace Pro 2 | $800 | $230 | $1,030 |
+| Action Cameras | $700-800 | $230 | $930-1,030 |
 | Gore Vent (Entaniya) + USB | $240 | $230 | **$470** |
 | Gore Vent (VA Imaging) + USB | $400 | $230 | **$630** |
 | Nitrogen-Purged (Dotworkz) + USB | $1,400-1,840 | $230 | $1,630-2,070 |
@@ -348,9 +293,7 @@ Features: IP68 submersible, IK10 impact resistance, active heater/blower, 20+ ye
 | Option | Camera (×1) | Power System | Total |
 |--------|-------------|--------------|-------|
 | PoE IP Camera (24/7) | $130 | $420 | **$550** |
-| GoPro Hero 13 | $400 | $200 | $600 |
-| DJI Osmo Action 5 | $350 | $200 | $550 |
-| Insta360 Ace Pro 2 | $400 | $200 | $600 |
+| Action Cameras | $350-400 | $200 | $550-600 |
 | Gore Vent (Entaniya) + USB | $120 | $200 | **$320** |
 | Gore Vent (VA Imaging) + USB | $200 | $200 | **$400** |
 | Nitrogen-Purged (Dotworkz) + USB | $700-920 | $200 | $900-1,120 |
@@ -362,9 +305,7 @@ Features: IP68 submersible, IK10 impact resistance, active heater/blower, 20+ ye
 | Option | Cameras (×2) | Power System | Total |
 |--------|--------------|--------------|-------|
 | PoE IP Camera (24/7) | $260 | $120 | **$380** |
-| GoPro Hero 13 | $800 | $120 | $920 |
-| DJI Osmo Action 5 | $700 | $120 | $820 |
-| Insta360 Ace Pro 2 | $800 | $120 | $920 |
+| Action Cameras | $700-800 | $120 | $820-920 |
 | Gore Vent (Entaniya) + USB | $240 | $120 | **$360** |
 | Gore Vent (VA Imaging) + USB | $400 | $120 | **$520** |
 | Nitrogen-Purged (Dotworkz) + USB | $1,400-1,840 | $120 | $1,520-1,960 |
@@ -374,9 +315,7 @@ Features: IP68 submersible, IK10 impact resistance, active heater/blower, 20+ ye
 | Option | Camera (×1) | Power System | Total |
 |--------|-------------|--------------|-------|
 | PoE IP Camera (24/7) | $130 | $100 | **$230** |
-| GoPro Hero 13 | $400 | $100 | $500 |
-| DJI Osmo Action 5 | $350 | $100 | $450 |
-| Insta360 Ace Pro 2 | $400 | $100 | $500 |
+| Action Cameras | $350-400 | $100 | $450-500 |
 | Gore Vent (Entaniya) + USB | $120 | $100 | **$220** |
 | Gore Vent (VA Imaging) + USB | $200 | $100 | **$300** |
 | Nitrogen-Purged (Dotworkz) + USB | $700-920 | $100 | $800-1,020 |
@@ -388,9 +327,7 @@ Features: IP68 submersible, IK10 impact resistance, active heater/blower, 20+ ye
 | Option | Tech Risk | Field Risk | Dev Risk | Overall |
 |--------|-----------|------------|----------|---------|
 | PoE IP Camera (24/7) | Low | Low | None | **LOW** |
-| GoPro Hero 13 | Medium | **High** (temp) | Low | **HIGH** |
-| DJI Osmo Action 5 | Medium | Low | **High** | **MEDIUM-HIGH** |
-| Insta360 Ace Pro 2 | Medium | Low | Medium | **MEDIUM** |
+| Action Cameras | Medium | High (temp/SDK) | Medium-High | **HIGH** |
 | Gore Vent Housing + USB | Low | Low | Medium | **MEDIUM** |
 | Nitrogen-Purged (Dotworkz) | Low | Low | Medium | **LOW** |
 
@@ -447,27 +384,9 @@ No development risk, no field assembly risk, no temperature surprises. Continuou
 
 ---
 
-### Solar sites - testing for cost savings
+### Solar sites - cost savings
 
-**Consider testing Insta360 Ace Pro 2 (Option 4) before committing.**
-
-Buy one camera (~$400) and validate:
-1. Does USB webcam mode work on Raspberry Pi?
-2. Can it run continuously on USB power without draining battery?
-3. Does it survive power cycling (boot on USB power)?
-4. Does it overheat at 40°C+ ambient (test in hot car or oven)?
-
-If all four pass, you have a factory-sealed, low-power option with simple USB integration. Resolution drops to 1080p, but that may be acceptable.
-
-If any fail, fall back to PoE cameras.
-
-**Test cost: ~$400 | Potential savings: ~$200-400/unit on power system**
-
----
-
-### Solar sites - maximum cost savings
-
-**Consider testing Gore Vent Housing approach (Option 5).**
+**Consider testing Gore Vent Housing approach (Option 3).**
 
 True nitrogen-purged housings cost $500-5,000+ and are more than we need for river monitoring. Gore protective vents + desiccant provide equivalent moisture protection at lower cost.
 
@@ -500,8 +419,7 @@ Gore vents use ePTFE membrane (same material as GORE-TEX). They allow continuous
 
 ### Not recommended
 
-- **GoPro Hero 13:** Temperature limit (35°C) is incompatible with Indonesia
-- **DJI Osmo Action 5:** Development effort for BLE integration is too high
+- **Action cameras (Option 2):** GoPro overheats above 35°C, DJI has no Python SDK, Insta360 limited to 1080p. None have integrated IR. Not worth the tradeoffs.
 
 ---
 
@@ -513,15 +431,7 @@ Gore vents use ePTFE membrane (same material as GORE-TEX). They allow continuous
    - Update BOM for Indonesia rainy season (300W panel, 200Ah battery)
    - Test IR image quality for river surface detection
 
-2. **If testing Insta360:**
-   - Order one Insta360 Ace Pro 2 (~$400)
-   - Test USB webcam mode on Pi
-   - Test continuous power operation
-   - Test high-temp survival (40°C+)
-   - Note: No IR capability - night monitoring would require separate IR illuminator
-   - Document results before committing
-
-3. **If testing Gore Vent housing approach:**
+2. **If testing Gore Vent housing approach:**
    - Order VA Imaging MVEC167 housing (~$100) or Entaniya WC-01 (~$40)
    - Order Gore screw-in vent (M12 thread, ~$12) from Digi-Key/Mouser
    - Order 4K USB camera module (~$60)
@@ -533,7 +443,7 @@ Gore vents use ePTFE membrane (same material as GORE-TEX). They allow continuous
    - Document assembly procedure for field replication
    - Validate USB camera works with Pi and ORC software
 
-4. **If pursuing nitrogen-purged housing (for critical installations):**
+3. **If pursuing nitrogen-purged housing (for critical installations):**
    - Contact [Dotworkz](https://shop.dotworkz.com/) for D2 series pricing and lead times
    - Request quotes from [2bSecurity](https://www.2bsecurity.com/) for PH-850/PH-860 housings
    - Evaluate heater/blower power requirements for solar deployments
