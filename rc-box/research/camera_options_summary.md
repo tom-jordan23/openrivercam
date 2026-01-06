@@ -6,9 +6,9 @@
 
 ## The Problem
 
-We need sealed cameras that won't die in Indonesia. Our Indonesia deployment proved that humidity kills - we fried a unit when moisture condensed inside the camera bay after it was opened in 90%+ humidity. Cameras must be **factory sealed** - no field assembly, no desiccant maintenance, no "IP67 equivalent" housings that require careful sealing.
+We need sealed cameras that won't die in Indonesia. Our Indonesia deployment proved that humidity kills - we lost a unit when moisture condensed inside the camera bay after it was opened in 90%+ humidity. Cameras must be **factory sealed** - no field assembly, no desiccant maintenance, no "IP67 equivalent" housings that require careful sealing.
 
-At the same time, power drives cost for solar sites. PoE cameras draw 10-12W each, which means bigger solar panels, bigger batteries, and higher unit costs. Every extra $100 in power system cost means fewer units deployed.
+At the same time, power drives cost for solar sites. PoE cameras draw 10-12W each, which means bigger solar panels, bigger batteries, and higher unit costs. Higher unit costs for power system cost means fewer units deployed.
 
 No camera on the market is factory-sealed, high-resolution, low-power, AND tropical-rated. We have to make tradeoffs.
 
