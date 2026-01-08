@@ -2,6 +2,8 @@
 
 **Target:** March/April 2026 deployment of two ORC river monitoring stations in Indonesia
 **Sites:** Sukabumi (solar, USB camera) and Jakarta (AC power, PoE camera)
+**Budget:** $3,000 USD total for both sites (target: less than $3,000)
+**Stakeholder:** tjordan
 
 ---
 
@@ -87,12 +89,12 @@ Electronics exposed to tropical humidity benefit from conformal coating - a thin
 
 | Type | Application | Cure Time | Rework | Notes |
 |------|-------------|-----------|--------|-------|
-| **Acrylic (MG 422B)** | Brush/spray | 10-30 min | Easy (solvent) | Good general purpose, easy rework |
-| **Silicone (MG 422C)** | Brush/spray | 24 hr | Moderate | Flexible, wide temp range |
+| **Acrylic (MG 422B)** | Brush/spray | 10-30 min | Easy (solvent) | Good general purpose, **NOT for >95% RH** |
+| **Silicone (MG 422C)** ✅ | Brush/spray | 24 hr | Moderate | Flexible, wide temp range, **best for high humidity** |
 | **Urethane** | Brush/spray | 24 hr | Difficult | Tough, chemical resistant |
 | **Nano-coating (NeverWet, Liquipel)** | Spray | 30 min | N/A | Hydrophobic, but less robust |
 
-**Recommendation:** Acrylic conformal coat (MG Chemicals 422B or similar) - easy to apply, easy to rework if repairs needed, good humidity protection.
+**Recommendation:** ✅ **Silicone conformal coat (MG Chemicals 422C)** - MG 422B explicitly states it is NOT intended for extended exposure to >95% RH. Pure silicone (422C) performs better in tropical humidity.
 
 **Application Notes:**
 - Apply in low-humidity environment before deployment
@@ -214,7 +216,7 @@ Keep the following at the local PMI office for field service. Covers both Sukabu
 | USB camera (same model as installed) | 1 | |
 | Gore vent camera housing | 1 | VA Imaging or Entaniya (match installed) |
 | Gore protective vent | 2 | |
-| Desiccant packs (rechargeable) | 4 | **IF desiccant strategy selected** - see design question |
+| ~~Desiccant packs~~ | ~~4~~ | **NOT NEEDED** - see Phase 1 humidity decision |
 | USB cable (outdoor-rated, same length) | 2 | |
 | IR flood light (with dusk sensor) | 1 | |
 | USB-powered relay module | 1 | |
@@ -239,8 +241,8 @@ Keep the following at the local PMI office for field service. Covers both Sukabu
 | Item | Qty | Notes |
 |------|-----|-------|
 | SIM cards (pre-activated) | 2 | For modem replacement |
-| Desiccant packs | 10 | **IF desiccant strategy selected** - otherwise omit |
-| Conformal coat (MG 422B or equiv) | 1 bottle | For replacement board coating |
+| ~~Desiccant packs~~ | ~~10~~ | **NOT NEEDED** - desiccant + Gore vents is not viable at 95% RH |
+| Conformal coat (MG 422C silicone) | 1 bottle | For replacement board coating |
 | Masking tape | 1 roll | For conformal coating prep |
 | Cable ties (assorted) | 1 bag | |
 | Heat shrink tubing | 1 set | |
@@ -265,7 +267,7 @@ Keep the following at the local PMI office for field service. Covers both Sukabu
 
 ### Phase 1: Requirements Validation
 
-1. **Review SITES.md** - Confirm equipment lists with stakeholders
+1. ~~**Review SITES.md** - Confirm equipment lists with stakeholders~~ ✓ Complete (stakeholder: tjordan)
 2. **Cross-reference research** - Check `/rc-box/research/camera_options_summary.md` for camera decisions
 3. **Verify existing equipment** - Confirm Sukabumi's solar system specs and condition
 4. **Validate capture schedule** - 5s video every 15 min affects power budget and storage sizing
@@ -273,7 +275,7 @@ Keep the following at the local PMI office for field service. Covers both Sukabu
 ### Phase 2: Sukabumi BOM Development
 
 #### 2.1 Compute Platform
-- [ ] Raspberry Pi 5 (4GB or 2GB - determine based on ORC requirements)
+- [ ] Raspberry Pi 5 (4GB minimum, 8GB preferred for ORC)
 - [ ] Witty Pi 4 for scheduling + backup battery
 - [ ] **GPIO terminal block riser** - Mounts on top of Witty Pi 4, exposes GPIO as screw terminals for future expansion (relay control, sensors, etc.)
 - [ ] M.2 SATA SSD (512GB) + USB enclosure
@@ -352,7 +354,7 @@ Components to research:
 - [ ] Stainless steel hardware
 
 #### 2.5 Conformal Coating & Protection
-- [ ] Acrylic conformal coat (MG 422B or equiv) - for Pi, Witty Pi, relay modules
+- [ ] Silicone conformal coat (MG 422C) - for Pi, Witty Pi, GPIO riser, relay modules
 - [ ] Masking tape (for protecting connectors during coating)
 - [ ] Application brush or spray
 
@@ -408,17 +410,48 @@ Research is organized into phases with checkpoints. Complete each phase and get 
 
 ---
 
-### Phase 1: Foundational Decisions (BLOCKING)
+### Phase 1: Foundational Decisions (BLOCKING) ✅ COMPLETE
 
 These decisions affect multiple downstream choices. Complete first.
 
-| # | Topic | Question to Answer | Deliverable |
-|---|-------|-------------------|-------------|
-| 1.1 | **Internal mounting solutions** | What's the best way to mount Pi + HATs, SSD, modem, relays inside enclosures? | Comparison table of options (DIN rail, standoffs, plates, etc.) with recommendation |
-| 1.2 | **GPIO terminal block riser** | Does a stackable riser exist that works with Witty Pi 4 on Pi 5? | Specific product recommendation or "not available" |
-| 1.3 | **Camera humidity tolerance** | Can IMX317/IMX219 sensors operate at 80-95% RH? | Yes/No + source. Determines desiccant strategy |
+| # | Topic | Question to Answer | Deliverable | Status |
+|---|-------|-------------------|-------------|--------|
+| 1.1 | **Internal mounting solutions** | What's the best way to mount Pi + HATs, SSD, modem, relays inside enclosures? | Comparison table of options (DIN rail, standoffs, plates, etc.) with recommendation | ✅ **DIN rail (35mm) approved** |
+| 1.2 | **GPIO terminal block riser** | Does a stackable riser exist that works with Witty Pi 4 on Pi 5? | Specific product recommendation or "not available" | ✅ **Adafruit Pi-EzConnect (ID 2711) approved** - $19.95 |
+| 1.3 | **Camera/enclosure humidity tolerance** | Can IMX317/IMX219 sensors operate at 80-95% RH? | Yes/No + source. Determines humidity management strategy | ✅ **See decisions below** |
 
-**Checkpoint 1:** Review findings. Decide on mounting approach and desiccant strategy before proceeding.
+**Checkpoint 1:** ✅ APPROVED (January 8, 2026)
+
+#### Phase 1 Decisions - Humidity Management Strategy
+
+**Key Finding:** Passive desiccant + Gore vents is NOT viable at 95% RH. Desiccant saturates in days due to vapor permeability of Gore vents. Industry standard is conformal coating + active heating.
+
+**Decision: Site-specific approach**
+
+| Site | Strategy | Rationale |
+|------|----------|-----------|
+| **Jakarta** (AC power) | Conformal coating (MG 422C) + PTC heaters + Gore vents | Full industrial approach - reference site for testing |
+| **Sukabumi** (solar) | Conformal coating (MG 422C) + Gore vents only (NO heaters) | Avoid solar system upgrade; test coating-only approach |
+
+**Jakarta humidity protection:**
+- Silicone conformal coating (MG 422C) on all PCBs
+- 5-7W PTC heater in camera housing (thermostat @ 28°C)
+- 10-15W PTC heater in compute enclosure (hygrostat @ 70% RH)
+- Gore M12 vents for pressure equalization
+- NO desiccant
+
+**Sukabumi humidity protection:**
+- Silicone conformal coating (MG 422C) on all PCBs
+- Gore M12 vents for pressure equalization
+- NO heaters (power budget constraint)
+- NO desiccant
+- Accept higher failure risk; budget for replacement parts
+
+**Research documents:**
+- `/internal_mounting_solutions_research.md`
+- `/gpio_terminal_block_research.md`
+- `/sealed_camera_module_research.md`
+- `/humidity_management_tropical_enclosures_research.md`
 
 ---
 
@@ -430,7 +463,7 @@ Status display and maintenance mode - common to both sites.
 |---|-------|-------------------|-------------|
 | 2.1 | **Status display** | Which display type works best? (OLED, LCD, LED, e-ink) | Comparison with recommendation. Must be sunlight-readable, I2C, low power |
 | 2.2 | **Maintenance mode input** | What's the best tactile input? (button, switch, magnetic) | Specific product recommendation. Must be IP67, panel-mount |
-| 2.3 | **Conformal coating** | Is MG 422B appropriate for Pi 5? What to mask? | Application procedure document |
+| 2.3 | **Conformal coating procedure** | ~~Is MG 422B appropriate?~~ **MG 422C selected.** What to mask on Pi 5? | Application procedure document |
 
 **Checkpoint 2:** Review UI component selections. Confirm they meet requirements.
 
@@ -592,9 +625,9 @@ Based on research review, the following items may need attention:
 
 See **Research Plan (Phased)** section above for organized research tasks with checkpoints.
 
-**Current Phase:** Not started
+**Current Phase:** Phase 1 COMPLETE ✅
 
-**Next Action:** Begin Phase 1 (Foundational Decisions)
+**Next Action:** Begin Phase 2 (User Interface Components) and Phase 3/4 (Site-Specific Research) - can run in parallel
 
 ---
 
