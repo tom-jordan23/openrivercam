@@ -80,7 +80,7 @@ Electronics exposed to tropical humidity benefit from conformal coating - a thin
 
 **Components to consider coating:**
 - Raspberry Pi 5 PCB (avoid connectors, GPIO pins, heat sink contact areas)
-- Witty Pi 4 PCB
+- Witty Pi 5 HAT+ PCB
 - GPIO terminal block riser
 - Relay modules
 - Any exposed PCBs in the enclosure
@@ -117,7 +117,7 @@ All components inside enclosures must be securely mounted - no loose items. **Mo
 - No specialized skills for assembly
 
 **Components to mount:**
-- Raspberry Pi 5 + Witty Pi 4 + GPIO terminal block riser (stacked)
+- Raspberry Pi 5 + Witty Pi 5 HAT+ + GPIO terminal block riser (stacked)
 - M.2 SSD in USB enclosure (no mounting holes typically)
 - Quectel modem + PU201 adapter
 - Relay modules
@@ -192,7 +192,7 @@ Keep the following at the local PMI office for field service. Covers both Sukabu
 | Item | Qty | Notes |
 |------|-----|-------|
 | Raspberry Pi 5 | 1 | Shared spare |
-| Witty Pi 4 | 1 | Shared spare |
+| Witty Pi 5 HAT+ | 1 | Shared spare |
 | GPIO terminal block riser | 1 | |
 | M.2 SSD (512GB) + USB enclosure | 1 | Pre-imaged with OS if possible |
 | SD card (32GB) with OS image | 2 | For quick Pi recovery |
@@ -276,8 +276,8 @@ Keep the following at the local PMI office for field service. Covers both Sukabu
 
 #### 2.1 Compute Platform
 - [ ] Raspberry Pi 5 (4GB minimum, 8GB preferred for ORC)
-- [ ] Witty Pi 4 for scheduling + backup battery
-- [ ] **GPIO terminal block riser** - Mounts on top of Witty Pi 4, exposes GPIO as screw terminals for future expansion (relay control, sensors, etc.)
+- [ ] Witty Pi 5 HAT+ for scheduling + RTC (~$46, I2C-only design enables clean stacking with Pi-EzConnect)
+- [ ] **GPIO terminal block riser** - Mounts on top of Witty Pi 5 HAT+, exposes GPIO as screw terminals for future expansion (relay control, sensors, etc.)
 - [ ] M.2 SATA SSD (512GB) + USB enclosure
 - [ ] Quectel EG25-G modem + PU201 adapter (verify Indonesian carrier bands)
 - [ ] LTE antenna (2x) + SMA bulkhead connectors
@@ -381,7 +381,7 @@ Components to research:
 - [ ] Conformal coat supplies (same as Sukabumi)
 
 #### 3.3 Compute Platform
-- [ ] Same as Sukabumi (Pi 5, Witty Pi 4, **GPIO terminal block riser**, SSD, modem, **status display**, **maintenance input**)
+- [ ] Same as Sukabumi (Pi 5, Witty Pi 5 HAT+, **GPIO terminal block riser**, SSD, modem, **status display**, **maintenance input**)
 
 #### 3.4 PoE Camera System
 - [ ] 2x PoE cameras: ANNKE C1200 (12MP) or Reolink RLC-810A (8MP)
@@ -417,7 +417,7 @@ These decisions affect multiple downstream choices. Complete first.
 | # | Topic | Question to Answer | Deliverable | Status |
 |---|-------|-------------------|-------------|--------|
 | 1.1 | **Internal mounting solutions** | What's the best way to mount Pi + HATs, SSD, modem, relays inside enclosures? | Comparison table of options (DIN rail, standoffs, plates, etc.) with recommendation | ✅ **DIN rail (35mm) approved** |
-| 1.2 | **GPIO terminal block riser** | Does a stackable riser exist that works with Witty Pi 4 on Pi 5? | Specific product recommendation or "not available" | ✅ **Adafruit Pi-EzConnect (ID 2711) approved** - $19.95 |
+| 1.2 | **GPIO terminal block riser** | Does a stackable riser exist that works with Witty Pi 5 HAT+ on Pi 5? | Specific product recommendation or "not available" | ✅ **Adafruit Pi-EzConnect (ID 2711) approved** - $19.95 |
 | 1.3 | **Camera/enclosure humidity tolerance** | Can IMX317/IMX219 sensors operate at 80-95% RH? | Yes/No + source. Determines humidity management strategy | ✅ **See decisions below** |
 
 **Checkpoint 1:** ✅ APPROVED (January 8, 2026)
@@ -452,6 +452,8 @@ These decisions affect multiple downstream choices. Complete first.
 - `research/gpio_terminal_block_research.md`
 - `research/sealed_camera_module_research.md`
 - `research/humidity_management_tropical_enclosures_research.md`
+- `research/witty_pi_5_research.md`
+- `research/GPIO_STACKING_ANALYSIS.md`
 
 ---
 
@@ -573,7 +575,7 @@ After all decisions are made.
 1. USB cameras work with Pi 5 and V4L2/UVC
 2. PoE cameras support RTSP and work with ffmpeg
 3. Modem works with Indonesian carriers
-4. Witty Pi 4 compatible with Pi 5
+4. Witty Pi 5 HAT+ compatible with Pi 5
 
 ### Lead Time Verification
 1. Check stock status at time of ordering
@@ -614,7 +616,7 @@ Based on research review, the following items may need attention:
 
 | Gap | Risk | Action Needed |
 |-----|------|---------------|
-| **GPIO terminal block riser** | Medium | Need to source HAT/riser that exposes GPIO as screw terminals while Witty Pi 4 is installed. Enables future expansion without resoldering |
+| **GPIO terminal block riser** | Medium | Need to source HAT/riser that exposes GPIO as screw terminals while Witty Pi 5 HAT+ is installed. Enables future expansion without resoldering |
 | **Modbus sensor details** | Medium | What device will connect via Modbus? Rain gauge? Water level sensor? External data logger? Need to specify interface requirements |
 | **SIM card strategy** | Medium | Pre-paid or postpaid? Which carrier? Data plan size? |
 | **ORC software compatibility** | Medium | Single-camera sites may need ORC modifications for day/night mode switching |
@@ -651,7 +653,7 @@ Key documents for BOM development:
 ### Creating Sukabumi BOM
 
 ```
-1. Start with compute platform (Pi 5, Witty Pi 4, GPIO terminal block riser, SSD, modem)
+1. Start with compute platform (Pi 5, Witty Pi 5 HAT+, GPIO terminal block riser, SSD, modem)
 2. Research Gore vent housing options (VA Imaging vs Entaniya)
 3. Select USB camera (verify IR sensitivity)
 4. Research commodity IR control solution (NO cable cutting - screw terminals only)
@@ -667,7 +669,7 @@ Key documents for BOM development:
 ```
 1. Start with power system research (UPS, cooling)
 2. Size enclosure for all components + cooling
-3. Add compute platform (Pi 5, Witty Pi 4, GPIO terminal block riser, SSD, modem)
+3. Add compute platform (Pi 5, Witty Pi 5 HAT+, GPIO terminal block riser, SSD, modem)
 4. Select PoE cameras from camera_options_summary.md
 5. Design PoE power distribution (injector vs switch)
 6. Add mounting infrastructure
