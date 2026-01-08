@@ -448,10 +448,10 @@ These decisions affect multiple downstream choices. Complete first.
 - Accept higher failure risk; budget for replacement parts
 
 **Research documents:**
-- `/internal_mounting_solutions_research.md`
-- `/gpio_terminal_block_research.md`
-- `/sealed_camera_module_research.md`
-- `/humidity_management_tropical_enclosures_research.md`
+- `research/internal_mounting_solutions_research.md`
+- `research/gpio_terminal_block_research.md`
+- `research/sealed_camera_module_research.md`
+- `research/humidity_management_tropical_enclosures_research.md`
 
 ---
 
