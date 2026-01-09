@@ -204,7 +204,8 @@ Keep the following at the local PMI office for field service. Covers both Sukabu
 | Inline fuse holders + fuses (5A, 10A) | 5 each | |
 | Cable glands (M12, M16, M20) | 3 each | |
 | Terminal blocks | 6 | Type TBD pending mounting research |
-| **Mounting hardware** | 1 kit | TBD - DIN rail, standoffs, or other per research |
+| **Mounting hardware** | 1 kit | DIN rail clips, standoffs, stainless hardware |
+| Tipping bucket rain gauge | 1 | Spare for either site (DFRobot or Misol) |
 | Silicone sealant (outdoor) | 1 tube | |
 | Dielectric grease | 1 tube | |
 | GORE vents (M12) | 2 | |
@@ -358,8 +359,10 @@ Components to research:
 - [ ] Masking tape (for protecting connectors during coating)
 - [ ] Application brush or spray
 
-#### 2.6 Optional
-- [ ] Rain gauge with Modbus output (research specific model)
+#### 2.6 Rain Gauge
+- [ ] Tipping bucket rain gauge - DFRobot SEN0575 (~$30) or Misol WH-SP-RG (~$20)
+- [ ] Mounting bracket/pole mount for rain gauge
+- [ ] Cable run from gauge to enclosure (2-wire for pulse output)
 
 ### Phase 3: Jakarta BOM Development
 
@@ -393,6 +396,11 @@ Components to research:
 #### 3.5 Infrastructure
 - [ ] Mounting pole + installation hardware
 - [ ] Grounding system (rod, cable, lugs)
+
+#### 3.6 Rain Gauge
+- [ ] Tipping bucket rain gauge - DFRobot SEN0575 (~$30) or Misol WH-SP-RG (~$20)
+- [ ] Mounting bracket/pole mount for rain gauge
+- [ ] Cable run from gauge to enclosure (2-wire for pulse output)
 
 ### Phase 4: Validation
 
@@ -457,61 +465,187 @@ These decisions affect multiple downstream choices. Complete first.
 
 ---
 
-### Phase 2: User Interface Components
+### Phase 2: User Interface Components ✅ COMPLETE
 
 Status display and maintenance mode - common to both sites.
 
-| # | Topic | Question to Answer | Deliverable |
-|---|-------|-------------------|-------------|
-| 2.1 | **Status display** | Which display type works best? (OLED, LCD, LED, e-ink) | Comparison with recommendation. Must be sunlight-readable, I2C, low power |
-| 2.2 | **Maintenance mode input** | What's the best tactile input? (button, switch, magnetic) | Specific product recommendation. Must be IP67, panel-mount |
-| 2.3 | **Conformal coating procedure** | ~~Is MG 422B appropriate?~~ **MG 422C selected.** What to mask on Pi 5? | Application procedure document |
+| # | Topic | Question to Answer | Deliverable | Status |
+|---|-------|-------------------|-------------|--------|
+| 2.1 | **Status display** | Which display type works best? (OLED, LCD, LED, e-ink) | Comparison with recommendation | ✅ **LED array approved** (3× 10mm IP67 LEDs: Red/Yellow/Green) |
+| 2.2 | **Maintenance mode input** | What's the best tactile input? (button, switch, magnetic) | Specific product recommendation | ✅ **IP67 pushbutton approved** (C&K AP Series or E-Switch PVA6) |
+| 2.3 | **Conformal coating procedure** | ~~Is MG 422B appropriate?~~ **MG 422C selected.** What to mask on Pi 5? | Application procedure document | ✅ **Procedure complete** |
 
-**Checkpoint 2:** Review UI component selections. Confirm they meet requirements.
+**Checkpoint 2:** ✅ APPROVED (January 8, 2026)
+
+#### Phase 2 Decisions Summary
+
+**Status Display:** 3× 10mm IP67 panel-mount LEDs
+- Green = OK/Ready
+- Yellow = Working (capture, upload)
+- Red = Error
+- Cost: ~$10-20 total
+- Visible at 3-5m distance, excellent sunlight readability
+
+**Maintenance Mode Input:** IP67 momentary pushbutton
+- C&K AP Series ($8-14) or E-Switch PVA6 Series ($12-18)
+- 16mm panel hole + PG9 cable gland
+- Recessed mounting prevents accidental activation
+- Long press (3s) = enter maintenance mode
+
+**Conformal Coating:** MG 422C silicone
+- See `research/conformal_coating_procedure.md` for detailed masking and application
+
+**Research documents:**
+- `research/status_display_research.md`
+- `research/maintenance_input_research.md`
+- `research/conformal_coating_procedure.md`
 
 ---
 
-### Phase 3: Sukabumi-Specific (USB Camera / Solar)
+### Phase 3: Sukabumi-Specific (USB Camera / Solar) ✅ COMPLETE
 
 Depends on Phase 1 decisions.
 
-| # | Topic | Question to Answer | Deliverable |
-|---|-------|-------------------|-------------|
-| 3.1 | **IR control solution** | Find USB-powered relay + IR light with dusk sensor | Specific products that require NO cable cutting |
-| 3.2 | **USB camera selection** | Which camera? Is it IR-sensitive? | Product recommendation with IR capability confirmation |
-| 3.3 | **Gore vent housing** | VA Imaging vs Entaniya - which is better for tropics? | Comparison and recommendation |
-| 3.4 | **USB cable quality** | What outdoor-rated USB cables exist? | Product options with length/price |
+| # | Topic | Question to Answer | Deliverable | Status |
+|---|-------|-------------------|-------------|--------|
+| 3.1 | **IR control solution** | Find USB-powered relay + IR light with dusk sensor | Specific products that require NO cable cutting | ✅ Tendelux AI4 + Numato USB relay |
+| 3.2 | **USB camera selection** | Which camera? Is it IR-sensitive? | Product recommendation with IR capability confirmation | ✅ Custom ELP/SVPRO 8MP NoIR (contact vendor) |
+| 3.3 | **Gore vent housing** | VA Imaging vs Entaniya - which is better for tropics? | Comparison and recommendation | ✅ VA Imaging MVEC167 (aluminum) |
+| 3.4 | **USB cable quality** | What outdoor-rated USB cables exist? | Product options with length/price | ✅ Bulgin PX0840 IP67 or HDPE conduit |
 
-**Checkpoint 3:** Review Sukabumi camera/IR system. Confirm it meets "no fabrication" principle.
+**Checkpoint 3:** ✅ APPROVED (January 8, 2026)
+
+#### Phase 3 Decisions Summary
+
+**IR Illumination System:**
+- Tendelux AI4 850nm IR illuminator with built-in photocell (~$35)
+- Numato Lab 1-channel USB relay (~$32)
+- Python script + systemd service controls relay on boot
+- All screw terminal connections, no soldering
+
+**USB Camera:**
+- Custom order: ELP or SVPRO 8MP IMX179 WITHOUT IR-cut filter
+- Contact: sales@elpcctv.com (request NoIR version, 115°+ wide angle)
+- Price: ~$70-100, lead time 2-6 weeks
+- **ACTION REQUIRED:** Contact vendor NOW for March/April delivery
+
+**Camera Housing:**
+- VA Imaging MVEC167 aluminum housing (~$100-150)
+- Aluminum preferred for heat dissipation in tropics
+- Add Gore M12 vent for pressure equalization
+
+**USB Cabling:**
+- 2-5m: Bulgin PX0840/A IP67 cable ($35-60)
+- >5m: USB over Cat6 extender ($150+)
+- Budget: Standard USB through HDPE conduit ($50-70)
+
+**Research documents:**
+- `research/ir_control_solution_research.md`
+- `research/usb_camera_ir_research.md`
+- `research/camera_housing_research.md`
+- `research/outdoor_usb_cable_research.md`
 
 ---
 
-### Phase 4: Jakarta-Specific (PoE Camera / AC Power)
+### Phase 4: Jakarta-Specific (PoE Camera / AC Power) ✅ COMPLETE
 
 Depends on Phase 1 decisions. Can run in parallel with Phase 3.
 
-| # | Topic | Question to Answer | Deliverable |
-|---|-------|-------------------|-------------|
-| 4.1 | **Tropical enclosure cooling** | What cooling options work for 40°C+ ambient? | Comparison of thermoelectric, fan, passive options with power draw |
-| 4.2 | **24hr UPS system** | What 12V UPS can provide ~1200Wh backup? | Product options with cost/size comparison |
-| 4.3 | **PoE injector verification** | Confirm Planet IPOE-260-12V works with 12V battery input | Datasheet confirmation or alternative |
-| 4.4 | **AC power supply** | Which industrial 220V→12V supply? | Product recommendation rated for Indonesia power quality |
+| # | Topic | Question to Answer | Deliverable | Status |
+|---|-------|-------------------|-------------|--------|
+| 4.1 | **Tropical enclosure cooling** | What cooling options work for 40°C+ ambient? | Comparison of thermoelectric, fan, passive options with power draw | ✅ Passive cooling (budget decision) |
+| 4.2 | **24hr UPS system** | What 12V UPS can provide ~1200Wh backup? | Product options with cost/size comparison | ✅ LiFePO4 100Ah + charger |
+| 4.3 | **PoE injector verification** | Confirm Planet IPOE-260-12V works with 12V battery input | Datasheet confirmation or alternative | ✅ Confirmed - native 12V support |
+| 4.4 | **AC power supply** | Which industrial 220V→12V supply? | Product recommendation rated for Indonesia power quality | ✅ Mean Well SDR-120-12 |
 
-**Checkpoint 4:** Review Jakarta power system. Confirm UPS sizing is realistic.
+**Checkpoint 4:** ✅ APPROVED (January 8, 2026)
+
+#### Phase 4 Decisions Summary
+
+**Site Context:** Jakarta is coastal/urban (hotter). Sukabumi is foothills (cooler).
+
+**Enclosure Cooling (Budget Approach):**
+- ~~Peltier cooler~~ - too expensive (~$1,800)
+- **Passive cooling strategy:**
+  - Oversized aluminum enclosure (~400x300x200mm) for thermal mass
+  - Mount in shaded location (under eave, north-facing)
+  - Internal heat sinks on Pi 5 and PoE injector
+  - Gore vent for pressure equalization
+  - Accept internal temps up to 55-60°C on hottest days (Pi 5 throttles at 80°C)
+- PTC heater still used for nighttime humidity control
+- Cost: ~$100-150 vs $1,800 for active cooling
+
+**24hr UPS System:**
+- 12V 100Ah LiFePO4 battery (~$300-400)
+- 20A LiFePO4 charger (~$80-100)
+- Victron BatteryProtect (~$50-80)
+- Total: ~$500-630
+- Runtime: 20-25 hours at 50W load
+- LiFePO4 chosen for tropical heat tolerance (vs AGM which degrades above 30°C)
+
+**PoE Injector:**
+- Planet IPOE-260-12V ✅ CONFIRMED
+- Native 12-56V DC input (no external converter needed)
+- 2× PoE+ ports, 60W total @ 12V input
+- Handles 2 cameras easily (~30W total)
+- Price: ~$164
+
+**AC Power Supply:**
+- Mean Well SDR-120-12 (DIN rail)
+- 88-264V AC input (handles Indonesia voltage swings)
+- 12V/10A output (120W)
+- Active PFC + SEMI F47 voltage sag immunity
+- Price: ~$55-105
+- Add external Type 2 surge protector for lightning
+
+**PTC Heaters (humidity control):**
+- Camera housing: 5-7W heater (~$25-35)
+- Compute enclosure: 10-15W heater (~$30-40)
+- Total: ~$55-75
+
+**Research documents:**
+- `research/enclosure_cooling_research.md`
+- `research/ups_backup_research.md`
+- `research/poe_injector_research.md`
+- `research/ac_power_supply_research.md`
 
 ---
 
-### Phase 5: Connectivity & Optional
+### Phase 5: Connectivity & Optional ✅ COMPLETE
 
 Lower priority. Can be deferred if needed.
 
-| # | Topic | Question to Answer | Deliverable |
-|---|-------|-------------------|-------------|
-| 5.1 | **Indonesian cellular** | Does EG25-G support Telkomsel, Indosat, XL bands? | Band compatibility confirmation |
-| 5.2 | **Rain gauge (optional)** | What Modbus rain gauge is available? | Product recommendation if feature is wanted |
-| 5.3 | **ORC software check** | Does current software handle single-camera config? | Yes/No + any required changes |
+| # | Topic | Question to Answer | Deliverable | Status |
+|---|-------|-------------------|-------------|--------|
+| 5.1 | **Indonesian cellular** | Does EG25-G support Telkomsel, Indosat, XL bands? | Band compatibility confirmation | ✅ EG25-G fully compatible, use Telkomsel |
+| 5.2 | **Rain gauge** | What rain gauge is available? | Product recommendation | ✅ Pulse tipping bucket (both sites) |
+| 5.3 | **ORC software check** | Does current software handle single-camera config? | Yes/No + any required changes | ✅ Validated - hardware IR approach bypasses issues |
 
-**Checkpoint 5:** Review connectivity. Confirm modem works in Indonesia.
+**Checkpoint 5:** ✅ APPROVED (January 8, 2026)
+
+#### Phase 5 Decisions Summary
+
+**Indonesian Cellular:**
+- Quectel EG25-G confirmed compatible with all Indonesian carriers
+- **Recommended carrier: Telkomsel** (98% coverage, best for rural Sukabumi)
+- Bands supported: B1, B3, B5, B8, B40 - covers all major carriers
+
+**Rain Gauge (BOTH SITES):**
+- Tipping bucket with pulse output (GPIO interrupt counting)
+- **DFRobot SEN0575** (~$30) - I2C/UART, Python libraries included
+- OR **Misol WH-SP-RG** (~$15-25) - simple pulse output, proven with Pi
+- Resolution: 0.2-0.3mm per tip (adequate for flood monitoring)
+- Connect to GPIO pin on Pi-EzConnect terminal block
+
+**ORC Software:**
+- Hardware IR relay approach (Tendelux + Numato) bypasses need for software day/night switching
+- USB camera capture may need opencv/ffmpeg integration (~4-8 hrs work)
+- Test with actual hardware before deployment
+
+**Research documents:**
+- `research/indonesian_cellular_research.md`
+- `research/rain_gauge_research.md`
+- `research/orc_software_compatibility.md`
 
 ---
 
@@ -527,6 +661,30 @@ Only after component selections are finalized.
 | 6.4 | **Shipping strategy** | What to ship vs. source locally in Indonesia |
 
 **Checkpoint 6:** Final BOM review. Confirm total cost is acceptable.
+
+---
+
+### Phase 6.5: Customs & Import Review
+
+Evaluate customs and import considerations for traveling US → Indonesia with equipment.
+
+| # | Topic | Deliverable |
+|---|-------|-------------|
+| 6.5.1 | **Air travel restrictions** | LiFePO4 battery rules, lithium limits, carry-on vs checked |
+| 6.5.2 | **Indonesian customs duties** | Duty rates for electronics, cameras, batteries |
+| 6.5.3 | **Import permits/certifications** | IMEI registration for modems, any required permits |
+| 6.5.4 | **Documentation needed** | Commercial invoice, packing list, equipment manifest |
+| 6.5.5 | **Items to source locally** | Heavy/restricted items better purchased in Indonesia |
+| 6.5.6 | **Carnet ATA consideration** | Temporary import for equipment that will be installed |
+
+**Key Considerations:**
+- LiFePO4 batteries have airline Wh limits (typically 100Wh carry-on, 160Wh with approval)
+- Indonesian customs may charge duty on electronics (0-15% typical)
+- Modems with IMEI may require registration with Indonesian telecom authority
+- Solar panels/large batteries may be better sourced in Indonesia
+- Document everything as "professional equipment for installation" not "goods for sale"
+
+**Checkpoint 6.5:** Customs strategy confirmed. Packing list finalized.
 
 ---
 
@@ -627,9 +785,9 @@ Based on research review, the following items may need attention:
 
 See **Research Plan (Phased)** section above for organized research tasks with checkpoints.
 
-**Current Phase:** Phase 1 COMPLETE ✅
+**Current Phase:** Phase 1 ✅ Phase 2 ✅ Phase 3 ✅ Phase 4 ✅
 
-**Next Action:** Begin Phase 2 (User Interface Components) and Phase 3/4 (Site-Specific Research) - can run in parallel
+**Next Action:** Phase 5 (Connectivity/Optional) then Phase 6 (Pricing & BOM finalization)
 
 ---
 
