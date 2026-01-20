@@ -1,0 +1,89 @@
+Category,Item,Description,Qty,Unit Price,Extended,Source,Site Compatibility
+Common Spares,Raspberry Pi 5 8GB,Shared compute spare,1,$80.00,$80.00,Adafruit,Both
+Common Spares,Witty Pi 5 HAT+,Power management spare,1,$46.00,$46.00,UUGear,Both
+Common Spares,Pi-EzConnect HAT,GPIO terminal block,1,$19.95,$19.95,Adafruit,Both
+Common Spares,M.2 SSD 512GB + enclosure,Storage spare (pre-imaged),1,$58.98,$58.98,Amazon,Both
+Common Spares,MicroSD 32GB,OS boot card (x2 pre-imaged),2,$14.95,$29.90,Adafruit,Both
+Common Spares,Quectel EG25-G + PU201,LTE modem spare,1,$119.00,$119.00,Amazon,Both
+Common Spares,LTE Antenna 9dBi,Replacement antennas,2,$8.50,$17.00,Amazon,Both
+Common Spares,USB-RS485 Adapter,Modbus interface spare,1,$11.95,$11.95,Adafruit,Both
+Common Spares,IP67 LED (R/Y/G set),Status LED replacement,1,$8.85,$8.85,Adafruit,Both
+Common Spares,IP67 Pushbutton,Maintenance button spare,1,$9.99,$9.99,Amazon,Both
+Common Spares,Inline fuse holders,With 5A and 10A fuses,5,$2.60,$13.00,Amazon,Both
+Common Spares,Cable glands (M12),IP68 replacement,3,$1.90,$5.70,Amazon,Both
+Common Spares,Cable glands (M16),IP68 replacement,3,$1.90,$5.70,Amazon,Both
+Common Spares,Cable glands (M20),IP68 replacement,2,$2.00,$4.00,Amazon,Both
+Common Spares,DIN rail terminal blocks,Assorted,6,$0.50,$3.00,Amazon,Both
+Common Spares,Rain gauge (DFRobot),Tipping bucket spare,1,$29.90,$29.90,DFRobot,Both
+Common Spares,Gore M12 vents,Pressure equalization,2,$9.00,$18.00,Amazon,Both
+Sukabumi-Specific,USB Camera (8MP NoIR),Same as installed (ELP/SVPRO),1,$85.00,$85.00,ELP Direct,Sukabumi
+Sukabumi-Specific,VA Imaging MVEC167,Aluminum camera housing,1,$125.00,$125.00,VA Imaging,Sukabumi
+Sukabumi-Specific,Gore protective vent,For camera housing,2,$12.00,$24.00,DigiKey,Sukabumi
+Sukabumi-Specific,USB cable (outdoor 3m),Bulgin PX0840 or equiv,2,$45.00,$90.00,DigiKey,Sukabumi
+Sukabumi-Specific,Tendelux AI4 IR light,850nm with photocell,1,$35.00,$35.00,Amazon,Sukabumi
+Sukabumi-Specific,Numato USB relay,1-channel,1,$32.00,$32.00,Numato,Sukabumi
+Jakarta-Specific,ANNKE C1200 PoE camera,12MP same as installed,1,$60.00,$60.00,Amazon,Jakarta
+Jakarta-Specific,Cat6 outdoor cable,Shielded 30m spool,1,$26.66,$26.66,Amazon,Jakarta
+Jakarta-Specific,IP68 RJ45 coupler,Waterproof feedthrough,2,$6.50,$13.00,Amazon,Jakarta
+Jakarta-Specific,RJ45 connectors + boots,For cable repairs,10,$0.50,$5.00,Amazon,Jakarta
+Jakarta-Specific,Planet IPOE-260-12V,PoE injector spare,1,$164.00,$164.00,Planet Tech,Jakarta
+Jakarta-Specific,Mean Well SDR-120-12,AC-DC PSU spare,1,$59.84,$59.84,DigiKey,Jakarta
+Jakarta-Specific,Phoenix Contact SPD,Surge protector spare,1,$78.15,$78.15,DigiKey,Jakarta
+Jakarta-Specific,PTC Heater 10W,Camera heater spare,1,$14.99,$14.99,Amazon,Jakarta
+Jakarta-Specific,PTC Heater 15W,Enclosure heater spare,1,$19.99,$19.99,Amazon,Jakarta
+Tools,Screwdriver set,Phillips #0 #1 #2 + flathead,1,$15.00,$15.00,Local/Amazon,N/A
+Tools,Adjustable wrench 6in,For cable glands clamps,1,$12.00,$12.00,Local/Amazon,N/A
+Tools,Wire strippers,18-22 AWG,1,$15.00,$15.00,Amazon,N/A
+Tools,Multimeter,DC voltage continuity,1,$35.00,$35.00,Amazon,N/A
+Tools,Ethernet cable tester,RJ45 continuity,1,$18.00,$18.00,Amazon,N/A
+Tools,USB cable tester,Basic continuity,1,$12.00,$12.00,Amazon,N/A
+Tools,RJ45 crimp tool,With cable stripper,1,$25.00,$25.00,Amazon,N/A
+Tools,Headlamp,LED rechargeable,1,$15.00,$15.00,Amazon,N/A
+Tools,Allen key set,Metric,1,$10.00,$10.00,Local/Amazon,N/A
+Consumables,SIM cards (Telkomsel),Pre-activated data plan,2,$10.00,$20.00,Local (Indonesia),Both
+Consumables,MG 422C conformal coat,55mL bottle,1,$18.99,$18.99,Amazon,Both
+Consumables,Masking tape,Low-tack 1in,1,$4.00,$4.00,Local,Both
+Consumables,Cable ties (UV-resistant),Assorted 500pc,1,$12.99,$12.99,Amazon,Both
+Consumables,Heat shrink tubing,Assorted kit,1,$11.99,$11.99,Amazon,Both
+Consumables,IPA wipes (99%),Electronics cleaning,1,$8.99,$8.99,Amazon,Both
+Consumables,Microfiber cloths,Lens cleaning,5,$1.00,$5.00,Local,Both
+Consumables,Silicone sealant,Outdoor clear,1,$7.99,$7.99,Amazon,Both
+Consumables,Dielectric grease,Small tube,1,$8.00,$8.00,Amazon,Both
+Consumables,SS hardware kit,M2.5 M3 M4 assorted,1,$16.99,$16.99,Amazon,Both
+Consumables,Velcro/Dual-Lock,25mm x 1m,1,$12.00,$12.00,Amazon,Both
+Consumables,Electrical tape,2 rolls,2,$3.00,$6.00,Local,Both
+,,,,,,,
+COST SUMMARY,,,,,,,
+Category,Subtotal,,,,,,
+Common Spares,$481.92,,,,,,
+Sukabumi-Specific,$391.00,,,,,,
+Jakarta-Specific,$441.63,,,,,,
+Tools,$157.00,,,,,,
+Consumables,$132.94,,,,,,
+GRAND TOTAL,$1604.49,,,,,,
+,,,,,,,
+MINIMUM VIABLE SPARES (Budget Option),,,,,,,
+Category,Item,Qty,Price,Rationale,,,
+Critical Spares,MicroSD cards (pre-imaged),2,$29.90,Most common failure point,,,
+Critical Spares,LTE antennas,2,$17.00,"Easy to damage, cheap",,,
+Critical Spares,Inline fuses + holders,5,$13.00,Electrical protection,,,
+Critical Spares,Cable glands (assorted),8,$15.40,Seal integrity,,,
+Critical Spares,Gore M12 vents,2,$18.00,Pressure equalization,,,
+Critical Spares,USB cable (Sukabumi),1,$45.00,Camera connection,,,
+Critical Spares,Cat6 cable 30m (Jakarta),1,$26.66,Camera connection,,,
+Critical Spares,RJ45 connectors,10,$5.00,Cable repairs,,,
+Critical Spares,IP68 RJ45 couplers,2,$13.00,Quick fixes,,,
+Critical Spares,Conformal coating,1,$18.99,Board protection,,,
+Critical Spares,Cable ties,1,$12.99,General use,,,
+Critical Spares,IPA wipes,1,$8.99,Cleaning,,,
+Critical Spares,Silicone sealant,1,$7.99,Sealing,,,
+Critical Spares,Dielectric grease,1,$8.00,Connector protection,,,
+Critical Spares,SIM cards,2,$20.00,Modem replacement,,,
+Critical Spares Subtotal,,$260.00,,,,
+Essential Tools,Screwdriver set,1,$15.00,Basic maintenance,,,
+Essential Tools,Multimeter,1,$35.00,Diagnostics,,,
+Essential Tools,Wire strippers,1,$15.00,Cable work,,,
+Essential Tools,Adjustable wrench,1,$12.00,Cable glands,,,
+Essential Tools,Headlamp,1,$15.00,Enclosure work,,,
+Essential Tools Subtotal,,$92.00,,,,
+Minimum Viable Total,,$352.00,,,,
