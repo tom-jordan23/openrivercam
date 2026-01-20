@@ -1,0 +1,892 @@
+(kicad_sch
+  (version 20231120)
+  (generator "claude_code")
+  (generator_version "1.0")
+  (uuid "b2c3d4e5-f6a7-8901-bcde-f23456789012")
+  (paper "A2")
+  (title_block
+    (title "Jakarta River Monitoring Station")
+    (date "2026-01-16")
+    (rev "1.0")
+    (company "OpenRiverCam")
+    (comment 1 "AC-Powered PoE Camera System with 24hr UPS")
+    (comment 2 "Indonesia Spring 2026 Deployment - Training/Demo Site")
+  )
+
+  ;; ============================================
+  ;; AC INPUT SECTION
+  ;; ============================================
+
+  ;; Mains Input 220V AC
+  (symbol
+    (lib_id "Connector:AC_Power")
+    (at 30.48 76.2 0)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "ac-mains-001")
+    (property "Reference" "J1"
+      (at 30.48 63.5 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "220V AC 50Hz"
+      (at 30.48 66.04 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Description" "Indonesia mains power input"
+      (at 30.48 68.58 0)
+      (effects (font (size 1.0 1.0)) hide)
+    )
+  )
+
+  ;; Main Circuit Breaker
+  (symbol
+    (lib_id "Device:Circuit_Breaker")
+    (at 63.5 76.2 0)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "breaker-main-001")
+    (property "Reference" "CB1"
+      (at 63.5 66.04 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "10A MCB"
+      (at 63.5 68.58 0)
+      (effects (font (size 1.27 1.27)))
+    )
+  )
+
+  ;; Surge Protector Type 2
+  (symbol
+    (lib_id "Device:Surge_Protector")
+    (at 101.6 76.2 0)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "surge-001")
+    (property "Reference" "SP1"
+      (at 101.6 63.5 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "Type 2 SPD"
+      (at 101.6 66.04 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Description" "Surge protective device for lightning/transients"
+      (at 101.6 68.58 0)
+      (effects (font (size 1.0 1.0)) hide)
+    )
+  )
+
+  ;; ============================================
+  ;; DC POWER CONVERSION
+  ;; ============================================
+
+  ;; Mean Well SDR-120-12 Power Supply
+  (symbol
+    (lib_id "Power:AC_DC_Converter")
+    (at 152.4 76.2 0)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "psu-meanwell-001")
+    (property "Reference" "PS1"
+      (at 152.4 55.88 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "Mean Well SDR-120-12"
+      (at 152.4 58.42 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Description" "DIN rail 120W, 88-264V AC in, 12V/10A out, SEMI F47"
+      (at 152.4 60.96 0)
+      (effects (font (size 1.0 1.0)) hide)
+    )
+    (pin "1" (uuid "psu-l") (name "L (Live)"))
+    (pin "2" (uuid "psu-n") (name "N (Neutral)"))
+    (pin "3" (uuid "psu-pe") (name "PE (Earth)"))
+    (pin "4" (uuid "psu-vout+") (name "+V (12V)"))
+    (pin "5" (uuid "psu-vout-") (name "-V (GND)"))
+  )
+
+  ;; ============================================
+  ;; BATTERY BACKUP SYSTEM
+  ;; ============================================
+
+  ;; LiFePO4 Battery Charger 20A
+  (symbol
+    (lib_id "Power:Battery_Charger")
+    (at 215.9 76.2 0)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "charger-001")
+    (property "Reference" "CHG1"
+      (at 215.9 55.88 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "20A LiFePO4 Charger"
+      (at 215.9 58.42 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Description" "CC/CV 14.6V max, Renogy or LiTime, 100-240V AC input"
+      (at 215.9 60.96 0)
+      (effects (font (size 1.0 1.0)) hide)
+    )
+    (pin "1" (uuid "chg-ac-l") (name "AC Live"))
+    (pin "2" (uuid "chg-ac-n") (name "AC Neutral"))
+    (pin "3" (uuid "chg-out+") (name "DC+ (14.6V)"))
+    (pin "4" (uuid "chg-out-") (name "DC- (GND)"))
+  )
+
+  ;; 12V 100Ah LiFePO4 Battery
+  (symbol
+    (lib_id "Device:Battery")
+    (at 279.4 101.6 0)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "batt-lifepo4-001")
+    (property "Reference" "BT1"
+      (at 279.4 81.28 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "12V 100Ah LiFePO4"
+      (at 279.4 83.82 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Description" "LiTime/Redodo with Bluetooth BMS, 4000+ cycles"
+      (at 279.4 86.36 0)
+      (effects (font (size 1.0 1.0)) hide)
+    )
+  )
+
+  ;; Victron BatteryProtect 100A Smart
+  (symbol
+    (lib_id "Power:Battery_Protect")
+    (at 342.9 101.6 0)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "victron-bp-001")
+    (property "Reference" "BP1"
+      (at 342.9 81.28 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "Victron BatteryProtect 100A Smart"
+      (at 342.9 83.82 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Description" "LVD 11.5V disconnect, 12.8V reconnect, Bluetooth monitoring"
+      (at 342.9 86.36 0)
+      (effects (font (size 1.0 1.0)) hide)
+    )
+    (pin "1" (uuid "bp-in+") (name "IN+ (Battery)"))
+    (pin "2" (uuid "bp-in-") (name "IN- (GND)"))
+    (pin "3" (uuid "bp-out+") (name "OUT+ (Load)"))
+    (pin "4" (uuid "bp-out-") (name "OUT- (GND)"))
+  )
+
+  ;; 12V Distribution Bus (Fused)
+  (symbol
+    (lib_id "Connector:Terminal_Block_01x06")
+    (at 406.4 101.6 0)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "distrib-12v-001")
+    (property "Reference" "TB1"
+      (at 406.4 78.74 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "12V Distribution Bus"
+      (at 406.4 81.28 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Description" "Fused 12V distribution to all loads"
+      (at 406.4 83.82 0)
+      (effects (font (size 1.0 1.0)) hide)
+    )
+    (pin "1" (uuid "tb-in+") (name "12V IN+"))
+    (pin "2" (uuid "tb-witty") (name "To Witty Pi (F:5A)"))
+    (pin "3" (uuid "tb-poe") (name "To PoE Injector (F:5A)"))
+    (pin "4" (uuid "tb-heater-enc") (name "To Enclosure Heater (F:3A)"))
+    (pin "5" (uuid "tb-heater-cam") (name "To Camera Heaters (F:2A)"))
+    (pin "6" (uuid "tb-gnd") (name "GND"))
+  )
+
+  ;; ============================================
+  ;; COMPUTE STACK
+  ;; ============================================
+
+  ;; Witty Pi 5 HAT+ (Power Management)
+  (symbol
+    (lib_id "Connector:Conn_01x06")
+    (at 152.4 177.8 0)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "wittypi-001")
+    (property "Reference" "U1"
+      (at 152.4 160.02 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "Witty Pi 5 HAT+"
+      (at 152.4 162.56 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Description" "Power management HAT with RTC, scheduled wake/sleep"
+      (at 152.4 165.1 0)
+      (effects (font (size 1.0 1.0)) hide)
+    )
+  )
+
+  ;; Raspberry Pi 5
+  (symbol
+    (lib_id "MCU_RaspberryPi:RaspberryPi_5")
+    (at 215.9 203.2 0)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "rpi5-001")
+    (property "Reference" "U2"
+      (at 215.9 152.4 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "Raspberry Pi 5 (4GB/8GB)"
+      (at 215.9 154.94 0)
+      (effects (font (size 1.27 1.27)))
+    )
+  )
+
+  ;; Pi-EzConnect Terminal Block
+  (symbol
+    (lib_id "Connector:Conn_02x20")
+    (at 279.4 203.2 0)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "piezconnect-001")
+    (property "Reference" "J2"
+      (at 279.4 152.4 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "Pi-EzConnect (Adafruit 2711)"
+      (at 279.4 154.94 0)
+      (effects (font (size 1.27 1.27)))
+    )
+  )
+
+  ;; M.2 SSD in USB Enclosure
+  (symbol
+    (lib_id "Device:Memory")
+    (at 215.9 266.7 0)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "ssd-001")
+    (property "Reference" "U3"
+      (at 215.9 254 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "512GB M.2 SSD + USB"
+      (at 215.9 256.54 0)
+      (effects (font (size 1.27 1.27)))
+    )
+  )
+
+  ;; ============================================
+  ;; POE CAMERA SYSTEM
+  ;; ============================================
+
+  ;; Planet IPOE-260-12V PoE Injector
+  (symbol
+    (lib_id "Network:PoE_Injector")
+    (at 469.9 101.6 0)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "poe-inject-001")
+    (property "Reference" "POE1"
+      (at 469.9 78.74 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "Planet IPOE-260-12V"
+      (at 469.9 81.28 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Description" "2-port PoE+ injector, 12-56V DC input, 60W total"
+      (at 469.9 83.82 0)
+      (effects (font (size 1.0 1.0)) hide)
+    )
+    (pin "1" (uuid "poe-12v+") (name "12V DC IN+"))
+    (pin "2" (uuid "poe-12v-") (name "12V DC IN-"))
+    (pin "3" (uuid "poe-lan1") (name "PoE OUT 1"))
+    (pin "4" (uuid "poe-lan2") (name "PoE OUT 2"))
+    (pin "5" (uuid "poe-data1") (name "Data IN 1"))
+    (pin "6" (uuid "poe-data2") (name "Data IN 2"))
+  )
+
+  ;; PoE Camera 1 (ANNKE C1200 or Reolink)
+  (symbol
+    (lib_id "Device:Camera_IP")
+    (at 558.8 76.2 0)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "camera-poe-001")
+    (property "Reference" "CAM1"
+      (at 558.8 55.88 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "PoE Camera 1 (8-12MP)"
+      (at 558.8 58.42 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Description" "ANNKE C1200 12MP or Reolink RLC-810A 8MP, factory sealed, 30m IR"
+      (at 558.8 60.96 0)
+      (effects (font (size 1.0 1.0)) hide)
+    )
+  )
+
+  ;; PoE Camera 2
+  (symbol
+    (lib_id "Device:Camera_IP")
+    (at 558.8 127 0)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "camera-poe-002")
+    (property "Reference" "CAM2"
+      (at 558.8 106.68 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "PoE Camera 2 (8-12MP)"
+      (at 558.8 109.22 0)
+      (effects (font (size 1.27 1.27)))
+    )
+  )
+
+  ;; IP68 RJ45 Feedthrough Connectors
+  (symbol
+    (lib_id "Connector:RJ45_IP68")
+    (at 520.7 76.2 0)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "rj45-ip68-001")
+    (property "Reference" "J3"
+      (at 520.7 68.58 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "IP68 RJ45"
+      (at 520.7 71.12 0)
+      (effects (font (size 1.27 1.27)))
+    )
+  )
+
+  (symbol
+    (lib_id "Connector:RJ45_IP68")
+    (at 520.7 127 0)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "rj45-ip68-002")
+    (property "Reference" "J4"
+      (at 520.7 119.38 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "IP68 RJ45"
+      (at 520.7 121.92 0)
+      (effects (font (size 1.27 1.27)))
+    )
+  )
+
+  ;; Cat6 Outdoor Cable
+  (symbol
+    (lib_id "Connector:Cable_Cat6")
+    (at 539.75 101.6 0)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "cat6-001")
+    (property "Reference" "CBL1"
+      (at 539.75 93.98 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "Cat6 Outdoor Shielded"
+      (at 539.75 96.52 0)
+      (effects (font (size 1.27 1.27)))
+    )
+  )
+
+  ;; ============================================
+  ;; HUMIDITY CONTROL - PTC HEATERS
+  ;; ============================================
+
+  ;; PTC Heater - Compute Enclosure
+  (symbol
+    (lib_id "Device:Heater_PTC")
+    (at 469.9 177.8 0)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "heater-enc-001")
+    (property "Reference" "HTR1"
+      (at 469.9 160.02 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "PTC Heater 10-15W"
+      (at 469.9 162.56 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Description" "Enclosure humidity control, hygrostat @ 70% RH"
+      (at 469.9 165.1 0)
+      (effects (font (size 1.0 1.0)) hide)
+    )
+  )
+
+  ;; Hygrostat for Enclosure Heater
+  (symbol
+    (lib_id "Sensor:Hygrostat")
+    (at 444.5 177.8 0)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "hygrostat-001")
+    (property "Reference" "TH1"
+      (at 444.5 167.64 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "Hygrostat 70%RH"
+      (at 444.5 170.18 0)
+      (effects (font (size 1.27 1.27)))
+    )
+  )
+
+  ;; PTC Heater - Camera Housing 1
+  (symbol
+    (lib_id "Device:Heater_PTC")
+    (at 558.8 165.1 0)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "heater-cam1-001")
+    (property "Reference" "HTR2"
+      (at 558.8 152.4 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "PTC Heater 5-7W"
+      (at 558.8 154.94 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Description" "Camera 1 housing, thermostat @ 28C"
+      (at 558.8 157.48 0)
+      (effects (font (size 1.0 1.0)) hide)
+    )
+  )
+
+  ;; Thermostat for Camera 1 Heater
+  (symbol
+    (lib_id "Sensor:Thermostat")
+    (at 533.4 165.1 0)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "thermostat-cam1-001")
+    (property "Reference" "TS1"
+      (at 533.4 154.94 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "Thermostat 28C"
+      (at 533.4 157.48 0)
+      (effects (font (size 1.27 1.27)))
+    )
+  )
+
+  ;; PTC Heater - Camera Housing 2
+  (symbol
+    (lib_id "Device:Heater_PTC")
+    (at 558.8 203.2 0)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "heater-cam2-001")
+    (property "Reference" "HTR3"
+      (at 558.8 190.5 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "PTC Heater 5-7W"
+      (at 558.8 193.04 0)
+      (effects (font (size 1.27 1.27)))
+    )
+  )
+
+  ;; Thermostat for Camera 2 Heater
+  (symbol
+    (lib_id "Sensor:Thermostat")
+    (at 533.4 203.2 0)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "thermostat-cam2-001")
+    (property "Reference" "TS2"
+      (at 533.4 193.04 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "Thermostat 28C"
+      (at 533.4 195.58 0)
+      (effects (font (size 1.27 1.27)))
+    )
+  )
+
+  ;; ============================================
+  ;; LTE MODEM SECTION
+  ;; ============================================
+
+  ;; Quectel EG25-G Modem + PU201
+  (symbol
+    (lib_id "RF_Module:Modem")
+    (at 342.9 203.2 0)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "modem-001")
+    (property "Reference" "U4"
+      (at 342.9 185.42 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "Quectel EG25-G + PU201"
+      (at 342.9 187.96 0)
+      (effects (font (size 1.27 1.27)))
+    )
+  )
+
+  ;; LTE Antennas
+  (symbol
+    (lib_id "Device:Antenna")
+    (at 368.3 185.42 0)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "ant-001")
+    (property "Reference" "ANT1"
+      (at 368.3 175.26 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "LTE Main"
+      (at 368.3 177.8 0)
+      (effects (font (size 1.27 1.27)))
+    )
+  )
+
+  (symbol
+    (lib_id "Device:Antenna")
+    (at 383.54 185.42 0)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "ant-002")
+    (property "Reference" "ANT2"
+      (at 383.54 175.26 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "LTE Diversity"
+      (at 383.54 177.8 0)
+      (effects (font (size 1.27 1.27)))
+    )
+  )
+
+  ;; ============================================
+  ;; RAIN GAUGE
+  ;; ============================================
+
+  (symbol
+    (lib_id "Sensor:Rain_Gauge")
+    (at 342.9 266.7 0)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "rain-gauge-001")
+    (property "Reference" "SENS1"
+      (at 342.9 248.92 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "DFRobot SEN0575"
+      (at 342.9 251.46 0)
+      (effects (font (size 1.27 1.27)))
+    )
+  )
+
+  ;; ============================================
+  ;; STATUS LEDS AND MAINTENANCE BUTTON
+  ;; ============================================
+
+  ;; Green LED
+  (symbol
+    (lib_id "Device:LED")
+    (at 406.4 203.2 0)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "led-green-001")
+    (property "Reference" "LED1"
+      (at 406.4 193.04 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "10mm IP67 Green"
+      (at 406.4 195.58 0)
+      (effects (font (size 1.27 1.27)))
+    )
+  )
+
+  ;; Yellow LED
+  (symbol
+    (lib_id "Device:LED")
+    (at 406.4 220.98 0)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "led-yellow-001")
+    (property "Reference" "LED2"
+      (at 406.4 210.82 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "10mm IP67 Yellow"
+      (at 406.4 213.36 0)
+      (effects (font (size 1.27 1.27)))
+    )
+  )
+
+  ;; Red LED
+  (symbol
+    (lib_id "Device:LED")
+    (at 406.4 238.76 0)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "led-red-001")
+    (property "Reference" "LED3"
+      (at 406.4 228.6 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "10mm IP67 Red"
+      (at 406.4 231.14 0)
+      (effects (font (size 1.27 1.27)))
+    )
+  )
+
+  ;; Current Limiting Resistors
+  (symbol
+    (lib_id "Device:R")
+    (at 419.1 203.2 90)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "r-green-001")
+    (property "Reference" "R1"
+      (at 419.1 198.12 90)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "330R"
+      (at 419.1 200.66 90)
+      (effects (font (size 1.27 1.27)))
+    )
+  )
+
+  (symbol
+    (lib_id "Device:R")
+    (at 419.1 220.98 90)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "r-yellow-001")
+    (property "Reference" "R2"
+      (at 419.1 215.9 90)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "330R"
+      (at 419.1 218.44 90)
+      (effects (font (size 1.27 1.27)))
+    )
+  )
+
+  (symbol
+    (lib_id "Device:R")
+    (at 419.1 238.76 90)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "r-red-001")
+    (property "Reference" "R3"
+      (at 419.1 233.68 90)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "330R"
+      (at 419.1 236.22 90)
+      (effects (font (size 1.27 1.27)))
+    )
+  )
+
+  ;; Maintenance Button
+  (symbol
+    (lib_id "Switch:SW_Push")
+    (at 406.4 266.7 0)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "btn-maint-001")
+    (property "Reference" "SW1"
+      (at 406.4 254 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "IP67 Momentary"
+      (at 406.4 256.54 0)
+      (effects (font (size 1.27 1.27)))
+    )
+  )
+
+  ;; ============================================
+  ;; GORE VENTS
+  ;; ============================================
+
+  ;; Enclosure Gore Vent
+  (symbol
+    (lib_id "Mechanical:Vent")
+    (at 469.9 220.98 0)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "vent-enc-001")
+    (property "Reference" "V1"
+      (at 469.9 210.82 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "Gore M12 Vent"
+      (at 469.9 213.36 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Description" "Enclosure pressure equalization"
+      (at 469.9 215.9 0)
+      (effects (font (size 1.0 1.0)) hide)
+    )
+  )
+
+  ;; ============================================
+  ;; LABELS AND NOTES
+  ;; ============================================
+
+  (text "AC INPUT\n220V 50Hz Indonesia Mains"
+    (at 30.48 50.8 0)
+    (effects (font (size 2.54 2.54) bold))
+  )
+
+  (text "DC POWER SYSTEM\n12V Battery Backup with 24hr Runtime"
+    (at 215.9 43.18 0)
+    (effects (font (size 2.54 2.54) bold))
+  )
+
+  (text "COMPUTE STACK\nPi 5 + Witty Pi 5 HAT+ + Pi-EzConnect"
+    (at 215.9 139.7 0)
+    (effects (font (size 2.54 2.54) bold))
+  )
+
+  (text "POE CAMERA SYSTEM\n2x Factory-Sealed 8-12MP Cameras"
+    (at 520.7 43.18 0)
+    (effects (font (size 2.54 2.54) bold))
+  )
+
+  (text "HUMIDITY CONTROL\nPTC Heaters with Thermostat/Hygrostat"
+    (at 469.9 147.32 0)
+    (effects (font (size 2.54 2.54) bold))
+  )
+
+  (text "NOTES:\n1. Mean Well SDR-120-12: DIN rail mount, 88-264V AC input, SEMI F47 voltage sag immunity\n2. LiFePO4 battery: Built-in BMS + Bluetooth monitoring, 4000+ cycles\n3. Victron BatteryProtect: LVD @ 11.5V disconnect, 12.8V reconnect, prevents deep discharge\n4. Planet IPOE-260-12V: Native 12V input (no DC-DC converter needed), 60W total PoE budget\n5. PTC heaters: Self-regulating, auto-shutoff at target temp, no runaway risk\n6. Conformal coat (MG 422C) on: Pi 5, Witty Pi, Pi-EzConnect, all exposed PCBs\n7. All outdoor cable penetrations via IP68 feedthrough connectors"
+    (at 30.48 304.8 0)
+    (effects (font (size 1.5 1.5)))
+  )
+
+  (text "POWER BUDGET:\n- Raspberry Pi 5: 15W\n- Quectel modem: 5W\n- 2x PoE cameras: 15W\n- PTC heaters (average): 12W\n- Misc: 3W\n- TOTAL: ~50W\n\n24hr BACKUP: 50W x 24h = 1200Wh\n100Ah @ 12V = 1200Wh = 24hr runtime"
+    (at 30.48 375.92 0)
+    (effects (font (size 1.5 1.5)))
+  )
+
+  (text "GPIO PIN ASSIGNMENTS:\nGPIO4  - Witty Pi shutdown\nGPIO17 - Witty Pi wake / Green LED\nGPIO27 - Yellow LED\nGPIO22 - Red LED\nGPIO5  - Maintenance button\nGPIO2  - I2C SDA (rain gauge)\nGPIO3  - I2C SCL (rain gauge)"
+    (at 330.2 304.8 0)
+    (effects (font (size 1.5 1.5)))
+  )
+
+)

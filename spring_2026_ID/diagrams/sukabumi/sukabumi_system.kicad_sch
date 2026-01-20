@@ -1,0 +1,854 @@
+(kicad_sch
+  (version 20231120)
+  (generator "claude_code")
+  (generator_version "1.0")
+  (uuid "a1b2c3d4-e5f6-7890-abcd-ef1234567890")
+  (paper "A3")
+  (title_block
+    (title "Sukabumi River Monitoring Station")
+    (date "2026-01-16")
+    (rev "1.0")
+    (company "OpenRiverCam")
+    (comment 1 "Solar-Powered USB Camera System")
+    (comment 2 "Indonesia Spring 2026 Deployment")
+  )
+
+  ;; ============================================
+  ;; POWER SECTION - Solar Battery Input
+  ;; ============================================
+
+  ;; Solar Battery 12V (Existing)
+  (symbol
+    (lib_id "Device:Battery")
+    (at 25.4 76.2 0)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "batt-solar-001")
+    (property "Reference" "BT1"
+      (at 25.4 68.58 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "12V 50Ah LiFePO4"
+      (at 25.4 71.12 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Description" "Existing solar battery (installed)"
+      (at 25.4 73.66 0)
+      (effects (font (size 1.0 1.0)) hide)
+    )
+  )
+
+  ;; Main Fuse 10A
+  (symbol
+    (lib_id "Device:Fuse")
+    (at 50.8 76.2 90)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "fuse-main-001")
+    (property "Reference" "F1"
+      (at 50.8 71.12 90)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "10A Blade Fuse"
+      (at 50.8 73.66 90)
+      (effects (font (size 1.27 1.27)))
+    )
+  )
+
+  ;; ============================================
+  ;; COMPUTE STACK
+  ;; ============================================
+
+  ;; Witty Pi 5 HAT+ (Power Management)
+  (symbol
+    (lib_id "Connector:Conn_01x06")
+    (at 101.6 76.2 0)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "wittypi-001")
+    (property "Reference" "U1"
+      (at 101.6 63.5 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "Witty Pi 5 HAT+"
+      (at 101.6 66.04 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Description" "Power management HAT with RTC, scheduled wake/sleep"
+      (at 101.6 68.58 0)
+      (effects (font (size 1.0 1.0)) hide)
+    )
+    (pin "1" (uuid "wp-vin+") (name "VIN+ (7-26V)"))
+    (pin "2" (uuid "wp-vin-") (name "VIN- (GND)"))
+    (pin "3" (uuid "wp-vout+") (name "VOUT+ (5V to Pi)"))
+    (pin "4" (uuid "wp-vout-") (name "VOUT- (GND)"))
+    (pin "5" (uuid "wp-gpio4") (name "GPIO4 (Shutdown)"))
+    (pin "6" (uuid "wp-gpio17") (name "GPIO17 (Wake)"))
+  )
+
+  ;; Raspberry Pi 5
+  (symbol
+    (lib_id "MCU_RaspberryPi:RaspberryPi_5")
+    (at 152.4 101.6 0)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "rpi5-001")
+    (property "Reference" "U2"
+      (at 152.4 50.8 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "Raspberry Pi 5 (4GB/8GB)"
+      (at 152.4 53.34 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Description" "Main compute unit running ORC software"
+      (at 152.4 55.88 0)
+      (effects (font (size 1.0 1.0)) hide)
+    )
+  )
+
+  ;; Pi-EzConnect Terminal Block (Adafruit 2711)
+  (symbol
+    (lib_id "Connector:Conn_02x20")
+    (at 203.2 101.6 0)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "piezconnect-001")
+    (property "Reference" "J1"
+      (at 203.2 55.88 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "Pi-EzConnect (Adafruit 2711)"
+      (at 203.2 58.42 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Description" "GPIO terminal block breakout - stacks on Witty Pi, screw terminals for all GPIO"
+      (at 203.2 60.96 0)
+      (effects (font (size 1.0 1.0)) hide)
+    )
+  )
+
+  ;; M.2 SSD in USB Enclosure
+  (symbol
+    (lib_id "Device:Memory")
+    (at 152.4 175.26 0)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "ssd-001")
+    (property "Reference" "U3"
+      (at 152.4 167.64 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "512GB M.2 SSD + USB Enclosure"
+      (at 152.4 170.18 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Description" "Mass storage for video capture"
+      (at 152.4 172.72 0)
+      (effects (font (size 1.0 1.0)) hide)
+    )
+  )
+
+  ;; ============================================
+  ;; LTE MODEM SECTION
+  ;; ============================================
+
+  ;; Quectel EG25-G Modem + PU201
+  (symbol
+    (lib_id "RF_Module:Modem")
+    (at 254 76.2 0)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "modem-001")
+    (property "Reference" "U4"
+      (at 254 63.5 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "Quectel EG25-G + PU201"
+      (at 254 66.04 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Description" "LTE Cat 4 modem with USB adapter, supports Indonesian carriers"
+      (at 254 68.58 0)
+      (effects (font (size 1.0 1.0)) hide)
+    )
+  )
+
+  ;; LTE Antennas (2x)
+  (symbol
+    (lib_id "Device:Antenna")
+    (at 279.4 63.5 0)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "ant-main-001")
+    (property "Reference" "ANT1"
+      (at 279.4 55.88 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "LTE Main Antenna"
+      (at 279.4 58.42 0)
+      (effects (font (size 1.27 1.27)))
+    )
+  )
+
+  (symbol
+    (lib_id "Device:Antenna")
+    (at 294.64 63.5 0)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "ant-div-001")
+    (property "Reference" "ANT2"
+      (at 294.64 55.88 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "LTE Diversity Antenna"
+      (at 294.64 58.42 0)
+      (effects (font (size 1.27 1.27)))
+    )
+  )
+
+  ;; SMA Bulkhead Connectors
+  (symbol
+    (lib_id "Connector:Conn_Coaxial")
+    (at 279.4 76.2 0)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "sma-bulk-001")
+    (property "Reference" "J2"
+      (at 279.4 83.82 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "SMA Bulkhead"
+      (at 279.4 86.36 0)
+      (effects (font (size 1.27 1.27)))
+    )
+  )
+
+  (symbol
+    (lib_id "Connector:Conn_Coaxial")
+    (at 294.64 76.2 0)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "sma-bulk-002")
+    (property "Reference" "J3"
+      (at 294.64 83.82 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "SMA Bulkhead"
+      (at 294.64 86.36 0)
+      (effects (font (size 1.27 1.27)))
+    )
+  )
+
+  ;; ============================================
+  ;; IR ILLUMINATION SECTION
+  ;; ============================================
+
+  ;; IR Control Fuse 3A
+  (symbol
+    (lib_id "Device:Fuse")
+    (at 50.8 139.7 90)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "fuse-ir-001")
+    (property "Reference" "F2"
+      (at 50.8 134.62 90)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "3A Blade Fuse"
+      (at 50.8 137.16 90)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Description" "Protection for IR illuminator circuit"
+      (at 50.8 139.7 0)
+      (effects (font (size 1.0 1.0)) hide)
+    )
+  )
+
+  ;; Numato USB Relay
+  (symbol
+    (lib_id "Relay:Relay_SPDT")
+    (at 76.2 139.7 0)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "relay-usb-001")
+    (property "Reference" "K1"
+      (at 76.2 127 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "Numato 1-Ch USB Relay"
+      (at 76.2 129.54 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Description" "USB-powered relay, software controlled via /dev/ttyACM0"
+      (at 76.2 132.08 0)
+      (effects (font (size 1.0 1.0)) hide)
+    )
+    (pin "COM" (uuid "relay-com"))
+    (pin "NO" (uuid "relay-no"))
+    (pin "NC" (uuid "relay-nc"))
+    (pin "USB" (uuid "relay-usb"))
+  )
+
+  ;; Barrel to Screw Terminal Adapter
+  (symbol
+    (lib_id "Connector:Barrel_Jack")
+    (at 101.6 139.7 0)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "barrel-adapt-001")
+    (property "Reference" "J4"
+      (at 101.6 132.08 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "5.5x2.1mm Barrel-to-Screw"
+      (at 101.6 134.62 0)
+      (effects (font (size 1.27 1.27)))
+    )
+  )
+
+  ;; Tendelux AI4 IR Illuminator
+  (symbol
+    (lib_id "Device:LED_IR")
+    (at 127 139.7 0)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "ir-light-001")
+    (property "Reference" "LED1"
+      (at 127 127 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "Tendelux AI4 850nm IR"
+      (at 127 129.54 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Description" "4W IR flood, 90deg beam, built-in photocell, IP65"
+      (at 127 132.08 0)
+      (effects (font (size 1.0 1.0)) hide)
+    )
+  )
+
+  ;; ============================================
+  ;; CAMERA SECTION
+  ;; ============================================
+
+  ;; USB Camera (ELP/SVPRO NoIR)
+  (symbol
+    (lib_id "Device:Camera")
+    (at 254 139.7 0)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "camera-usb-001")
+    (property "Reference" "CAM1"
+      (at 254 127 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "ELP/SVPRO 8MP IMX179 NoIR"
+      (at 254 129.54 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Description" "Custom order: 8MP USB camera WITHOUT IR-cut filter, 115+ deg wide angle"
+      (at 254 132.08 0)
+      (effects (font (size 1.0 1.0)) hide)
+    )
+  )
+
+  ;; Camera Housing (VA Imaging MVEC167)
+  (symbol
+    (lib_id "Mechanical:Housing")
+    (at 254 160.02 0)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "housing-cam-001")
+    (property "Reference" "H1"
+      (at 254 152.4 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "VA Imaging MVEC167 Aluminum"
+      (at 254 154.94 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Description" "Aluminum camera housing with Gore M12 vent, heat dissipation for tropics"
+      (at 254 157.48 0)
+      (effects (font (size 1.0 1.0)) hide)
+    )
+  )
+
+  ;; Gore Vent
+  (symbol
+    (lib_id "Mechanical:Vent")
+    (at 279.4 160.02 0)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "vent-gore-001")
+    (property "Reference" "V1"
+      (at 279.4 152.4 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "Gore M12 Protective Vent"
+      (at 279.4 154.94 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Description" "Pressure equalization, prevents condensation events"
+      (at 279.4 157.48 0)
+      (effects (font (size 1.0 1.0)) hide)
+    )
+  )
+
+  ;; USB Cable (Outdoor Rated)
+  (symbol
+    (lib_id "Connector:USB_A")
+    (at 254 180.34 0)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "usb-cable-cam-001")
+    (property "Reference" "J5"
+      (at 254 172.72 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "Bulgin PX0840 IP67 USB"
+      (at 254 175.26 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Description" "IP67 outdoor USB cable, 2-5m length"
+      (at 254 177.8 0)
+      (effects (font (size 1.0 1.0)) hide)
+    )
+  )
+
+  ;; ============================================
+  ;; RAIN GAUGE SECTION
+  ;; ============================================
+
+  ;; DFRobot SEN0575 Rain Gauge
+  (symbol
+    (lib_id "Sensor:Rain_Gauge")
+    (at 330.2 101.6 0)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "rain-gauge-001")
+    (property "Reference" "SENS1"
+      (at 330.2 88.9 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "DFRobot SEN0575"
+      (at 330.2 91.44 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Description" "Tipping bucket rain gauge, I2C interface, 0.28mm resolution"
+      (at 330.2 93.98 0)
+      (effects (font (size 1.0 1.0)) hide)
+    )
+    (pin "1" (uuid "rain-vcc") (name "VCC (3.3-5V)"))
+    (pin "2" (uuid "rain-gnd") (name "GND"))
+    (pin "3" (uuid "rain-sda") (name "SDA (I2C)"))
+    (pin "4" (uuid "rain-scl") (name "SCL (I2C)"))
+  )
+
+  ;; ============================================
+  ;; STATUS DISPLAY SECTION
+  ;; ============================================
+
+  ;; Green Status LED
+  (symbol
+    (lib_id "Device:LED")
+    (at 330.2 139.7 0)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "led-green-001")
+    (property "Reference" "LED2"
+      (at 330.2 132.08 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "10mm IP67 Green LED"
+      (at 330.2 134.62 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Description" "Status: OK/Ready - GPIO17"
+      (at 330.2 137.16 0)
+      (effects (font (size 1.0 1.0)) hide)
+    )
+  )
+
+  ;; Current Limiting Resistor Green
+  (symbol
+    (lib_id "Device:R")
+    (at 345.44 139.7 90)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "r-green-001")
+    (property "Reference" "R1"
+      (at 345.44 134.62 90)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "330R"
+      (at 345.44 137.16 90)
+      (effects (font (size 1.27 1.27)))
+    )
+  )
+
+  ;; Yellow Status LED
+  (symbol
+    (lib_id "Device:LED")
+    (at 330.2 154.94 0)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "led-yellow-001")
+    (property "Reference" "LED3"
+      (at 330.2 147.32 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "10mm IP67 Yellow LED"
+      (at 330.2 149.86 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Description" "Status: Working (capture/upload) - GPIO27"
+      (at 330.2 152.4 0)
+      (effects (font (size 1.0 1.0)) hide)
+    )
+  )
+
+  ;; Current Limiting Resistor Yellow
+  (symbol
+    (lib_id "Device:R")
+    (at 345.44 154.94 90)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "r-yellow-001")
+    (property "Reference" "R2"
+      (at 345.44 149.86 90)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "330R"
+      (at 345.44 152.4 90)
+      (effects (font (size 1.27 1.27)))
+    )
+  )
+
+  ;; Red Status LED
+  (symbol
+    (lib_id "Device:LED")
+    (at 330.2 170.18 0)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "led-red-001")
+    (property "Reference" "LED4"
+      (at 330.2 162.56 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "10mm IP67 Red LED"
+      (at 330.2 165.1 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Description" "Status: Error - GPIO22"
+      (at 330.2 167.64 0)
+      (effects (font (size 1.0 1.0)) hide)
+    )
+  )
+
+  ;; Current Limiting Resistor Red
+  (symbol
+    (lib_id "Device:R")
+    (at 345.44 170.18 90)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "r-red-001")
+    (property "Reference" "R3"
+      (at 345.44 165.1 90)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "330R"
+      (at 345.44 167.64 90)
+      (effects (font (size 1.27 1.27)))
+    )
+  )
+
+  ;; ============================================
+  ;; MAINTENANCE MODE SECTION
+  ;; ============================================
+
+  ;; Maintenance Mode Button
+  (symbol
+    (lib_id "Switch:SW_Push")
+    (at 330.2 195.58 0)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "btn-maint-001")
+    (property "Reference" "SW1"
+      (at 330.2 187.96 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "IP67 Momentary Pushbutton"
+      (at 330.2 190.5 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Description" "C&K AP Series or E-Switch PVA6, 16mm panel mount, long press (3s) enters maintenance mode - GPIO5"
+      (at 330.2 193.04 0)
+      (effects (font (size 1.0 1.0)) hide)
+    )
+  )
+
+  ;; Pull-up Resistor for Button
+  (symbol
+    (lib_id "Device:R")
+    (at 345.44 195.58 90)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "r-pullup-001")
+    (property "Reference" "R4"
+      (at 345.44 190.5 90)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "10K (internal pullup)"
+      (at 345.44 193.04 90)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Description" "Use Pi internal pull-up, or add external 10K to 3.3V"
+      (at 345.44 195.58 0)
+      (effects (font (size 1.0 1.0)) hide)
+    )
+  )
+
+  ;; ============================================
+  ;; WIRES / CONNECTIONS
+  ;; ============================================
+
+  ;; Power: Battery+ to Fuse
+  (wire
+    (pts (xy 30.48 76.2) (xy 45.72 76.2))
+    (stroke (width 0.5) (type solid))
+    (uuid "wire-batt-fuse")
+  )
+
+  ;; Power: Fuse to Witty Pi VIN+
+  (wire
+    (pts (xy 55.88 76.2) (xy 96.52 76.2))
+    (stroke (width 0.5) (type solid))
+    (uuid "wire-fuse-witty")
+  )
+
+  ;; USB: Pi to Relay
+  (wire
+    (pts (xy 152.4 114.3) (xy 152.4 139.7) (xy 71.12 139.7))
+    (stroke (width 0.25) (type solid))
+    (uuid "wire-pi-relay-usb")
+  )
+
+  ;; USB: Pi to SSD
+  (wire
+    (pts (xy 152.4 119.38) (xy 152.4 170.18))
+    (stroke (width 0.25) (type solid))
+    (uuid "wire-pi-ssd")
+  )
+
+  ;; USB: Pi to Modem
+  (wire
+    (pts (xy 167.64 101.6) (xy 248.92 76.2))
+    (stroke (width 0.25) (type solid))
+    (uuid "wire-pi-modem")
+  )
+
+  ;; USB: Pi to Camera
+  (wire
+    (pts (xy 167.64 106.68) (xy 248.92 180.34))
+    (stroke (width 0.25) (type solid))
+    (uuid "wire-pi-camera")
+  )
+
+  ;; Power: Battery to IR circuit via fuse
+  (wire
+    (pts (xy 30.48 81.28) (xy 30.48 139.7) (xy 45.72 139.7))
+    (stroke (width 0.5) (type solid))
+    (uuid "wire-batt-ir")
+  )
+
+  ;; IR: Fuse to Relay COM
+  (wire
+    (pts (xy 55.88 139.7) (xy 71.12 134.62))
+    (stroke (width 0.5) (type solid))
+    (uuid "wire-fuse-relay-com")
+  )
+
+  ;; IR: Relay NO to Barrel Adapter
+  (wire
+    (pts (xy 81.28 139.7) (xy 96.52 139.7))
+    (stroke (width 0.5) (type solid))
+    (uuid "wire-relay-barrel")
+  )
+
+  ;; IR: Barrel Adapter to IR Light
+  (wire
+    (pts (xy 106.68 139.7) (xy 121.92 139.7))
+    (stroke (width 0.5) (type solid))
+    (uuid "wire-barrel-ir")
+  )
+
+  ;; I2C: Pi to Rain Gauge
+  (wire
+    (pts (xy 167.64 96.52) (xy 325.12 96.52) (xy 325.12 101.6))
+    (stroke (width 0.25) (type solid))
+    (uuid "wire-pi-rain-i2c")
+  )
+
+  ;; GPIO: Pi to Green LED
+  (wire
+    (pts (xy 208.28 76.2) (xy 325.12 139.7))
+    (stroke (width 0.25) (type solid))
+    (uuid "wire-gpio-led-green")
+  )
+
+  ;; GPIO: Pi to Yellow LED
+  (wire
+    (pts (xy 208.28 81.28) (xy 325.12 154.94))
+    (stroke (width 0.25) (type solid))
+    (uuid "wire-gpio-led-yellow")
+  )
+
+  ;; GPIO: Pi to Red LED
+  (wire
+    (pts (xy 208.28 86.36) (xy 325.12 170.18))
+    (stroke (width 0.25) (type solid))
+    (uuid "wire-gpio-led-red")
+  )
+
+  ;; GPIO: Pi to Maintenance Button
+  (wire
+    (pts (xy 208.28 91.44) (xy 325.12 195.58))
+    (stroke (width 0.25) (type solid))
+    (uuid "wire-gpio-btn-maint")
+  )
+
+  ;; ============================================
+  ;; LABELS AND NOTES
+  ;; ============================================
+
+  (text "POWER SECTION\n12V Solar (Existing)"
+    (at 25.4 55.88 0)
+    (effects (font (size 2.54 2.54) bold))
+  )
+
+  (text "COMPUTE STACK\nPi 5 + Witty Pi 5 HAT+ + Pi-EzConnect"
+    (at 152.4 40.64 0)
+    (effects (font (size 2.54 2.54) bold))
+  )
+
+  (text "IR ILLUMINATION\nUSB Relay controlled, photocell in light"
+    (at 76.2 116.84 0)
+    (effects (font (size 2.54 2.54) bold))
+  )
+
+  (text "CAMERA\nUSB camera in Gore-vented aluminum housing"
+    (at 254 116.84 0)
+    (effects (font (size 2.54 2.54) bold))
+  )
+
+  (text "LTE CONNECTIVITY\nQuectel EG25-G for Telkomsel network"
+    (at 254 50.8 0)
+    (effects (font (size 2.54 2.54) bold))
+  )
+
+  (text "SENSORS\nRain gauge on I2C bus"
+    (at 330.2 78.74 0)
+    (effects (font (size 2.54 2.54) bold))
+  )
+
+  (text "STATUS & UI\nLEDs + Maintenance Button on GPIO"
+    (at 330.2 124.46 0)
+    (effects (font (size 2.54 2.54) bold))
+  )
+
+  (text "NOTES:\n1. All GPIO via Pi-EzConnect screw terminals\n2. Conformal coat (MG 422C) on Pi, Witty Pi, relay PCBs\n3. IR relay controlled by systemd service on boot\n4. Status LEDs: Green=OK, Yellow=Working, Red=Error\n5. Long press (3s) maintenance button enters WiFi hotspot mode"
+    (at 25.4 220.98 0)
+    (effects (font (size 1.5 1.5)))
+  )
+
+  (text "GPIO PIN ASSIGNMENTS:\nGPIO4  - Witty Pi shutdown signal\nGPIO17 - Witty Pi wake signal / Green LED\nGPIO27 - Yellow LED\nGPIO22 - Red LED\nGPIO5  - Maintenance button input\nGPIO2  - I2C SDA (rain gauge)\nGPIO3  - I2C SCL (rain gauge)"
+    (at 25.4 254 0)
+    (effects (font (size 1.5 1.5)))
+  )
+
+)
