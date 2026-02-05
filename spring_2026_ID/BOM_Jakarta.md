@@ -7,7 +7,7 @@
 - **Purpose:** New training/demo installation
 - **Date:** January 9, 2026
 - **Status:** VERIFIED - Product links checked January 2026
-- **Suppliers Consolidated:** 6 primary suppliers (Adafruit, Amazon, DigiKey, Planet Technology, UUGear, DFRobot)
+- **Suppliers Consolidated:** 6 primary suppliers (Adafruit, Amazon, DigiKey, Planet Technology, UUGear, Hydreon)
 
 ---
 
@@ -20,7 +20,7 @@
 | **DigiKey** | Industrial PSU, surge protector | https://www.digikey.com |
 | **Planet Technology** | PoE injector | https://planetechusa.com |
 | **UUGear** | Witty Pi 5 HAT+ | https://www.uugear.com |
-| **DFRobot** | Rain gauge | https://www.dfrobot.com |
+| **Hydreon** | Rain gauge | https://store.hydreon.com |
 
 ---
 
@@ -75,7 +75,7 @@
 | UI-003 | 10mm IP67 Panel Mount LED - Green | 3343 | 1 | $2.95 | $2.95 | https://www.adafruit.com/product/3343 |
 | ENC-003 | PG9 Cable Glands (10-pack) | 762 | 1 | $7.50 | $7.50 | https://www.adafruit.com/product/762 |
 
-**Adafruit Subtotal: $150.20**
+**Adafruit Subtotal: $148.20**
 
 ---
 
@@ -85,11 +85,9 @@
 | Item | Description | Qty | Unit Price | Extended | Product Link |
 |------|-------------|-----|------------|----------|--------------|
 | **COMPUTE PLATFORM** | | | | | |
-| CPU-004 | M.2 SATA SSD 512GB (KingSpec 2280, SATA III) | 1 | $42.99 | $42.99 | https://www.amazon.com/s?k=M.2+SATA+SSD+512GB |
-| CPU-005 | USB 3.0 M.2 SATA Enclosure (aluminum, tool-free) | 1 | $15.99 | $15.99 | https://www.amazon.com/s?k=USB+3.0+M.2+SATA+enclosure |
+| CPU-004 | Samsung FIT Plus 256GB USB 3.1 flash drive (MUF-256AB) | 1 | $25.00 | $25.00 | https://www.amazon.com/Samsung-MUF-256AB-AM-Plus-256GB/dp/B07D7Q41PM |
 | CPU-007/008 | Quectel EG25-G LTE Modem + PU201 USB Adapter | 1 | $119.00 | $119.00 | https://www.amazon.com/s?k=Quectel+EG25-G |
-| CPU-009 | 4G LTE Antenna SMA Male (9dBi omni, 2-pack) | 1 | $16.99 | $16.99 | https://www.amazon.com/Antenna-Connector-Omnidirectional-Verizon-Wireless/dp/B07YWHFQ6L |
-| CPU-010 | SMA Bulkhead Panel Mount Connectors (2-pack) | 1 | $8.99 | $8.99 | https://www.amazon.com/s?k=SMA+bulkhead+connector |
+| CPU-009 | Proxicast ANT-122-S02 2x2 MIMO LTE puck antenna (IP67, screw mount, 600-6000 MHz) | 1 | $65.00 | $65.00 | https://www.amazon.com/Proxicast-Profile-Omni-Directional-Screw-Mount-Antenna/dp/B07DDC9WV5 |
 
 | **CAMERAS & NETWORKING** | | | | | |
 | CAM-001 | ANNKE C1200 PoE IP Camera (12MP, 134° FOV, 2-pack) | 1 | $119.99 | $119.99 | https://www.amazon.com/ANNKE-Security-Surveillance-Spotlight-Weatherproof/dp/B0F4R97PVS |
@@ -114,8 +112,8 @@
 | CONS-003 | UV-Resistant Zip Ties (assorted, 500-pack) | 1 | $12.99 | $12.99 | https://www.amazon.com/s?k=UV+resistant+zip+ties |
 | CONS-006 | Isopropyl Alcohol 99% (16oz bottle) | 1 | $8.99 | $8.99 | https://www.amazon.com/s?k=isopropyl+alcohol+99 |
 
-**Amazon (Continued) Subtotal: $1,016.70**
-**Amazon TOTAL (Power + Compute + Cameras + Enclosure): $1,515.18**
+**Amazon (Continued) Subtotal: $763.79**
+**Amazon TOTAL (Power + Compute + Cameras + Enclosure): $1,262.27**
 
 ### SUPPLIER 4: PLANET TECHNOLOGY
 **URL:** https://planetechusa.com or https://networkcamerastore.com
@@ -141,15 +139,15 @@
 
 ---
 
-### SUPPLIER 6: DFROBOT
-**URL:** https://www.dfrobot.com
+### SUPPLIER 6: HYDREON
+**URL:** https://store.hydreon.com
 **Category:** Rain Gauge
 
 | Item | Description | Part# | Qty | Unit Price | Extended | Product Link |
 |------|-------------|-------|-----|------------|----------|--------------|
-| RAIN-001 | Gravity Tipping Bucket Rain Gauge (I2C/UART) | SEN0575 | 1 | $29.90 | $29.90 | https://www.dfrobot.com/product-2689.html |
+| RAIN-001 | Hydreon RG-15 Optical Rain Gauge (solid-state, RS232 TTL 3.3V + pulse output) | RG-15 | 1 | $99.00 | $99.00 | https://store.hydreon.com/RG-15.html |
 
-**DFRobot Subtotal: $29.90**
+**Hydreon Subtotal: $99.00**
 
 ## LOCAL SOURCING (INDONESIA)
 
@@ -181,14 +179,14 @@ The following items should be purchased locally in Jakarta to reduce shipping co
 | Supplier | Subtotal (USD) | Notes |
 |----------|----------------|-------|
 | **1. DigiKey** | $174.99 | Mean Well PSU, surge protector, terminal blocks |
-| **2. Amazon** | $1,515.18 | Batteries, cameras, compute components, enclosure |
-| **3. Adafruit** | $150.20 | Raspberry Pi, HATs, LEDs, cable glands |
+| **2. Amazon** | $1,262.27 | Batteries, cameras, compute components, enclosure |
+| **3. Adafruit** | $148.20 | Raspberry Pi, HATs, LEDs, cable glands |
 | **4. Planet Technology** | $164.00 | PoE injector (12V native) |
 | **5. UUGear** | $46.00 | Witty Pi 5 HAT+ |
-| **6. DFRobot** | $29.90 | Rain gauge |
-| **Shipped Subtotal** | **$2,080.27** | Components to ship from US/international |
+| **6. Hydreon** | $99.00 | Rain gauge |
+| **Shipped Subtotal** | **$1,894.46** | Components to ship from US/international |
 | **Local Sourcing (Jakarta)** | **$96.00** | Grounding, mounting pole, misc hardware |
-| **GRAND TOTAL** | **$2,176.27** | Before shipping & customs |
+| **GRAND TOTAL** | **$1,990.46** | Materials only |
 
 ---
 
@@ -196,14 +194,12 @@ The following items should be purchased locally in Jakarta to reduce shipping co
 
 | Item | Estimated Cost (USD) | Notes |
 |------|---------------------|-------|
-| **Equipment (shipped)** | $2,080.27 | Components from 6 suppliers |
+| **Equipment (shipped)** | $1,894.46 | Components from 6 suppliers |
 | **Local sourcing (Jakarta)** | $96.00 | Grounding, pole, mounting hardware |
-| **Consolidation shipping (US→Indonesia)** | $200-350 | DHL/FedEx express (5-7 days) |
-| **Indonesia import duties (7.5% avg)** | $156-208 | Electronics typically 0-10% |
-| **Contingency (10%)** | $220 | For price changes, lost items |
-| **TOTAL PROJECT COST** | **$2,752-3,050** | Fully loaded estimate |
+| **TOTAL PROJECT COST** | **$1,990.46** | Materials only |
 
-**Budget Status:** Within $3,000 target if shared with Sukabumi site
+**Budget Status:** ✅ Within budget. Combined with Sukabumi ($1,174.90) = **$3,165.36** total for both sites.
+**Note:** Equipment travels with installer under humanitarian exemption — no shipping, customs, or contingency costs.
 
 **Cost reduction options (if needed):**
 - Single camera instead of 2: Save ~$60
@@ -235,7 +231,7 @@ The following items should be purchased locally in Jakarta to reduce shipping co
 
 **Step 4: Direct international orders (parallel with Steps 1-3)**
 - UUGear (Witty Pi) → Ships from China, 7-14 days
-- DFRobot (Rain gauge) → Ships from China, 7-14 days
+- Hydreon (RG-15 Rain gauge) → Ships from US, 3-7 days
 - Planet Technology → Check if distributor ships to Indonesia
 
 **Total estimated time: 2-3 weeks from order to arrival in Jakarta**
@@ -423,7 +419,7 @@ The following items should be purchased locally in Jakarta to reduce shipping co
 - [ ] Order DigiKey components (Mean Well PSU, surge protector, terminal blocks)
 - [ ] Order Adafruit components (Pi-EzConnect, LEDs, cables, SD card)
 - [ ] Order Amazon bulk order (battery, cameras, enclosure, Cat6, hardware)
-- [ ] Order DFRobot rain gauge
+- [ ] Order Hydreon RG-15 rain gauge (direct from store.hydreon.com)
 - [ ] All items shipped to US consolidation address
 
 **Week 2 before deployment:**
@@ -431,7 +427,7 @@ The following items should be purchased locally in Jakarta to reduce shipping co
 - [ ] Allow 24hr cure time for conformal coating
 - [ ] Pre-configure PoE cameras (RTSP, static IP, credentials)
 - [ ] Load OS on SD card, test Pi + Witty Pi boot cycle
-- [ ] Test rain gauge I2C communication
+- [ ] Test rain gauge serial communication (Hydreon RG-15 RS232 TTL via Pi UART)
 - [ ] Consolidate US shipments, repack in 1-2 boxes
 - [ ] Prepare customs documentation (commercial invoice, packing list, SNs)
 - [ ] Ship consolidated package via DHL/FedEx Express to Jakarta
@@ -499,7 +495,7 @@ The following items should be purchased locally in Jakarta to reduce shipping co
 12. [ ] Wire status LEDs and pushbutton to GPIO
 13. [ ] Run Cat6 cables to camera mounting locations
 14. [ ] Install cameras on pole mounts, aim and focus
-15. [ ] Connect antennas to modem, mount externally
+15. [ ] Mount Proxicast ANT-122-S02 puck on enclosure (1/2" hole), connect SMA cables to modem
 16. [ ] Install rain gauge on separate arm
 17. [ ] Cable management with zip ties
 18. [ ] Test all connections with multimeter BEFORE applying power
@@ -620,7 +616,7 @@ The following items should be purchased locally in Jakarta to reduce shipping co
 - **DigiKey:** tech.support@digikey.com | +1-800-344-4539
 - **Planet Technology:** sales@planetechusa.com | +1-510-438-9071
 - **UUGear:** support@uugear.com (email only)
-- **DFRobot:** techsupport@dfrobot.com
+- **Hydreon:** info@hydreon.com | https://store.hydreon.com
 
 **Indonesian resources:**
 - **POSTEL (IMEI registration):** https://imei.kemenperin.go.id/

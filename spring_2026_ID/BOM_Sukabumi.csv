@@ -2,75 +2,58 @@ Category,Item,Description,Qty,Unit Price,Ext. Price,Source,Order Link,Notes
 Compute Platform,RPi5-8GB,Raspberry Pi 5 8GB RAM,1,$80.00,$80.00,Adafruit,https://www.adafruit.com/product/5813,Check stock - periodic shortages
 Compute Platform,WittyPi5,Witty Pi 5 HAT+ (power mgmt RTC I2C-only),1,$46.00,$46.00,UUGear,https://www.uugear.com/product/witty-pi-5/,Ships from Hong Kong
 Compute Platform,EZCONNECT,Adafruit Pi-EzConnect (ID 2711 GPIO terminal block),1,$19.95,$19.95,Adafruit,https://www.adafruit.com/product/2711,Stacks on Witty Pi 5 HAT+
-Compute Platform,SSD-M2,M.2 SATA SSD 512GB (KingSpec or TEAMGROUP),1,$50.00,$50.00,Amazon,https://www.amazon.com/s?k=M.2+SATA+SSD+512GB+2280,Budget option (~$40-85 range)
-Compute Platform,SSD-ENC,USB 3.0 to M.2 SATA enclosure,1,$15.00,$15.00,Amazon,https://www.amazon.com/s?k=USB+3.0+M.2+SATA+enclosure+aluminum,Tool-free aluminum preferred
-Compute Platform,MODEM,Quectel EG25-G LTE Mini PCIe module,1,$35.00,$35.00,Amazon,https://www.amazon.com/Generic-Quectel-EG25-G-Cellular-M2M-optimized/dp/B0CVQ2YLQQ,Verify Indonesian bands B1/B3/B5/B8/B40
-Compute Platform,MODEM-USB,Techship PU201 USB adapter for Mini PCIe,1,$15.00,$15.00,DigiKey,https://www.digikey.com/en/products/detail/techship/PU201/21262919,USB interface for modem
-Compute Platform,ANT-LTE,4G LTE antenna (SMA male 9dBi 2-pack),1,$16.99,$16.99,Amazon,https://www.amazon.com/Antenna-Connector-Omnidirectional-Verizon-Wireless/dp/B07YWHFQ6L,Main + diversity
-Compute Platform,ANT-BULK,SMA bulkhead connector (female-female),2,$4.50,$9.00,Amazon,https://www.amazon.com/s?k=SMA+bulkhead+connector+panel+mount,Panel mount for antennas
-Compute Platform,SD-CARD,MicroSD card 32GB (Official Raspberry Pi),1,$14.95,$14.95,Adafruit,https://www.adafruit.com/product/6010,For OS boot - Class A2
-Compute Platform,HEATSINK,Raspberry Pi 5 Active Cooler,1,$13.50,$13.50,Adafruit,https://www.adafruit.com/product/5815,Temperature-controlled fan
-Compute Platform,USB-RS485,USB to RS485/232 Multi-Protocol Adapter,1,$21.95,$21.95,Adafruit,https://www.adafruit.com/product/5995,For Modbus devices
-Camera System,CAM-USB,Custom 8MP IMX179 NoIR USB camera (ELP/SVPRO),1,$85.00,$85.00,ELP Direct,mailto:sales@elpcctv.com,LONG LEAD TIME 2-6 weeks - contact vendor
-Camera System,CAM-HOUSING,VA Imaging MVEC167 aluminum camera housing,1,$125.00,$125.00,VA Imaging,https://va-imaging.com/products/machine-vision-aluminium-camera-housing-enclosure-waterproof-ip67,IP67 aluminum for heat dissipation
-Camera System,VENT-CAM,Amphenol LTW M12 protective vent (screw-in),1,$12.00,$12.00,DigiKey,https://www.digikey.com/en/products/detail/amphenol-ltw/VENT-PS1YBK-N8001/7898285,Pressure equalization - Gore alternative
-Camera System,USB-CABLE,Bulgin PX0840 IP67 USB cable (2-3m),1,$45.00,$45.00,DigiKey,https://www.digikey.com/en/products/filter/usb-cables/457?s=N4IgTCBcDaIMIGEAKBaAjABgJwgLoF8g,Or HDPE conduit option
-IR Illumination,IR-LIGHT,Tendelux AI4 850nm IR illuminator (built-in photocell),1,$35.00,$35.00,Amazon,https://www.amazon.com/Tendelux-Illuminator-AI4-Infrared-Security/dp/B075ZYG89D,Day/night sensing 80ft range
-IR Illumination,RELAY-USB,Numato Lab 1-channel USB relay module,1,$32.00,$32.00,Numato Lab,https://numato.com/product/1-channel-usb-powered-relay-module/,Powers on with Pi boot
-IR Illumination,PWR-12V,12V power cable with screw terminals (18AWG 2m),1,$8.00,$8.00,Amazon,https://www.amazon.com/s?k=12V+power+cable+screw+terminal+18AWG,From solar controller to relay
-IR Illumination,FUSE-INLINE,Inline fuse holder with 5A fuse (12V),1,$6.00,$6.00,Amazon,https://www.amazon.com/s?k=inline+fuse+holder+waterproof+blade,Protection for IR circuit
-User Interface,LED-RED,12mm IP67 panel-mount LED indicator Red 12V,1,$8.00,$8.00,DigiKey,https://www.digikey.com/en/products/filter/panel-indicators/99?s=N4IgTCBcDaIIwFYEFoCMBOAtAOQCIgF0BfIA,Error indication - APEM or VCC brand
-User Interface,LED-YEL,12mm IP67 panel-mount LED indicator Yellow 12V,1,$8.00,$8.00,DigiKey,https://www.digikey.com/en/products/filter/panel-indicators/99?s=N4IgTCBcDaIIwFYEFoCMBOAtAOQCIgF0BfIA,Working (capture/upload)
-User Interface,LED-GRN,12mm IP67 panel-mount LED indicator Green 12V,1,$8.00,$8.00,DigiKey,https://www.digikey.com/en/products/filter/panel-indicators/99?s=N4IgTCBcDaIIwFYEFoCMBOAtAOQCIgF0BfIA,OK/Ready status
-User Interface,BTN-MAINT,IP67 momentary pushbutton 16mm stainless,1,$12.00,$12.00,Amazon,https://www.amazon.com/s?k=16mm+IP67+momentary+pushbutton+stainless,Maintenance mode input
-User Interface,GLAND-BTN,PG9 cable gland for button wiring,1,$1.95,$1.95,Adafruit,https://www.adafruit.com/product/761,16mm panel hole
+Compute Platform,USB-DRIVE,Samsung FIT Plus 256GB USB 3.1 flash drive (MUF-256AB),1,$25.00,$25.00,Amazon,https://www.amazon.com/Samsung-MUF-256AB-AM-Plus-256GB/dp/B07D7Q41PM,IP67 waterproof - 0-60C operating - plugs directly into Pi USB-A
+Compute Platform,MODEM,Quectel EG25-G LTE Cat 4 module,1,$35.00,$35.00,Amazon,https://www.amazon.com/Generic-Quectel-EG25-G-Cellular-M2M-optimized/dp/B0CVQ2YLQQ,Verify Indonesian bands B1/B3/B5/B8/B40
+Compute Platform,MODEM-USB,PU201 USB adapter board for EG25-G,1,$15.00,$15.00,DigiKey,https://www.digikey.com/en/products/detail/techship/PU201/21262919,USB interface for modem
+Compute Platform,ANT-PUCK,Proxicast ANT-122-S02 2x2 MIMO LTE puck antenna (IP67 screw mount),1,$65.00,$65.00,Amazon,https://www.amazon.com/Proxicast-Profile-Omni-Directional-Screw-Mount-Antenna/dp/B07DDC9WV5,Main + diversity in single sealed unit - 600-6000 MHz - eliminates bulkhead connectors
+Compute Platform,SD-CARD,MicroSD card 32GB (SanDisk/Samsung),1,$8.00,$8.00,Amazon,https://www.amazon.com/s?k=microSD+32GB+SanDisk,For OS boot
+Compute Platform,HEATSINK,Heatsink for Raspberry Pi 5,1,$8.00,$8.00,Amazon,https://www.amazon.com/s?k=raspberry+pi+5+heatsink,Active or passive
+Compute Platform,USB-RS485,USB to RS485 converter (FTDI chip),1,$18.00,$18.00,Amazon,https://www.amazon.com/s?k=USB+RS485+converter+FTDI,For Modbus devices
+PoE Camera System,CAM-001,ANNKE C1200 PoE IP Camera (12MP 134deg FOV 2-pack),1,$119.99,$119.99,Amazon,https://www.amazon.com/ANNKE-Security-Surveillance-Detection-Spotlight/dp/B0DBHRMT1V,1 camera installed 1 spare - built-in IR LEDs
+PoE Camera System,CAM-002,Planet IPOE-260-12V PoE Injector (2-port 60W 12V input),1,$164.00,$164.00,Planet Technology,https://planetechusa.com/product/ipoe-260-12v-industrial-2-port-10-100-1000t-802-3at-poe-injector-hub-12v-booster/,Native 12V input - power-cycled with Pi
+PoE Camera System,CAM-004,Outdoor Cat6 Shielded Cable (300ft UV-resistant),1,$79.99,$79.99,Amazon,https://www.amazon.com/s?k=outdoor+Cat6+shielded+cable+300ft+UV,Camera cabling
+PoE Camera System,CAM-005,IP68 RJ45 Waterproof Coupler (2-pack),1,$12.99,$12.99,Amazon,https://www.amazon.com/s?k=IP68+RJ45+coupler+waterproof,Weatherproof connections
+PoE Camera System,CAM-006,Camera Pole Mount Bracket (stainless 2-pack),1,$22.99,$22.99,Amazon,https://www.amazon.com/s?k=camera+pole+mount+bracket+stainless,Camera mounting
+User Interface,LED-RED,10mm IP67 panel-mount LED Red,1,$6.00,$6.00,DigiKey,https://www.digikey.com/en/products/filter/panel-indicators/99?s=N4IgTCBcDaIIwFYEFoCMBOAtAOQCIgF0BfIA,Error indication
+User Interface,LED-YEL,10mm IP67 panel-mount LED Yellow,1,$6.00,$6.00,DigiKey,https://www.digikey.com/en/products/filter/panel-indicators/99?s=N4IgTCBcDaIIwFYEFoCMBOAtAOQCIgF0BfIA,Working (capture/upload)
+User Interface,LED-GRN,10mm IP67 panel-mount LED Green,1,$6.00,$6.00,DigiKey,https://www.digikey.com/en/products/filter/panel-indicators/99?s=N4IgTCBcDaIIwFYEFoCMBOAtAOQCIgF0BfIA,OK/Ready status
+User Interface,BTN-MAINT,IP67 momentary pushbutton (C&K AP or E-Switch PVA6),1,$12.00,$12.00,DigiKey,https://www.amazon.com/s?k=16mm+IP67+momentary+pushbutton+stainless,Maintenance mode input
+User Interface,GLAND-BTN,PG9 cable gland for button wiring,1,$3.00,$3.00,Amazon,https://www.amazon.com/s?k=PG9+cable+gland+IP68,16mm panel hole
 User Interface,RESISTOR,Current-limiting resistors for LEDs (assorted),1,$5.00,$5.00,Amazon,https://www.amazon.com/s?k=LED+resistor+kit+assorted,220-470 ohm range
 Humidity Protection,COAT-SIL,MG Chemicals 422C silicone conformal coat (55ml),1,$22.00,$22.00,Amazon,https://www.amazon.com/MG-Chemicals-Silicone-Conformal-Coating/dp/B085G42TGS,For 95%+ RH environments
 Humidity Protection,BRUSH,Application brush (acid brush or fine bristle),2,$2.00,$4.00,Amazon,https://www.amazon.com/s?k=acid+brush+pack,Clean lint-free
-Humidity Protection,MASK-TAPE,Kapton tape 1/4in (masking for coating),1,$9.99,$9.99,Amazon,https://www.amazon.com/s?k=kapton+tape+1%2F4+inch,Protect connectors during coating
-Humidity Protection,VENT-ENC,Amphenol LTW M12 protective vent (compute enclosure),2,$12.00,$24.00,DigiKey,https://www.digikey.com/en/products/detail/amphenol-ltw/VENT-PS1YBK-N8001/7898285,2x for larger enclosure
-Humidity Protection,IPA-WIPES,Isopropyl alcohol 99% (16oz),1,$8.99,$8.99,Amazon,https://www.amazon.com/s?k=isopropyl+alcohol+99,Pre-coating cleaning
-Enclosure & Mounting,ENC-COMPUTE,Outdoor enclosure IP66 (300x200x150mm polycarbonate),1,$45.00,$45.00,Amazon,https://www.amazon.com/s?k=IP66+enclosure+300x200x150mm+polycarbonate,Clear lid option
-Enclosure & Mounting,DIN-RAIL,DIN rail 35mm x 300mm (aluminum),1,$8.00,$8.00,Amazon,https://www.amazon.com/s?k=35mm+DIN+rail+300mm+aluminum,Internal mounting
-Enclosure & Mounting,CLIP-RPI,DIN rail clip for Raspberry Pi,1,$6.00,$6.00,Amazon,https://www.amazon.com/s?k=DIN+rail+clip+raspberry+pi,Specific to Pi 5 form factor
-Enclosure & Mounting,CLIP-TERM,DIN rail terminal block clips,4,$2.00,$8.00,Amazon,https://www.amazon.com/s?k=DIN+rail+terminal+block+kit,For various components
-Enclosure & Mounting,TERM-BLOCK,Screw terminal blocks DIN rail (2-12 position assorted),1,$15.00,$15.00,Amazon,https://www.amazon.com/s?k=DIN+rail+terminal+block+kit+assorted,Power distribution
-Enclosure & Mounting,GLAND-M12,M12 cable gland (IP68) 4-pack,1,$12.00,$12.00,Amazon,https://www.amazon.com/s?k=M12+cable+gland+IP68,Camera antenna power
-Enclosure & Mounting,GLAND-M16,M16 cable gland (IP68) 2-pack,1,$7.00,$7.00,Amazon,https://www.amazon.com/s?k=M16+cable+gland+IP68,USB cable larger runs
-Enclosure & Mounting,GLAND-M20,M20 cable gland (IP68),1,$4.00,$4.00,Amazon,https://www.amazon.com/s?k=M20+cable+gland+IP68,AC power inlet (if needed)
-Enclosure & Mounting,VELCRO-LOCK,3M Dual Lock reclosable fastener (25mm x 1m),1,$12.00,$12.00,Amazon,https://www.amazon.com/s?k=3M+dual+lock+reclosable+fastener,For SSD modem mounting
-Enclosure & Mounting,STANDOFFS,M2.5/M3 standoff kit (brass or nylon),1,$12.00,$12.00,Amazon,https://www.amazon.com/s?k=M2.5+M3+standoff+kit+brass,Backup mounting option
-Rain Gauge,RAIN-GAUGE,DFRobot SEN0575 I2C tipping bucket rain gauge,1,$29.90,$29.90,DFRobot,https://www.dfrobot.com/product-2689.html,Python libraries included
-Rain Gauge,MOUNT-RG,Mounting bracket for rain gauge (stainless steel),1,$8.00,$8.00,Amazon,https://www.amazon.com/s?k=rain+gauge+mounting+bracket+stainless,Or fabricate from included hardware
-Rain Gauge,CABLE-RG,2-conductor shielded cable (22AWG 5m),1,$10.00,$10.00,Amazon,https://www.amazon.com/s?k=shielded+cable+22AWG+2+conductor,I2C connection to Pi
+Humidity Protection,MASK-TAPE,Masking tape (low-tack 1in width),1,$4.00,$4.00,Amazon,https://www.amazon.com/s?k=low+tack+masking+tape+1+inch,Protect connectors during coating
+Humidity Protection,IPA-WIPES,Isopropyl alcohol wipes (99%),1,$8.00,$8.00,Amazon,https://www.amazon.com/s?k=isopropyl+alcohol+wipes+99,Pre-coating cleaning
+Enclosure & Mounting,ENC-001,VEVOR carbon steel hinged IP66 enclosure (16x12x8in / 406x305x203mm),1,$60.00,$60.00,Amazon,https://www.amazon.com/dp/B0924DJGJ9,Hinged door with lock - includes mounting plate
+Enclosure & Mounting,VENT-ENC,Gore M12 protective vent,1,$12.00,$12.00,DigiKey,https://www.digikey.com/en/products/detail/amphenol-ltw/VENT-PS1YBK-N8001/7898285,Pressure equalization without humidity ingress
+Enclosure & Mounting,ENC-004,Cable Gland Assortment (PG9/PG13.5/PG16 20-pack),1,$18.99,$18.99,Amazon,https://www.amazon.com/s?k=cable+gland+assortment+IP68,Various cable entries
+Enclosure & Mounting,VELCRO-LOCK,3M Dual Lock reclosable fastener (25mm x 1m),1,$12.00,$12.00,Amazon,https://www.amazon.com/s?k=3M+dual+lock+reclosable+fastener,Mount SSD / modem / PoE injector
+Enclosure & Mounting,STANDOFFS,M2.5/M3 standoff kit (brass or nylon),1,$12.00,$12.00,Amazon,https://www.amazon.com/s?k=M2.5+M3+standoff+kit+brass,Pi stack mounting
+Enclosure & Mounting,TERM-BLOCK,Screw terminal blocks (2-8 position assorted),1,$10.00,$10.00,Amazon,https://www.amazon.com/s?k=screw+terminal+block+assorted,Power distribution
+Rain Gauge,RAIN-GAUGE,Hydreon RG-15 Optical Rain Gauge (solid-state RS232 TTL 3.3V + pulse output),1,$99.00,$99.00,Hydreon Store,https://store.hydreon.com/RG-15.html,No moving parts - self-cleaning lens - ±10% accuracy - built-in mounting holes - 12V powered
 Cables & Connectors,USB-C-PWR,USB-C power cable (1.5m right-angle),1,$8.00,$8.00,Amazon,https://www.amazon.com/s?k=USB-C+power+cable+right+angle+1.5m,Pi 5 power from solar controller
-Cables & Connectors,USB-A-SHORT,USB-A cables (0.5m various) 3-pack,1,$12.00,$12.00,Amazon,https://www.amazon.com/s?k=short+USB+cable+pack+0.5m,Modem relay short runs
+Cables & Connectors,USB-A-SHORT,USB-A cables (0.5m various),3,$4.00,$12.00,Amazon,https://www.amazon.com/s?k=short+USB+cable+pack+0.5m,Modem / relay / short runs
 Cables & Connectors,HDPE-CONDUIT,HDPE flexible conduit (20mm x 5m),1,$15.00,$15.00,Amazon,https://www.amazon.com/s?k=flexible+conduit+20mm,Cable protection (if not using Bulgin)
-Cables & Connectors,HEAT-SHRINK,Heat shrink tubing kit (assorted sizes 328pc),1,$11.99,$11.99,Amazon,https://www.amazon.com/s?k=heat+shrink+tubing+kit+assorted,Cable sealing strain relief
-Cables & Connectors,CABLE-TIES,UV-resistant cable ties (assorted 500pc),1,$12.99,$12.99,Amazon,https://www.amazon.com/s?k=UV+resistant+cable+ties+500,Cable management
+Cables & Connectors,HEAT-SHRINK,Heat shrink tubing kit (assorted sizes),1,$10.00,$10.00,Amazon,https://www.amazon.com/s?k=heat+shrink+tubing+kit+assorted,Cable sealing / strain relief
+Cables & Connectors,CABLE-TIES,UV-resistant cable ties (assorted 100pc),1,$8.00,$8.00,Amazon,https://www.amazon.com/s?k=UV+resistant+cable+ties,Cable management
 Cables & Connectors,WIRE-18AWG,18AWG stranded wire (red/black 10m each),1,$15.00,$15.00,Amazon,https://www.amazon.com/s?k=18AWG+stranded+wire+red+black,Power distribution
 Cables & Connectors,FERRULES,Wire ferrules (assorted crimper kit),1,$18.00,$18.00,Amazon,https://www.amazon.com/s?k=wire+ferrule+crimper+kit,Professional terminal connections
 Hardware & Fasteners,SS-SCREWS,Stainless steel screw assortment (M3 M4 M5),1,$15.00,$15.00,Amazon,https://www.amazon.com/s?k=stainless+steel+screw+assortment+M3+M4,304/316 grade for corrosion resistance
 Hardware & Fasteners,SS-NUTS,Stainless steel nut assortment (M3 M4 M5),1,$10.00,$10.00,Amazon,https://www.amazon.com/s?k=stainless+steel+nut+assortment+nyloc,Nyloc and standard
 Hardware & Fasteners,SS-WASHERS,Stainless steel washer assortment,1,$8.00,$8.00,Amazon,https://www.amazon.com/s?k=stainless+steel+washer+assortment,Flat and split lock
 Hardware & Fasteners,POLE-CLAMP,Stainless U-bolt clamp (for pole mounting 60mm),2,$8.00,$16.00,Amazon,https://www.amazon.com/s?k=stainless+U-bolt+clamp+60mm,Camera housing mount
-Hardware & Fasteners,SEALANT,Silicone sealant (RTV electronics-grade),1,$7.99,$7.99,Amazon,https://www.amazon.com/s?k=silicone+sealant+electronics+clear,Cable gland sealing
+Hardware & Fasteners,SEALANT,Silicone sealant (outdoor clear),1,$6.00,$6.00,Amazon,https://www.amazon.com/s?k=silicone+sealant+electronics+clear,Cable gland sealing
 Hardware & Fasteners,DI-GREASE,Dielectric grease (small tube),1,$8.00,$8.00,Amazon,https://www.amazon.com/s?k=dielectric+grease+tube,Connector protection
 Hardware & Fasteners,DESICCANT,Silica gel packets (for initial assembly only),1,$6.00,$6.00,Amazon,https://www.amazon.com/s?k=silica+gel+packets,Not for field maintenance
 ,,,,,,,,
 COST SUMMARY,,,,,,,,
 Category,Subtotal,,,,,,,
-Compute Platform,$327.74,,,,,,,
-Camera System,$267.00,,,,,,,
-IR Illumination,$81.00,,,,,,,
-User Interface,$42.95,,,,,,,
-Humidity Protection,$69.98,,,,,,,
-Enclosure & Mounting,$129.00,,,,,,,
-Rain Gauge,$47.90,,,,,,,
-Cables & Connectors,$93.98,,,,,,,
-Hardware & Fasteners,$70.99,,,,,,,
-SUBTOTAL (Materials),$1130.54,,,,,,,
-Shipping & Handling (est. 10%),$113.00,,,,,,,
-Customs/Import Duties (est. 5%),$57.00,,,,,,,
-Contingency (10%),$113.00,,,,,,,
-TOTAL ESTIMATED COST,$1413.54,,,,,,,
+Compute Platform,$319.95,,,,,,,
+PoE Camera System,$399.96,,,,,,,
+User Interface,$38.00,,,,,,,
+Humidity Protection,$38.00,,,,,,,
+Enclosure & Mounting,$124.99,,,,,,,
+Rain Gauge,$99.00,,,,,,,
+Cables & Connectors,$86.00,,,,,,,
+Hardware & Fasteners,$69.00,,,,,,,
+TOTAL (Materials),$1174.90,,,,,,,

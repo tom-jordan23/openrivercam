@@ -1,7 +1,7 @@
 # Indonesia Spring 2026 Deployment - Planning Guide
 
 **Target:** March/April 2026 deployment of two ORC river monitoring stations in Indonesia
-**Sites:** Sukabumi (solar, USB camera) and Jakarta (AC power, PoE camera)
+**Sites:** Sukabumi (solar, PoE camera) and Jakarta (AC power, PoE camera)
 **Budget:** $3,000 USD total for both sites (target: less than $3,000)
 **Stakeholder:** tjordan
 
@@ -13,8 +13,8 @@ This document provides a structured approach for developing site-specific Bills 
 
 | Site | Power | Camera Strategy | Status |
 |------|-------|-----------------|--------|
-| Sukabumi | Solar (existing 200W/50Ah) | USB cameras with Gore vent housings | Replacement of failed unit |
-| Jakarta | AC utility (new install) | Factory-sealed PoE cameras | New training/demo site |
+| Sukabumi | Solar (existing 200W/50Ah) | Factory-sealed PoE camera (power-cycled with Pi) | Replacement of failed unit |
+| Jakarta | AC utility (new install) | Factory-sealed PoE cameras (continuous) | New training/demo site |
 
 ---
 
@@ -118,12 +118,12 @@ All components inside enclosures must be securely mounted - no loose items. **Mo
 
 **Components to mount:**
 - Raspberry Pi 5 + Witty Pi 5 HAT+ + GPIO terminal block riser (stacked)
-- M.2 SSD in USB enclosure (no mounting holes typically)
+- USB flash drive (Samsung FIT Plus) - plugs directly into Pi USB port
 - Quectel modem + PU201 adapter
 - Relay modules
 - Terminal blocks
 - Fuse holders
-- PoE injector (Jakarta) or power distribution (Sukabumi)
+- PoE injector (both sites)
 - Status display (must be visible externally)
 
 **Options to Research:**
@@ -163,7 +163,7 @@ All components inside enclosures must be securely mounted - no loose items. **Mo
 
 **Duty cycle estimate:** ~1-2 minutes active per 15-minute cycle = 6-13% duty cycle
 
-This schedule drives power budget calculations. PoE cameras at Jakarta run 24/7; USB cameras at Sukabumi only power during active phase.
+This schedule drives power budget calculations. PoE cameras at Jakarta run 24/7; PoE camera at Sukabumi is power-cycled with the Pi (camera boots each cycle) to conserve solar power.
 
 ---
 
@@ -179,8 +179,7 @@ Keep the following at the local PMI office for field service. Covers both Sukabu
 | Adjustable wrench (6") | 1 | For cable glands, pole clamps |
 | Wire strippers | 1 | For 18-22 AWG |
 | Multimeter | 1 | DC voltage, continuity testing |
-| Ethernet cable tester | 1 | For PoE camera troubleshooting (Jakarta) |
-| USB cable tester | 1 | For camera cable troubleshooting (Sukabumi) |
+| Ethernet cable tester | 1 | For PoE camera troubleshooting (both sites) |
 | Headlamp or flashlight | 1 | For enclosure work |
 | Cable ties (assorted) | 1 bag | Cable management |
 | Electrical tape | 2 rolls | |
@@ -194,34 +193,30 @@ Keep the following at the local PMI office for field service. Covers both Sukabu
 | Raspberry Pi 5 | 1 | Shared spare |
 | Witty Pi 5 HAT+ | 1 | Shared spare |
 | GPIO terminal block riser | 1 | |
-| M.2 SSD (512GB) + USB enclosure | 1 | Pre-imaged with OS if possible |
+| Samsung FIT Plus 256GB USB flash drive | 1 | Pre-imaged with OS if possible |
 | SD card (32GB) with OS image | 2 | For quick Pi recovery |
 | Quectel EG25-G modem + PU201 | 1 | Shared spare |
 | LTE antenna | 2 | |
 | USB-RS485 adapter | 1 | |
-| Status display (OLED/LCD) | 1 | |
+| IP67 panel-mount LEDs (Red/Yellow/Green) | 1 set | Status indication |
 | Maintenance mode button/switch | 1 | |
 | Inline fuse holders + fuses (5A, 10A) | 5 each | |
 | Cable glands (M12, M16, M20) | 3 each | |
 | Terminal blocks | 6 | Type TBD pending mounting research |
 | **Mounting hardware** | 1 kit | DIN rail clips, standoffs, stainless hardware |
-| Tipping bucket rain gauge | 1 | Spare for either site (DFRobot or Misol) |
+| Hydreon RG-15 rain gauge | 1 | Spare for either site |
 | Silicone sealant (outdoor) | 1 tube | |
 | Dielectric grease | 1 tube | |
 | GORE vents (M12) | 2 | |
 
-### Spare Parts - Sukabumi (USB Camera / Solar)
+### Spare Parts - Sukabumi (PoE Camera / Solar)
 
 | Item | Qty | Notes |
 |------|-----|-------|
-| USB camera (same model as installed) | 1 | |
-| Gore vent camera housing | 1 | VA Imaging or Entaniya (match installed) |
-| Gore protective vent | 2 | |
-| ~~Desiccant packs~~ | ~~4~~ | **NOT NEEDED** - see Phase 1 humidity decision |
-| USB cable (outdoor-rated, same length) | 2 | |
-| IR flood light (with dusk sensor) | 1 | |
-| USB-powered relay module | 1 | |
-| 12V photoresistor relay (if used) | 1 | |
+| PoE camera (same model as installed) | 1 | ANNKE C1200 (spare from 2-pack) |
+| Cat6 outdoor cable (30m) | 1 | |
+| IP68 RJ45 feedthrough connector | 2 | |
+| PoE injector (Planet IPOE-260-12V) | 1 | Shared spare with Jakarta |
 
 ### Spare Parts - Jakarta (PoE Camera / AC Power)
 
@@ -276,74 +271,26 @@ Keep the following at the local PMI office for field service. Covers both Sukabu
 ### Phase 2: Sukabumi BOM Development
 
 #### 2.1 Compute Platform
-- [ ] Raspberry Pi 5 (4GB minimum, 8GB preferred for ORC)
-- [ ] Witty Pi 5 HAT+ for scheduling + RTC (~$46, I2C-only design enables clean stacking with Pi-EzConnect)
-- [ ] **GPIO terminal block riser** - Mounts on top of Witty Pi 5 HAT+, exposes GPIO as screw terminals for future expansion (relay control, sensors, etc.)
-- [ ] M.2 SATA SSD (512GB) + USB enclosure
-- [ ] Quectel EG25-G modem + PU201 adapter (verify Indonesian carrier bands)
-- [ ] LTE antenna (2x) + SMA bulkhead connectors
-- [ ] USB-RS485 adapter for Modbus interface
-- [ ] **Status display** - OLED, LCD, or LED indicators (research options)
-- [ ] **Maintenance mode input** - IP67 button, switch, or magnetic sensor (research options)
+- [x] Raspberry Pi 5 8GB
+- [x] Witty Pi 5 HAT+ for scheduling + RTC
+- [x] Adafruit Pi-EzConnect (GPIO terminal block riser)
+- [x] Samsung FIT Plus 256GB USB flash drive (IP67, plugs directly into Pi)
+- [x] Quectel EG25-G modem + PU201 adapter
+- [x] Proxicast ANT-122-S02 MIMO LTE puck antenna (IP67, eliminates SMA bulkhead connectors)
+- [x] USB-RS485 adapter for Modbus/rain gauge
+- [x] 3× IP67 panel-mount LEDs (Red/Yellow/Green)
+- [x] IP67 momentary pushbutton for maintenance mode
 
-#### 2.2 Camera System (Gore Vent Approach)
-- [ ] Select housing: VA Imaging MVEC167 ($100) vs Entaniya WC-01 ($40)
-- [ ] Select USB camera: ELP 4K IMX317 or Arducam 8MP IMX219
-- [ ] Gore protective vents (M12 screw-in)
-- [ ] **Moisture management strategy** - see design question below
-- [ ] USB cables (outdoor-rated, appropriate length)
+#### 2.2 PoE Camera System
+- [x] PoE camera: ANNKE C1200 (12MP, built-in IR LEDs) - 1 installed, 1 spare from 2-pack
+- [x] Planet IPOE-260-12V PoE injector (native 12V input from solar battery)
+- [x] Outdoor Cat6 shielded cable
+- [x] IP68 RJ45 waterproof couplers
+- [x] Pole mount bracket (stainless steel)
 
-**DESIGN QUESTION: Desiccant in Gore-vented housing?**
+**Power-Cycled Operation:** PoE injector powered from same switched 12V circuit as Pi. Camera boots when Pi wakes (~45-60s boot time), captures, then powers down with Pi sleep cycle. Active phase extended to ~150s per cycle to accommodate boot + capture + upload.
 
-Opening the enclosure in tropical humidity (90%+) to change desiccant defeats the purpose - you introduce the humid air you're trying to exclude. This is how the original Sukabumi unit failed.
-
-Options to evaluate:
-
-| Option | Pros | Cons |
-|--------|------|------|
-| **No desiccant, Gore vent only** | No maintenance, no field opening needed | Interior matches ambient humidity; relies on camera being humidity-tolerant |
-| **Sealed enclosure + desiccant (no vent)** | Keeps interior dry | Pressure changes stress seals; must open to service |
-| **Externally-accessible desiccant cartridge** | Can swap without opening main compartment | Requires housing with separate desiccant compartment; may not exist commercially |
-| **Self-regenerating desiccant with heater** | Automatic, no maintenance | Adds power draw, complexity, heat near camera |
-| **Assembly-only desiccant** | Simple; desiccant handles initial assembly moisture | Accept that over time interior equilibrates with ambient; Gore vent prevents rapid condensation |
-
-**Recommendation to research:** Can USB cameras (IMX317/IMX219 sensors) operate reliably at 80-95% RH without condensation on the sensor? If yes, "Gore vent only" (no desiccant, no field opening) may be sufficient - the vent prevents rapid pressure/temp condensation events while accepting ambient humidity levels.
-
-#### 2.3 IR Illumination
-
-**WARNING: Current DESIGN_SPECS.md IR solution requires cable cutting and custom wiring. Needs redesign for commodity approach.**
-
-**Design Parameters:**
-
-| Parameter | Requirement |
-|-----------|-------------|
-| Control logic | IR light ON when: (1) Pi USB port has power AND (2) photosensor detects darkness |
-| Pi power sensing | Must detect 5V presence on Pi USB port WITHOUT cutting cables |
-| Light sensing | Photoresistor or similar, adjustable threshold for dusk detection |
-| Assembly | Screw terminals or plug-in connections ONLY - no soldering, no cable cutting |
-| Serviceability | Field-replaceable with common tools |
-
-**Preferred Approach: IR light with built-in dusk sensor**
-
-Simplest solution - only one relay needed:
-- **USB-powered relay** plugs into Pi USB port, closes contacts when Pi is powered
-- **IR flood light with built-in dusk sensor** handles day/night logic internally
-- Relay contacts switch 12V power to light
-- Light only illuminates when: Pi is ON (relay closed) AND light's sensor detects darkness
-
-This eliminates the need for a separate photoresistor module.
-
-**Alternative Approach (if no suitable IR light found):**
-
-Two relays in series:
-1. USB-powered relay (closes when Pi powered)
-2. Photoresistor relay module (closes when dark)
-
-Components to research:
-- [ ] **850nm IR flood light with built-in dusk sensor** (12V, 20-30W, IP65) - PREFERRED
-- [ ] **USB-powered relay module** - Plugs into Pi USB, closes contacts when powered, screw terminals for 12V output
-- [ ] Photoresistor relay module (ONLY if IR light lacks built-in sensor) - 12V input, screw terminals, adjustable threshold
-- [ ] Inline fuse holder (pre-wired, screw terminal)
+**IR Illumination:** Built-in IR LEDs on ANNKE C1200 handle day/night automatically. No separate IR illuminator or relay needed.
 
 #### 2.4 Enclosure & Mounting
 - [ ] Small enclosure for Pi/electronics (sized to fit within existing power box, or separate)
@@ -360,9 +307,9 @@ Components to research:
 - [ ] Application brush or spray
 
 #### 2.6 Rain Gauge
-- [ ] Tipping bucket rain gauge - DFRobot SEN0575 (~$30) or Misol WH-SP-RG (~$20)
-- [ ] Mounting bracket/pole mount for rain gauge
-- [ ] Cable run from gauge to enclosure (2-wire for pulse output)
+- [x] Hydreon RG-15 optical rain gauge (~$99) - solid-state, no moving parts, self-cleaning
+- [x] RS232 TTL 3.3V output connects directly to Pi UART via Pi-EzConnect terminals
+- [x] Built-in mounting holes (no separate bracket needed)
 
 ### Phase 3: Jakarta BOM Development
 
@@ -398,9 +345,9 @@ Components to research:
 - [ ] Grounding system (rod, cable, lugs)
 
 #### 3.6 Rain Gauge
-- [ ] Tipping bucket rain gauge - DFRobot SEN0575 (~$30) or Misol WH-SP-RG (~$20)
-- [ ] Mounting bracket/pole mount for rain gauge
-- [ ] Cable run from gauge to enclosure (2-wire for pulse output)
+- [x] Hydreon RG-15 optical rain gauge (~$99) - solid-state, no moving parts, self-cleaning
+- [x] RS232 TTL 3.3V output connects directly to Pi UART via Pi-EzConnect terminals
+- [x] Built-in mounting holes (no separate bracket needed)
 
 ### Phase 4: Validation
 
@@ -443,17 +390,18 @@ These decisions affect multiple downstream choices. Complete first.
 
 **Jakarta humidity protection:**
 - Silicone conformal coating (MG 422C) on all PCBs
-- 5-7W PTC heater in camera housing (thermostat @ 28°C)
-- 10-15W PTC heater in compute enclosure (hygrostat @ 70% RH)
+- PTC heaters in compute enclosure for nighttime humidity control
 - Gore M12 vents for pressure equalization
 - NO desiccant
+- PoE cameras are factory-sealed IP67 - no additional camera housing protection needed
 
 **Sukabumi humidity protection:**
 - Silicone conformal coating (MG 422C) on all PCBs
 - Gore M12 vents for pressure equalization
 - NO heaters (power budget constraint)
 - NO desiccant
-- Accept higher failure risk; budget for replacement parts
+- PoE camera is factory-sealed IP67 - no additional camera housing protection needed
+- Accept higher failure risk for compute enclosure; budget for replacement parts
 
 **Research documents:**
 - `research/internal_mounting_solutions_research.md`
@@ -502,48 +450,39 @@ Status display and maintenance mode - common to both sites.
 
 ---
 
-### Phase 3: Sukabumi-Specific (USB Camera / Solar) ✅ COMPLETE
+### Phase 3: Sukabumi-Specific (PoE Camera / Solar) ✅ COMPLETE (UPDATED)
 
-Depends on Phase 1 decisions.
+Depends on Phase 1 decisions. **Updated January 2026: Switched from USB camera to PoE camera approach.**
 
 | # | Topic | Question to Answer | Deliverable | Status |
 |---|-------|-------------------|-------------|--------|
-| 3.1 | **IR control solution** | Find USB-powered relay + IR light with dusk sensor | Specific products that require NO cable cutting | ✅ Tendelux AI4 + Numato USB relay |
-| 3.2 | **USB camera selection** | Which camera? Is it IR-sensitive? | Product recommendation with IR capability confirmation | ✅ Custom ELP/SVPRO 8MP NoIR (contact vendor) |
-| 3.3 | **Gore vent housing** | VA Imaging vs Entaniya - which is better for tropics? | Comparison and recommendation | ✅ VA Imaging MVEC167 (aluminum) |
-| 3.4 | **USB cable quality** | What outdoor-rated USB cables exist? | Product options with length/price | ✅ Bulgin PX0840 IP67 or HDPE conduit |
+| 3.1 | **PoE camera selection** | Which factory-sealed PoE camera with built-in IR? | Product recommendation | ✅ ANNKE C1200 (12MP, built-in IR) |
+| 3.2 | **PoE power strategy** | How to power PoE from 12V solar? | PoE injector with native 12V input | ✅ Planet IPOE-260-12V |
+| 3.3 | **Power cycling** | Can camera boot fast enough for duty-cycled operation? | Boot time verification | ✅ ~45-60s boot, 150s active cycle |
 
-**Checkpoint 3:** ✅ APPROVED (January 8, 2026)
+**Checkpoint 3:** ✅ APPROVED (January 30, 2026) - Updated to PoE camera approach
 
 #### Phase 3 Decisions Summary
 
-**IR Illumination System:**
-- Tendelux AI4 850nm IR illuminator with built-in photocell (~$35)
-- Numato Lab 1-channel USB relay (~$32)
-- Python script + systemd service controls relay on boot
-- All screw terminal connections, no soldering
+**PoE Camera System:**
+- ANNKE C1200 PoE IP camera (12MP, 134° FOV, built-in IR LEDs)
+- Factory-sealed IP67 housing eliminates humidity concerns
+- 2-pack purchased: 1 installed, 1 spare
+- Same camera model as Jakarta site for parts commonality
 
-**USB Camera:**
-- Custom order: ELP or SVPRO 8MP IMX179 WITHOUT IR-cut filter
-- Contact: sales@elpcctv.com (request NoIR version, 115°+ wide angle)
-- Price: ~$70-100, lead time 2-6 weeks
-- **ACTION REQUIRED:** Contact vendor NOW for March/April delivery
+**PoE Power Strategy:**
+- Planet IPOE-260-12V PoE injector (native 12V input)
+- Powered from 12V solar battery via Witty Pi switched circuit
+- Camera power-cycled with Pi to conserve solar budget
 
-**Camera Housing:**
-- VA Imaging MVEC167 aluminum housing (~$100-150)
-- Aluminum preferred for heat dissipation in tropics
-- Add Gore M12 vent for pressure equalization
-
-**USB Cabling:**
-- 2-5m: Bulgin PX0840/A IP67 cable ($35-60)
-- >5m: USB over Cat6 extender ($150+)
-- Budget: Standard USB through HDPE conduit ($50-70)
+**Power Budget Impact:**
+- Higher than USB camera approach (~94 Wh/day vs ~47 Wh/day)
+- Still within solar capacity (200W panel generates ~720 Wh/day)
+- 3.2 days autonomy with 50Ah battery
 
 **Research documents:**
-- `research/ir_control_solution_research.md`
-- `research/usb_camera_ir_research.md`
-- `research/camera_housing_research.md`
-- `research/outdoor_usb_cable_research.md`
+- `research/poe_injector_research.md` (same as Jakarta)
+- BOM_Sukabumi.md Section 2 for full details
 
 ---
 
@@ -631,16 +570,17 @@ Lower priority. Can be deferred if needed.
 - Bands supported: B1, B3, B5, B8, B40 - covers all major carriers
 
 **Rain Gauge (BOTH SITES):**
-- Tipping bucket with pulse output (GPIO interrupt counting)
-- **DFRobot SEN0575** (~$30) - I2C/UART, Python libraries included
-- OR **Misol WH-SP-RG** (~$15-25) - simple pulse output, proven with Pi
-- Resolution: 0.2-0.3mm per tip (adequate for flood monitoring)
-- Connect to GPIO pin on Pi-EzConnect terminal block
+- **Hydreon RG-15** optical rain gauge (~$99)
+- Solid-state, no moving parts, self-cleaning lens
+- RS232 TTL 3.3V output connects directly to Pi UART
+- Resolution: 0.2mm or 0.02mm (configurable)
+- Very low power: ~150µA sleep, 15mA active
+- Operating temp: -40°C to +60°C
 
 **ORC Software:**
-- Hardware IR relay approach (Tendelux + Numato) bypasses need for software day/night switching
-- USB camera capture may need opencv/ffmpeg integration (~4-8 hrs work)
-- Test with actual hardware before deployment
+- PoE cameras with built-in IR handle day/night automatically - no software changes needed
+- Both sites now use identical PoE camera approach (ANNKE C1200)
+- RTSP capture via ffmpeg already supported in ORC
 
 **Research documents:**
 - `research/indonesian_cellular_research.md`
@@ -730,8 +670,8 @@ After all decisions are made.
 4. Check power consumption against budget
 
 ### Compatibility Verification
-1. USB cameras work with Pi 5 and V4L2/UVC
-2. PoE cameras support RTSP and work with ffmpeg
+1. PoE cameras (ANNKE C1200) support RTSP and work with ffmpeg
+2. Planet IPOE-260-12V works with native 12V input (both sites)
 3. Modem works with Indonesian carriers
 4. Witty Pi 5 HAT+ compatible with Pi 5
 
@@ -750,14 +690,11 @@ Based on research review, the following items may need attention:
 
 | Gap | Risk | Action Needed |
 |-----|------|---------------|
-| **IR control solution needs redesign** | High | Current DESIGN_SPECS.md approach requires cutting USB cables and custom wiring. Must find commodity alternative with screw terminals only |
-| **Desiccant strategy unresolved** | High | Opening enclosure in 90% humidity to swap desiccant defeats purpose. Need to determine: Gore vent only? Sealed + desiccant? Or camera must tolerate high humidity? |
-| **USB camera IR sensitivity** | Medium | USB cameras may not be IR-sensitive. Need NoIR sensor or verify IMX317/IMX219 can capture IR illumination |
-| **Camera housing thermal management** | Medium | VA Imaging aluminum housing recommended over plastic for tropical heat dissipation |
-| **USB cable quality** | Medium | Standard USB cables degrade outdoors. Need UV-resistant, outdoor-rated cables or run through conduit |
-| **Gore vent quantity** | Low | Need one vent per camera housing - verify housing has M12 vent port |
-| **IR illuminator aiming** | Low | If cameras are 2m apart, may need 2 IR lights or wide-angle flood |
-| **Assembly environment** | Medium | Gore vent cameras must be assembled in low-humidity environment - document procedure |
+| **PoE camera boot time** | Low | Camera needs ~45-60s to boot each cycle. Active phase extended to 150s. ✅ Resolved |
+| **Higher power consumption** | Low | PoE camera uses ~94 Wh/day vs ~47 Wh/day for USB. Solar capacity (720 Wh/day) is adequate. ✅ Resolved |
+| **Cat6 cable routing** | Low | Need UV-resistant outdoor Cat6 from enclosure to camera. ✅ In BOM |
+
+**Note:** Switching to factory-sealed PoE camera (ANNKE C1200) eliminates previous USB camera risks: IR sensitivity, Gore vent housing, humidity management, custom housing assembly.
 
 ### Jakarta Site
 
@@ -777,7 +714,7 @@ Based on research review, the following items may need attention:
 | **GPIO terminal block riser** | Medium | Need to source HAT/riser that exposes GPIO as screw terminals while Witty Pi 5 HAT+ is installed. Enables future expansion without resoldering |
 | **Modbus sensor details** | Medium | What device will connect via Modbus? Rain gauge? Water level sensor? External data logger? Need to specify interface requirements |
 | **SIM card strategy** | Medium | Pre-paid or postpaid? Which carrier? Data plan size? |
-| **ORC software compatibility** | Medium | Single-camera sites may need ORC modifications for day/night mode switching |
+| **ORC software compatibility** | Low | Both sites use PoE cameras with built-in IR - standard RTSP capture, no special day/night handling needed |
 | **Shipping strategy** | Low | Batteries/panels may need local sourcing per DESIGN_SPECS.md shipping section |
 | **Customs documentation** | Low | Prepare commercial invoices, HS codes, IMEI list for modems |
 
@@ -811,15 +748,13 @@ Key documents for BOM development:
 ### Creating Sukabumi BOM
 
 ```
-1. Start with compute platform (Pi 5, Witty Pi 5 HAT+, GPIO terminal block riser, SSD, modem)
-2. Research Gore vent housing options (VA Imaging vs Entaniya)
-3. Select USB camera (verify IR sensitivity)
-4. Research commodity IR control solution (NO cable cutting - screw terminals only)
-5. Size enclosure based on components
-6. Calculate power budget against existing 200W/50Ah system
-7. Add optional rain gauge if requested
-8. Get pricing from suppliers
-9. Review against guiding principles (no fabrication, commodity parts only)
+1. Start with compute platform (Pi 5, Witty Pi 5 HAT+, GPIO terminal block riser, USB flash drive, modem)
+2. Add PoE camera system (ANNKE C1200 + Planet IPOE-260-12V injector)
+3. Size enclosure based on components
+4. Calculate power budget against existing 200W/50Ah system
+5. Add rain gauge (Hydreon RG-15)
+6. Get pricing from suppliers
+7. Review against guiding principles (no fabrication, commodity parts only)
 ```
 
 ### Creating Jakarta BOM

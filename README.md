@@ -1,56 +1,84 @@
-# OpenRiverCam Lab Setup
+# OpenRiverCam - Indonesia Spring 2026 Deployment
 
-Documentation spot for my notes setting up NodeORC on a Raspberry Pi with solar and IR integration for unattended day and night river observations.
+River monitoring for flood early warning using camera-based surface velocity measurement. This repository tracks planning and documentation for the Spring 2026 deployment to Indonesia.
 
-## Tom's realizations
- - I need to have a place to send the data, so I need a LiveOpenRiverCam setup somewhere
+## Current Focus
 
-## Pi Setup
+**Trip:** March/April 2026
+**Sites:** Sukabumi (redeploy) + Jakarta (new install)
+**Budget:** $3,000 USD for both sites
+**Method:** Personal carry with humanitarian papers
 
-- Raspberry PI 5 8GB
-- Heat sink and PWM fan
-- RTC battery
+### Site Summary
 
-## OS Setup
-- Bookworm Lite (no GUI environment), running headless
-- Configuration via SSH
-- TODO: add instructions for cloning repo onto device
-- configure shell to autorun `source ~/orc/venv/bin/activate` on login
+| Site | Power | Camera | Status |
+|------|-------|--------|--------|
+| **Sukabumi** | Solar (existing 200W/50Ah) | USB + Gore vent housing | Replacing failed unit due to humidity damage |
+| **Jakarta** | AC utility + 24hr UPS | Factory-sealed PoE (2 cameras) | New training/demonstration site |
 
-### System packages (install with sudo apt install):
+### Planning Status
 
-  libcamera-apps
-  python3-libcamera
-  python3-kms++
-  python3-pip
-  python3-venv
-  python3-dev
-  libcap-dev
+- **Research phases 1-5:** Complete (mounting, humidity, UI, cameras, connectivity)
+- **BOMs:** In progress - site-specific bills of materials with pricing
+- **Travel/import strategy:** Documented - what to carry vs source locally
+- **Wiring diagrams:** Complete for both sites
 
-### requirements_camera.txt:
+## Repository Structure
 
-  picamera2>=0.3.12
-  opencv-python>=4.5.0
-  numpy>=1.21.0
-  pillow>=8.0.0
+### Active Work
 
-### Hardware setup commands:
-  # Enable camera and I2C
-  sudo raspi-config nonint do_camera 0
-  sudo raspi-config nonint do_i2c 0
+```
+spring_2026_ID/
+├── SITES.md                 # Site requirements and equipment lists
+├── TRAVEL_AND_IMPORT.md     # Customs, packing, local sourcing strategy
+├── BOM_Sukabumi.md/csv      # Bill of materials - solar site
+├── BOM_Jakarta.md/csv       # Bill of materials - AC power site
+├── BOM_Spares.md/csv        # Spare parts for PMI office
+├── diagrams/                # KiCad schematics and wiring diagrams
+├── docs/                    # Assembly and wiring documentation
+└── research/                # Technical research (25+ documents)
+```
 
-### # Set GPU memory to 128MB
-  echo 'gpu_mem=128' | sudo tee -a /boot/firmware/config.txt
+### Hardware Platform
 
-### Reboot required after hardware changes
-  sudo reboot
+```
+rc-box/
+├── DESIGN_SPECS.md          # Authoritative hardware specifications
+├── BOM_VERIFIED.md          # Reference BOM (PoE camera approach)
+└── research/                # Camera, power, enclosure research
+```
 
+### Survey Procedures
 
-## Installation Notes
+```
+survey/
+├── SURVEY_PROCESS_v2.md     # RTK survey field procedures
+├── SURVEY_DATA_PROCESSING.md # Post-processing workflows
+├── QGIS_Reproject_WGS84_to_UTM48S.md
+├── PPP_TRANSLATION.md       # Coordinate transformation
+└── QUICK_NOTES.md
+```
 
-1. Update OS
-2. Using a base directory of $HOME/orc
-3. Activate the camera using `sudo raspi-config nonint do_camera 0`
-4. Restart using `sudo reboot` or `sudo init 6`
-5. Verify environment using `test_environment.py`
-6. Verify camera using `test_camera.py`
+### Reference
+
+- **manual/** - Comprehensive humanitarian river monitoring manual (~280k words, 75+ files)
+- **prior_work/** - Archived documentation organized by topic
+
+## Key Decisions
+
+**Humidity management:**
+- Jakarta: Conformal coating + PTC heaters + Gore vents (full industrial approach)
+- Sukabumi: Conformal coating + Gore vents only (solar power constraint)
+
+**Camera strategy:**
+- Sukabumi: Custom NoIR USB camera in VA Imaging aluminum housing
+- Jakarta: ANNKE C1200 factory-sealed PoE cameras with built-in IR
+
+**IR illumination:** Tendelux AI4 with built-in photocell + Numato USB relay (no cable cutting)
+
+## Next Steps
+
+1. Finalize BOMs with current pricing and lead times
+2. Order long-lead items (custom NoIR camera needs 2-6 weeks)
+3. Request humanitarian letter from sponsoring organization
+4. Pre-configure and conformal coat electronics before travel

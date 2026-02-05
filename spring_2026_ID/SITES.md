@@ -21,11 +21,9 @@ Equipment for this site:
  - (optional) External rain gauge
 
 
- - Dual Gore vent camera enclosures
- - Dual USB cameras (IMX708 or equiv)
- - Dessicant packs
- - IR illuminator
- - Relay for controlling IR illuminator based on Pi's duty cycle
+ - 12v PoE injector (Planet IPOE-260-12V, native 12V input)
+ - 1 factory sealed PoE security camera (ANNKE C1200, 12MP, built-in IR)
+ - Pole mount for camera
 
 
 

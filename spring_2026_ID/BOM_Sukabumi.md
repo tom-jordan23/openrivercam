@@ -3,7 +3,7 @@
 
 **Site:** Sukabumi, Indonesia (foothills)
 **Power:** Solar (existing 200W panel / 50Ah battery - reused from failed unit)
-**Camera:** Single USB camera with IR night vision
+**Camera:** Single PoE IP camera (ANNKE C1200) with built-in IR
 **Purpose:** Replacement of failed river monitoring unit
 **Date:** January 9, 2026
 **Budget Target:** <$1,500 USD (half of $3,000 total for both sites)
@@ -12,12 +12,27 @@
 
 ## Design Approach
 
-**Humidity Protection Strategy:**
-- Silicone conformal coating (MG 422C) on all PCBs
-- Gore M12 vents for pressure equalization
-- NO PTC heaters (solar power budget constraint)
-- NO desiccant (ineffective at 95% RH with vents)
-- Accept higher failure risk; budget includes spare parts
+**Standalone Enclosure (deployable with or without outer box):**
+- **Primary enclosure:** VEVOR carbon steel hinged IP66 box (16×12×8" / 406×305×203mm) houses all electronics
+- Hinged door with lock for easy field access — no screws to remove
+- Includes removable galvanized mounting plate (backplate)
+- Fully self-contained: Pi stack, PoE injector, modem, USB flash drive, terminal blocks, status LEDs, pushbutton, antenna
+- Can be pole-mounted standalone at sites without an existing outer box
+- At Sukabumi: sits inside existing outer aluminum box for bonus physical protection
+- Gore vent for pressure equalization; all cables enter through IP68 cable glands
+
+**Camera Strategy:**
+- Factory-sealed PoE IP camera (ANNKE C1200, 12MP, built-in IR LEDs)
+- Planet IPOE-260-12V PoE injector powered from 12V solar battery
+- PoE injector power-cycled with Pi via Witty Pi schedule (camera boots each cycle)
+- 1 camera installed, 1 spare from 2-pack
+- Day/night configuration switching handled in ORC software
+
+**Humidity Protection Strategy (Layered):**
+1. **Primary:** IP66 sealed carbon steel enclosure with Gore vent
+2. **Secondary:** Silicone conformal coating (MG 422C) on all PCBs
+3. NO PTC heaters (solar power budget constraint)
+4. NO desiccant (ineffective at 95% RH)
 
 **Key Principles:**
 - Commodity electronics only (no custom PCBs)
@@ -30,14 +45,13 @@
 ## Component Categories
 
 1. [Compute Platform](#1-compute-platform)
-2. [Camera System](#2-camera-system)
-3. [IR Illumination](#3-ir-illumination)
-4. [User Interface](#4-user-interface)
-5. [Humidity Protection](#5-humidity-protection)
-6. [Enclosure & Mounting](#6-enclosure--mounting)
-7. [Rain Gauge](#7-rain-gauge)
-8. [Cables & Connectors](#8-cables--connectors)
-9. [Hardware & Fasteners](#9-hardware--fasteners)
+2. [PoE Camera System](#2-poe-camera-system)
+3. [User Interface](#3-user-interface)
+4. [Humidity Protection](#4-humidity-protection)
+5. [Enclosure & Mounting](#5-enclosure--mounting)
+6. [Rain Gauge](#6-rain-gauge)
+7. [Cables & Connectors](#7-cables--connectors)
+8. [Hardware & Fasteners](#8-hardware--fasteners)
 
 ---
 
@@ -48,65 +62,49 @@
 | **RPi5-8GB** | Raspberry Pi 5, 8GB RAM | 1 | $80.00 | $80.00 | Adafruit, CanaKit | MSRP, verify availability |
 | **WittyPi5** | Witty Pi 5 HAT+ (power mgmt, RTC, I2C-only) | 1 | $46.00 | $46.00 | UUGear | Per CLAUDE.md research |
 | **EZCONNECT** | Adafruit Pi-EzConnect (ID 2711, GPIO terminal block) | 1 | $19.95 | $19.95 | Adafruit | Stacks on Witty Pi 5 HAT+ |
-| **SSD-M2** | M.2 SATA SSD 512GB (ORICO or TEAMGROUP) | 1 | $50.00 | $50.00 | Amazon | Budget option (~$40-85 range) |
-| **SSD-ENC** | USB 3.0 to M.2 SATA enclosure | 1 | $15.00 | $15.00 | Amazon | Tool-free, aluminum preferred |
+| **USB-DRIVE** | Samsung FIT Plus 256GB USB 3.1 flash drive (MUF-256AB) | 1 | $25.00 | $25.00 | [Amazon](https://www.amazon.com/Samsung-MUF-256AB-AM-Plus-256GB/dp/B07D7Q41PM) | IP67 waterproof; 0-60°C operating; plugs directly into Pi USB-A |
 | **MODEM** | Quectel EG25-G LTE Cat 4 module | 1 | $35.00 | $35.00 | AliExpress, Mouser | Verify Indonesian bands |
 | **MODEM-USB** | PU201 USB adapter board for EG25-G | 1 | $15.00 | $15.00 | AliExpress | USB interface for modem |
-| **ANT-LTE** | 4G LTE antenna (SMA male, 3-5dBi) | 2 | $8.00 | $16.00 | Amazon | Main + diversity |
-| **ANT-BULK** | SMA bulkhead connector (female-female) | 2 | $4.00 | $8.00 | Amazon, DigiKey | Panel mount for antennas |
+| **ANT-PUCK** | Proxicast ANT-122-S02 2x2 MIMO LTE puck antenna (IP67, screw mount) | 1 | $65.00 | $65.00 | [Amazon](https://www.amazon.com/Proxicast-Profile-Omni-Directional-Screw-Mount-Antenna/dp/B07DDC9WV5) | Main + diversity in single sealed unit; 600-6000 MHz; eliminates bulkhead connectors |
 | **SD-CARD** | MicroSD card 32GB (SanDisk/Samsung) | 1 | $8.00 | $8.00 | Amazon | For OS boot |
 | **HEATSINK** | Heatsink for Raspberry Pi 5 | 1 | $8.00 | $8.00 | Included or Amazon | Active or passive |
 | **USB-RS485** | USB to RS485 converter (FTDI chip) | 1 | $18.00 | $18.00 | Amazon, DigiKey | For Modbus devices |
-| | | | **Subtotal** | **$318.95** | | |
+| | | | **Subtotal** | **$319.95** | | |
 
 **Notes:**
 - Pi 5 8GB preferred for ORC (4GB minimum would save ~$15)
 - Quectel EG25-G confirmed compatible with Telkomsel (B1/B3/B5/B8/B40)
-- SSD provides storage for ~2 weeks of video at 5s/15min capture rate
+- Samsung FIT Plus 256GB: IP67 waterproof, 0-60°C operating, 5-year warranty; plugs directly into USB-A port (no enclosure needed)
+- 256GB provides storage for weeks of video buffer at 5s/15min capture rate
 - Witty Pi 5 HAT+ provides scheduling, RTC, and low-power sleep
 - Pi-EzConnect enables future sensor expansion via screw terminals
+- Proxicast ANT-122-S02 replaces basic stick antennas + bulkhead connectors; IP67 sealed screw-mount puck eliminates connector corrosion failure point; same model used at Jakarta site (see `research/lte_antenna_weatherproof_research.md`)
 
 ---
 
-## 2. Camera System
+## 2. PoE Camera System
 
 | Item | Description | Qty | Unit Price | Ext. Price | Source | Notes |
 |------|-------------|-----|------------|------------|--------|-------|
-| **CAM-USB** | Custom 8MP IMX179 NoIR USB camera (ELP/SVPRO) | 1 | $85.00 | $85.00 | ELP (sales@elpcctv.com) | **LONG LEAD TIME: Order now for March/April delivery** |
-| **CAM-HOUSING** | VA Imaging MVEC167 aluminum camera housing | 1 | $125.00 | $125.00 | VA Imaging | Aluminum for heat dissipation |
-| **VENT-CAM** | Gore M12 protective vent (screw-in) | 1 | $12.00 | $12.00 | DigiKey, Mouser | Pressure equalization |
-| **USB-CABLE** | Bulgin PX0840 IP67 USB cable (2-3m) | 1 | $45.00 | $45.00 | DigiKey, Newark | Or HDPE conduit option |
-| | | | **Subtotal** | **$267.00** | | |
+| **CAM-001** | ANNKE C1200 PoE IP Camera (12MP, 134° FOV, 2-pack) | 1 | $119.99 | $119.99 | [Amazon](https://www.amazon.com/ANNKE-Security-Surveillance-Detection-Spotlight/dp/B0DBHRMT1V) | 1 camera installed, 1 spare; built-in IR LEDs for night vision |
+| **CAM-002** | Planet IPOE-260-12V PoE Injector (2-port, 60W, 12V input) | 1 | $164.00 | $164.00 | [Planet Technology](https://planetechusa.com/product/ipoe-260-12v-industrial-2-port-10-100-1000t-802-3at-poe-injector-hub-12v-booster/) | Native 12V input from solar battery; power-cycled with Pi |
+| **CAM-004** | Outdoor Cat6 Shielded Cable (300ft, UV-resistant) | 1 | $79.99 | $79.99 | [Amazon](https://www.amazon.com/s?k=outdoor+Cat6+shielded+cable+300ft+UV) | Camera cabling |
+| **CAM-005** | IP68 RJ45 Waterproof Coupler (2-pack) | 1 | $12.99 | $12.99 | [Amazon](https://www.amazon.com/s?k=IP68+RJ45+coupler+waterproof) | Weatherproof connections |
+| **CAM-006** | Camera Pole Mount Bracket (stainless, 2-pack) | 1 | $22.99 | $22.99 | [Amazon](https://www.amazon.com/s?k=camera+pole+mount+bracket+stainless) | Camera mounting |
+| | | | **Subtotal** | **$399.96** | | |
 
 **Notes:**
-- **CRITICAL ACTION:** Contact ELP/SVPRO NOW - custom NoIR orders take 2-6 weeks
-- Request: 8MP IMX179 sensor WITHOUT IR-cut filter, 115°+ wide angle lens
-- Alternative budget option: Standard USB in HDPE conduit through sealed gland (~$50 total)
-- VA Imaging aluminum housing preferred over plastic (Entaniya) for tropical heat
-- Gore vent essential for pressure equalization; prevents seal stress from temperature swings
+- **Power-cycled operation:** PoE injector powered from same switched 12V circuit as Pi. Camera boots when Pi wakes, captures, then powers down with Pi sleep cycle.
+- **Camera boot time:** ~45-60 seconds. Active phase extended to ~150s per cycle to accommodate boot + capture + upload.
+- **Built-in IR:** ANNKE C1200 has integrated IR LEDs with automatic day/night switching. No separate IR illuminator or relay needed.
+- **Day/night config:** ORC software will handle switching between day and night capture configurations.
+- **1 camera installed** at Sukabumi (single viewpoint). Second camera from 2-pack kept as spare at PMI office.
+- Same camera model as Jakarta site for parts commonality.
+- Pre-configure camera before deployment: set static IP, enable RTSP, set credentials.
 
 ---
 
-## 3. IR Illumination
-
-| Item | Description | Qty | Unit Price | Ext. Price | Source | Notes |
-|------|-------------|-----|------------|------------|--------|-------|
-| **IR-LIGHT** | Tendelux AI4 850nm IR illuminator (built-in photocell) | 1 | $35.00 | $35.00 | Amazon | Day/night sensing integrated |
-| **RELAY-USB** | Numato Lab 1-channel USB relay module | 1 | $32.00 | $32.00 | Numato Lab, Amazon | Powers on with Pi boot |
-| **PWR-12V** | 12V power cable with screw terminals (18AWG, 2m) | 1 | $8.00 | $8.00 | Amazon | From solar controller to relay |
-| **FUSE-INLINE** | Inline fuse holder with 5A fuse (12V) | 1 | $6.00 | $6.00 | Amazon | Protection for IR circuit |
-| | | | **Subtotal** | **$81.00** | | |
-
-**Notes:**
-- Tendelux AI4 includes photocell - only illuminates at night automatically
-- Numato relay controlled by systemd service on Pi boot (closes circuit when Pi powered)
-- All screw terminal connections - NO soldering or cable cutting required
-- IR light powered from existing solar battery (minimal impact: ~15W × 8hr/night = 120Wh/day)
-- Total IR duty cycle: ~8hr night × 13% (Pi active time) = ~1hr/night actual runtime
-
----
-
-## 4. User Interface
+## 3. User Interface
 
 | Item | Description | Qty | Unit Price | Ext. Price | Source | Notes |
 |------|-------------|-----|------------|------------|--------|-------|
@@ -127,71 +125,99 @@
 
 ---
 
-## 5. Humidity Protection
+## 4. Humidity Protection
 
 | Item | Description | Qty | Unit Price | Ext. Price | Source | Notes |
 |------|-------------|-----|------------|------------|--------|-------|
-| **COAT-SIL** | MG Chemicals 422C silicone conformal coat (55ml) | 1 | $22.00 | $22.00 | DigiKey, Amazon | For 95%+ RH environments |
+| **COAT-SIL** | MG Chemicals 422C silicone conformal coat (55ml) | 1 | $22.00 | $22.00 | DigiKey, Amazon | Backup protection for PCBs |
 | **BRUSH** | Application brush (acid brush or fine bristle) | 2 | $2.00 | $4.00 | Hardware store | Clean, lint-free |
 | **MASK-TAPE** | Masking tape (low-tack, 1" width) | 1 | $4.00 | $4.00 | Hardware store | Protect connectors during coating |
-| **VENT-ENC** | Gore M12 protective vent (compute enclosure) | 2 | $12.00 | $24.00 | DigiKey, Mouser | 2× for larger enclosure |
 | **IPA-WIPES** | Isopropyl alcohol wipes (99%) | 1 | $8.00 | $8.00 | Amazon | Pre-coating cleaning |
-| | | | **Subtotal** | **$62.00** | | |
+| | | | **Subtotal** | **$38.00** | | |
 
 **Notes:**
-- Apply conformal coating to: Raspberry Pi 5, Witty Pi 5 HAT+, Pi-EzConnect, relay module
+- **Primary protection:** Sealed IP67 inner enclosure (see Section 6)
+- **Secondary protection:** Conformal coating on PCBs (belt-and-suspenders approach)
+- Apply conformal coating to: Raspberry Pi 5, Witty Pi 5 HAT+, Pi-EzConnect
 - MASK: All connectors (USB, HDMI, GPIO pins, SD card slot), heat sink contact areas
 - Apply in low-humidity environment (ideally <60% RH), allow 24hr cure before assembly
-- Gore vents provide pressure equalization without active humidity control
+- Gore vent on inner box (Section 6) provides pressure equalization
 - NO PTC heaters due to solar power budget constraint
-- NO desiccant (ineffective at 95% RH with vents per research)
+- NO desiccant (ineffective at 95% RH)
 
 ---
 
-## 6. Enclosure & Mounting
+## 5. Enclosure & Mounting
+
+**Standalone enclosure** capable of outdoor deployment with or without existing outer box. Houses all electronics except solar panel, charge controller, and battery.
 
 | Item | Description | Qty | Unit Price | Ext. Price | Source | Notes |
 |------|-------------|-----|------------|------------|--------|-------|
-| **ENC-COMPUTE** | Outdoor enclosure (300×200×150mm, polycarbonate) | 1 | $45.00 | $45.00 | Amazon | IP65+ rated, clear lid option |
-| **DIN-RAIL** | DIN rail 35mm × 300mm (aluminum) | 1 | $8.00 | $8.00 | Amazon, DigiKey | Internal mounting |
-| **CLIP-RPI** | DIN rail clip for Raspberry Pi | 1 | $6.00 | $6.00 | Amazon | Specific to Pi 5 form factor |
-| **CLIP-TERM** | DIN rail terminal block clips | 4 | $2.00 | $8.00 | Amazon, DigiKey | For various components |
-| **TERM-BLOCK** | Screw terminal blocks (2-12 position, assorted) | 1 | $15.00 | $15.00 | Amazon, DigiKey | Power distribution |
-| **GLAND-M12** | M12 cable gland (IP68) | 4 | $3.00 | $12.00 | Amazon | Camera, antenna, power |
-| **GLAND-M16** | M16 cable gland (IP68) | 2 | $3.50 | $7.00 | Amazon | USB cable, larger runs |
-| **GLAND-M20** | M20 cable gland (IP68) | 1 | $4.00 | $4.00 | Amazon | AC power inlet (if needed) |
-| **VELCRO-LOCK** | 3M Dual Lock reclosable fastener (25mm × 1m) | 1 | $12.00 | $12.00 | Amazon | For SSD, modem mounting |
-| **STANDOFFS** | M2.5/M3 standoff kit (brass or nylon) | 1 | $12.00 | $12.00 | Amazon | Backup mounting option |
-| | | | **Subtotal** | **$129.00** | | |
+| **ENCLOSURE** | | | | | | |
+| **ENC-001** | VEVOR carbon steel hinged IP66 enclosure (16×12×8" / 406×305×203mm) | 1 | $60.00 | $60.00 | [Amazon](https://www.amazon.com/dp/B0924DJGJ9) | Hinged door with lock; includes mounting plate |
+| **VENT-ENC** | Gore M12 protective vent | 1 | $12.00 | $12.00 | DigiKey, Mouser | Pressure equalization without humidity ingress |
+| **CABLE ENTRY** | | | | | | |
+| **ENC-004** | Cable Gland Assortment (PG9/PG13.5/PG16, 20-pack) | 1 | $18.99 | $18.99 | Amazon | Various cable entries |
+| **MOUNTING HARDWARE** | | | | | | |
+| **VELCRO-LOCK** | 3M Dual Lock reclosable fastener (25mm × 1m) | 1 | $12.00 | $12.00 | Amazon | Mount modem, PoE injector |
+| **STANDOFFS** | M2.5/M3 standoff kit (brass or nylon) | 1 | $12.00 | $12.00 | Amazon | Pi stack mounting |
+| **TERM-BLOCK** | Screw terminal blocks (2-8 position, assorted) | 1 | $10.00 | $10.00 | Amazon, DigiKey | Power distribution |
+| | | | **Subtotal** | **$124.99** | | |
 
 **Notes:**
-- DIN rail provides secure, vibration-resistant mounting (per internal mounting research)
-- Enclosure size accommodates: Pi stack, SSD, modem, relay, terminal blocks
-- Clear or windowed lid enables LED visibility without opening enclosure
-- Velcro/Dual Lock for items without mounting holes (SSD, modem USB adapter)
-- Consider mounting within or adjacent to existing solar controller enclosure
+
+**Enclosure Strategy:**
+- **VEVOR 16×12×8" carbon steel hinged enclosure** — hinged door with lock eliminates removing screws for field access
+- Includes removable galvanized mounting plate (backplate) for component mounting
+- 1.5mm cold-rolled steel, powder-coated, IP66/NEMA 4X rated
+- **Standalone-capable:** Can be wall/pole-mounted directly at sites without an existing outer enclosure
+- **At Sukabumi:** Sits inside existing outer aluminum box for bonus physical/weather protection
+- Components mounted with standoffs (Pi stack) and Velcro/Dual Lock (modem, PoE injector) on mounting plate
+- Samsung FIT Plus plugs directly into Pi USB-A port (no mounting needed)
+
+**Panel-Mount Components (drilled into enclosure lid or side):**
+- 3× 10mm holes for IP67 panel-mount LEDs (Red, Yellow, Green)
+- 1× 16mm hole for IP67 pushbutton
+- 1× 12mm hole for Proxicast antenna mount (1/2" + locking nut)
+- Cable glands for: 12V power in, Cat6 to camera, rain gauge cable
+- LED/button/antenna housings self-seal against panel
+
+**Antenna Mounting:**
+- Proxicast ANT-122-S02 screw-mounts to top surface of enclosure (single 1/2" / 12mm hole + locking nut)
+- 2× SMA cables route internally to Quectel EG25-G main + diversity ports
+- No external SMA bulkhead connectors needed (eliminates corrosion failure point)
+- Same antenna model used at Jakarta site for parts commonality
+
+**Cable Entry:**
+- PG9: Rain gauge serial + 12V (×1), 12V power in (×1), antenna (internal)
+- PG13.5/PG16: Cat6 to camera (×1)
+- Spare glands for future expansion
 
 ---
 
-## 7. Rain Gauge
+## 6. Rain Gauge
 
 | Item | Description | Qty | Unit Price | Ext. Price | Source | Notes |
 |------|-------------|-----|------------|------------|--------|-------|
-| **RAIN-GAUGE** | DFRobot SEN0575 I2C tipping bucket rain gauge | 1 | $30.00 | $30.00 | DFRobot, DigiKey | Python libraries included |
-| **MOUNT-RG** | Mounting bracket for rain gauge (stainless steel) | 1 | $8.00 | $8.00 | Amazon | Or fabricate from included hardware |
-| **CABLE-RG** | 2-conductor shielded cable (22AWG, 5m) | 1 | $10.00 | $10.00 | Amazon | I2C connection to Pi |
-| | | | **Subtotal** | **$48.00** | | |
+| **RAIN-GAUGE** | Hydreon RG-15 Optical Rain Gauge (solid-state, RS232 TTL 3.3V + pulse output) | 1 | $99.00 | $99.00 | [Hydreon Store](https://store.hydreon.com/RG-15.html) | No moving parts; self-cleaning lens; ±10% accuracy |
+| | | | **Subtotal** | **$99.00** | | |
 
 **Notes:**
-- Alternative: Misol WH-SP-RG (~$20, simple pulse output to GPIO)
-- DFRobot SEN0575 provides I2C interface, easier software integration
-- Resolution: 0.2-0.3mm per tip (adequate for flood monitoring)
-- Connect via Pi-EzConnect I2C screw terminals
+- **Solid-state optical sensor** — no tipping bucket, no moving parts, no clogging from tropical debris
+- Self-cleaning round lens surface discourages debris collection
+- **Dual output:** RS232 TTL at 3.3V (connects directly to Pi UART via EzConnect terminals) + open-collector pulse output emulating tipping bucket
+- Serial interface provides real-time rainfall rate, accumulated total, and configurable resolution (0.2mm or 0.02mm)
+- DIP switches for configuration (units, resolution, operating mode); also configurable via serial commands
+- Very low power: ~150µA sleep, 15mA active; well-suited to solar applications
+- Powered from 12V system supply (5-15V input range)
+- Built-in mounting holes — no separate bracket needed
+- Operating temp: -40°C to +60°C
 - Mount in open area away from structures (>2m from walls/trees)
+- Order direct from Hydreon (US-based); Amazon third-party sellers charge 2x+ markup
 
 ---
 
-## 8. Cables & Connectors
+## 7. Cables & Connectors
 
 | Item | Description | Qty | Unit Price | Ext. Price | Source | Notes |
 |------|-------------|-----|------------|------------|--------|-------|
@@ -212,7 +238,7 @@
 
 ---
 
-## 9. Hardware & Fasteners
+## 8. Hardware & Fasteners
 
 | Item | Description | Qty | Unit Price | Ext. Price | Source | Notes |
 |------|-------------|-----|------------|------------|--------|-------|
@@ -237,23 +263,19 @@
 
 | Category | Subtotal |
 |----------|----------|
-| 1. Compute Platform | $318.95 |
-| 2. Camera System | $267.00 |
-| 3. IR Illumination | $81.00 |
-| 4. User Interface | $38.00 |
-| 5. Humidity Protection | $62.00 |
-| 6. Enclosure & Mounting | $129.00 |
-| 7. Rain Gauge | $48.00 |
-| 8. Cables & Connectors | $86.00 |
-| 9. Hardware & Fasteners | $69.00 |
-| **SUBTOTAL (Materials)** | **$1,098.95** |
-| Shipping & Handling (est. 10%) | $110.00 |
-| Customs/Import Duties (est. 5%) | $55.00 |
-| Contingency (10%) | $110.00 |
-| **TOTAL ESTIMATED COST** | **$1,373.95** |
+| 1. Compute Platform | $319.95 |
+| 2. PoE Camera System | $399.96 |
+| 3. User Interface | $38.00 |
+| 4. Humidity Protection | $38.00 |
+| 5. Enclosure & Mounting | $124.99 |
+| 6. Rain Gauge | $99.00 |
+| 7. Cables & Connectors | $86.00 |
+| 8. Hardware & Fasteners | $69.00 |
+| **TOTAL (Materials)** | **$1,174.90** |
 
 **Budget Status:** ✅ Within $1,500 target for Sukabumi site
-**Remaining Budget (of $3,000 total):** ~$1,626 for Jakarta site + shared spares
+**Remaining Budget (of $3,000 total):** ~$1,825 for Jakarta site + shared spares
+**Note:** Equipment travels with installer under humanitarian exemption — no shipping, customs, or contingency costs.
 
 ---
 
@@ -267,14 +289,18 @@
 ### Daily Power Consumption Estimate
 
 **Active Phase (15-minute cycle, 96 cycles/day):**
+
+Note: Active phase is ~150s per cycle to accommodate PoE camera boot time (~45-60s) + capture (5s) + upload.
+
 | Component | Power | Duration/Cycle | Energy/Cycle | Daily (96 cycles) |
 |-----------|-------|----------------|--------------|-------------------|
-| Raspberry Pi 5 (active) | 8W | 90s | 0.20 Wh | 19.2 Wh |
-| SSD | 2W | 90s | 0.05 Wh | 4.8 Wh |
-| USB Camera | 2.5W | 5s | 0.003 Wh | 0.3 Wh |
+| Raspberry Pi 5 (active) | 8W | 150s | 0.33 Wh | 32.0 Wh |
+| USB flash drive | 0.5W | 150s | 0.02 Wh | 2.0 Wh |
+| PoE Camera (via injector) | 8W | 150s | 0.33 Wh | 32.0 Wh |
+| PoE Injector (overhead) | 5W | 150s | 0.21 Wh | 20.0 Wh |
 | LTE Modem (upload) | 3W | 30s | 0.025 Wh | 2.4 Wh |
-| Witty Pi 5 (active) | 0.5W | 90s | 0.0125 Wh | 1.2 Wh |
-| **Active subtotal** | | | | **27.9 Wh/day** |
+| Witty Pi 5 (active) | 0.5W | 150s | 0.021 Wh | 2.0 Wh |
+| **Active subtotal** | | | | **90.4 Wh/day** |
 
 **Sleep Phase:**
 | Component | Power | Duration | Daily Energy |
@@ -283,28 +309,21 @@
 | LTE Modem (standby) | 0.1W | 24 hr | 2.4 Wh |
 | **Sleep subtotal** | | | **2.96 Wh/day** |
 
-**IR Illumination (nighttime only):**
-| Component | Power | Duration | Daily Energy |
-|-----------|-------|----------|--------------|
-| IR Light (Tendelux AI4) | 15W | ~1 hr (actual runtime) | 15 Wh |
-| Relay (closed) | 0.5W | ~1 hr | 0.5 Wh |
-| **IR subtotal** | | | **15.5 Wh/day** |
-
 **LED Status Indicators:**
 | Component | Power | Duration | Daily Energy |
 |-----------|-------|----------|--------------|
 | 1× LED (average) | 0.02W | 24 hr | 0.48 Wh |
 
-**TOTAL DAILY CONSUMPTION:** ~46.8 Wh/day
+**TOTAL DAILY CONSUMPTION:** ~93.8 Wh/day
 
 **Solar Generation (Sukabumi - foothills, decent sun):**
 - 200W panel × 4.5 peak sun hours × 0.8 efficiency = ~720 Wh/day
-- **Margin:** 720 Wh generation - 47 Wh consumption = **673 Wh surplus**
+- **Margin:** 720 Wh generation - 94 Wh consumption = **626 Wh surplus**
 
 **Battery Runtime (no sun):**
-- 300 Wh usable ÷ 47 Wh/day = **6.4 days autonomy**
+- 300 Wh usable ÷ 94 Wh/day = **3.2 days autonomy**
 
-**Status:** ✅ Excellent power budget margin. System can run indefinitely on existing solar setup.
+**Status:** ✅ Good power budget margin. Higher than USB camera approach (~47 Wh/day) but still well within solar capacity. Power-cycling the PoE camera with Pi keeps consumption manageable.
 
 ---
 
@@ -314,14 +333,13 @@
 
 | Item | Lead Time | Action Required |
 |------|-----------|-----------------|
-| **Custom USB Camera (ELP/SVPRO)** | 2-6 weeks | Contact sales@elpcctv.com NOW. Specify: 8MP IMX179 NoIR (no IR-cut filter), 115°+ wide angle lens, USB interface |
-| **VA Imaging MVEC167 Housing** | 2-4 weeks | Contact VA Imaging for quote/availability |
 | **Witty Pi 5 HAT+** | 1-2 weeks | Order from UUGear (stock availability varies) |
 | **Quectel EG25-G + PU201** | 2-4 weeks | AliExpress or Mouser (verify stock) |
+| **Planet IPOE-260-12V** | 1-2 weeks | Check Planet Technology distributor stock |
 
 ### Standard Lead Time (1-2 weeks)
 
-All other components available from Amazon, DigiKey, Mouser with standard shipping.
+All other components (ANNKE cameras, Cat6 cable, enclosures, etc.) available from Amazon, DigiKey, Mouser with standard shipping.
 
 ---
 
@@ -346,37 +364,17 @@ All other components available from Amazon, DigiKey, Mouser with standard shippi
 - Raspberry Pi 5 (may not be available in Indonesia)
 - Witty Pi 5 HAT+ (specialty item)
 - Adafruit Pi-EzConnect (specialty item)
-- Custom USB camera (already international shipping)
+- ANNKE C1200 PoE camera (quality/warranty)
+- Planet IPOE-260-12V PoE injector (specialty item)
 - Conformal coating (specific product required)
-- Quality LTE antennas (counterfeit risk locally)
-- Numato USB relay (specialty item)
-- Tendelux IR illuminator (quality/warranty)
+- Proxicast ANT-122-S02 LTE antenna (specialty item, counterfeit risk locally)
+- Hydreon RG-15 rain gauge (specialty item, order direct from Hydreon)
 
 ---
 
-## Customs & Import Considerations
+## Import Notes
 
-### Documentation Required
-
-| Document | Purpose |
-|----------|---------|
-| Commercial invoice | Detailed item list with values |
-| Packing list | Box contents, weights |
-| Equipment manifest | Serial numbers (Pi, modem IMEI) |
-| PMI letter of introduction | Humanitarian/research purpose |
-
-### Estimated Import Duties (Indonesia)
-
-- Electronics: 0-10% depending on classification
-- Cameras: 0-5% (professional equipment)
-- Batteries: May have restrictions (verify current regulations)
-- **Strategy:** Declare as "professional monitoring equipment for humanitarian installation"
-
-### Customs Value Declaration
-
-- Use actual purchase prices (not retail)
-- Include BOM spreadsheet as supporting documentation
-- Highlight non-commercial nature (replacement of failed unit)
+Equipment travels with installer under humanitarian exemption. No shipping or customs duties apply.
 
 ### IMEI Registration
 
@@ -390,7 +388,7 @@ All other components available from Amazon, DigiKey, Mouser with standard shippi
 
 ### Pre-Deployment Preparation (US - Low Humidity Environment)
 
-1. **Apply conformal coating** to all PCBs (Pi 5, Witty Pi 5, Pi-EzConnect, relay)
+1. **Apply conformal coating** to all PCBs (Pi 5, Witty Pi 5, Pi-EzConnect)
    - Mask all connectors, GPIO pins, SD card slot
    - Apply thin, even coat of MG 422C silicone
    - Allow 24hr cure in <60% RH environment
@@ -398,56 +396,64 @@ All other components available from Amazon, DigiKey, Mouser with standard shippi
 
 2. **Test compute stack** before coating
    - Verify Pi 5 boots, SSD recognized, modem connects
-   - Test ORC software with USB camera
+   - Test ORC software with PoE camera (verify RTSP capture)
    - Verify Witty Pi 5 scheduling works
-   - Test GPIO control of LEDs and relay
+   - Test GPIO control of LEDs
 
 3. **Pre-configure software**
-   - Install ORC, configure for single camera
+   - Install ORC, configure for single PoE camera
    - Set up Witty Pi 5 schedule (15-minute wake cycles)
-   - Configure IR relay control service
+   - Configure day/night capture settings in ORC
    - Test maintenance mode WiFi hotspot
    - Pre-load Indonesian SIM config (if known)
 
-4. **Assemble camera module** (if possible in controlled environment)
-   - Install USB camera in VA Imaging housing with Gore vent
-   - Include small silica gel packet (one-time, for shipping)
-   - Seal and test before shipping
+4. **Pre-configure PoE camera**
+   - Set static IP address, enable RTSP, set credentials
+   - Test ONVIF discovery
+   - Verify built-in IR LEDs activate in darkness
 
 ### Field Assembly (Indonesia)
 
-1. **Mount components to DIN rail** inside enclosure
-   - Pi 5 stack (with coated PCBs)
-   - Terminal blocks
-   - Relay module
-   - SSD (Velcro mount)
-   - Modem (Velcro mount)
+1. **Mount components** inside enclosure
+   - Pi 5 stack on standoffs (with coated PCBs)
+   - Terminal blocks on enclosure wall or base
+   - PoE injector (Velcro/Dual Lock mount)
+   - Modem (Velcro/Dual Lock mount)
+   - Samsung FIT Plus plugs directly into Pi USB-A port
 
-2. **Wire power distribution**
-   - 12V from solar controller to terminal blocks
+2. **Drill panel holes** in enclosure lid or side
+   - 3× 10mm holes for IP67 LEDs
+   - 1× 16mm hole for IP67 pushbutton
+   - 1× 12mm hole for Proxicast antenna mount
+   - Cable gland holes per gland sizes
+
+3. **Wire power distribution**
+   - 12V from solar controller to terminal blocks (via cable gland)
    - USB-C power to Pi 5 (via terminal block or direct)
-   - 12V to IR relay circuit with inline fuse
+   - 12V to PoE injector (power-cycled with Pi via Witty Pi or shared switched circuit)
 
-3. **Connect peripherals**
-   - USB camera, modem, relay, SSD to Pi 5
-   - LTE antennas through bulkhead connectors
-   - Rain gauge I2C to Pi-EzConnect terminals
-   - LEDs to GPIO via Pi-EzConnect terminals
-   - Pushbutton to GPIO via Pi-EzConnect terminals
+4. **Connect peripherals**
+   - Modem to Pi 5 via USB
+   - Samsung FIT Plus into Pi 5 USB-A port
+   - Proxicast ANT-122-S02 cables to modem SMA ports (main + diversity)
+   - Cat6 from PoE injector to camera (via cable gland)
+   - Rain gauge serial TX/RX + 12V power to Pi-EzConnect UART terminals (via cable gland)
+   - LEDs and pushbutton wired to GPIO via Pi-EzConnect terminals
 
-4. **Mount camera and IR illuminator** on pole
-   - Use stainless U-bolt clamps
-   - Run USB cable through conduit or use IP67 cable
-   - Mount Tendelux IR adjacent to camera
-   - Apply dielectric grease to all outdoor connectors
+5. **Mount camera** on pole
+   - Use stainless U-bolt clamps and pole mount bracket
+   - Run Cat6 cable through conduit or direct with UV protection
+   - Apply dielectric grease to outdoor RJ45 connections
+   - Use IP68 waterproof coupler at camera connection
 
 5. **System test**
    - Verify Pi boots and LEDs indicate status
-   - Test camera capture
-   - Test IR illumination (cover photocell to simulate darkness)
+   - Test PoE camera capture via RTSP
+   - Verify camera IR LEDs activate in darkness (cover lens to test)
    - Verify LTE connectivity (may need IMEI registration first)
-   - Test rain gauge pulse counting
+   - Test rain gauge serial communication (RS232 TTL over Pi UART)
    - Test maintenance mode (button press)
+   - Verify PoE injector powers off during Pi sleep cycle
 
 6. **Seal enclosure**
    - Apply silicone sealant around cable glands
@@ -468,9 +474,10 @@ All other components available from Amazon, DigiKey, Mouser with standard shippi
 ### Likely Failure Points
 
 1. **SD card** - Most common failure (write wear)
-2. **USB camera** - High humidity exposure
-3. **LTE antennas** - UV degradation, connector corrosion
-4. **Cable glands** - Gasket degradation from UV/ozone
+2. **PoE camera** - Factory-sealed IP67, but outdoor exposure; spare available from 2-pack
+3. **LTE antenna** - Mitigated by Proxicast ANT-122-S02 sealed puck (IP67); main risk is cable damage
+4. **Cat6 cable** - UV degradation if conduit not used
+5. **Cable glands** - Gasket degradation from UV/ozone
 
 ### Spare Parts (Keep at PMI Office)
 
@@ -479,11 +486,11 @@ See CLAUDE.md "Tools & Spares Inventory" section for comprehensive list. Key spa
 - Raspberry Pi 5 (1× shared with Jakarta)
 - Witty Pi 5 HAT+ (1× shared)
 - MicroSD cards (2×, pre-imaged)
-- USB camera (1×, same model)
-- LTE antennas (2×)
-- Inline fuses (5×, various amperage)
+- ANNKE C1200 PoE camera (1× spare from 2-pack)
+- Proxicast ANT-122-S02 antenna (1×, spare)
+- Cat6 cable (spare length)
+- IP68 RJ45 couplers (spare)
 - Cable glands (3× each size)
-- USB cables (2×)
 
 ---
 
@@ -498,24 +505,24 @@ See CLAUDE.md "Tools & Spares Inventory" section for comprehensive list. Key spa
 
 ### Camera Not Capturing
 
-1. Verify USB cable connection
-2. Check camera power LED (if equipped)
-3. SSH into Pi, run `lsusb` to verify camera detected
-4. Check ORC logs: `/var/log/orc/`
-5. Test with `ffmpeg` or `v4l2-ctl --list-devices`
+1. Verify Cat6 cable connection at camera and PoE injector
+2. Check PoE injector status LEDs (verify 12V power to injector)
+3. Verify camera has IP address (check DHCP or static config)
+4. SSH into Pi, test RTSP stream: `ffmpeg -i rtsp://<camera-ip>/stream -frames 1 test.jpg`
+5. Check ORC logs: `/var/log/orc/`
+6. Verify camera boots within the active cycle window (~60s boot time)
 
-### IR Not Illuminating
+### Camera IR Not Working at Night
 
-1. Cover Tendelux photocell (should turn on in "night" mode)
-2. Check 12V power at IR light terminals
-3. Verify relay clicks when Pi boots (listen for audible click)
-4. Check fuse in IR circuit
-5. Test relay with multimeter (continuity when Pi powered)
+1. Block camera lens to simulate darkness (IR should activate automatically)
+2. Verify camera IR LED settings in web interface (may be disabled)
+3. Check ORC day/night configuration is set correctly
+4. Verify camera has sufficient PoE power (check injector port LEDs)
 
 ### No LTE Connectivity
 
 1. Verify SIM card installed and activated
-2. Check antenna connections (finger-tight on SMA)
+2. Check Proxicast puck antenna SMA connections to modem (finger-tight)
 3. Verify modem LED indicators
 4. May require IMEI registration with Indonesian telecom
 5. Check signal strength: `mmcli -m 0 --signal-get`
@@ -551,6 +558,17 @@ Deployment is successful when:
 
 | Date | Version | Changes | Author |
 |------|---------|---------|--------|
+| 2026-01-30 | 2.4 | Replaced DFRobot SEN0575 tipping bucket rain gauge with Hydreon RG-15 solid-state optical rain gauge ($99 vs $48) — no moving parts, self-cleaning, RS232 3.3V TTL direct to Pi UART, ±10% accuracy; removed mount bracket and cable (built-in mounting, powered from 12V system) | Claude (Opus 4.5) |
+| 2026-01-30 | 2.3 | Replaced M.2 SATA SSD + USB enclosure with Samsung FIT Plus 256GB USB flash drive — IP67, smaller, cheaper ($25 vs $65), no mounting needed | Claude (Opus 4.5) |
+| 2026-01-30 | 2.2 | Switched to VEVOR carbon steel hinged enclosure (16×12×8") — hinged door for field access, includes mounting plate; saves $30 vs cast aluminum | Claude (Opus 4.5) |
+| 2026-01-30 | 2.1 | Replaced dual-enclosure (inner+outer) with standalone 400×310×190mm cast aluminum enclosure; dropped DIN rail for standoff/Velcro mounting | Claude (Opus 4.5) |
+| 2026-01-30 | 2.0 | Switched from USB camera + IR illuminator to PoE camera system (ANNKE C1200 + Planet IPOE-260-12V); removed Camera System and IR Illumination sections; power-cycled PoE with Pi | Claude (Opus 4.5) |
+| 2026-01-30 | 1.6 | Changed antenna from Poynting PUCK-2 to Proxicast ANT-122-S02 (better availability, same model as Jakarta) | Claude (Opus 4.5) |
+| 2026-01-30 | 1.5 | Replaced basic LTE antennas + bulkhead connectors with sealed MIMO puck antenna | Claude (Opus 4.5) |
+| 2026-01-28 | 1.4 | Changed inner enclosure from polycarbonate to BestTong aluminum (thermal concern) | Claude (Opus 4.5) |
+| 2026-01-22 | 1.3 | Dual-enclosure strategy: inner IP67 box inside existing aluminum box | Claude (Opus 4.5) |
+| 2026-01-22 | 1.2 | Reuse existing aluminum enclosure; external panel-mount LEDs/button | Claude (Opus 4.5) |
+| 2026-01-22 | 1.1 | Changed enclosure to opaque body + small window (thermal/greenhouse concern) | Claude (Opus 4.5) |
 | 2026-01-09 | 1.0 | Initial BOM creation | Claude (comprehensive-researcher) |
 
 ---
@@ -566,21 +584,14 @@ Deployment is successful when:
 
 ## Contact Information
 
-**ELP Camera (Custom USB NoIR):**
-- Email: sales@elpcctv.com
-- Request: 8MP IMX179 NoIR, 115°+ wide angle, USB interface
-
-**VA Imaging (Camera Housing):**
-- Product: MVEC167 aluminum housing
-- Verify M12 vent compatibility
+**Planet Technology (PoE Injector):**
+- Website: planetechusa.com
+- Product: IPOE-260-12V (native 12V input)
+- Sales: sales@planetechusa.com
 
 **UUGear (Witty Pi 5 HAT+):**
 - Website: uugear.com
 - Product: Witty Pi 5 HAT+
-
-**Numato Lab (USB Relay):**
-- Website: numato.com
-- Product: 1-channel USB relay module
 
 ---
 

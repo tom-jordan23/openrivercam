@@ -18,12 +18,10 @@ Adafruit,UI-001,10mm IP67 Panel Mount LED - Red,,1,$2.95,$2.95,https://www.digik
 Adafruit,UI-002,10mm IP67 Panel Mount LED - Yellow,,1,$2.95,$2.95,https://www.digikey.com/en/products/filter/panel-indicators/99,Working status - source from DigiKey
 Adafruit,UI-003,10mm IP67 Panel Mount LED - Green,,1,$2.95,$2.95,https://www.digikey.com/en/products/filter/panel-indicators/99,OK/Ready status - source from DigiKey
 Adafruit,ENC-003,PG9 Cable Glands (10-pack),761,1,$7.50,$7.50,https://www.adafruit.com/product/761,Cable entry sealing - corrected to PG9
-Amazon,CPU-004,M.2 SATA SSD 512GB (KingSpec 2280 SATA III),,1,$42.99,$42.99,https://www.amazon.com/s?k=M.2+SATA+SSD+512GB+2280,Local storage
-Amazon,CPU-005,USB 3.0 M.2 SATA Enclosure (aluminum tool-free),,1,$15.99,$15.99,https://www.amazon.com/s?k=USB+3.0+M.2+SATA+enclosure+aluminum,SSD enclosure
+Amazon,CPU-004,Samsung FIT Plus 256GB USB 3.1 flash drive (MUF-256AB),,1,$25.00,$25.00,https://www.amazon.com/Samsung-MUF-256AB-AM-Plus-256GB/dp/B07D7Q41PM,IP67 waterproof - 0-60C operating - plugs directly into Pi USB-A
 Amazon,CPU-007,Quectel EG25-G LTE Mini PCIe Modem,,1,$95.00,$95.00,https://www.amazon.com/Generic-Quectel-EG25-G-Cellular-M2M-optimized/dp/B0CVQ2YLQQ,Cellular connectivity
 DigiKey,CPU-008,Techship PU201 USB Adapter for Mini PCIe,PU201,1,$24.00,$24.00,https://www.digikey.com/en/products/detail/techship/PU201/21262919,USB interface for modem
-Amazon,CPU-009,4G LTE Antenna SMA Male (9dBi omni 2-pack),,1,$16.99,$16.99,https://www.amazon.com/Antenna-Connector-Omnidirectional-Verizon-Wireless/dp/B07YWHFQ6L,LTE antennas
-Amazon,CPU-010,SMA Bulkhead Panel Mount Connectors (2-pack),,1,$8.99,$8.99,https://www.amazon.com/s?k=SMA+bulkhead+connector+panel+mount,Antenna feedthrough
+Amazon,CPU-009,Proxicast ANT-122-S02 2x2 MIMO LTE puck antenna (IP67 screw mount 600-6000 MHz),,1,$65.00,$65.00,https://www.amazon.com/Proxicast-Profile-Omni-Directional-Screw-Mount-Antenna/dp/B07DDC9WV5,Main + diversity in single sealed unit - eliminates bulkhead connectors - same as Sukabumi
 Amazon,CAM-001,ANNKE C1200 PoE IP Camera (12MP 134deg FOV 2-pack),,1,$119.99,$119.99,https://www.amazon.com/ANNKE-Security-Surveillance-Detection-Spotlight/dp/B0DBHRMT1V,Primary cameras - 2-pack with cables
 Amazon,CAM-004,Outdoor Cat6 Shielded Cable (300ft UV-resistant),,1,$79.99,$79.99,https://www.amazon.com/s?k=outdoor+Cat6+shielded+cable+300ft+UV,Camera cabling
 Amazon,CAM-005,IP68 RJ45 Waterproof Coupler (2-pack),,1,$12.99,$12.99,https://www.amazon.com/s?k=IP68+RJ45+coupler+waterproof,Weatherproof connections
@@ -44,7 +42,7 @@ Amazon,CONS-003,UV-Resistant Zip Ties (assorted 500-pack),,1,$12.99,$12.99,https
 Amazon,CONS-006,Isopropyl Alcohol 99% (16oz bottle),,1,$8.99,$8.99,https://www.amazon.com/s?k=isopropyl+alcohol+99,Cleaning
 Planet Technology,CAM-002,Planet IPOE-260-12V PoE Injector (2-port 60W 12V input),IPOE-260-12V,1,$164.00,$164.00,https://planetechusa.com/product/ipoe-260-12v-industrial-2-port-10-100-1000t-802-3at-poe-injector-hub-12v-booster/,Native 12V PoE - power supply not included
 UUGear,CPU-002,Witty Pi 5 HAT+ (RTC + power scheduling),WP5P,1,$46.00,$46.00,https://www.uugear.com/product/witty-pi-5/,Power management - ships from Hong Kong
-DFRobot,RAIN-001,Gravity Tipping Bucket Rain Gauge (I2C/UART),SEN0575,1,$29.90,$29.90,https://www.dfrobot.com/product-2689.html,Precipitation monitoring
+Hydreon,RAIN-001,Hydreon RG-15 Optical Rain Gauge (solid-state RS232 TTL 3.3V + pulse output),RG-15,1,$99.00,$99.00,https://store.hydreon.com/RG-15.html,No moving parts - self-cleaning lens - ±10% accuracy - 12V powered
 ,,,,,,,,,
 LOCAL SOURCING (INDONESIA),,,,,,,,,
 Location,Item,Description,,Est. Cost (IDR),Est. Cost (USD),,Source,Notes
@@ -60,21 +58,12 @@ Local,MISC,Concrete mix wire nuts additional cable ties,,100000,$6,,Any hardware
 ,,,,,,,,,
 COST SUMMARY BY SUPPLIER,,,,,,,,,
 Supplier,Subtotal,Notes,,,,,,,
-DigiKey,$223.99,"Mean Well PSU, surge protector, terminal blocks, vents, PU201",,,,,,,
-Amazon,$1421.43,"Batteries, cameras, compute, enclosure, consumables",,,,,,,
-Adafruit,$163.70,"Raspberry Pi, HATs, LEDs, cable glands",,,,,,,
+DigiKey,$222.99,"Mean Well PSU, surge protector, terminal blocks, vents, PU201",,,,,,,
+Amazon,$1220.29,"Batteries, cameras, compute, enclosure, consumables",,,,,,,
+Adafruit,$166.70,"Raspberry Pi, HATs, LEDs, cable glands",,,,,,,
 Planet Technology,$164.00,PoE injector (12V native),,,,,,,
 UUGear,$46.00,Witty Pi 5 HAT+,,,,,,,
-DFRobot,$29.90,Rain gauge,,,,,,,
-Shipped Subtotal,$2049.02,Components to ship from US/international,,,,,,,
+Hydreon,$99.00,Rain gauge,,,,,,,
+Shipped Subtotal,$1918.98,Components to ship from US/international,,,,,,,
 Local Sourcing (Jakarta),$96.00,"Grounding, mounting pole, misc hardware",,,,,,,
-GRAND TOTAL,$2145.02,Before shipping & customs,,,,,,,
-,,,,,,,,,
-ADDITIONAL COSTS,,,,,,,,,
-Item,Estimated Cost,Notes,,,,,,,
-Equipment (shipped),$2049.02,Components from 6 suppliers,,,,,,,
-Local sourcing (Jakarta),$96.00,"Grounding, pole, mounting hardware",,,,,,,
-Consolidation shipping (US to Indonesia),$200-350,DHL/FedEx express (5-7 days),,,,,,,
-Indonesia import duties (7.5% avg),$154-205,Electronics typically 0-10%,,,,,,,
-Contingency (10%),$210,"For price changes, lost items",,,,,,,
-TOTAL PROJECT COST,$2705-2910,Fully loaded estimate,,,,,,,
+GRAND TOTAL,$2014.98,Materials only,,,,,,,
