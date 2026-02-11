@@ -10,12 +10,12 @@
 
 | Category | Cost |
 |----------|------|
-| Common Spares | $463.82 |
-| Sukabumi-Specific Spares | $229.00 |
-| Jakarta-Specific Spares | $408.96 |
-| Tools | $164.91 |
-| Consumables | $89.86 |
-| **TOTAL** | **$1,356.55** |
+| Common Spares | $481.92 |
+| Sukabumi-Specific Spares | $263.66 |
+| Jakarta-Specific Spares | $441.63 |
+| Tools | $157.00 |
+| Consumables | $132.94 |
+| **TOTAL** | **$1,477.15** |
 
 **Note:** This is the FULL recommended inventory. For initial deployment on a tight budget, see "Minimum Viable Spares" section below.
 
@@ -50,17 +50,15 @@ Shared spare components that can service either site.
 
 ## Sukabumi-Specific Spares
 
-Components specific to the USB camera / solar site.
+Components specific to the PoE camera / solar site.
 
 | Item | Description | Qty | Unit Price | Extended | Source |
 |------|-------------|-----|------------|----------|--------|
-| USB Camera (8MP NoIR) | Same as installed (ELP/SVPRO) | 1 | $85.00 | $85.00 | ELP Direct |
-| VA Imaging MVEC167 | Aluminum camera housing | 1 | $125.00 | $125.00 | VA Imaging |
-| Gore protective vent | For camera housing | 2 | $12.00 | $24.00 | DigiKey |
-| USB cable (outdoor, 3m) | Bulgin PX0840 or equiv | 2 | $45.00 | $90.00 | DigiKey |
-| Tendelux AI4 IR light | 850nm with photocell | 1 | $35.00 | $35.00 | Amazon |
-| Numato USB relay | 1-channel | 1 | $32.00 | $32.00 | Numato |
-| | | | **Subtotal** | **$391.00** | |
+| ANNKE C1200 PoE camera | 12MP, same as installed | 1 | $60.00 | $60.00 | Amazon |
+| Cat6 outdoor cable | Shielded, 30m spool | 1 | $26.66 | $26.66 | Amazon |
+| IP68 RJ45 coupler | Waterproof feedthrough | 2 | $6.50 | $13.00 | Amazon |
+| Planet IPOE-260-12V | PoE injector spare | 1 | $164.00 | $164.00 | Planet Tech |
+| | | | **Subtotal** | **$263.66** | |
 
 ---
 
@@ -129,11 +127,11 @@ Items expected to be used up over time.
 | Category | Cost |
 |----------|------|
 | Common Spares | $481.92 |
-| Sukabumi-Specific | $391.00 |
+| Sukabumi-Specific | $263.66 |
 | Jakarta-Specific | $441.63 |
 | Tools | $157.00 |
 | Consumables | $132.94 |
-| **GRAND TOTAL** | **$1,604.49** |
+| **GRAND TOTAL** | **$1,477.15** |
 
 ---
 

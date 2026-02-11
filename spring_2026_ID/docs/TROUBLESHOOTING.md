@@ -74,40 +74,47 @@ START: No status LEDs lit
 
 ### Camera Not Working
 
-#### Sukabumi (USB Camera)
+#### Sukabumi (PoE Camera - Power-Cycled)
 
 ```
 START: No video capture
          │
          ▼
-┌────────────────────────┐
-│ SSH into Pi            │
-│ Run: lsusb             │
-└───────────┬────────────┘
+┌─────────────────────────┐
+│ Ping camera from Pi:    │
+│ ping 192.168.100.10     │
+│ (or configured IP)      │
+└───────────┬─────────────┘
             │
      ┌──────┴──────┐
      │             │
-  Camera        Camera
-  not listed    listed
+  No reply      Reply OK
      │             │
      ▼             ▼
-┌──────────┐  ┌────────────────────┐
-│ Check    │  │ Run: ls /dev/video*│
-│ USB cable│  │ Should show video0 │
-│ connection│ └─────────┬──────────┘
-└──────────┘            │
-                  ┌─────┴─────┐
-                  │           │
-              No device    Device exists
-                  │           │
-                  ▼           ▼
-            ┌──────────┐  ┌────────────────┐
-            │ Reboot   │  │ Test capture:  │
-            │ or check │  │ ffmpeg -f v4l2 │
-            │ camera   │  │ -i /dev/video0 │
-            │ power    │  │ -frames:v 1    │
-            └──────────┘  │ test.jpg       │
-                          └────────────────┘
+┌──────────────┐  ┌────────────────────┐
+│ Check PoE    │  │ Test RTSP:         │
+│ injector:    │  │ ffmpeg -i rtsp://  │
+│ - 12V input? │  │ admin:pass@        │
+│ - LED on?    │  │ 192.168.100.10:554/│
+└──────┬───────┘  │ stream1 -frames:v 1│
+       │          │ test.jpg           │
+  ┌────┴────┐     └─────────┬──────────┘
+  │         │               │
+No LED    LED on      ┌─────┴─────┐
+  │         │         │           │
+  ▼         ▼       Fails      Success
+┌─────┐  ┌────────┐   │           │
+│Check│  │Check   │   ▼           ▼
+│12V  │  │Cat6    │ ┌───────┐  ┌────────┐
+│fuse │  │cable & │ │Check  │  │Camera  │
+│& PoE│  │RJ45    │ │camera │  │OK,     │
+│injec│  │connect-│ │creds &│  │check   │
+│power│  │ions    │ │RTSP   │  │ORC     │
+└─────┘  └────────┘ │config │  │config  │
+                    └───────┘  └────────┘
+
+NOTE: Camera takes ~45-60s to boot after Pi wakes.
+Wait before testing if system just powered on.
 ```
 
 #### Jakarta (PoE Cameras)
@@ -293,14 +300,16 @@ START: No rain data
 | Intermittent shutdowns | Low battery voltage | Check BatteryProtect setting |
 | Intermittent shutdowns | Loose connection | Check all terminal connections |
 
-### Camera Issues
+### Camera Issues (Both Sites Use PoE Cameras)
 
 | Problem | Possible Cause | Solution |
 |---------|---------------|----------|
-| USB camera not detected | Cable fault | Replace USB cable |
-| USB camera not detected | USB port issue | Try different Pi USB port |
-| PoE camera offline | PoE injector fault | Check injector power LED |
-| PoE camera offline | Cat6 cable fault | Test with cable tester |
+| PoE camera offline | PoE injector fault | Check injector power/data LEDs |
+| PoE camera offline | Cat6 cable fault | Test cable continuity |
+| PoE camera offline | 12V power to injector | Check fuse, terminal connections |
+| PoE camera offline (Sukabumi) | Camera still booting | Wait 60s after Pi wakes |
+| PoE camera not reachable | Wrong IP address | Verify camera static IP setting |
+| PoE camera not reachable | Network config | Check Pi and camera on same subnet |
 | Camera image blurry | Focus issue | Adjust lens focus ring |
 | Camera image dark | Exposure settings | Adjust via camera web interface |
 | Camera image washed out | Overexposure | Reduce exposure in settings |

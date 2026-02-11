@@ -9,7 +9,7 @@
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                           SUKABUMI SITE WIRING                              │
-│                      Solar Power / USB Camera / IR Light                    │
+│                    Solar Power / PoE Camera (power-cycled)                  │
 └─────────────────────────────────────────────────────────────────────────────┘
 
                                     ┌──────────────┐
@@ -30,9 +30,9 @@
 ┌────────────────────────────────────────────────────────────────────────────┐
 │                          COMPUTE ENCLOSURE                                  │
 │                                                                            │
-│   12V IN ──┬──[FUSE 5A]──► RELAY ──[FUSE 5A]──► TO IR LIGHT (12V)        │
+│   12V IN ──┬──[FUSE 5A]──► PLANET PoE INJECTOR ──► PoE CAMERA            │
 │            │                                                               │
-│            └──► [12V→5V USB-C] ──► WITTY PI 5 ──► PI 5                    │
+│            └──► WITTY PI 5 (12V direct) ──► PI 5                          │
 │                                                                            │
 │   ┌─────────────────────────────────────────────────────────────────┐     │
 │   │                    PI 5 + HAT STACK                              │     │
@@ -42,30 +42,33 @@
 │   │  │ Witty Pi 5  │◄── Power management, RTC, scheduling           │     │
 │   │  │   HAT+      │                                                │     │
 │   │  ├─────────────┤                                                │     │
-│   │  │   Pi 5      │◄── USB: Camera, SSD, Modem, Relay             │     │
+│   │  │   Pi 5      │◄── USB: SSD, Modem | ETH: PoE Camera          │     │
 │   │  │   8GB       │                                                │     │
 │   │  └─────────────┘                                                │     │
 │   └─────────────────────────────────────────────────────────────────┘     │
 │                                                                            │
 │   USB CONNECTIONS:                                                         │
 │   ├── USB 3.0 (blue) ──► SSD Enclosure                                   │
-│   ├── USB 2.0 ──► Quectel Modem (PU201)                                  │
-│   ├── USB 2.0 ──► Numato Relay Module                                    │
-│   └── USB 2.0 ──► USB Camera (via cable gland)                           │
+│   └── USB 2.0 ──► Quectel Modem (PU201)                                  │
+│                                                                            │
+│   ETHERNET CONNECTION:                                                     │
+│   └── ETH Port ──► Planet PoE Injector (DATA) ──► Camera via Cat6        │
 │                                                                            │
 │   ANTENNAS:                                                               │
 │   ├── SMA Bulkhead 1 ──► LTE Antenna (Main)                              │
 │   └── SMA Bulkhead 2 ──► LTE Antenna (Diversity)                         │
 │                                                                            │
 └────────────────────────────────────────────────────────────────────────────┘
-           │                    │                    │
-           │                    │                    │
-           ▼                    ▼                    ▼
-    ┌────────────┐      ┌────────────┐      ┌────────────────┐
-    │ USB CAMERA │      │  IR LIGHT  │      │   RAIN GAUGE   │
-    │  (NoIR)    │      │ Tendelux   │      │   (I2C/GPIO)   │
-    │            │      │   AI4      │      │                │
-    └────────────┘      └────────────┘      └────────────────┘
+           │                                         │
+           │                                         │
+           ▼                                         ▼
+    ┌──────────────────────────┐            ┌────────────────┐
+    │    ANNKE C1200 PoE       │            │   RAIN GAUGE   │
+    │    CAMERA (IP67)         │            │   (I2C/GPIO)   │
+    │  [Built-in IR, factory   │            │                │
+    │   sealed, power-cycled   │            │                │
+    │   with Pi via PoE]       │            │                │
+    └──────────────────────────┘            └────────────────┘
 ```
 
 ---
@@ -96,9 +99,9 @@ SOLAR CONTROLLER 12V OUTPUT
            │     │     │
            │     │     └──► 12V return from all 12V devices
            │     │
-           │     ├──[FUSE 5A]──► Numato Relay ──► IR Light circuit
+           │     ├──[FUSE 5A]──► Planet PoE Injector ──► PoE Camera
            │     │
-           │     └──► 12V→5V USB-C adapter ──► Witty Pi 5 power input
+           │     └──► Witty Pi 5 power input (12V direct)
            │
            └──► From solar controller 12V+
 
@@ -121,56 +124,49 @@ USB-C POWER PATH:
 
 ---
 
-## IR Light Control Circuit
+## PoE Camera Circuit
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                         IR LIGHT CONTROL                                    │
+│                         POE CAMERA CIRCUIT                                  │
 └─────────────────────────────────────────────────────────────────────────────┘
 
-                         PI 5 USB PORT
-                              │
-                              │ (USB-A cable)
-                              ▼
-                    ┌─────────────────────┐
-                    │   NUMATO 1-CH       │
-                    │   USB RELAY         │
-                    │                     │
-                    │  ┌───┐ ┌───┐ ┌───┐  │
-                    │  │COM│ │NO │ │NC │  │
-                    │  └─┬─┘ └─┬─┘ └───┘  │
-                    └────┼─────┼──────────┘
-                         │     │
-                         │     │ (NO = Normally Open)
-                         │     │ (Closes when Pi powered + relay activated)
-                         │     │
-12V+ ──[FUSE 5A]─────────┘     │
-                               │
-                    ┌──────────┴──────────┐
-                    │                     │
-                    │    TENDELUX AI4     │
-                    │    850nm IR LIGHT   │
-                    │                     │
-                    │   ┌───┐             │
-                    │   │12+│◄────────────┼─── From relay COM
-                    │   ├───┤             │
-                    │   │12-│◄────────────┼─── To GND (terminal block)
-                    │   └───┘             │
-                    │                     │
-                    │  [Built-in photocell│
-                    │   controls on/off   │
-                    │   based on ambient  │
-                    │   light level]      │
-                    │                     │
-                    └─────────────────────┘
+                    PLANET IPOE-260-12V PoE INJECTOR
+                    ┌─────────────────────────────────────┐
+                    │                                     │
+                    │  ┌─────────┐       ┌─────────┐     │
+12V+ ──[FUSE 5A]───►│  │  12V+   │       │  DATA   │◄────┼──── Short Ethernet
+                    │  │  INPUT  │       │ (to Pi) │     │     to Pi 5 ETH port
+12V- (GND) ────────►│  │  12V-   │       ├─────────┤     │
+                    │  │  INPUT  │       │DATA+PWR │◄────┼──── Cat6 outdoor cable
+                    │  └─────────┘       │(to cam) │     │     to camera
+                    │                    └─────────┘     │
+                    └─────────────────────────────────────┘
+                                              │
+                                              │ Cat6 outdoor (shielded)
+                                              │ through IP68 RJ45 feedthrough
+                                              ▼
+                    ┌─────────────────────────────────────┐
+                    │       ANNKE C1200 PoE CAMERA        │
+                    │                                     │
+                    │   • 12MP resolution                 │
+                    │   • Built-in IR LEDs (auto on/off)  │
+                    │   • Factory-sealed IP67             │
+                    │   • RTSP streaming                  │
+                    │   • Static IP: 192.168.100.10       │
+                    │                                     │
+                    └─────────────────────────────────────┘
 
 OPERATION:
-1. Pi boots → systemd service sends "relay on 0" command
-2. Relay closes → 12V available at Tendelux
-3. Tendelux photocell senses light level:
-   - Daytime: IR stays OFF (photocell open)
-   - Nighttime: IR turns ON (photocell closed)
-4. Pi shuts down → relay opens → Tendelux unpowered
+1. Witty Pi wakes → 12V powers PoE injector
+2. PoE injector provides 48V PoE to camera over Ethernet
+3. Camera boots (~45-60s), establishes static IP
+4. Pi captures video via RTSP over Ethernet connection
+5. Camera IR LEDs auto-enable in low light (built-in photocell)
+6. Witty Pi sleeps → 12V cuts off → camera powers down
+
+ADVANTAGE: Camera power-cycled with Pi saves solar budget.
+Built-in IR eliminates need for separate IR light and relay.
 ```
 
 ---
@@ -253,39 +249,39 @@ RAIN GAUGE WIRING (I2C):
 
 ---
 
-## USB Camera Connection
+## PoE Camera Connection
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                         USB CAMERA CONNECTION                               │
+│                         POE CAMERA CONNECTION                               │
 └─────────────────────────────────────────────────────────────────────────────┘
 
 INSIDE ENCLOSURE                    │    OUTSIDE ENCLOSURE
                                     │
 ┌─────────────────┐                 │    ┌─────────────────────────────────┐
-│  Raspberry Pi 5 │                 │    │      VA IMAGING MVEC167         │
-│                 │                 │    │      CAMERA HOUSING             │
-│   ┌─────────┐   │                 │    │                                 │
-│   │ USB 2.0 │◄──┼── Bulgin USB ───┼────┼──► USB Camera Board            │
-│   │  Port   │   │    Cable        │    │    (8MP IMX179 NoIR)           │
-│   └─────────┘   │    (IP67)       │    │                                 │
-│                 │                 │    │   [Gore M12 Vent installed]    │
-└─────────────────┘                 │    │                                 │
-                              M16 Cable   └─────────────────────────────────┘
-                                Gland
-                                    │
-                                    │
-                            ┌───────┴───────┐
-                            │               │
-                            │  ENCLOSURE    │
-                            │    WALL       │
-                            │               │
-                            └───────────────┘
+│  Raspberry Pi 5 │                 │    │      ANNKE C1200 PoE            │
+│                 │                 │    │      CAMERA (IP67)              │
+│   ┌─────────┐   │  ┌───────────┐  │    │                                 │
+│   │Ethernet │◄──┼──│Planet PoE │──┼────┼──► Camera via Cat6 outdoor     │
+│   │  Port   │   │  │Injector   │  │    │    (factory-sealed housing)    │
+│   └─────────┘   │  │(DATA port)│  │    │                                 │
+│                 │  └───────────┘  │    │   [Built-in IR LEDs]           │
+└─────────────────┘    │            │    │                                 │
+                  DATA+PWR port     │    └─────────────────────────────────┘
+                       │            │
+                       │ Cat6       │
+                       ▼            │
+              ┌─────────────────┐   │
+              │ IP68 RJ45       │◄──┘
+              │ Feedthrough     │
+              │ (enclosure wall)│
+              └─────────────────┘
 
 CABLE DETAILS:
-- Bulgin PX0840 series IP67 USB cable (2-3m)
-- OR: Standard USB in HDPE conduit with sealed glands
-- Seal cable gland with silicone after installation
+- Cat6 outdoor shielded cable (UV-resistant jacket)
+- IP68 RJ45 waterproof coupler at enclosure wall
+- Apply dielectric grease to outdoor RJ45 connections
+- Secure cable to pole with UV-resistant cable ties
 ```
 
 ---
@@ -302,10 +298,10 @@ CABLE DETAILS:
     │                                                                     │
     │  ┌──────────────────────────────────────────────────────────────┐  │
     │  │                        DIN RAIL                               │  │
-    │  │  ┌──────────┐  ┌───────┐  ┌──────┐  ┌────────────────────┐   │  │
-    │  │  │ PI STACK │  │ RELAY │  │ FUSE │  │  TERMINAL BLOCK    │   │  │
-    │  │  │          │  │       │  │HOLDER│  │  12V+ 12V- GND     │   │  │
-    │  │  └──────────┘  └───────┘  └──────┘  └────────────────────┘   │  │
+    │  │  ┌──────────┐  ┌────────┐  ┌──────┐  ┌──────────────────┐   │  │
+    │  │  │ PI STACK │  │PoE Inj │  │ FUSE │  │  TERMINAL BLOCK  │   │  │
+    │  │  │          │  │ Planet │  │HOLDER│  │  12V+ 12V- GND   │   │  │
+    │  │  └──────────┘  └────────┘  └──────┘  └──────────────────┘   │  │
     │  └──────────────────────────────────────────────────────────────┘  │
     │                                                                     │
     │  ┌────────────┐      ┌────────────────┐                            │
@@ -317,16 +313,17 @@ CABLE DETAILS:
     │  [SMA]  [SMA]                                                      │
     │  Ant 1  Ant 2                                                      │
     │                                                                     │
-    │  ○ ○ ○   [●]        [M12]    [M16]    [M12]                        │
-    │  LEDs   Button      12V in   USB cam  Rain                         │
-    │  R Y G              power    cable    gauge                        │
+    │  ○ ○ ○   [●]        [M12]    [RJ45]   [M12]                        │
+    │  LEDs   Button      12V in   PoE cam  Rain                         │
+    │  R Y G              power    (IP68)   gauge                        │
     │                                                                     │
     └─────────────────────────────────────────────────────────────────────┘
 
 LEGEND:
 ○ = 10mm LED (panel mount)
 ● = 16mm Button (panel mount)
-[M12/M16] = Cable gland size
+[M12] = Cable gland size
+[RJ45] = IP68 RJ45 feedthrough for PoE camera
 [SMA] = SMA bulkhead antenna connector
 ```
 
@@ -362,5 +359,6 @@ TB1 - MAIN POWER
 
 **PRINT THIS DOCUMENT - LAMINATE FOR FIELD USE**
 
-**Document Version:** 1.0
-**Last Updated:** January 9, 2026
+**Document Version:** 2.0
+**Last Updated:** February 11, 2026
+**Change:** Updated from USB camera + IR relay to PoE camera (ANNKE C1200) approach

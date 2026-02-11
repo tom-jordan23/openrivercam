@@ -71,7 +71,7 @@ Keep these with you - irreplaceable or long lead time:
 | Quectel EG25-G modems (×3) | 3 | 0.2 kg | With PU201 adapters |
 | MicroSD cards (×6) | 6 | 0.05 kg | Pre-imaged |
 | M.2 SSDs (×3) | 3 | 0.1 kg | Without enclosures |
-| Custom USB camera | 1 | 0.1 kg | Long lead time item |
+| ANNKE C1200 PoE cameras | 3 | 1.0 kg | Fragile, already in carry-on list |
 | ANNKE C1200 cameras (×3) | 3 | 1.0 kg | Fragile |
 | LTE antennas (×6) | 6 | 0.2 kg | |
 | USB relay (Numato) | 2 | 0.1 kg | |

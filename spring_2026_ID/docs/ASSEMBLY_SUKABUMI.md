@@ -1,7 +1,7 @@
 # Assembly Guide - Sukabumi Site
 
 **Site:** Sukabumi, Indonesia (foothills)
-**Type:** Solar-powered, USB camera with IR night vision
+**Type:** Solar-powered, PoE camera with built-in IR (power-cycled with Pi)
 **Purpose:** Replacement of failed river monitoring unit
 
 ---
@@ -18,7 +18,8 @@ Apply MG 422C silicone conformal coating to all PCBs:
 - [ ] Raspberry Pi 5
 - [ ] Witty Pi 5 HAT+
 - [ ] Pi-EzConnect terminal block HAT
-- [ ] Numato USB relay module
+
+**Note:** No relay module needed - PoE camera has built-in IR.
 
 **Masking (Use Kapton tape):**
 - GPIO header pins (all 40 pins)
@@ -43,19 +44,19 @@ Apply MG 422C silicone conformal coating to all PCBs:
 - [ ] Flash OS image to MicroSD card
 - [ ] Boot Pi 5 and verify ORC software runs
 - [ ] Configure Witty Pi 5 schedule (15-minute wake cycle)
-- [ ] Test USB camera capture
+- [ ] Test PoE camera RTSP capture (ffmpeg)
 - [ ] Configure WiFi hotspot for maintenance mode
 - [ ] Set up LED GPIO control script
-- [ ] Set up relay control service (systemd)
 - [ ] Pre-configure Telkomsel APN (if known)
+- [ ] Configure camera static IP and RTSP settings
 
 ### 3. Hardware Testing
 
 - [ ] Test Pi 5 + Witty Pi 5 + Pi-EzConnect stack boots correctly
 - [ ] Verify SSD is recognized via USB
 - [ ] Test LTE modem connects (with test SIM)
-- [ ] Test USB camera captures video
-- [ ] Test Numato relay clicks when controlled
+- [ ] Test PoE camera RTSP stream works
+- [ ] Test PoE injector powers camera when 12V applied
 - [ ] Verify LEDs light up on GPIO control
 
 ---
@@ -78,17 +79,12 @@ Verify all components before starting assembly:
 - [ ] SMA bulkhead connectors (×2)
 - [ ] USB-RS485 adapter
 
-### Camera System
-- [ ] 8MP IMX179 NoIR USB camera
-- [ ] VA Imaging MVEC167 aluminum housing
-- [ ] Gore M12 vent
-- [ ] Bulgin PX0840 USB cable (or outdoor USB cable)
-
-### IR Illumination
-- [ ] Tendelux AI4 850nm IR light
-- [ ] Numato USB relay module (coated)
-- [ ] 12V power cable with terminals
-- [ ] Inline fuse holder + 5A fuse
+### PoE Camera System
+- [ ] ANNKE C1200 PoE camera (12MP, built-in IR, factory-sealed IP67)
+- [ ] Planet IPOE-260-12V PoE injector (native 12V input)
+- [ ] Cat6 outdoor shielded cable (to camera)
+- [ ] IP68 RJ45 waterproof coupler (enclosure feedthrough)
+- [ ] Pole mount bracket (stainless steel)
 
 ### User Interface
 - [ ] IP67 LEDs: Red, Yellow, Green
@@ -125,7 +121,7 @@ Verify all components before starting assembly:
 1. **Mark hole positions:**
    - 2× M12 holes for Gore vents (opposite sides for airflow)
    - 2× M12 holes for SMA antenna bulkheads
-   - 1× M16 hole for USB camera cable
+   - 1× hole for IP68 RJ45 feedthrough (Ethernet to PoE camera)
    - 1× M12 hole for 12V power input
    - 3× 10mm holes for status LEDs
    - 1× 16mm hole for pushbutton
@@ -183,7 +179,7 @@ Verify all components before starting assembly:
    - Verify secure fit
 
 2. **Mount other components:**
-   - Numato relay module (use clip or Velcro)
+   - Planet PoE injector (use Velcro or screw mount)
    - Terminal blocks (snap onto rail)
    - Fuse holder (snap onto rail or screw mount)
 
@@ -198,7 +194,7 @@ Verify all components before starting assembly:
    │                                         │
    │  ┌──────────────────────────────────┐   │
    │  │         DIN RAIL                 │   │
-   │  │ [Pi Stack] [Relay] [Fuse] [Term] │   │
+   │  │ [Pi Stack] [PoE Inj] [Fuse][Term]│   │
    │  └──────────────────────────────────┘   │
    │                                         │
    │  [SSD]     [Modem]                      │
@@ -263,41 +259,43 @@ Verify all components before starting assembly:
 
 2. **Power distribution:**
    ```
-   Solar 12V ──┬── Inline Fuse (5A) ── Relay ── IR Light
+   Solar 12V ──┬── Inline Fuse (5A) ── Planet PoE Injector ── Camera
                │
-               └── USB-C converter ── Pi 5 (via Witty Pi)
+               └── Witty Pi 5 (direct 12V input) ── Pi 5
 
-   Note: Witty Pi 5 can accept 5-26V input.
-   Use 12V→5V USB-C adapter OR power Witty Pi directly at 12V.
+   Note: Witty Pi 5 accepts 5-26V input directly.
+   PoE injector and Pi are on same switched 12V circuit.
+   Camera boots when Pi wakes, powers down when Pi sleeps.
    ```
 
 3. **Terminal block connections:**
    - Use ferrules on all stranded wire ends
    - Label all terminals (12V+, 12V-, GND, etc.)
 
-### Step 6: Wire IR Control Circuit (15 min)
+### Step 6: Wire PoE Camera Circuit (15 min)
 
-**Tools needed:** Screwdriver
+**Tools needed:** Screwdriver, Ethernet cable
 
 1. **Circuit overview:**
    ```
-   Pi USB Port ──► Numato Relay ──┐
-                                  │ (relay contacts)
-   Solar 12V ── Fuse ─────────────┴──► Tendelux AI4
+   Solar 12V ── Fuse ──► Planet IPOE-260-12V ──► Cat6 ──► ANNKE C1200
+                                │
+                                └── Short Ethernet ──► Pi 5 Ethernet port
    ```
 
 2. **Connections:**
-   - Numato relay USB cable → Pi 5 USB-A port
    - 12V+ from terminal block → fuse holder input
-   - Fuse holder output → relay NO (normally open) terminal
-   - Relay COM (common) terminal → Tendelux 12V+
-   - Tendelux 12V- → terminal block GND
+   - Fuse holder output → PoE injector 12V+ input
+   - PoE injector 12V- → terminal block GND
+   - Short Ethernet patch cable: PoE injector DATA port → Pi 5 Ethernet
+   - Cat6 outdoor cable: PoE injector DATA+POWER port → IP68 RJ45 coupler → Camera
 
 3. **Operation:**
-   - When Pi boots, systemd service activates relay
-   - Relay closes, providing 12V to Tendelux
-   - Tendelux photocell controls actual illumination (only at night)
-   - When Pi shuts down, relay opens, IR light unpowered
+   - When Pi/Witty Pi wakes, 12V powers PoE injector
+   - PoE injector provides 48V PoE to camera over Ethernet
+   - Camera boots (~45-60s), built-in IR activates automatically at night
+   - Pi captures video via RTSP over Ethernet (camera has static IP)
+   - When Pi sleeps, 12V cuts off, camera powers down
 
 ### Step 7: Connect Peripherals (15 min)
 
@@ -309,9 +307,10 @@ Verify all components before starting assembly:
    - SMA cables from modem → bulkhead connectors
    - External antennas on bulkheads
 
-3. **USB Camera:**
-   - Bulgin USB cable through M16 gland
-   - Connect to Pi 5 USB port
+3. **PoE Camera:**
+   - Already connected via Step 6
+   - Verify Ethernet from PoE injector to Pi 5 port
+   - Verify Cat6 cable routed to IP68 feedthrough
 
 4. **Rain Gauge:**
    - I2C cable through PG9 gland
@@ -323,32 +322,27 @@ Verify all components before starting assembly:
 
 5. **Verify all connections before powering on.**
 
-### Step 8: Assemble Camera Housing (20 min)
+### Step 8: Configure PoE Camera (15 min)
 
-**Tools needed:** Screwdriver, silicone sealant
+**Note:** ANNKE C1200 is factory-sealed IP67. No housing assembly required.
 
-1. **Prepare housing:**
-   - Install Gore M12 vent in housing vent port
-   - Clean all sealing surfaces
+1. **Initial camera setup (before field installation):**
+   - Connect camera directly to laptop/switch via PoE
+   - Access web interface (default: 192.168.1.88)
+   - Set static IP (e.g., 192.168.100.10) for field use
+   - Enable RTSP stream
+   - Set video resolution/framerate per ORC requirements
+   - Configure IR to auto-enable in low light
 
-2. **Install camera:**
-   - Mount USB camera board inside housing
-   - Align lens with window
-   - Secure with provided hardware
+2. **Test RTSP capture:**
+   ```bash
+   ffmpeg -i rtsp://admin:password@192.168.100.10:554/stream1 -frames:v 1 test.jpg
+   ```
 
-3. **Connect USB cable:**
-   - Route Bulgin cable through housing cable entry
-   - Connect to camera board
-   - Seal cable entry with provided gland/seal
-
-4. **Close housing:**
-   - Verify O-ring/gasket is clean and seated
-   - Close housing, secure all screws
-   - Apply thin bead of silicone around seam (optional extra protection)
-
-5. **Test:**
-   - Connect to Pi, verify camera captures image
-   - Check focus through housing window
+3. **Verify IR function:**
+   - Cover camera lens (simulate darkness)
+   - IR LEDs should illuminate (visible glow)
+   - Capture should show IR-lit image
 
 ### Step 9: Mount External Components (30 min)
 
@@ -356,14 +350,10 @@ Verify all components before starting assembly:
 
 1. **Camera mounting:**
    - Select pole/mounting location with clear river view
-   - Use stainless U-bolts to secure housing bracket
+   - Use stainless U-bolts to secure ANNKE C1200 bracket
    - Aim camera at target water area
-   - Secure USB cable along pole with UV-resistant cable ties
-
-2. **IR light mounting:**
-   - Mount Tendelux AI4 adjacent to camera
-   - Aim to illuminate same area as camera view
-   - Secure 12V cable alongside USB cable
+   - Secure Cat6 cable along pole with UV-resistant cable ties
+   - Apply dielectric grease to outdoor RJ45 connection
 
 3. **Rain gauge mounting:**
    - Mount on separate arm, away from obstructions
@@ -422,16 +412,16 @@ Verify all components before starting assembly:
 1. Enter maintenance mode (long press button)
 2. Connect to WiFi hotspot
 3. SSH into Pi
-4. Run: `ls /dev/video*` - should show camera device
-5. Run test capture: `ffmpeg -f v4l2 -i /dev/video0 -frames:v 1 test.jpg`
+4. Check camera is reachable: `ping 192.168.100.10` (or configured IP)
+5. Test RTSP capture: `ffmpeg -i rtsp://admin:password@192.168.100.10:554/stream1 -frames:v 1 test.jpg`
 6. Verify image captured
 
 ### Verify IR Light
 
-1. Cover Tendelux photocell with hand (simulate darkness)
-2. IR light should illuminate
-3. Verify camera captures IR-lit scene
-4. Uncover photocell, IR should turn off
+1. Cover camera lens with hand or cloth (simulate darkness)
+2. Camera IR LEDs should illuminate automatically (visible red glow)
+3. Capture test image, verify IR-lit scene
+4. Uncover lens, IR should turn off
 
 ### Verify LTE Connection
 
@@ -455,9 +445,9 @@ See `TROUBLESHOOTING.md` for detailed diagnostics.
 
 | Symptom | Check |
 |---------|-------|
-| No boot | Battery voltage, fuses, USB-C power |
-| No camera | USB cable, `lsusb` output |
-| No IR | Relay clicking? Cover photocell. Check fuse. |
+| No boot | Battery voltage, fuses, Witty Pi power LED |
+| No camera | PoE injector powered? Camera IP reachable? Ethernet cables? |
+| No IR | Cover lens to trigger. Check camera IR settings in web UI. |
 | No LTE | Antennas tight? SIM inserted? IMEI registered? |
 | No rain data | I2C address? Cable connections? |
 
@@ -494,12 +484,14 @@ See `TROUBLESHOOTING.md` for detailed diagnostics.
 | WiFi hotspot password | |
 | LTE SIM number | |
 | Modem IMEI | |
-| Camera device path | |
+| Camera IP address | |
+| Camera RTSP URL | |
 | GPS coordinates | |
 | Installation date | |
 | Installer name | |
 
 ---
 
-**Document Version:** 1.0
-**Last Updated:** January 9, 2026
+**Document Version:** 2.0
+**Last Updated:** February 11, 2026
+**Change:** Updated from USB camera + IR relay to PoE camera (ANNKE C1200) approach
