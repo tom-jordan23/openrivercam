@@ -82,27 +82,32 @@ The ORC team uses Pangolin for remote access to field devices. We will use the s
 
 **Remote Configuration Management**
 
-The ORC team uses a script that checks an FTP server for configuration updates at device startup. We will mirror this approach:
+~~The ORC team uses a script that checks an FTP server for configuration updates at device startup.~~
+
+**UPDATED (Feb 2026):** NodeORC v0.2.4 has built-in configuration pickup from LiveORC
+(GitHub Issue #49, implemented October 2024). No separate FTP script is needed.
+NodeORC polls the LiveORC server every 5 minutes for new tasks and configuration updates.
 
 | Behavior | Implementation |
 |----------|----------------|
-| On boot | Device checks FTP server for config updates |
-| Config changed | Download new config, apply, log change |
-| Config unchanged | Continue with existing config |
-| FTP unreachable | Continue with existing config, log warning |
-| Rollback | Keep previous config as backup |
+| On boot | NodeORC service starts, announces to LiveORC |
+| Polling | Every 5 minutes, checks LiveORC for new tasks/config |
+| Config changed | Downloads, validates, stores in local database |
+| Config unchanged | Continues with existing tasks |
+| LiveORC unreachable | Continues with existing tasks, retries next cycle |
+| Rollback | Previous tasks/config retained in local database |
 
 **Build implications:**
 
-- Phase 5/6: Configure Pangolin client during Witty Pi / modem setup
-- Phase 11: Configure FTP config-check script as part of ORC installation
+- Phase 5/6: Configure Pangolin client (Newt) during Witty Pi / modem setup
+- Phase 11: Install NodeORC, configure LiveORC connectivity (built-in, no FTP)
 - Phase 12: Test remote access via Pangolin before enclosure sealing
-- Phase 14: Verify config-check works during scheduled wake cycles
+- Phase 14: Verify LiveORC task polling works during scheduled wake cycles
 
 **Document in `configuration_backup.md`:**
-- Pangolin server details and device credentials
-- FTP server location and credentials
-- Config file format and location
+- Pangolin server details and Newt client credentials
+- LiveORC server URL and device credentials
+- NodeORC config file location (`/mnt/usb/settings/config_device.json`)
 - Rollback procedure if bad config pushed
 
 ---
@@ -125,10 +130,10 @@ The build proceeds in phases. Each phase has verification criteria that must pas
 | 8 | Rain gauge setup | Phase 4 | |
 | 9 | Status LEDs & button | Phase 4 | |
 | 10 | Enclosure assembly | Phases 3-9 | |
-| 11 | ORC software installation | Phase 10 | Include FTP config-check script |
+| 11 | ORC software installation | Phase 10 | NodeORC + RTSP capture + LiveORC connectivity |
 | 12 | Integration testing | Phase 11 | **Test Pangolin remote access** |
 | 13 | Power budget verification | Phase 12 | |
-| 14 | Schedule testing | Phase 13 | Verify config-check on wake |
+| 14 | Schedule testing | Phase 13 | Verify LiveORC polling on wake |
 | 15 | Environmental testing | Phase 14 | |
 | 16 | Final verification | Phase 15 | |
 
@@ -294,7 +299,7 @@ See `sukabumi_parts_procured.csv` for:
 | LiveORC | https://github.com/localdevices/LiveORC | Cloud platform |
 | NodeORC | https://github.com/localdevices/nodeorc | Edge device software |
 | pyorc | https://github.com/localdevices/pyorc | Python processing library |
-| Pangolin | https://github.com/fossorern/pangolin (or ORC team resource) | Remote access tunneling |
+| Pangolin | https://github.com/fosrl/pangolin | Remote access tunneling (client: Newt) |
 
 **Note:** Phase 11 (ORC software installation) should use existing LiveORC/NodeORC packages. If modifications are needed, coordinate with the OpenRiverCam team and submit PRs rather than creating local forks.
 

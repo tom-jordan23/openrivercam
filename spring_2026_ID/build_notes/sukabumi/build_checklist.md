@@ -1593,9 +1593,18 @@ Sketch or notes:
 
 ## Phase 11: ORC Software Installation
 
-**Goal:** Install NodeORC/LiveORC software and configure FTP config-check
+**Goal:** Install NodeORC software, configure LiveORC connectivity, and set up RTSP video capture
 **Prerequisite:** Phase 10 complete
-**Note:** Use upstream packages - do not fork
+**Note:** Use upstream packages - do not fork. See https://github.com/localdevices/nodeorc
+
+> **Software Ecosystem:**
+> - **NodeORC** = edge device orchestration (runs on the Pi, processes videos, reports to server)
+> - **pyorc (pyOpenRiverCam)** = processing library (installed as NodeORC dependency)
+> - **LiveORC** = cloud server (receives results, distributes tasks to devices)
+> - **ORC-OS** = newer full dashboard project (alternative to NodeORC - discuss with ORC team)
+>
+> NodeORC does NOT capture video itself. It processes videos placed in its `incoming/` folder.
+> A separate capture script (11.6) handles RTSP recording from the PoE camera.
 
 ### 11.1 Environmental Conditions
 
@@ -1603,100 +1612,345 @@ Sketch or notes:
 |------|------|-----------|--------------|
 | | | | |
 
-### 11.2 Install Dependencies
+### 11.2 Prepare USB Flash Storage
+
+NodeORC stores videos and results on disk. The Samsung FIT Plus 256GB USB flash drive
+(mounted in Phase 4 as /dev/sda) must be formatted and mounted as the NodeORC home folder.
 
 ```bash
-sudo apt install python3 python3-pip python3-venv git ffmpeg -y
-```
+# Verify USB flash is detected
+lsblk
 
-| Package | Installed |
-|---------|-----------|
-| python3 | [ ] |
-| python3-pip | [ ] |
-| python3-venv | [ ] |
-| git | [ ] |
-| ffmpeg | [ ] |
+# Create filesystem (if not already formatted)
+# WARNING: This erases all data on the USB drive
+sudo mkfs.ext4 -L nodeorc /dev/sda1
 
-### 11.3 Install NodeORC
+# Create mount point
+sudo mkdir -p /mnt/usb
 
-**Follow ORC team installation instructions.**
+# Add to fstab for persistent mount
+# Use LABEL to survive device reordering
+echo 'LABEL=nodeorc /mnt/usb ext4 defaults,noatime 0 2' | sudo tee -a /etc/fstab
 
-```bash
-# Example - confirm actual procedure with ORC team
-# pip install nodeorc
-# or
-# git clone https://github.com/localdevices/nodeorc.git
-```
-
-| Step | Completed |
-|------|-----------|
-| NodeORC installed | [ ] |
-| Dependencies resolved | [ ] |
-| Version recorded | [ ] |
-
-**NodeORC version:** _______________
-
-### 11.4 Configure ORC
-
-**Configuration file location:** _______________
-
-| Setting | Value | Configured |
-|---------|-------|------------|
-| Camera RTSP URL | | [ ] |
-| Capture duration | 5 seconds | [ ] |
-| Capture interval | (controlled by Witty Pi) | [ ] |
-| Upload destination | | [ ] |
-| Rain gauge serial port | /dev/serial0 | [ ] |
-| LED GPIO pins | Green:__ Yellow:__ Red:__ | [ ] |
-| Button GPIO pin | | [ ] |
-
-### 11.5 Configure FTP Config-Check
-
-**Mirror ORC team approach: check FTP for config updates at boot.**
-
-| Step | Completed |
-|------|-----------|
-| Obtain FTP server details from ORC team | [ ] |
-| Install/configure config-check script | [ ] |
-| Script runs at boot | [ ] |
-| Test: config unchanged - continues normally | [ ] |
-| Test: config changed - downloads and applies | [ ] |
-| Test: FTP unreachable - continues with existing | [ ] |
-
-**FTP details (store securely, NOT here):**
-- Documented in secure location: [ ]
-
-### 11.6 Test Manual Capture
-
-```bash
-# Run single capture (command TBD based on ORC setup)
-# nodeorc capture --test
+# Mount and verify
+sudo mount -a
+df -h /mnt/usb
 ```
 
 | Check | Expected | Actual | Pass |
 |-------|----------|--------|------|
-| Capture command runs | Yes | | [ ] |
-| Video file created | Yes | | [ ] |
-| Correct duration | 5s | s | [ ] |
-| Correct resolution | ≥1080p | | [ ] |
-| Metadata logged | Yes | | [ ] |
+| USB flash detected | /dev/sda | | [ ] |
+| Filesystem created | ext4 | | [ ] |
+| Mounted at /mnt/usb | Yes | | [ ] |
+| Available space | ~230 GB | GB | [ ] |
+| Persists after reboot | Yes | | [ ] |
 
-### 11.7 Verification
+### 11.3 Install NodeORC
+
+**Source:** https://github.com/localdevices/nodeorc/releases
+**Latest verified version:** v0.2.4 (March 2025) - confirm latest before install
+
+```bash
+# Download the setup script from latest release
+wget https://github.com/localdevices/nodeorc/releases/latest/download/setup.sh
+
+# Make executable and run full installation
+chmod +x setup.sh
+./setup.sh --all
+```
+
+The setup wizard will prompt for:
+1. **LiveORC server URL** - obtain from ORC team (e.g., `https://liveorc.example.com:8000`)
+2. **Username** - LiveORC account credentials
+3. **Password** - LiveORC account credentials (not stored locally; only tokens retained)
+4. **Storage location** - select USB storage (`/mnt/usb`)
+
+> **Note:** Run `./setup.sh` without `--all` to see individual installation steps.
+> Credentials are NOT stored locally - only temporary access tokens are retained.
+>
+> **CONFIRM WITH ORC TEAM:** LiveORC server URL and account credentials before this step.
+
+| Step | Completed |
+|------|-----------|
+| setup.sh downloaded | [ ] |
+| setup.sh executed without errors | [ ] |
+| LiveORC server URL entered | [ ] |
+| LiveORC credentials entered | [ ] |
+| Storage location set to /mnt/usb | [ ] |
+| NodeORC service started | [ ] |
+
+```bash
+# Verify installation
+sudo systemctl status nodeorc.service
+sudo journalctl -u nodeorc.service --no-pager -n 20
+```
+
+| Check | Expected | Actual | Pass |
+|-------|----------|--------|------|
+| nodeorc.service active | active (running) | | [ ] |
+| No errors in journal | Clean startup | | [ ] |
+
+**NodeORC version:** _______________
+
+### 11.4 Verify Directory Structure
+
+After installation, the home folder (`/mnt/usb`) should contain:
+
+```bash
+ls -la /mnt/usb/
+```
+
+| Directory/File | Purpose | Present |
+|----------------|---------|---------|
+| `incoming/` | New video files placed here for processing | [ ] |
+| `results/` | Processing output (NetCDF, JPG) by day | [ ] |
+| `success/` | Successfully processed videos by day | [ ] |
+| `failed/` | Failed processing attempts by day | [ ] |
+| `tmp/` | Temporary processing workspace | [ ] |
+| `water_level/` | Water level data files | [ ] |
+| `log/` | Daily log subdirectories | [ ] |
+| `nodeorc_data.db` | Local processing database | [ ] |
+| `settings/config_device.json` | Device configuration | [ ] |
+
+### 11.5 Configure NodeORC Settings
+
+**Configuration file:** `/mnt/usb/settings/config_device.json`
+
+Review and adjust disk management settings:
+
+```bash
+# View current configuration
+cat /mnt/usb/settings/config_device.json
+```
+
+| Setting | Recommended Value | Actual | Configured |
+|---------|-------------------|--------|------------|
+| home_folder | /mnt/usb | | [ ] |
+| min_free_space | 2 (GB) | | [ ] |
+| critical_space | 1 (GB) | | [ ] |
+
+> **Disk management behavior:** When free space drops below `min_free_space`, NodeORC
+> automatically removes oldest files from `failed/`, then `success/`, then `results/`.
+> At `critical_space`, the service shuts down to preserve system accessibility.
+
+To apply configuration changes:
+```bash
+python nodeorc upload-config /mnt/usb/settings/config_device.json
+```
+
+### 11.6 Create RTSP Video Capture Script
+
+**NodeORC does not capture video.** Videos must be placed in `incoming/` by an external script.
+Since Sukabumi uses a PoE camera (ANNKE C1200) with RTSP, we need an ffmpeg-based capture script.
+
+> **CONFIRM WITH ORC TEAM:** Exact RTSP URL format for the ANNKE C1200.
+> Common patterns for ONVIF cameras:
+> - Main stream: `rtsp://admin:PASSWORD@CAMERA_IP:554/Streaming/Channels/101`
+> - Sub stream: `rtsp://admin:PASSWORD@CAMERA_IP:554/Streaming/Channels/102`
+
+```bash
+sudo nano /usr/local/bin/orc-capture.sh
+```
+
+```bash
+#!/bin/bash
+# ORC RTSP Video Capture Script - Sukabumi
+# Captures video from PoE camera and places in NodeORC incoming folder
+# Called by Witty Pi schedule or systemd timer
+
+set -euo pipefail
+
+# Configuration
+CAMERA_URL="rtsp://admin:PASSWORD@CAMERA_IP:554/Streaming/Channels/101"  # CONFIRM
+DURATION=5         # seconds
+INCOMING="/mnt/usb/incoming"
+LOGFILE="/mnt/usb/log/capture.log"
+
+# Generate filename with NodeORC naming convention (YYYYMMDD_HHMMSS)
+DT=$(date '+%Y%m%d_%H%M%S')
+FILENAME="${INCOMING}/${DT}.mp4"
+
+# Ensure incoming directory exists
+mkdir -p "${INCOMING}"
+
+# Wait for camera to be ready (PoE camera boots with Pi, needs ~60s)
+# Only wait if camera is not yet responding
+if ! ffprobe -v quiet -i "${CAMERA_URL}" -show_entries format=duration 2>/dev/null; then
+    echo "$(date): Waiting for camera..." >> "${LOGFILE}"
+    sleep 60
+fi
+
+# Capture video
+echo "$(date): Capturing ${DURATION}s to ${FILENAME}" >> "${LOGFILE}"
+ffmpeg -y -rtsp_transport tcp \
+    -i "${CAMERA_URL}" \
+    -t "${DURATION}" \
+    -c copy \
+    -f mp4 \
+    "${FILENAME}" 2>> "${LOGFILE}"
+
+if [ $? -eq 0 ]; then
+    echo "$(date): Capture complete: ${FILENAME}" >> "${LOGFILE}"
+else
+    echo "$(date): ERROR: Capture failed" >> "${LOGFILE}"
+    exit 1
+fi
+```
+
+```bash
+sudo chmod +x /usr/local/bin/orc-capture.sh
+```
+
+> **IMPORTANT:** Replace `CAMERA_URL` with actual RTSP URL after camera is configured.
+> The camera password should NOT be hardcoded in production - discuss secure credential
+> management approach with ORC team.
+
+| Step | Completed |
+|------|-----------|
+| Capture script created | [ ] |
+| Script is executable | [ ] |
+| RTSP URL confirmed with ORC team | [ ] |
+| Camera credentials configured | [ ] |
+
+### 11.7 Test Manual Capture
+
+```bash
+# Ensure camera is powered and booted (wait ~90s after power-on)
+# Run capture script manually
+/usr/local/bin/orc-capture.sh
+
+# Verify output
+ls -la /mnt/usb/incoming/
+ffprobe /mnt/usb/incoming/*.mp4
+```
+
+| Check | Expected | Actual | Pass |
+|-------|----------|--------|------|
+| Capture script runs without error | Yes | | [ ] |
+| .mp4 file created in incoming/ | Yes | | [ ] |
+| Filename format | YYYYMMDD_HHMMSS.mp4 | | [ ] |
+| Video duration | ~5s | s | [ ] |
+| Video resolution | ≥1080p | | [ ] |
+| Video plays correctly | Yes | | [ ] |
+
+### 11.8 Verify NodeORC Processing
+
+After the capture script places a video in `incoming/`, NodeORC should automatically
+detect and process it.
+
+```bash
+# Watch NodeORC logs in real time
+sudo journalctl -u nodeorc.service -f
+```
+
+(In another terminal, run `/usr/local/bin/orc-capture.sh`, then watch the logs.)
+
+| Check | Expected | Actual | Pass |
+|-------|----------|--------|------|
+| NodeORC detects new video | Log shows pickup | | [ ] |
+| Processing begins | Log shows processing | | [ ] |
+| Video moves to success/ or failed/ | File moved from incoming/ | | [ ] |
+| Results appear in results/ | NetCDF/JPG files | | [ ] |
+
+> **Note:** Processing will likely fail until a valid task is configured via LiveORC.
+> At this stage, confirming that NodeORC *detects* the video and *attempts* processing
+> is sufficient. Full end-to-end processing requires LiveORC task configuration (Phase 12).
+
+### 11.9 Configure LiveORC Task Retrieval
+
+NodeORC automatically polls the LiveORC server every 5 minutes for task configurations.
+This replaces the previously-planned FTP config-check approach.
+
+> **CORRECTION:** The build guide CLAUDE.md references an "FTP config-check script" but
+> NodeORC v0.2.4 has built-in configuration pickup from LiveORC (GitHub Issue #49, closed
+> October 2024). No separate FTP mechanism is needed.
+
+```bash
+# Check if device has registered with LiveORC
+sudo journalctl -u nodeorc.service | grep -i "task\|config\|announce"
+```
+
+| Check | Expected | Actual | Pass |
+|-------|----------|--------|------|
+| Device announces to LiveORC | Yes (in logs) | | [ ] |
+| Polling for tasks (every 5 min) | Yes (in logs) | | [ ] |
+| Task downloaded (if configured) | Yes/Pending | | [ ] |
+
+> **CONFIRM WITH ORC TEAM:** Has a task template been configured on LiveORC for this device?
+> Task templates define how videos are processed (velocity analysis parameters, etc.).
+> Preparing task forms requires the LiveORC web interface.
+
+### 11.10 Water Level Data Setup
+
+NodeORC requires external water level data for discharge calculations.
+Water level cannot be read optically by NodeORC.
+
+**File location:** `/mnt/usb/water_level/all_levels.txt`
+**Format:** Space-separated, no headers - datetime string and water level value
+
+```
+20260301_000000 92.367
+20260301_001500 92.368
+```
+
+> **CONFIRM WITH ORC TEAM:** How will water level data be supplied at Sukabumi?
+> Options:
+> 1. Manual file updates via Pangolin remote access
+> 2. API harvesting script (if water levels posted to central platform)
+> 3. Direct sensor reading (requires additional hardware/software)
+
+| Step | Completed |
+|------|-----------|
+| water_level/ directory exists | [ ] |
+| Water level data source identified | [ ] |
+| Data supply method documented | [ ] |
+
+**Water level data source:** _______________
+**Supply method:** _______________
+
+### 11.11 Verification
 
 | Check | Pass |
 |-------|------|
-| NodeORC installed | [ ] |
-| Configuration complete | [ ] |
-| FTP config-check working | [ ] |
-| Manual capture works | [ ] |
+| USB flash mounted at /mnt/usb | [ ] |
+| NodeORC installed and service running | [ ] |
+| Directory structure correct | [ ] |
+| config_device.json reviewed | [ ] |
+| RTSP capture script created and tested | [ ] |
+| Manual capture produces valid video | [ ] |
+| NodeORC detects videos in incoming/ | [ ] |
+| LiveORC connectivity confirmed | [ ] |
+| Water level data approach documented | [ ] |
 
 **Notes:**
 ```
 NodeORC version:
-Config file path:
+Config file path: /mnt/usb/settings/config_device.json
+LiveORC server URL:
+Camera RTSP URL:
+Water level approach:
+ORC team contact for task configuration:
 
 
 ```
+
+### 11.12 Open Items for ORC Team Coordination
+
+These items require input from the ORC team before Phase 12:
+
+| Item | Status | Contact/Notes |
+|------|--------|---------------|
+| LiveORC server URL and credentials | [ ] Obtained | |
+| LiveORC task template configured | [ ] Confirmed | |
+| Camera RTSP URL format verified | [ ] Tested | |
+| Water level data approach agreed | [ ] Documented | |
+| ORC-OS vs NodeORC decision | [ ] Discussed | See note below |
+| Credential management approach | [ ] Agreed | For RTSP password |
+
+> **ORC-OS Note:** The ORC team has a newer project called ORC-OS
+> (https://github.com/localdevices/ORC-OS) that provides a full web dashboard with
+> FastAPI backend. It may be a better fit than raw NodeORC depending on team direction.
+> Discuss with ORC team before finalizing - both approaches are compatible with LiveORC.
 
 ---
 
@@ -1724,11 +1978,24 @@ Config file path:
 
 ### 12.3 Full Capture Cycle
 
+Run the RTSP capture script and verify NodeORC processes the result:
+
+```bash
+# Run capture
+/usr/local/bin/orc-capture.sh
+
+# Monitor NodeORC processing
+sudo journalctl -u nodeorc.service -f
+```
+
 | Step | Expected | Actual | Pass |
 |------|----------|--------|------|
 | System boot | ≤60s | s | [ ] |
-| Camera ready | ≤90s from boot | s | [ ] |
-| Video capture | 5s video | s | [ ] |
+| Camera RTSP ready | ≤90s from boot | s | [ ] |
+| orc-capture.sh completes | Video in incoming/ | | [ ] |
+| NodeORC detects video | Log shows pickup | | [ ] |
+| NodeORC processes video | Log shows processing | | [ ] |
+| Results or callback | success/ or failed/ | | [ ] |
 | Rain gauge reading | Value returned | | [ ] |
 | Data upload (or queue) | Success/queued | | [ ] |
 | LEDs indicate status | Correct colors | | [ ] |
@@ -1755,27 +2022,48 @@ Config file path:
 | SSH via hotspot | Success | | [ ] |
 | Exit maintenance mode | Works | | [ ] |
 
-### 12.6 Error Condition Tests
+### 12.6 NodeORC Service Resilience
+
+```bash
+# Verify service restarts after reboot
+sudo reboot
+# (after reboot)
+sudo systemctl status nodeorc.service
+```
 
 | Test | Action | Expected Behavior | Pass |
 |------|--------|-------------------|------|
-| Camera offline | Disconnect Ethernet | Error LED, logged | [ ] |
-| Modem offline | Remove antenna | Error handling | [ ] |
-| Rain gauge offline | Disconnect | Graceful failure | [ ] |
+| Service survives reboot | Reboot Pi | nodeorc.service active | [ ] |
+| LiveORC polling resumes | Check logs after reboot | "announce" or "task" in logs | [ ] |
+| USB storage remounts | Check /mnt/usb after reboot | Mounted, files intact | [ ] |
 
-### 12.7 Verification
+### 12.7 Error Condition Tests
+
+| Test | Action | Expected Behavior | Pass |
+|------|--------|-------------------|------|
+| Camera offline | Disconnect Ethernet | Capture script fails, error logged | [ ] |
+| Modem offline | Remove antenna | NodeORC queues callbacks for retry | [ ] |
+| Rain gauge offline | Disconnect | Graceful failure, logged | [ ] |
+| LiveORC unreachable | Block outbound | NodeORC continues with existing tasks | [ ] |
+| Disk full simulation | Fill /mnt/usb to min_free_space | Automatic cleanup of oldest files | [ ] |
+
+### 12.8 Verification
 
 | Check | Pass |
 |-------|------|
 | Power cycle works | [ ] |
-| Full capture cycle works | [ ] |
+| Full capture + processing cycle works | [ ] |
+| NodeORC service resilient across reboots | [ ] |
 | Pangolin remote access works | [ ] |
 | Maintenance mode works | [ ] |
 | Error handling works | [ ] |
+| LiveORC connectivity confirmed | [ ] |
 
 **Notes:**
 ```
-
+NodeORC processing status (success/failed/pending task):
+Pangolin connection details (document securely):
+Capture cycle total time (boot to shutdown-ready):
 
 
 ```
