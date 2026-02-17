@@ -38,63 +38,63 @@ Record serial numbers, date codes, and supplier info for traceability.
 
 | Component | Serial / ID | Date Code | Supplier | Order # | Photo |
 |-----------|-------------|-----------|----------|---------|-------|
-| Raspberry Pi 5 8GB | | | Amazon | Coupa #484665 | [ ] |
-| Witty Pi 5 HAT+ | | | Adafruit | #3625618 | [ ] |
-| Stacking Headers | | | Amazon | Coupa #484665 | [ ] |
-| GPIO Breakout (G469) | | | Amazon | Coupa #484666 | [ ] |
-| USB Flash 256GB | | | Amazon | Coupa #484667 | [ ] |
-| SD Card (primary) | | | Amazon | Coupa #484671 | [ ] |
-| SD Card (backup) | | | | | [ ] |
-| Active Cooler | | | Amazon | Coupa #484671 | [ ] |
+| Raspberry Pi 5 8GB | | | Amazon | Coupa #484665 | [photo](photos/raspberry_pi_5.png) |
+| Witty Pi 5 HAT+ | | | Adafruit | #3625618 | [photo](photos/witty_pi_5_hat.png) |
+| Stacking Headers | | | Amazon | Coupa #484665 | [photo](photos/stacking_headers.png) |
+| GPIO Breakout (G469) | | | Amazon | Coupa #484666 | [photo](photos/gpio_breakout_g469.png) |
+| USB Flash 256GB | | | Amazon | Coupa #484667 | [photo](photos/usb_flash_256gb.png) |
+| SD Card (primary) | | | Amazon | Coupa #484671 | [photo](photos/sd_cards.png) |
+| SD Card (backup) | | | | | [photo](photos/sd_cards.png) |
+| Active Cooler | | | Amazon | Coupa #484671 | [photo](photos/active_cooler.png) |
 
 #### Modem & Connectivity
 
 | Component | Serial / IMEI | Date Code | Supplier | Order # | Photo |
 |-----------|---------------|-----------|----------|---------|-------|
-| Quectel EG25-G | IMEI: | | Amazon | Coupa #484668 | [ ] |
-| WWAN-USB Adapter | | | Amazon | Coupa #484669 | [ ] |
-| Proxicast Antenna | | | Amazon | Coupa #484670 | [ ] |
+| Quectel EG25-G | IMEI: | | Amazon | Coupa #484668 | [photo](photos/quectel_eg25g.png) |
+| WWAN-USB Adapter | | | Amazon | Coupa #484669 | [photo](photos/wwan_usb_adapter.png) |
+| Proxicast Antenna | | | Amazon | Coupa #484670 | [photo](photos/proxicast_antenna.png) |
 
 #### Camera System
 
 | Component | Serial / MAC | Date Code | Supplier | Order # | Photo |
 |-----------|--------------|-----------|----------|---------|-------|
-| ANNKE C1200 | MAC: | | Amazon | Coupa #484671 | [ ] |
-| PoE Switch (12V) | | | Amazon | Coupa #484673 | [ ] |
-| Vertical Mount | | | Amazon | Coupa #484672 | [ ] |
+| ANNKE C1200 | MAC: | | Amazon | Coupa #484671 | [photo](photos/annke_c1200_camera.png) |
+| PoE Switch (12V) | | | Amazon | Coupa #484673 | [photo](photos/poe_switch_12v.png) |
+| Vertical Mount | | | Amazon | Coupa #484672 | [photo](photos/vertical_mount.png) |
 
 #### Sensors
 
 | Component | Serial / ID | Date Code | Supplier | Order # | Photo |
 |-----------|-------------|-----------|----------|---------|-------|
-| Hydreon RG-15 | | | Hydreon | #OEDES-00049484 | [ ] |
+| Hydreon RG-15 | | | Hydreon | #OEDES-00049484 | [photo](photos/hydreon_rg15.png) |
 
 #### Enclosure & Mounting
 
 | Component | Condition | Supplier | Order # | Photo |
 |-----------|-----------|----------|---------|-------|
-| NEMA 4X Enclosure 16x12x8 | | Amazon | Coupa #484671 | [ ] |
-| DIN Rail 35mm x 300mm | | Amazon | Coupa #484671 | [ ] |
-| DIN Clip for Pi | | Amazon | Coupa #484671 | [ ] |
-| DIN Terminal Blocks | | Amazon | Coupa #484671 | [ ] |
-| Gore Vent M12 | | DigiKey | #97227035 | [ ] |
+| NEMA 4X Enclosure 16x12x8 | | Amazon | Coupa #484671 | [photo](photos/nema_4x_enclosure.png) |
+| DIN Rail 35mm x 300mm | | Amazon | Coupa #484671 | [photo](photos/din_rail.png) |
+| DIN Clip for Pi | | Amazon | Coupa #484671 | [photo](photos/din_clip_pi.png) |
+| DIN Terminal Blocks | | Amazon | Coupa #484671 | [photo](photos/din_terminal_blocks.png) |
+| Gore Vent M12 | | DigiKey | #97227035 | [photo](photos/gore_vent_m12.png) |
 
 #### User Interface
 
 | Component | Quantity | Condition | Photo |
 |-----------|----------|-----------|-------|
-| Multi-color LEDs | /5 | | [ ] |
-| IP67 Pushbutton 16mm | | | [ ] |
-| PG9 Cable Gland | | | [ ] |
+| Multi-color LEDs | /5 | | [photo](photos/status_leds.png) |
+| IP67 Pushbutton 16mm | | | [photo](photos/ip67_pushbutton.png) |
+| PG9 Cable Gland | | | [photo](photos/cable_glands.png) |
 | LED Resistors | | | [ ] |
 
 #### Protection & Consumables
 
 | Component | Expiry/Condition | Supplier | Photo |
 |-----------|------------------|----------|-------|
-| Conformal Coating | Exp: | Amazon | [ ] |
-| Dielectric Grease | | Amazon | [ ] |
-| 12V Power Couplers | | Amazon | [ ] |
+| Conformal Coating | Exp: | Amazon | [photo](photos/conformal_coating.png) |
+| Dielectric Grease | | Amazon | [photo](photos/dielectric_grease.png) |
+| 12V Power Couplers | | Amazon | [photo](photos/12v_power_couplers.png) |
 
 #### Cables
 
