@@ -1,0 +1,457 @@
+<mxfile host="app.diagrams.net" modified="2026-02-16" agent="Claude Code" version="24.0.0" type="device">
+  <diagram name="System Wiring" id="sukabumi-wiring-v2">
+    <mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <!-- ============================================ -->
+        <!-- TITLE BLOCK                                  -->
+        <!-- ============================================ -->
+        <mxCell id="title-1" value="&lt;font style=&quot;font-size: 20px;&quot;&gt;&lt;b&gt;SUKABUMI ORC STATION &amp;mdash; SYSTEM WIRING DIAGRAM&lt;/b&gt;&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="350" y="10" width="680" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="title-2" value="&lt;font color=&quot;#666666&quot;&gt;OpenRiverCam&amp;nbsp; |&amp;nbsp; Rev B&amp;nbsp; |&amp;nbsp; 2026-02-16&amp;nbsp; |&amp;nbsp; Solar-Powered PoE Camera System&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="410" y="42" width="460" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="title-line" value="" style="line;strokeWidth=1;strokeColor=#AAAAAA;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="30" y="70" width="1540" height="1" as="geometry"/>
+        </mxCell>
+
+        <!-- ============================================ -->
+        <!-- EXTERNAL POWER SYSTEM (left side)            -->
+        <!-- ============================================ -->
+        <mxCell id="power-label" value="&lt;b&gt;EXTERNAL POWER&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#888888&quot; style=&quot;font-size: 9px;&quot;&gt;(existing at site)&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=middle;strokeColor=none;fillColor=none;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="30" y="82" width="170" height="35" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="solar" value="&lt;b&gt;200W Solar Panel&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE0E0;strokeColor=#B85450;fontSize=11;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="35" y="120" width="160" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="chargectl" value="&lt;b&gt;Charge Controller&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 9px;&quot; color=&quot;#666&quot;&gt;(site-provided)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE0E0;strokeColor=#B85450;fontSize=11;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="35" y="210" width="160" height="55" as="geometry"/>
+        </mxCell>
+        <mxCell id="battery" value="&lt;b&gt;12V 50Ah Battery&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 9px;&quot; color=&quot;#666&quot;&gt;LiFePO4 / Lead-Acid&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE0E0;strokeColor=#B85450;fontSize=11;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="35" y="305" width="160" height="55" as="geometry"/>
+        </mxCell>
+
+        <!-- Power wires: Solar -> CC -> Battery -->
+        <mxCell id="w-solar-cc" style="endArrow=block;endFill=1;strokeColor=#CC0000;strokeWidth=2;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;rounded=0;" edge="1" parent="1" source="solar" target="chargectl">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="w-cc-batt" style="endArrow=block;endFill=1;strokeColor=#CC0000;strokeWidth=2;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;rounded=0;" edge="1" parent="1" source="chargectl" target="battery">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Battery -> Cable Gland -> TB1 -->
+        <mxCell id="w-batt-tb1" style="endArrow=block;endFill=1;strokeColor=#CC0000;strokeWidth=2.5;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;rounded=0;" edge="1" parent="1" source="battery" target="tb1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="lbl-batt-tb1" value="&lt;font color=&quot;#CC0000&quot; style=&quot;font-size: 8px;&quot;&gt;12V DC&lt;br&gt;18 AWG&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=middle;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="200" y="300" width="55" height="30" as="geometry"/>
+        </mxCell>
+
+        <!-- Cable gland symbol -->
+        <mxCell id="gland-power" value="&lt;font style=&quot;font-size: 8px;&quot; color=&quot;#888&quot;&gt;M12&lt;br&gt;gland&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=middle;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="225" y="335" width="40" height="30" as="geometry"/>
+        </mxCell>
+
+        <!-- ============================================ -->
+        <!-- IP67 COMPUTE ENCLOSURE (dashed boundary)     -->
+        <!-- ============================================ -->
+        <mxCell id="enclosure" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#999999;strokeWidth=2;dashed=1;dashPattern=8 4;" vertex="1" parent="1">
+          <mxGeometry x="260" y="85" width="1100" height="530" as="geometry"/>
+        </mxCell>
+        <mxCell id="encl-label" value="&lt;font color=&quot;#999999&quot; style=&quot;font-size: 12px;&quot;&gt;&lt;i&gt;IP67 COMPUTE ENCLOSURE&lt;/i&gt;&lt;/font&gt;" style="text;html=1;align=right;verticalAlign=middle;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="88" width="240" height="25" as="geometry"/>
+        </mxCell>
+
+        <!-- ============================================ -->
+        <!-- TERMINAL BLOCK TB1                           -->
+        <!-- ============================================ -->
+        <mxCell id="tb1" value="&lt;b&gt;Terminal Block&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 9px;&quot; color=&quot;#666&quot;&gt;TB1&lt;br&gt;Power Distribution&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE0E0;strokeColor=#B85450;fontSize=11;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="280" y="300" width="130" height="70" as="geometry"/>
+        </mxCell>
+
+        <!-- ============================================ -->
+        <!-- WITTY PI 5 HAT+                              -->
+        <!-- ============================================ -->
+        <mxCell id="wittypi" value="&lt;b&gt;Witty Pi 5 HAT+&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 9px;&quot; color=&quot;#666&quot;&gt;IN: 12V (5-26V range)&lt;br&gt;OUT: 5V USB-C to Pi&lt;br&gt;RTC | Sleep/Wake schedule&lt;br&gt;Switched 12V rail&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DAE8FC;strokeColor=#6C8EBF;fontSize=11;verticalAlign=top;spacingTop=3;" vertex="1" parent="1">
+          <mxGeometry x="280" y="130" width="170" height="105" as="geometry"/>
+        </mxCell>
+
+        <!-- TB1 -> Witty Pi (12V) -->
+        <mxCell id="w-tb1-witty" style="endArrow=block;endFill=1;strokeColor=#CC0000;strokeWidth=2;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.25;entryY=1;entryDx=0;entryDy=0;rounded=0;" edge="1" parent="1" source="tb1" target="wittypi">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="lbl-tb1-witty" value="&lt;font color=&quot;#CC0000&quot; style=&quot;font-size: 8px;&quot;&gt;12V&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=middle;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="300" y="260" width="30" height="20" as="geometry"/>
+        </mxCell>
+
+        <!-- ============================================ -->
+        <!-- RASPBERRY PI 5                               -->
+        <!-- ============================================ -->
+        <mxCell id="pi5" value="&lt;b style=&quot;font-size: 13px;&quot;&gt;Raspberry Pi 5&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 9px;&quot; color=&quot;#666&quot;&gt;8GB RAM&lt;br&gt;NodeORC software&lt;br&gt;5V USB-C powered&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DAE8FC;strokeColor=#6C8EBF;fontSize=11;verticalAlign=top;spacingTop=5;" vertex="1" parent="1">
+          <mxGeometry x="520" y="130" width="210" height="115" as="geometry"/>
+        </mxCell>
+
+        <!-- Witty Pi -> Pi 5 (5V USB-C) -->
+        <mxCell id="w-witty-pi" style="endArrow=block;endFill=1;strokeColor=#FF6600;strokeWidth=2;exitX=1;exitY=0.3;exitDx=0;exitDy=0;entryX=0;entryY=0.3;entryDx=0;entryDy=0;rounded=0;" edge="1" parent="1" source="wittypi" target="pi5">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="lbl-witty-pi" value="&lt;font color=&quot;#FF6600&quot; style=&quot;font-size: 9px;&quot;&gt;&lt;b&gt;5V USB-C&lt;/b&gt;&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=middle;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="455" y="145" width="70" height="20" as="geometry"/>
+        </mxCell>
+
+        <!-- ============================================ -->
+        <!-- SAMSUNG FIT PLUS (USB storage)               -->
+        <!-- ============================================ -->
+        <mxCell id="ssd" value="&lt;b&gt;Samsung FIT Plus&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 9px;&quot; color=&quot;#666&quot;&gt;256GB USB 3.1 (IP67)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DAE8FC;strokeColor=#6C8EBF;fontSize=10;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="520" y="290" width="150" height="45" as="geometry"/>
+        </mxCell>
+
+        <!-- Pi -> SSD (USB 3.0) -->
+        <mxCell id="w-pi-ssd" style="endArrow=block;endFill=1;strokeColor=#6600CC;strokeWidth=1.5;exitX=0.25;exitY=1;exitDx=0;exitDy=0;entryX=0.25;entryY=0;entryDx=0;entryDy=0;rounded=0;" edge="1" parent="1" source="pi5" target="ssd">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="lbl-pi-ssd" value="&lt;font color=&quot;#6600CC&quot; style=&quot;font-size: 8px;&quot;&gt;USB 3.0&lt;/font&gt;" style="text;html=1;align=left;verticalAlign=middle;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="578" y="258" width="50" height="20" as="geometry"/>
+        </mxCell>
+
+        <!-- ============================================ -->
+        <!-- QUECTEL EG25-G MODEM                         -->
+        <!-- ============================================ -->
+        <mxCell id="modem" value="&lt;b&gt;Quectel EG25-G&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 9px;&quot; color=&quot;#666&quot;&gt;LTE Cat-4 Modem&lt;br&gt;PU201 USB adapter&lt;br&gt;Telkomsel (Indonesia)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;fontSize=10;verticalAlign=top;spacingTop=3;" vertex="1" parent="1">
+          <mxGeometry x="800" y="130" width="160" height="80" as="geometry"/>
+        </mxCell>
+
+        <!-- Pi -> Modem (USB 2.0) -->
+        <mxCell id="w-pi-modem" style="endArrow=block;endFill=1;strokeColor=#6600CC;strokeWidth=1.5;exitX=1;exitY=0.25;exitDx=0;exitDy=0;entryX=0;entryY=0.4;entryDx=0;entryDy=0;rounded=0;" edge="1" parent="1" source="pi5" target="modem">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="lbl-pi-modem" value="&lt;font color=&quot;#6600CC&quot; style=&quot;font-size: 8px;&quot;&gt;USB 2.0&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=middle;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="740" y="148" width="55" height="20" as="geometry"/>
+        </mxCell>
+
+        <!-- ============================================ -->
+        <!-- LTE ANTENNA (external, above enclosure)      -->
+        <!-- ============================================ -->
+        <mxCell id="antenna" value="&lt;b&gt;Proxicast ANT-122-S02&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 9px;&quot; color=&quot;#666&quot;&gt;MIMO LTE Puck (IP67)&lt;br&gt;Roof-mounted&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;fontSize=10;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="1050" y="100" width="170" height="60" as="geometry"/>
+        </mxCell>
+
+        <!-- Modem -> SMA Bulkheads -> Antenna -->
+        <mxCell id="w-modem-ant" style="endArrow=none;strokeColor=#CC8800;strokeWidth=1.5;exitX=1;exitY=0.25;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;rounded=1;" edge="1" parent="1" source="modem" target="antenna">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="lbl-sma" value="&lt;font color=&quot;#888&quot; style=&quot;font-size: 8px;&quot;&gt;2x SMA&lt;br&gt;bulkhead&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=middle;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="980" y="110" width="55" height="30" as="geometry"/>
+        </mxCell>
+
+        <!-- ============================================ -->
+        <!-- PI-EZCONNECT (GPIO terminal block)           -->
+        <!-- ============================================ -->
+        <mxCell id="ezconnect" value="&lt;b&gt;Pi-EzConnect&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 9px;&quot; color=&quot;#666&quot;&gt;GPIO Terminal Block&lt;br&gt;Adafruit 2711&lt;br&gt;Screw terminals for all GPIO&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E1D5E7;strokeColor=#9673A6;fontSize=10;verticalAlign=top;spacingTop=3;" vertex="1" parent="1">
+          <mxGeometry x="800" y="260" width="160" height="80" as="geometry"/>
+        </mxCell>
+
+        <!-- Pi -> EzConnect (40-pin GPIO) -->
+        <mxCell id="w-pi-ez" style="endArrow=block;endFill=1;strokeColor=#999900;strokeWidth=1.5;exitX=1;exitY=0.7;exitDx=0;exitDy=0;entryX=0;entryY=0.35;entryDx=0;entryDy=0;rounded=0;" edge="1" parent="1" source="pi5" target="ezconnect">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="lbl-pi-ez" value="&lt;font color=&quot;#999900&quot; style=&quot;font-size: 8px;&quot;&gt;40-pin GPIO&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=middle;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="730" y="208" width="70" height="20" as="geometry"/>
+        </mxCell>
+
+        <!-- ============================================ -->
+        <!-- SWITCHED 12V RAIL (Witty Pi -> Fuse -> PoE)  -->
+        <!-- ============================================ -->
+
+        <!-- Fuse 5A -->
+        <mxCell id="fuse" value="&lt;b&gt;&lt;font color=&quot;#CC0000&quot;&gt;F1: 5A&lt;/font&gt;&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#CC0000;strokeWidth=2;fontSize=10;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="410" y="420" width="80" height="30" as="geometry"/>
+        </mxCell>
+
+        <!-- Witty Pi switched 12V -> Fuse (dashed = switched) -->
+        <mxCell id="w-witty-fuse" style="endArrow=block;endFill=1;strokeColor=#CC0000;strokeWidth=1.5;dashed=1;dashPattern=8 4;rounded=1;" edge="1" parent="1" source="wittypi" target="fuse">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="365" y="260"/>
+              <mxPoint x="365" y="390"/>
+              <mxPoint x="450" y="390"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="lbl-sw12v" value="&lt;font color=&quot;#CC0000&quot; style=&quot;font-size: 8px;&quot;&gt;Switched&lt;br&gt;12V rail&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=middle;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="370" y="370" width="55" height="25" as="geometry"/>
+        </mxCell>
+
+        <!-- ============================================ -->
+        <!-- PoE INJECTOR                                 -->
+        <!-- ============================================ -->
+        <mxCell id="poe" value="&lt;b&gt;Planet IPOE-260-12V&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 9px;&quot; color=&quot;#666&quot;&gt;PoE Injector&lt;br&gt;12V IN &amp;rarr; 48V PoE OUT&lt;br&gt;802.3af/at, 60W max&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D5E8D4;strokeColor=#82B366;fontSize=10;verticalAlign=top;spacingTop=3;" vertex="1" parent="1">
+          <mxGeometry x="380" y="480" width="170" height="80" as="geometry"/>
+        </mxCell>
+
+        <!-- Fuse -> PoE Injector -->
+        <mxCell id="w-fuse-poe" style="endArrow=block;endFill=1;strokeColor=#CC0000;strokeWidth=2;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;rounded=0;" edge="1" parent="1" source="fuse" target="poe">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="lbl-fuse-poe" value="&lt;font color=&quot;#CC0000&quot; style=&quot;font-size: 8px;&quot;&gt;12V&lt;/font&gt;" style="text;html=1;align=left;verticalAlign=middle;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="455" y="455" width="30" height="15" as="geometry"/>
+        </mxCell>
+
+        <!-- PoE Injector DATA -> Pi Ethernet -->
+        <mxCell id="w-poe-data" style="endArrow=block;endFill=1;strokeColor=#006633;strokeWidth=1.5;rounded=1;" edge="1" parent="1" source="poe" target="pi5">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="590" y="500"/>
+              <mxPoint x="590" y="390"/>
+              <mxPoint x="650" y="390"/>
+              <mxPoint x="650" y="290"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="lbl-poe-data" value="&lt;font color=&quot;#006633&quot; style=&quot;font-size: 8px;&quot;&gt;DATA&lt;br&gt;(Ethernet)&lt;/font&gt;" style="text;html=1;align=left;verticalAlign=middle;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="595" y="375" width="60" height="30" as="geometry"/>
+        </mxCell>
+
+        <!-- PoE Injector DATA+POWER -> Camera (through enclosure wall) -->
+        <mxCell id="w-poe-cam" style="endArrow=block;endFill=1;strokeColor=#0066CC;strokeWidth=2.5;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;rounded=0;" edge="1" parent="1" source="poe" target="camera">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="465" y="600"/>
+              <mxPoint x="465" y="680"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="lbl-poe-cam" value="&lt;font color=&quot;#0066CC&quot; style=&quot;font-size: 9px;&quot;&gt;&lt;b&gt;Cat6 PoE&lt;/b&gt;&lt;br&gt;48V + Data&lt;/font&gt;" style="text;html=1;align=left;verticalAlign=middle;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="475" y="600" width="70" height="30" as="geometry"/>
+        </mxCell>
+
+        <!-- Cable gland + RJ45 at enclosure boundary -->
+        <mxCell id="gland-cat6" value="&lt;font style=&quot;font-size: 8px;&quot; color=&quot;#888&quot;&gt;M12 gland&lt;br&gt;+ IP68 RJ45&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=middle;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="395" y="610" width="65" height="30" as="geometry"/>
+        </mxCell>
+
+        <!-- ============================================ -->
+        <!-- ANNKE C1200 CAMERA (external)                -->
+        <!-- ============================================ -->
+        <mxCell id="camera" value="&lt;b style=&quot;font-size: 12px;&quot;&gt;ANNKE C1200&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 9px;&quot; color=&quot;#666&quot;&gt;PoE Camera (IP67)&lt;br&gt;12MP | 134&amp;deg; FOV&lt;br&gt;Built-in IR LEDs&lt;br&gt;48V PoE powered&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D5E8D4;strokeColor=#82B366;fontSize=11;verticalAlign=top;spacingTop=3;" vertex="1" parent="1">
+          <mxGeometry x="370" y="700" width="190" height="95" as="geometry"/>
+        </mxCell>
+        <mxCell id="cam-label" value="&lt;font color=&quot;#888&quot; style=&quot;font-size: 9px;&quot;&gt;&lt;i&gt;EXTERNAL (pole-mounted)&lt;/i&gt;&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=middle;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="370" y="680" width="190" height="20" as="geometry"/>
+        </mxCell>
+
+        <!-- ============================================ -->
+        <!-- STATUS LEDs (via EzConnect GPIO)              -->
+        <!-- ============================================ -->
+        <mxCell id="led-section-bg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F0FF;strokeColor=#D4C5E2;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="1020" y="260" width="200" height="180" as="geometry"/>
+        </mxCell>
+        <mxCell id="led-section-label" value="&lt;b&gt;STATUS LEDs&lt;/b&gt;" style="text;html=1;align=center;verticalAlign=middle;strokeColor=none;fillColor=none;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1050" y="262" width="140" height="20" as="geometry"/>
+        </mxCell>
+
+        <!-- Green LED -->
+        <mxCell id="led-green" value="&lt;font style=&quot;font-size: 9px;&quot;&gt;330&amp;Omega; &amp;rarr; &lt;b&gt;&lt;font color=&quot;#00AA00&quot;&gt;GREEN LED&lt;/font&gt;&lt;/b&gt;&lt;br&gt;GPIO 17 | System OK&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#00AA00;strokeWidth=1.5;fontSize=9;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="1040" y="288" width="165" height="36" as="geometry"/>
+        </mxCell>
+
+        <!-- Yellow LED -->
+        <mxCell id="led-yellow" value="&lt;font style=&quot;font-size: 9px;&quot;&gt;330&amp;Omega; &amp;rarr; &lt;b&gt;&lt;font color=&quot;#CC9900&quot;&gt;YELLOW LED&lt;/font&gt;&lt;/b&gt;&lt;br&gt;GPIO 27 | Working&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#CC9900;strokeWidth=1.5;fontSize=9;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="1040" y="334" width="165" height="36" as="geometry"/>
+        </mxCell>
+
+        <!-- Red LED -->
+        <mxCell id="led-red" value="&lt;font style=&quot;font-size: 9px;&quot;&gt;330&amp;Omega; &amp;rarr; &lt;b&gt;&lt;font color=&quot;#CC0000&quot;&gt;RED LED&lt;/font&gt;&lt;/b&gt;&lt;br&gt;GPIO 22 | Error&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#CC0000;strokeWidth=1.5;fontSize=9;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="1040" y="380" width="165" height="36" as="geometry"/>
+        </mxCell>
+
+        <!-- EzConnect -> LEDs -->
+        <mxCell id="w-ez-leds" style="endArrow=block;endFill=1;strokeColor=#999900;strokeWidth=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;rounded=1;" edge="1" parent="1" source="ezconnect" target="led-section-bg">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="lbl-ez-leds" value="&lt;font color=&quot;#999900&quot; style=&quot;font-size: 8px;&quot;&gt;3.3V GPIO&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=middle;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="965" y="285" width="55" height="15" as="geometry"/>
+        </mxCell>
+        <mxCell id="lbl-led-gland" value="&lt;font style=&quot;font-size: 8px;&quot; color=&quot;#888&quot;&gt;M16 gland&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=middle;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="1040" y="422" width="60" height="15" as="geometry"/>
+        </mxCell>
+
+        <!-- ============================================ -->
+        <!-- MAINTENANCE BUTTON                           -->
+        <!-- ============================================ -->
+        <mxCell id="button" value="&lt;b&gt;IP67 Pushbutton&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 9px;&quot; color=&quot;#666&quot;&gt;GPIO 23 (internal pull-up)&lt;br&gt;Long press 3s = Maintenance mode&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E1D5E7;strokeColor=#9673A6;fontSize=10;verticalAlign=top;spacingTop=3;" vertex="1" parent="1">
+          <mxGeometry x="1020" y="465" width="200" height="65" as="geometry"/>
+        </mxCell>
+
+        <!-- EzConnect -> Button -->
+        <mxCell id="w-ez-btn" style="endArrow=block;endFill=1;strokeColor=#999900;strokeWidth=1;exitX=1;exitY=0.8;exitDx=0;exitDy=0;entryX=0;entryY=0.4;entryDx=0;entryDy=0;rounded=1;" edge="1" parent="1" source="ezconnect" target="button">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="990" y="324"/>
+              <mxPoint x="990" y="491"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="lbl-btn-gland" value="&lt;font style=&quot;font-size: 8px;&quot; color=&quot;#888&quot;&gt;M16 gland&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=middle;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="1040" y="530" width="60" height="15" as="geometry"/>
+        </mxCell>
+
+        <!-- ============================================ -->
+        <!-- RAIN GAUGE (external)                        -->
+        <!-- ============================================ -->
+        <mxCell id="rain" value="&lt;b&gt;Hydreon RG-15&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 9px;&quot; color=&quot;#666&quot;&gt;Optical Rain Gauge&lt;br&gt;UART Serial 3.3V&lt;br&gt;GPIO 14 TX / GPIO 15 RX&lt;br&gt;12V power from TB1&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D4E8F0;strokeColor=#5B9BD5;fontSize=10;verticalAlign=top;spacingTop=3;" vertex="1" parent="1">
+          <mxGeometry x="1020" y="580" width="200" height="85" as="geometry"/>
+        </mxCell>
+        <mxCell id="rain-label" value="&lt;font color=&quot;#888&quot; style=&quot;font-size: 9px;&quot;&gt;&lt;i&gt;EXTERNAL (pole-mounted)&lt;/i&gt;&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=middle;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="1020" y="665" width="200" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="lbl-rain-gland" value="&lt;font style=&quot;font-size: 8px;&quot; color=&quot;#888&quot;&gt;PG9 gland&lt;/font&gt;" style="text;html=1;align=left;verticalAlign=middle;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="958" y="610" width="55" height="15" as="geometry"/>
+        </mxCell>
+
+        <!-- EzConnect -> Rain Gauge -->
+        <mxCell id="w-ez-rain" style="endArrow=block;endFill=1;strokeColor=#999900;strokeWidth=1;exitX=0.75;exitY=1;exitDx=0;exitDy=0;entryX=0.25;entryY=0;entryDx=0;entryDy=0;rounded=1;" edge="1" parent="1" source="ezconnect" target="rain">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="920" y="370"/>
+              <mxPoint x="920" y="550"/>
+              <mxPoint x="1070" y="550"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="lbl-ez-rain" value="&lt;font color=&quot;#999900&quot; style=&quot;font-size: 8px;&quot;&gt;UART&lt;br&gt;GPIO 14/15&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=middle;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="925" y="540" width="60" height="25" as="geometry"/>
+        </mxCell>
+
+        <!-- ============================================ -->
+        <!-- GORE VENT (on enclosure)                     -->
+        <!-- ============================================ -->
+        <mxCell id="gorevent" value="&lt;font style=&quot;font-size: 9px;&quot;&gt;&lt;b&gt;Gore Vent M12&lt;/b&gt;&lt;br&gt;Pressure equalization&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#999999;fontSize=9;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="660" y="575" width="120" height="35" as="geometry"/>
+        </mxCell>
+
+        <!-- ============================================ -->
+        <!-- WIRE COLOR LEGEND                            -->
+        <!-- ============================================ -->
+        <mxCell id="legend-bg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FAFAFA;strokeColor=#CCCCCC;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="30" y="470" width="200" height="200" as="geometry"/>
+        </mxCell>
+        <mxCell id="legend-title" value="&lt;b&gt;WIRE LEGEND&lt;/b&gt;" style="text;html=1;align=left;verticalAlign=middle;strokeColor=none;fillColor=none;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="45" y="475" width="100" height="20" as="geometry"/>
+        </mxCell>
+
+        <!-- Legend entries -->
+        <mxCell id="leg1-line" value="" style="endArrow=none;strokeColor=#CC0000;strokeWidth=3;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="50" y="510" as="sourcePoint"/>
+            <mxPoint x="90" y="510" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="leg1-text" value="&lt;font style=&quot;font-size: 9px;&quot;&gt;12V DC Power (18 AWG)&lt;/font&gt;" style="text;html=1;align=left;verticalAlign=middle;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="95" y="500" width="130" height="20" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="leg1b-line" value="" style="endArrow=none;strokeColor=#CC0000;strokeWidth=2;dashed=1;dashPattern=8 4;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="50" y="530" as="sourcePoint"/>
+            <mxPoint x="90" y="530" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="leg1b-text" value="&lt;font style=&quot;font-size: 9px;&quot;&gt;Switched 12V (Witty Pi)&lt;/font&gt;" style="text;html=1;align=left;verticalAlign=middle;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="95" y="520" width="130" height="20" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="leg2-line" value="" style="endArrow=none;strokeColor=#FF6600;strokeWidth=3;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="50" y="550" as="sourcePoint"/>
+            <mxPoint x="90" y="550" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="leg2-text" value="&lt;font style=&quot;font-size: 9px;&quot;&gt;5V USB-C (to Pi)&lt;/font&gt;" style="text;html=1;align=left;verticalAlign=middle;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="95" y="540" width="130" height="20" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="leg3-line" value="" style="endArrow=none;strokeColor=#0066CC;strokeWidth=3;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="50" y="570" as="sourcePoint"/>
+            <mxPoint x="90" y="570" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="leg3-text" value="&lt;font style=&quot;font-size: 9px;&quot;&gt;48V PoE (Cat6)&lt;/font&gt;" style="text;html=1;align=left;verticalAlign=middle;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="95" y="560" width="130" height="20" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="leg4-line" value="" style="endArrow=none;strokeColor=#006633;strokeWidth=3;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="50" y="590" as="sourcePoint"/>
+            <mxPoint x="90" y="590" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="leg4-text" value="&lt;font style=&quot;font-size: 9px;&quot;&gt;Ethernet Data&lt;/font&gt;" style="text;html=1;align=left;verticalAlign=middle;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="95" y="580" width="130" height="20" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="leg5-line" value="" style="endArrow=none;strokeColor=#6600CC;strokeWidth=3;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="50" y="610" as="sourcePoint"/>
+            <mxPoint x="90" y="610" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="leg5-text" value="&lt;font style=&quot;font-size: 9px;&quot;&gt;USB Data&lt;/font&gt;" style="text;html=1;align=left;verticalAlign=middle;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="95" y="600" width="130" height="20" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="leg6-line" value="" style="endArrow=none;strokeColor=#999900;strokeWidth=3;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="50" y="630" as="sourcePoint"/>
+            <mxPoint x="90" y="630" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="leg6-text" value="&lt;font style=&quot;font-size: 9px;&quot;&gt;GPIO / Signal (22 AWG)&lt;/font&gt;" style="text;html=1;align=left;verticalAlign=middle;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="95" y="620" width="130" height="20" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="leg7-line" value="" style="endArrow=none;strokeColor=#CC8800;strokeWidth=3;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="50" y="650" as="sourcePoint"/>
+            <mxPoint x="90" y="650" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="leg7-text" value="&lt;font style=&quot;font-size: 9px;&quot;&gt;SMA Coaxial (RF)&lt;/font&gt;" style="text;html=1;align=left;verticalAlign=middle;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="95" y="640" width="130" height="20" as="geometry"/>
+        </mxCell>
+
+        <!-- ============================================ -->
+        <!-- NOTES                                        -->
+        <!-- ============================================ -->
+        <mxCell id="notes-bg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FAFAFA;strokeColor=#CCCCCC;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="30" y="690" width="310" height="220" as="geometry"/>
+        </mxCell>
+        <mxCell id="notes-title" value="&lt;b&gt;NOTES&lt;/b&gt;" style="text;html=1;align=left;verticalAlign=top;strokeColor=none;fillColor=none;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="45" y="695" width="60" height="18" as="geometry"/>
+        </mxCell>
+        <mxCell id="notes-text" value="&lt;font style=&quot;font-size: 8px;&quot;&gt;1. PoE injector on Witty Pi switched 12V rail &amp;mdash;&lt;br&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;camera power-cycles in sync with Pi.&lt;br&gt;2. No heaters (Sukabumi tropical climate,&lt;br&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;solar power budget constraint).&lt;br&gt;3. Conformal coating MG 422C on all PCBs.&lt;br&gt;4. Dielectric grease on outdoor connections.&lt;br&gt;5. Gore vent for pressure equalization.&lt;br&gt;6. Carrier: Telkomsel (Indonesia).&lt;br&gt;7. Peak draw: ~42W (3.5A @ 12V).&lt;br&gt;8. Cycle: 2.5 min ON / 12.5 min SLEEP&lt;br&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;(96 cycles/day).&lt;br&gt;9. ANNKE C1200 built-in IR &amp;mdash;&lt;br&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;no separate illuminator needed.&lt;/font&gt;" style="text;html=1;align=left;verticalAlign=top;strokeColor=none;fillColor=none;spacingLeft=5;" vertex="1" parent="1">
+          <mxGeometry x="40" y="715" width="290" height="185" as="geometry"/>
+        </mxCell>
+
+        <!-- ============================================ -->
+        <!-- VOLTAGE / PROTECTION TABLE                   -->
+        <!-- ============================================ -->
+        <mxCell id="vtable-bg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FAFAFA;strokeColor=#CCCCCC;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="660" y="700" width="310" height="200" as="geometry"/>
+        </mxCell>
+        <mxCell id="vtable-title" value="&lt;b&gt;VOLTAGE / PROTECTION&lt;/b&gt;" style="text;html=1;align=left;verticalAlign=top;strokeColor=none;fillColor=none;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="675" y="705" width="160" height="18" as="geometry"/>
+        </mxCell>
+        <mxCell id="vtable-text" value="&lt;font style=&quot;font-size: 9px;&quot;&gt;&lt;table style=&quot;border-collapse: collapse;&quot;&gt;&lt;tr&gt;&lt;td style=&quot;padding: 2px 8px;&quot;&gt;&lt;b&gt;Component&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;padding: 2px 8px;&quot;&gt;&lt;b&gt;Voltage&lt;/b&gt;&lt;/td&gt;&lt;td style=&quot;padding: 2px 8px;&quot;&gt;&lt;b&gt;Protection&lt;/b&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;padding: 2px 8px;&quot;&gt;Solar system&lt;/td&gt;&lt;td style=&quot;padding: 2px 8px;&quot;&gt;12V nom&lt;/td&gt;&lt;td style=&quot;padding: 2px 8px;&quot;&gt;&amp;mdash;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;padding: 2px 8px;&quot;&gt;Witty Pi in&lt;/td&gt;&lt;td style=&quot;padding: 2px 8px;&quot;&gt;12V (5-26V)&lt;/td&gt;&lt;td style=&quot;padding: 2px 8px;&quot;&gt;Internal OCP&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;padding: 2px 8px;&quot;&gt;Pi 5 (USB-C)&lt;/td&gt;&lt;td style=&quot;padding: 2px 8px;&quot;&gt;5V&lt;/td&gt;&lt;td style=&quot;padding: 2px 8px;&quot;&gt;From Witty Pi&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;padding: 2px 8px;&quot;&gt;PoE injector&lt;/td&gt;&lt;td style=&quot;padding: 2px 8px;&quot;&gt;12V&amp;rarr;48V&lt;/td&gt;&lt;td style=&quot;padding: 2px 8px;&quot;&gt;5A inline fuse&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;padding: 2px 8px;&quot;&gt;Camera (PoE)&lt;/td&gt;&lt;td style=&quot;padding: 2px 8px;&quot;&gt;48V&lt;/td&gt;&lt;td style=&quot;padding: 2px 8px;&quot;&gt;802.3af/at&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;padding: 2px 8px;&quot;&gt;LTE modem&lt;/td&gt;&lt;td style=&quot;padding: 2px 8px;&quot;&gt;5V USB&lt;/td&gt;&lt;td style=&quot;padding: 2px 8px;&quot;&gt;Pi USB OCP&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;padding: 2px 8px;&quot;&gt;GPIO signals&lt;/td&gt;&lt;td style=&quot;padding: 2px 8px;&quot;&gt;3.3V&lt;/td&gt;&lt;td style=&quot;padding: 2px 8px;&quot;&gt;330&amp;Omega; series R&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/font&gt;" style="text;html=1;align=left;verticalAlign=top;strokeColor=none;fillColor=none;overflow=fill;" vertex="1" parent="1">
+          <mxGeometry x="665" y="725" width="300" height="170" as="geometry"/>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
