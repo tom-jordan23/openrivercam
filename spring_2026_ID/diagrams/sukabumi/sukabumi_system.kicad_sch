@@ -1,15 +1,15 @@
 (kicad_sch
   (version 20231120)
   (generator "claude_code")
-  (generator_version "1.0")
+  (generator_version "2.0")
   (uuid "a1b2c3d4-e5f6-7890-abcd-ef1234567890")
   (paper "A3")
   (title_block
     (title "Sukabumi River Monitoring Station")
-    (date "2026-01-16")
-    (rev "1.0")
+    (date "2026-02-16")
+    (rev "2.0")
     (company "OpenRiverCam")
-    (comment 1 "Solar-Powered USB Camera System")
+    (comment 1 "Solar-Powered PoE Camera System")
     (comment 2 "Indonesia Spring 2026 Deployment")
   )
 
@@ -41,7 +41,7 @@
     )
   )
 
-  ;; Main Fuse 10A
+  ;; PoE Camera Circuit Fuse 5A
   (symbol
     (lib_id "Device:Fuse")
     (at 50.8 76.2 90)
@@ -55,9 +55,13 @@
       (at 50.8 71.12 90)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Value" "10A Blade Fuse"
+    (property "Value" "5A Inline Blade Fuse"
       (at 50.8 73.66 90)
       (effects (font (size 1.27 1.27)))
+    )
+    (property "Description" "Protection for PoE injector circuit, on Witty Pi switched 12V rail"
+      (at 50.8 76.2 0)
+      (effects (font (size 1.0 1.0)) hide)
     )
   )
 
@@ -83,16 +87,16 @@
       (at 101.6 66.04 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Description" "Power management HAT with RTC, scheduled wake/sleep"
+    (property "Description" "Power management HAT with RTC, scheduled wake/sleep, switched 12V output rail"
       (at 101.6 68.58 0)
       (effects (font (size 1.0 1.0)) hide)
     )
     (pin "1" (uuid "wp-vin+") (name "VIN+ (7-26V)"))
     (pin "2" (uuid "wp-vin-") (name "VIN- (GND)"))
-    (pin "3" (uuid "wp-vout+") (name "VOUT+ (5V to Pi)"))
+    (pin "3" (uuid "wp-vout+") (name "VOUT+ (5V USB-C to Pi)"))
     (pin "4" (uuid "wp-vout-") (name "VOUT- (GND)"))
-    (pin "5" (uuid "wp-gpio4") (name "GPIO4 (Shutdown)"))
-    (pin "6" (uuid "wp-gpio17") (name "GPIO17 (Wake)"))
+    (pin "5" (uuid "wp-sw12v+") (name "SW_12V+ (Switched 12V out)"))
+    (pin "6" (uuid "wp-sw12v-") (name "SW_12V- (GND)"))
   )
 
   ;; Raspberry Pi 5
@@ -109,11 +113,11 @@
       (at 152.4 50.8 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Value" "Raspberry Pi 5 (4GB/8GB)"
+    (property "Value" "Raspberry Pi 5 (8GB)"
       (at 152.4 53.34 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Description" "Main compute unit running ORC software"
+    (property "Description" "Main compute unit running NodeORC software"
       (at 152.4 55.88 0)
       (effects (font (size 1.0 1.0)) hide)
     )
@@ -143,7 +147,7 @@
     )
   )
 
-  ;; M.2 SSD in USB Enclosure
+  ;; Samsung FIT Plus 256GB USB Flash Drive
   (symbol
     (lib_id "Device:Memory")
     (at 152.4 175.26 0)
@@ -157,11 +161,11 @@
       (at 152.4 167.64 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Value" "512GB M.2 SSD + USB Enclosure"
+    (property "Value" "Samsung FIT Plus 256GB USB"
       (at 152.4 170.18 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Description" "Mass storage for video capture"
+    (property "Description" "USB 3.1 Gen 1 flash drive (IP67), mass storage for video capture and processing"
       (at 152.4 172.72 0)
       (effects (font (size 1.0 1.0)) hide)
     )
@@ -189,13 +193,13 @@
       (at 254 66.04 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Description" "LTE Cat 4 modem with USB adapter, supports Indonesian carriers"
+    (property "Description" "LTE Cat 4 modem with USB adapter, supports Indonesian carriers (Telkomsel)"
       (at 254 68.58 0)
       (effects (font (size 1.0 1.0)) hide)
     )
   )
 
-  ;; LTE Antennas (2x)
+  ;; LTE Antennas (2x MIMO)
   (symbol
     (lib_id "Device:Antenna")
     (at 279.4 63.5 0)
@@ -234,7 +238,31 @@
     )
   )
 
-  ;; SMA Bulkhead Connectors
+  ;; Proxicast ANT-122-S02 MIMO Puck
+  (symbol
+    (lib_id "Device:Antenna")
+    (at 287.02 50.8 0)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "ant-puck-001")
+    (property "Reference" "ANT3"
+      (at 287.02 43.18 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "Proxicast ANT-122-S02 MIMO Puck (IP67)"
+      (at 287.02 45.72 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Description" "External MIMO LTE puck antenna, roof-mounted, IP67"
+      (at 287.02 48.26 0)
+      (effects (font (size 1.0 1.0)) hide)
+    )
+  )
+
+  ;; SMA Bulkhead Connectors (through enclosure wall)
   (symbol
     (lib_id "Connector:Conn_Coaxial")
     (at 279.4 76.2 0)
@@ -248,7 +276,7 @@
       (at 279.4 83.82 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Value" "SMA Bulkhead"
+    (property "Value" "SMA Bulkhead (M12)"
       (at 279.4 86.36 0)
       (effects (font (size 1.27 1.27)))
     )
@@ -267,117 +295,45 @@
       (at 294.64 83.82 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Value" "SMA Bulkhead"
+    (property "Value" "SMA Bulkhead (M12)"
       (at 294.64 86.36 0)
       (effects (font (size 1.27 1.27)))
     )
   )
 
   ;; ============================================
-  ;; IR ILLUMINATION SECTION
+  ;; PoE CAMERA SECTION
   ;; ============================================
 
-  ;; IR Control Fuse 3A
+  ;; Planet IPOE-260-12V PoE Injector
   (symbol
-    (lib_id "Device:Fuse")
-    (at 50.8 139.7 90)
-    (unit 1)
-    (exclude_from_sim no)
-    (in_bom yes)
-    (on_board yes)
-    (dnp no)
-    (uuid "fuse-ir-001")
-    (property "Reference" "F2"
-      (at 50.8 134.62 90)
-      (effects (font (size 1.27 1.27)))
-    )
-    (property "Value" "3A Blade Fuse"
-      (at 50.8 137.16 90)
-      (effects (font (size 1.27 1.27)))
-    )
-    (property "Description" "Protection for IR illuminator circuit"
-      (at 50.8 139.7 0)
-      (effects (font (size 1.0 1.0)) hide)
-    )
-  )
-
-  ;; Numato USB Relay
-  (symbol
-    (lib_id "Relay:Relay_SPDT")
-    (at 76.2 139.7 0)
-    (unit 1)
-    (exclude_from_sim no)
-    (in_bom yes)
-    (on_board yes)
-    (dnp no)
-    (uuid "relay-usb-001")
-    (property "Reference" "K1"
-      (at 76.2 127 0)
-      (effects (font (size 1.27 1.27)))
-    )
-    (property "Value" "Numato 1-Ch USB Relay"
-      (at 76.2 129.54 0)
-      (effects (font (size 1.27 1.27)))
-    )
-    (property "Description" "USB-powered relay, software controlled via /dev/ttyACM0"
-      (at 76.2 132.08 0)
-      (effects (font (size 1.0 1.0)) hide)
-    )
-    (pin "COM" (uuid "relay-com"))
-    (pin "NO" (uuid "relay-no"))
-    (pin "NC" (uuid "relay-nc"))
-    (pin "USB" (uuid "relay-usb"))
-  )
-
-  ;; Barrel to Screw Terminal Adapter
-  (symbol
-    (lib_id "Connector:Barrel_Jack")
+    (lib_id "Connector:Conn_01x04")
     (at 101.6 139.7 0)
     (unit 1)
     (exclude_from_sim no)
     (in_bom yes)
     (on_board yes)
     (dnp no)
-    (uuid "barrel-adapt-001")
-    (property "Reference" "J4"
+    (uuid "poe-injector-001")
+    (property "Reference" "U5"
+      (at 101.6 127 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "Planet IPOE-260-12V PoE Injector"
+      (at 101.6 129.54 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Description" "12V input PoE injector, outputs 48V PoE (802.3af/at), 60W max. Powered from Witty Pi switched 12V rail."
       (at 101.6 132.08 0)
-      (effects (font (size 1.27 1.27)))
-    )
-    (property "Value" "5.5x2.1mm Barrel-to-Screw"
-      (at 101.6 134.62 0)
-      (effects (font (size 1.27 1.27)))
-    )
-  )
-
-  ;; Tendelux AI4 IR Illuminator
-  (symbol
-    (lib_id "Device:LED_IR")
-    (at 127 139.7 0)
-    (unit 1)
-    (exclude_from_sim no)
-    (in_bom yes)
-    (on_board yes)
-    (dnp no)
-    (uuid "ir-light-001")
-    (property "Reference" "LED1"
-      (at 127 127 0)
-      (effects (font (size 1.27 1.27)))
-    )
-    (property "Value" "Tendelux AI4 850nm IR"
-      (at 127 129.54 0)
-      (effects (font (size 1.27 1.27)))
-    )
-    (property "Description" "4W IR flood, 90deg beam, built-in photocell, IP65"
-      (at 127 132.08 0)
       (effects (font (size 1.0 1.0)) hide)
     )
+    (pin "1" (uuid "poe-12v+") (name "12V+ IN"))
+    (pin "2" (uuid "poe-12v-") (name "12V- IN (GND)"))
+    (pin "3" (uuid "poe-data") (name "DATA (Ethernet to Pi)"))
+    (pin "4" (uuid "poe-datapower") (name "DATA+POWER (PoE to Camera)"))
   )
 
-  ;; ============================================
-  ;; CAMERA SECTION
-  ;; ============================================
-
-  ;; USB Camera (ELP/SVPRO NoIR)
+  ;; ANNKE C1200 PoE Camera
   (symbol
     (lib_id "Device:Camera")
     (at 254 139.7 0)
@@ -386,49 +342,73 @@
     (in_bom yes)
     (on_board yes)
     (dnp no)
-    (uuid "camera-usb-001")
+    (uuid "camera-poe-001")
     (property "Reference" "CAM1"
       (at 254 127 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Value" "ELP/SVPRO 8MP IMX179 NoIR"
+    (property "Value" "ANNKE C1200 PoE Camera"
       (at 254 129.54 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Description" "Custom order: 8MP USB camera WITHOUT IR-cut filter, 115+ deg wide angle"
+    (property "Description" "12MP PoE IP camera, 134 deg FOV, built-in IR LEDs, factory-sealed IP67. RTSP output via Ethernet."
       (at 254 132.08 0)
       (effects (font (size 1.0 1.0)) hide)
     )
   )
 
-  ;; Camera Housing (VA Imaging MVEC167)
+  ;; IP68 RJ45 Waterproof Coupler (enclosure feedthrough)
   (symbol
-    (lib_id "Mechanical:Housing")
-    (at 254 160.02 0)
+    (lib_id "Connector:RJ45")
+    (at 177.8 160.02 0)
     (unit 1)
     (exclude_from_sim no)
     (in_bom yes)
     (on_board yes)
     (dnp no)
-    (uuid "housing-cam-001")
-    (property "Reference" "H1"
-      (at 254 152.4 0)
+    (uuid "rj45-coupler-001")
+    (property "Reference" "J4"
+      (at 177.8 152.4 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Value" "VA Imaging MVEC167 Aluminum"
-      (at 254 154.94 0)
+    (property "Value" "IP68 RJ45 Waterproof Coupler"
+      (at 177.8 154.94 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Description" "Aluminum camera housing with Gore M12 vent, heat dissipation for tropics"
-      (at 254 157.48 0)
+    (property "Description" "IP68 RJ45 feedthrough connector through M12 cable gland on enclosure"
+      (at 177.8 157.48 0)
       (effects (font (size 1.0 1.0)) hide)
     )
   )
 
-  ;; Gore Vent
+  ;; Cat6 Outdoor Shielded Ethernet Cable
+  (symbol
+    (lib_id "Connector:RJ45")
+    (at 215.9 160.02 0)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "cat6-outdoor-001")
+    (property "Reference" "J5"
+      (at 215.9 152.4 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "Cat6 Outdoor Shielded Cable"
+      (at 215.9 154.94 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Description" "UV-resistant outdoor Cat6 shielded cable, enclosure to camera pole"
+      (at 215.9 157.48 0)
+      (effects (font (size 1.0 1.0)) hide)
+    )
+  )
+
+  ;; Gore Vent (on compute enclosure)
   (symbol
     (lib_id "Mechanical:Vent")
-    (at 279.4 160.02 0)
+    (at 330.2 76.2 0)
     (unit 1)
     (exclude_from_sim no)
     (in_bom yes)
@@ -436,39 +416,15 @@
     (dnp no)
     (uuid "vent-gore-001")
     (property "Reference" "V1"
-      (at 279.4 152.4 0)
+      (at 330.2 68.58 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "Gore M12 Protective Vent"
-      (at 279.4 154.94 0)
+      (at 330.2 71.12 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Description" "Pressure equalization, prevents condensation events"
-      (at 279.4 157.48 0)
-      (effects (font (size 1.0 1.0)) hide)
-    )
-  )
-
-  ;; USB Cable (Outdoor Rated)
-  (symbol
-    (lib_id "Connector:USB_A")
-    (at 254 180.34 0)
-    (unit 1)
-    (exclude_from_sim no)
-    (in_bom yes)
-    (on_board yes)
-    (dnp no)
-    (uuid "usb-cable-cam-001")
-    (property "Reference" "J5"
-      (at 254 172.72 0)
-      (effects (font (size 1.27 1.27)))
-    )
-    (property "Value" "Bulgin PX0840 IP67 USB"
-      (at 254 175.26 0)
-      (effects (font (size 1.27 1.27)))
-    )
-    (property "Description" "IP67 outdoor USB cable, 2-5m length"
-      (at 254 177.8 0)
+    (property "Description" "Pressure equalization on compute enclosure, prevents condensation"
+      (at 330.2 73.66 0)
       (effects (font (size 1.0 1.0)) hide)
     )
   )
@@ -477,7 +433,7 @@
   ;; RAIN GAUGE SECTION
   ;; ============================================
 
-  ;; DFRobot SEN0575 Rain Gauge
+  ;; Hydreon RG-15 Optical Rain Gauge
   (symbol
     (lib_id "Sensor:Rain_Gauge")
     (at 330.2 101.6 0)
@@ -491,18 +447,18 @@
       (at 330.2 88.9 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Value" "DFRobot SEN0575"
+    (property "Value" "Hydreon RG-15"
       (at 330.2 91.44 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Description" "Tipping bucket rain gauge, I2C interface, 0.28mm resolution"
+    (property "Description" "Optical rain gauge, solid-state, self-cleaning lens, RS232 TTL 3.3V serial output, 0.2mm resolution"
       (at 330.2 93.98 0)
       (effects (font (size 1.0 1.0)) hide)
     )
-    (pin "1" (uuid "rain-vcc") (name "VCC (3.3-5V)"))
+    (pin "1" (uuid "rain-vcc") (name "VCC (12V)"))
     (pin "2" (uuid "rain-gnd") (name "GND"))
-    (pin "3" (uuid "rain-sda") (name "SDA (I2C)"))
-    (pin "4" (uuid "rain-scl") (name "SCL (I2C)"))
+    (pin "3" (uuid "rain-tx") (name "TX (RS232 TTL 3.3V) -> Pi GPIO15 (UART RX)"))
+    (pin "4" (uuid "rain-rx") (name "RX (RS232 TTL 3.3V) <- Pi GPIO14 (UART TX)"))
   )
 
   ;; ============================================
@@ -519,7 +475,7 @@
     (on_board yes)
     (dnp no)
     (uuid "led-green-001")
-    (property "Reference" "LED2"
+    (property "Reference" "LED1"
       (at 330.2 132.08 0)
       (effects (font (size 1.27 1.27)))
     )
@@ -563,7 +519,7 @@
     (on_board yes)
     (dnp no)
     (uuid "led-yellow-001")
-    (property "Reference" "LED3"
+    (property "Reference" "LED2"
       (at 330.2 147.32 0)
       (effects (font (size 1.27 1.27)))
     )
@@ -607,7 +563,7 @@
     (on_board yes)
     (dnp no)
     (uuid "led-red-001")
-    (property "Reference" "LED4"
+    (property "Reference" "LED3"
       (at 330.2 162.56 0)
       (effects (font (size 1.27 1.27)))
     )
@@ -663,7 +619,7 @@
       (at 330.2 190.5 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Description" "C&K AP Series or E-Switch PVA6, 16mm panel mount, long press (3s) enters maintenance mode - GPIO5"
+    (property "Description" "C&K AP Series or E-Switch PVA6, 16mm panel mount, long press (3s) enters maintenance mode - GPIO23"
       (at 330.2 193.04 0)
       (effects (font (size 1.0 1.0)) hide)
     )
@@ -687,7 +643,7 @@
       (at 345.44 193.04 90)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Description" "Use Pi internal pull-up, or add external 10K to 3.3V"
+    (property "Description" "Use Pi internal pull-up on GPIO23, or add external 10K to 3.3V"
       (at 345.44 195.58 0)
       (effects (font (size 1.0 1.0)) hide)
     )
@@ -697,25 +653,67 @@
   ;; WIRES / CONNECTIONS
   ;; ============================================
 
-  ;; Power: Battery+ to Fuse
+  ;; Power: Battery+ to Terminal Block
   (wire
     (pts (xy 30.48 76.2) (xy 45.72 76.2))
     (stroke (width 0.5) (type solid))
-    (uuid "wire-batt-fuse")
+    (uuid "wire-batt-tb1")
   )
 
-  ;; Power: Fuse to Witty Pi VIN+
+  ;; Power: Terminal Block to Witty Pi VIN+
   (wire
     (pts (xy 55.88 76.2) (xy 96.52 76.2))
     (stroke (width 0.5) (type solid))
-    (uuid "wire-fuse-witty")
+    (uuid "wire-tb1-witty")
   )
 
-  ;; USB: Pi to Relay
+  ;; 5V USB-C: Witty Pi to Pi 5
   (wire
-    (pts (xy 152.4 114.3) (xy 152.4 139.7) (xy 71.12 139.7))
+    (pts (xy 106.68 81.28) (xy 147.32 81.28) (xy 147.32 96.52))
     (stroke (width 0.25) (type solid))
-    (uuid "wire-pi-relay-usb")
+    (uuid "wire-witty-pi-usbc")
+  )
+
+  ;; Switched 12V: Witty Pi to Fuse (PoE injector circuit)
+  (wire
+    (pts (xy 106.68 86.36) (xy 106.68 111.76) (xy 50.8 111.76) (xy 50.8 134.62))
+    (stroke (width 0.5) (type dash))
+    (uuid "wire-witty-sw12v-fuse")
+  )
+
+  ;; Power: Fuse to PoE Injector 12V+ IN
+  (wire
+    (pts (xy 50.8 139.7) (xy 96.52 139.7))
+    (stroke (width 0.5) (type solid))
+    (uuid "wire-fuse-poe")
+  )
+
+  ;; Ethernet: PoE Injector DATA port to Pi 5 Ethernet
+  (wire
+    (pts (xy 106.68 144.78) (xy 152.4 144.78) (xy 152.4 114.3))
+    (stroke (width 0.25) (type solid))
+    (uuid "wire-poe-data-pi")
+  )
+
+  ;; PoE: Injector DATA+POWER to RJ45 coupler (enclosure wall)
+  (wire
+    (pts (xy 106.68 149.86) (xy 172.72 149.86) (xy 172.72 160.02))
+    (stroke (width 0.5) (type solid))
+    (uuid "wire-poe-to-coupler")
+  )
+
+  ;; Cat6: RJ45 coupler to outdoor cable
+  (wire
+    (pts (xy 182.88 160.02) (xy 210.82 160.02))
+    (stroke (width 0.5) (type solid))
+    (uuid "wire-coupler-cat6")
+  )
+
+  ;; Cat6: Outdoor cable to Camera
+  (wire
+    (pts (xy 220.98 160.02) (xy 248.92 149.86) (xy 248.92 139.7))
+    (stroke (width 0.5) (type solid))
+    (uuid "wire-cat6-camera")
   )
 
   ;; USB: Pi to SSD
@@ -732,70 +730,35 @@
     (uuid "wire-pi-modem")
   )
 
-  ;; USB: Pi to Camera
+  ;; UART: Pi GPIO14/15 to Rain Gauge (via Pi-EzConnect terminals)
   (wire
-    (pts (xy 167.64 106.68) (xy 248.92 180.34))
+    (pts (xy 208.28 101.6) (xy 325.12 101.6))
     (stroke (width 0.25) (type solid))
-    (uuid "wire-pi-camera")
+    (uuid "wire-pi-rain-uart")
   )
 
-  ;; Power: Battery to IR circuit via fuse
-  (wire
-    (pts (xy 30.48 81.28) (xy 30.48 139.7) (xy 45.72 139.7))
-    (stroke (width 0.5) (type solid))
-    (uuid "wire-batt-ir")
-  )
-
-  ;; IR: Fuse to Relay COM
-  (wire
-    (pts (xy 55.88 139.7) (xy 71.12 134.62))
-    (stroke (width 0.5) (type solid))
-    (uuid "wire-fuse-relay-com")
-  )
-
-  ;; IR: Relay NO to Barrel Adapter
-  (wire
-    (pts (xy 81.28 139.7) (xy 96.52 139.7))
-    (stroke (width 0.5) (type solid))
-    (uuid "wire-relay-barrel")
-  )
-
-  ;; IR: Barrel Adapter to IR Light
-  (wire
-    (pts (xy 106.68 139.7) (xy 121.92 139.7))
-    (stroke (width 0.5) (type solid))
-    (uuid "wire-barrel-ir")
-  )
-
-  ;; I2C: Pi to Rain Gauge
-  (wire
-    (pts (xy 167.64 96.52) (xy 325.12 96.52) (xy 325.12 101.6))
-    (stroke (width 0.25) (type solid))
-    (uuid "wire-pi-rain-i2c")
-  )
-
-  ;; GPIO: Pi to Green LED
+  ;; GPIO17: Pi to Green LED (via Pi-EzConnect)
   (wire
     (pts (xy 208.28 76.2) (xy 325.12 139.7))
     (stroke (width 0.25) (type solid))
     (uuid "wire-gpio-led-green")
   )
 
-  ;; GPIO: Pi to Yellow LED
+  ;; GPIO27: Pi to Yellow LED
   (wire
     (pts (xy 208.28 81.28) (xy 325.12 154.94))
     (stroke (width 0.25) (type solid))
     (uuid "wire-gpio-led-yellow")
   )
 
-  ;; GPIO: Pi to Red LED
+  ;; GPIO22: Pi to Red LED
   (wire
     (pts (xy 208.28 86.36) (xy 325.12 170.18))
     (stroke (width 0.25) (type solid))
     (uuid "wire-gpio-led-red")
   )
 
-  ;; GPIO: Pi to Maintenance Button
+  ;; GPIO23: Pi to Maintenance Button
   (wire
     (pts (xy 208.28 91.44) (xy 325.12 195.58))
     (stroke (width 0.25) (type solid))
@@ -816,12 +779,12 @@
     (effects (font (size 2.54 2.54) bold))
   )
 
-  (text "IR ILLUMINATION\nUSB Relay controlled, photocell in light"
-    (at 76.2 116.84 0)
+  (text "PoE CAMERA SYSTEM\nPlanet IPOE-260-12V injector + ANNKE C1200\nCamera power-cycled with Pi via Witty Pi switched 12V rail"
+    (at 177.8 116.84 0)
     (effects (font (size 2.54 2.54) bold))
   )
 
-  (text "CAMERA\nUSB camera in Gore-vented aluminum housing"
+  (text "CAMERA (EXTERNAL)\nANNKE C1200 - Factory-sealed IP67\n12MP, 134 deg FOV, built-in IR LEDs"
     (at 254 116.84 0)
     (effects (font (size 2.54 2.54) bold))
   )
@@ -831,7 +794,7 @@
     (effects (font (size 2.54 2.54) bold))
   )
 
-  (text "SENSORS\nRain gauge on I2C bus"
+  (text "SENSORS\nHydreon RG-15 rain gauge on UART serial (GPIO14/15)"
     (at 330.2 78.74 0)
     (effects (font (size 2.54 2.54) bold))
   )
@@ -841,13 +804,18 @@
     (effects (font (size 2.54 2.54) bold))
   )
 
-  (text "NOTES:\n1. All GPIO via Pi-EzConnect screw terminals\n2. Conformal coat (MG 422C) on Pi, Witty Pi, relay PCBs\n3. IR relay controlled by systemd service on boot\n4. Status LEDs: Green=OK, Yellow=Working, Red=Error\n5. Long press (3s) maintenance button enters WiFi hotspot mode"
+  (text "NOTES:\n1. PoE injector powered via Witty Pi switched 12V rail - camera boots with Pi, sleeps with Pi\n2. No heaters installed (Sukabumi tropical climate, solar power budget constraint)\n3. Conformal coat (MG 422C silicone) on Pi, Witty Pi, Pi-EzConnect PCBs\n4. Status LEDs: Green=OK, Yellow=Working, Red=Error (all via 330R series resistors)\n5. Long press (3s) maintenance button (GPIO23) enters WiFi hotspot mode\n6. ANNKE C1200 has built-in IR LEDs - no separate IR illuminator needed\n7. Dielectric grease on all outdoor connections (cable glands, SMA, RJ45)\n8. Gore vent on compute enclosure for pressure equalization"
     (at 25.4 220.98 0)
     (effects (font (size 1.5 1.5)))
   )
 
-  (text "GPIO PIN ASSIGNMENTS:\nGPIO4  - Witty Pi shutdown signal\nGPIO17 - Witty Pi wake signal / Green LED\nGPIO27 - Yellow LED\nGPIO22 - Red LED\nGPIO5  - Maintenance button input\nGPIO2  - I2C SDA (rain gauge)\nGPIO3  - I2C SCL (rain gauge)"
+  (text "GPIO PIN ASSIGNMENTS:\nGPIO14 - UART TX (to Hydreon RG-15 RX)\nGPIO15 - UART RX (from Hydreon RG-15 TX)\nGPIO17 - Green LED (System OK)\nGPIO22 - Red LED (Error)\nGPIO23 - Maintenance button input (internal pull-up)\nGPIO27 - Yellow LED (Working)"
     (at 25.4 254 0)
+    (effects (font (size 1.5 1.5)))
+  )
+
+  (text "POWER PATH:\nBattery 12V -> TB1 -> Witty Pi 5 (5-26V in)\n  Witty Pi -> 5V USB-C -> Pi 5\n  Witty Pi -> Switched 12V -> F1 5A Fuse -> Planet IPOE-260 PoE Injector\n    PoE Injector DATA port -> Pi 5 Ethernet (data only)\n    PoE Injector DATA+POWER port -> Cat6 outdoor -> ANNKE C1200 (48V PoE)\nPi 5 USB 2.0 -> Quectel EG25-G LTE Modem (bus-powered)\nPi 5 USB 3.0 -> Samsung FIT Plus 256GB (bus-powered)"
+    (at 25.4 274.32 0)
     (effects (font (size 1.5 1.5)))
   )
 
