@@ -13,8 +13,8 @@ River monitoring for flood early warning using camera-based surface velocity mea
 
 | Site | Power | Camera | Status |
 |------|-------|--------|--------|
-| **Sukabumi** | Solar (existing 200W/50Ah) | USB + Gore vent housing | Replacing failed unit due to humidity damage |
-| **Jakarta** | AC utility + 24hr UPS | Factory-sealed PoE (2 cameras) | New training/demonstration site |
+| **Sukabumi** | Solar (existing 200W/50Ah) | Factory-sealed PoE (1 camera) | Replacing failed unit due to humidity damage |
+| **Jakarta** | AC utility + 24hr UPS | Factory-sealed PoE (1 camera) | New training/demonstration site |
 
 ### Planning Status
 
@@ -71,14 +71,13 @@ survey/
 - Sukabumi: Conformal coating + Gore vents only (solar power constraint)
 
 **Camera strategy:**
-- Sukabumi: Custom NoIR USB camera in VA Imaging aluminum housing
-- Jakarta: ANNKE C1200 factory-sealed PoE cameras with built-in IR
+- Both sites: Single ANNKE C1200 factory-sealed PoE camera with built-in IR
 
 **IR illumination:** Tendelux AI4 with built-in photocell + Numato USB relay (no cable cutting)
 
 ## Next Steps
 
 1. Finalize BOMs with current pricing and lead times
-2. Order long-lead items (custom NoIR camera needs 2-6 weeks)
+2. Order long-lead items
 3. Request humanitarian letter from sponsoring organization
 4. Pre-configure and conformal coat electronics before travel
