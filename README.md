@@ -4,6 +4,16 @@ River monitoring for flood early warning using camera-based surface velocity mea
 
 ## Current Focus
 
+Building the Sukabumi device first, then ordering and building the Jakarta device.
+
+### Current Problems to Solve
+
+1. **Camera power cycling** - Managing when the PoE camera is powered on/off to conserve solar energy
+2. **Video capture and transfer timing** - Coordinating when video is recorded and how/when it gets transferred off-device
+3. **Rain sensor integration** - Incorporating rain detection into the monitoring workflow
+
+### Deployment Overview
+
 **Trip:** March/April 2026
 **Sites:** Sukabumi (redeploy) + Jakarta (new install)
 **Budget:** $3,000 USD for both sites

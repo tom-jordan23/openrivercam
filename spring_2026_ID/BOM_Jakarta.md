@@ -64,6 +64,7 @@ Items marked **"Jakarta-specific"** are unique to the Jakarta AC-powered deploym
 | CAM-006 | Hikvision DS-1275ZJ Vertical Mounting Plate (stainless) | 2 | $30.99 | $61.98 | https://www.amazon.com/DS-1275ZJ-Vertical-Adapter-Hikvision-Stainless/dp/B0DRDZBR69 | Matched Sukabumi, qty 2 for 2 cameras |
 | CAM-004 | Outdoor Cat6 Shielded Cable (300ft, UV-resistant) | 1 | $79.99 | $79.99 | https://www.amazon.com/s?k=outdoor+Cat6+shielded+cable+300ft+UV | Camera cabling |
 | CAM-005 | IP68 RJ45 Waterproof Coupler (2-pack) | 1 | $12.99 | $12.99 | https://www.amazon.com/s?k=IP68+RJ45+coupler+waterproof | Weatherproof connections |
+| RELAY-POE | Electronics-Salon DIN Rail 4-SPDT 10A Relay Module, 5V | 1 | $18.00 | $18.00 | https://www.amazon.com/Electronics-Salon-Mount-Interface-Module-Version/dp/B00M1MW5BW | Switches 12V to PoE switch; GPIO or passive USB trigger. See [research](research/poe_switch_relay_research.md) |
 | **POWER SYSTEM (Jakarta-specific)** | | | | | | |
 | PWR-002 | 12V 100Ah LiFePO4 Battery (LiTime, 1280Wh, BMS) | 1 | $299.99 | $299.99 | https://www.amazon.com/s?k=12V+100Ah+LiFePO4+battery | Jakarta-specific: 24hr backup |
 | PWR-003 | 20A LiFePO4 Battery Charger (12V, smart, temp sensor) | 1 | $89.99 | $89.99 | https://www.amazon.com/s?k=20A+LiFePO4+charger+12V | Jakarta-specific |
@@ -78,6 +79,8 @@ Items marked **"Jakarta-specific"** are unique to the Jakarta AC-powered deploym
 | CLIP-TERM | DIN Rail Terminal Block Kit | 1 | $19.99 | $19.99 | https://www.amazon.com/GUETNEU-Terminal-Block-Voltage-Combined/dp/B0BQQDWGXV | Matched Sukabumi |
 | CLIP-RPI | DIN Rail Clip for Raspberry Pi | 1 | $18.99 | $18.99 | https://www.amazon.com/Mount-Bracket-Raspberry-Arduino-BeagleBone/dp/B08HRZVFCX | Matched Sukabumi |
 | ENC-008 | Stainless Steel M3/M4 Hardware Kit (300-piece) | 1 | $16.99 | $16.99 | https://www.amazon.com/s?k=stainless+steel+hardware+kit+M3+M4 | Mounting hardware |
+| DIN-PCB | Molence C45 PCB DIN Rail Clip-Pairs (10 sets) | 1 | $9.00 | $9.00 | https://www.amazon.com/Molence-Mounting-Adapter-Circuit-Bracket/dp/B09KZHY8G4 | Mount bare PCBs to DIN rail. See [research](research/din_rail_mounting_clips_research.md) |
+| DIN-CLIP | CNQLIS 1.65" Aluminum DIN Rail Mounting Clips (10-pack) | 1 | $13.00 | $13.00 | https://www.amazon.com/CNQLIS-Universal-Mounting-Bracket-Countersunk/dp/B0CJJ1DBZM | Mount modem, misc items via screws/zip ties. See [research](research/din_rail_mounting_clips_research.md) |
 | **USER INTERFACE** | | | | | | |
 | LED-MULTI | Multi-color LED 5-pack (FILN, 12V-24V, IP67) | 1 | $16.99 | $16.99 | https://www.amazon.com/FILN-Indicator-Anodized-Waterproof-12V-24V/dp/B0C7KSFKTH | Matched Sukabumi |
 | BTN-MAINT | IP67 Momentary Pushbutton 16mm Stainless | 1 | $8.99 | $8.99 | https://www.amazon.com/Gebildet-Momentary-terminals-Stainless-Waterproof/dp/B081JJBN4G | Matched Sukabumi |
@@ -97,7 +100,7 @@ Items marked **"Jakarta-specific"** are unique to the Jakarta AC-powered deploym
 | CONS-003 | UV-Resistant Zip Ties (assorted, 500-pack) | 1 | $12.99 | $12.99 | https://www.amazon.com/s?k=UV+resistant+zip+ties | Cable management |
 | CONS-006 | Isopropyl Alcohol 99% (16oz bottle) | 1 | $8.99 | $8.99 | https://www.amazon.com/s?k=isopropyl+alcohol+99 | Cleaning |
 
-**Amazon Subtotal: $1,567.69**
+**Amazon Subtotal: $1,607.69**
 
 ---
 
@@ -154,13 +157,13 @@ The following items should be purchased locally in Jakarta to reduce shipping co
 
 | Supplier | Subtotal (USD) | Notes |
 |----------|----------------|-------|
-| **1. Amazon** | $1,567.69 | Compute, cameras, power system, enclosure, consumables |
+| **1. Amazon** | $1,607.69 | Compute, cameras, power system, enclosure, consumables |
 | **2. DigiKey** | $194.89 | PSU, surge protector, power distribution, vents |
 | **3. Adafruit** | $89.40 | Witty Pi 5, USB-RS485, cable glands |
 | **4. Hydreon** | $99.00 | Rain gauge |
-| **Shipped Subtotal** | **$1,950.98** | Components to ship from US/international |
+| **Shipped Subtotal** | **$1,990.98** | Components to ship from US/international |
 | **Local Sourcing (Jakarta)** | **$96.00** | Grounding, mounting pole, misc hardware |
-| **GRAND TOTAL** | **$2,046.98** | Materials only |
+| **GRAND TOTAL** | **$2,086.98** | Materials only |
 
 ---
 
@@ -168,11 +171,11 @@ The following items should be purchased locally in Jakarta to reduce shipping co
 
 | Item | Estimated Cost (USD) | Notes |
 |------|---------------------|-------|
-| **Equipment (shipped)** | $1,950.98 | Components from 4 suppliers |
+| **Equipment (shipped)** | $1,990.98 | Components from 4 suppliers |
 | **Local sourcing (Jakarta)** | $96.00 | Grounding, pole, mounting hardware |
-| **TOTAL PROJECT COST** | **$2,046.98** | Materials only |
+| **TOTAL PROJECT COST** | **$2,086.98** | Materials only |
 
-**Budget Status:** ✅ Within budget. Combined with Sukabumi ($948.08 actual) = **$2,995.06** total for both sites.
+**Budget Status:** ✅ Within budget. Combined with Sukabumi ($948.08 actual) = **$3,035.06** total for both sites.
 **Note:** Equipment travels with installer under humanitarian exemption — no shipping, customs, or contingency costs.
 
 ### Cost Review Items (decision pending)
@@ -635,7 +638,7 @@ The following items should be purchased locally in Jakarta to reduce shipping co
 **Version:** 3.0 (Reconciled with Sukabumi actuals)
 **Site:** Jakarta, Indonesia
 **Project:** OpenRiverCam Training/Demo Installation
-**Budget:** Jakarta $2,046.98 + Sukabumi $948.08 = **$2,995.06** total (within $3,000 target)
+**Budget:** Jakarta $2,086.98 + Sukabumi $948.08 = **$3,035.06** total (within $3,000 target)
 **Status:** RECONCILED - Ready for procurement
 
 ---
@@ -646,7 +649,8 @@ The following items were not ordered with the Sukabumi parts and need to be incl
 
 | Item | Reason | Est. Cost | For Site | Notes |
 |------|--------|-----------|----------|-------|
-| Buck converter (12V to 5V) | Not ordered for Sukabumi | TBD | Sukabumi | Power Pi from 12V solar - add to Jakarta order |
+| Mean Well DDR-60G-5 (5V/10.8A DC-DC) | Not ordered for Sukabumi | ~$39 | Sukabumi | Powers Pi + modem + LEDs + rain sensor from 12V battery. See [research](research/dc_dc_buck_converter_research.md) |
+| Mean Well DDR-60G-12 (12V/5A DC-DC) | Not ordered for Sukabumi | ~$39 | Sukabumi | Powers PoE injector + camera from 12V battery. See [research](research/dc_dc_buck_converter_research.md) |
 | External ethernet cable | Not ordered for Sukabumi | TBD | Sukabumi | Cat6 outdoor run from enclosure to camera |
 | Fans (enclosure ventilation) | Not ordered for either site | TBD | Both | Active airflow for thermal management |
 | Additional DIN rail clips | Not enough for all components | TBD | Both | Need clips for PoE switch, modem adapter, terminal blocks, etc. |

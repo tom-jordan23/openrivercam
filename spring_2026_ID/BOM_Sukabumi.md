@@ -91,10 +91,11 @@
 | **CAM-004** | Outdoor Cat6 Shielded Cable (300ft, UV-resistant) | 1 | $79.99 | $79.99 | [Amazon](https://www.amazon.com/s?k=outdoor+Cat6+shielded+cable+300ft+UV) | Camera cabling |
 | **CAM-005** | IP68 RJ45 Waterproof Coupler (2-pack) | 1 | $12.99 | $12.99 | [Amazon](https://www.amazon.com/s?k=IP68+RJ45+coupler+waterproof) | Weatherproof connections |
 | **CAM-006** | Camera Pole Mount Bracket (stainless, 2-pack) | 1 | $22.99 | $22.99 | [Amazon](https://www.amazon.com/s?k=camera+pole+mount+bracket+stainless) | Camera mounting |
-| | | | **Subtotal** | **$399.96** | | |
+| **RELAY-POE** | Electronics-Salon DIN Rail 4-SPDT 10A Relay Module, 5V | 1 | $18.00 | $18.00 | [Amazon](https://www.amazon.com/Electronics-Salon-Mount-Interface-Module-Version/dp/B00M1MW5BW) | Switches 12V to PoE injector; GPIO or passive USB trigger. See [research](research/poe_switch_relay_research.md) |
+| | | | **Subtotal** | **$417.96** | | |
 
 **Notes:**
-- **Power-cycled operation:** PoE injector powered from same switched 12V circuit as Pi. Camera boots when Pi wakes, captures, then powers down with Pi sleep cycle.
+- **Power-cycled operation:** PoE injector power switched by Electronics-Salon DIN relay. Relay can be triggered by GPIO pin (systemd service) or passively by USB power (zero software). When Witty Pi 5 cuts power at sleep, relay opens and PoE injector loses 12V. See [poe_switch_relay_research.md](research/poe_switch_relay_research.md) for wiring details.
 - **Camera boot time:** ~45-60 seconds. Active phase extended to ~150s per cycle to accommodate boot + capture + upload.
 - **Built-in IR:** ANNKE C1200 has integrated IR LEDs with automatic day/night switching. No separate IR illuminator or relay needed.
 - **Day/night config:** ORC software will handle switching between day and night capture configurations.
@@ -162,7 +163,9 @@
 | **VELCRO-LOCK** | 3M Dual Lock reclosable fastener (25mm × 1m) | 1 | $12.00 | $12.00 | Amazon | Mount modem, PoE injector |
 | **STANDOFFS** | M2.5/M3 standoff kit (brass or nylon) | 1 | $12.00 | $12.00 | Amazon | Pi stack mounting |
 | **TERM-BLOCK** | Screw terminal blocks (2-8 position, assorted) | 1 | $10.00 | $10.00 | Amazon, DigiKey | Power distribution |
-| | | | **Subtotal** | **$124.99** | | |
+| **DIN-PCB** | Molence C45 PCB DIN Rail Clip-Pairs (10 sets) | 1 | $9.00 | $9.00 | [Amazon](https://www.amazon.com/Molence-Mounting-Adapter-Circuit-Bracket/dp/B09KZHY8G4) | Mount bare PCBs to DIN rail. See [research](research/din_rail_mounting_clips_research.md) |
+| **DIN-CLIP** | CNQLIS 1.65" Aluminum DIN Rail Mounting Clips (10-pack) | 1 | $13.00 | $13.00 | [Amazon](https://www.amazon.com/CNQLIS-Universal-Mounting-Bracket-Countersunk/dp/B0CJJ1DBZM) | Mount modem, USB adapters, misc items via screws/zip ties. See [research](research/din_rail_mounting_clips_research.md) |
+| | | | **Subtotal** | **$146.99** | | |
 
 **Notes:**
 
@@ -221,16 +224,20 @@
 
 | Item | Description | Qty | Unit Price | Ext. Price | Source | Notes |
 |------|-------------|-----|------------|------------|--------|-------|
-| **USB-C-PWR** | USB-C power cable (1.5m, right-angle) | 1 | $8.00 | $8.00 | Amazon | Pi 5 power from solar controller |
+| **BUCK-5V** | Mean Well DDR-60G-5 DIN Rail DC-DC Converter (5V 10.8A, 9-36V input) | 1 | $39.00 | $39.00 | [Amazon](https://www.amazon.com/s?k=DDR-60G-5+Mean+Well) | Powers Pi + modem + LEDs + rain sensor. See [research](research/dc_dc_buck_converter_research.md) |
+| **BUCK-12V** | Mean Well DDR-60G-12 DIN Rail DC-DC Converter (12V 5A, 9-36V input) | 1 | $39.00 | $39.00 | [Amazon](https://www.amazon.com/s?k=DDR-60G-12+Mean+Well) | Powers PoE injector + camera. See [research](research/dc_dc_buck_converter_research.md) |
+| **USB-C-PWR** | USB-C power cable (1.5m, right-angle) | 1 | $8.00 | $8.00 | Amazon | Pi 5 power from 5V buck converter |
 | **USB-A-SHORT** | USB-A cables (0.5m, various) | 3 | $4.00 | $12.00 | Amazon | Modem, relay, short runs |
 | **HDPE-CONDUIT** | HDPE flexible conduit (20mm × 5m) | 1 | $15.00 | $15.00 | Hardware store | Cable protection (if not using Bulgin) |
 | **HEAT-SHRINK** | Heat shrink tubing kit (assorted sizes) | 1 | $10.00 | $10.00 | Amazon | Cable sealing, strain relief |
 | **CABLE-TIES** | UV-resistant cable ties (assorted, 100pc) | 1 | $8.00 | $8.00 | Amazon | Cable management |
 | **WIRE-18AWG** | 18AWG stranded wire (red/black, 10m each) | 1 | $15.00 | $15.00 | Amazon | Power distribution |
 | **FERRULES** | Wire ferrules (assorted, crimper kit) | 1 | $18.00 | $18.00 | Amazon | Professional terminal connections |
-| | | | **Subtotal** | **$86.00** | | |
+| | | | **Subtotal** | **$164.00** | | |
 
 **Notes:**
+- Mean Well DDR-60G pair provides regulated 12V and 5V from battery. See [dc_dc_buck_converter_research.md](research/dc_dc_buck_converter_research.md) for full analysis
+- Cell modem and LEDs powered via Pi USB/GPIO (load on 5V rail, not 12V)
 - Right-angle USB-C connector reduces strain on Pi 5 power port
 - Ferrules recommended for all screw terminal connections (prevents wire fraying)
 - UV-resistant cable ties essential for outdoor tropical environment
@@ -264,17 +271,17 @@
 | Category | Subtotal |
 |----------|----------|
 | 1. Compute Platform | $319.95 |
-| 2. PoE Camera System | $399.96 |
+| 2. PoE Camera System | $417.96 |
 | 3. User Interface | $38.00 |
 | 4. Humidity Protection | $38.00 |
-| 5. Enclosure & Mounting | $124.99 |
+| 5. Enclosure & Mounting | $146.99 |
 | 6. Rain Gauge | $99.00 |
-| 7. Cables & Connectors | $86.00 |
+| 7. Cables & Connectors | $164.00 |
 | 8. Hardware & Fasteners | $69.00 |
-| **TOTAL (Materials)** | **$1,174.90** |
+| **TOTAL (Materials)** | **$1,292.90** |
 
 **Budget Status:** ✅ Within $1,500 target for Sukabumi site
-**Remaining Budget (of $3,000 total):** ~$1,825 for Jakarta site + shared spares
+**Remaining Budget (of $3,000 total):** ~$1,707 for Jakarta site + shared spares
 **Note:** Equipment travels with installer under humanitarian exemption — no shipping, customs, or contingency costs.
 
 ---
