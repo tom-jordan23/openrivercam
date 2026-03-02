@@ -86,7 +86,7 @@ Configure ANNKE C1200 cameras BEFORE deployment:
 - [ ] Active cooler for Pi 5
 
 ### Connectivity
-- [ ] Quectel EG25-G modem + PU201 USB adapter
+- [ ] Quectel EG25-G modem + EXVIST Mini PCIe-USB adapter
 - [ ] LTE antennas (×2)
 - [ ] SMA bulkhead connectors (×2)
 - [ ] USB-RS485 adapter

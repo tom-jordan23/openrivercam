@@ -121,7 +121,7 @@
         <!-- ============================================ -->
         <!-- QUECTEL EG25-G MODEM                         -->
         <!-- ============================================ -->
-        <mxCell id="modem" value="&lt;b&gt;Quectel EG25-G&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 9px;&quot; color=&quot;#666&quot;&gt;LTE Cat-4 Modem&lt;br&gt;PU201 USB adapter&lt;br&gt;Telkomsel (Indonesia)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;fontSize=10;verticalAlign=top;spacingTop=3;" vertex="1" parent="1">
+        <mxCell id="modem" value="&lt;b&gt;Quectel EG25-G&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 9px;&quot; color=&quot;#666&quot;&gt;LTE Cat-4 Modem&lt;br&gt;EXVIST Mini PCIe-USB adapter&lt;br&gt;Telkomsel (Indonesia)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;fontSize=10;verticalAlign=top;spacingTop=3;" vertex="1" parent="1">
           <mxGeometry x="800" y="130" width="160" height="80" as="geometry"/>
         </mxCell>
 

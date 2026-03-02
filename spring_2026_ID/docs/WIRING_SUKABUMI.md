@@ -49,7 +49,7 @@
 │                                                                            │
 │   USB CONNECTIONS:                                                         │
 │   ├── USB 3.0 (blue) ──► SSD Enclosure                                   │
-│   └── USB 2.0 ──► Quectel Modem (PU201)                                  │
+│   └── USB 2.0 ──► Quectel Modem (EXVIST mPCIe-USB)                                  │
 │                                                                            │
 │   ETHERNET CONNECTION:                                                     │
 │   └── ETH Port ──► Planet PoE Injector (DATA) ──► Camera via Cat6        │
@@ -306,7 +306,7 @@ CABLE DETAILS:
     │                                                                     │
     │  ┌────────────┐      ┌────────────────┐                            │
     │  │    SSD     │      │  LTE MODEM     │                            │
-    │  │  (Velcro)  │      │  + PU201       │                            │
+    │  │  (Velcro)  │      │  + EXVIST mPCIe       │                            │
     │  └────────────┘      │  (Velcro)      │                            │
     │                      └────────────────┘                            │
     │                                                                     │

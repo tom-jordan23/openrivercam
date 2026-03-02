@@ -64,7 +64,7 @@
 | **EZCONNECT** | Adafruit Pi-EzConnect (ID 2711, GPIO terminal block) | 1 | $19.95 | $19.95 | Adafruit | Stacks on Witty Pi 5 HAT+ |
 | **USB-DRIVE** | Samsung FIT Plus 256GB USB 3.1 flash drive (MUF-256AB) | 1 | $25.00 | $25.00 | [Amazon](https://www.amazon.com/Samsung-MUF-256AB-AM-Plus-256GB/dp/B07D7Q41PM) | IP67 waterproof; 0-60°C operating; plugs directly into Pi USB-A |
 | **MODEM** | Quectel EG25-G LTE Cat 4 module | 1 | $35.00 | $35.00 | AliExpress, Mouser | Verify Indonesian bands |
-| **MODEM-USB** | PU201 USB adapter board for EG25-G | 1 | $15.00 | $15.00 | AliExpress | USB interface for modem |
+| **MODEM-USB** | EXVIST Mini PCIe-USB adapter (P2U52V02USB) for EG25-G | 1 | $15.00 | $15.00 | AliExpress | USB interface for modem |
 | **ANT-PUCK** | Proxicast ANT-122-S02 2x2 MIMO LTE puck antenna (IP67, screw mount) | 1 | $65.00 | $65.00 | [Amazon](https://www.amazon.com/Proxicast-Profile-Omni-Directional-Screw-Mount-Antenna/dp/B07DDC9WV5) | Main + diversity in single sealed unit; 600-6000 MHz; eliminates bulkhead connectors |
 | **SD-CARD** | MicroSD card 32GB (SanDisk/Samsung) | 1 | $8.00 | $8.00 | Amazon | For OS boot |
 | **HEATSINK** | Heatsink for Raspberry Pi 5 | 1 | $8.00 | $8.00 | Included or Amazon | Active or passive |
@@ -334,7 +334,7 @@ Note: Active phase is ~150s per cycle to accommodate PoE camera boot time (~45-6
 | Item | Lead Time | Action Required |
 |------|-----------|-----------------|
 | **Witty Pi 5 HAT+** | 1-2 weeks | Order from UUGear (stock availability varies) |
-| **Quectel EG25-G + PU201** | 2-4 weeks | AliExpress or Mouser (verify stock) |
+| **Quectel EG25-G + EXVIST Mini PCIe-USB** | 2-4 weeks | AliExpress or Mouser (verify stock) |
 | **Planet IPOE-260-12V** | 1-2 weeks | Check Planet Technology distributor stock |
 
 ### Standard Lead Time (1-2 weeks)

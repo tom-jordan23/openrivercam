@@ -38,7 +38,7 @@ This research evaluates eight mounting solutions for securing IoT components (Ra
 - **Vibration Sensitivity:** High (data corruption risk)
 - **Heat Generation:** Moderate (requires airflow)
 
-### 1.3 Quectel Modem + PU201 Adapter
+### 1.3 Quectel Modem + EXVIST Mini PCIe-USB Adapter
 - **Mounting:** Mini-PCIe or M.2 format, typically 50mm x 30mm
 - **Thermal:** Moderate heat generation during transmission
 - **Access Requirements:** Antenna connections must remain accessible
@@ -920,7 +920,7 @@ Using pre-perforated metal or plastic plates as universal mounting substrates. H
 
 - **Option 2:** Mini-PCIe to DIN rail adapter (if using mini-PCIe modem form factor)
   - Custom bracket using universal mount plate
-  - Attach PU201 adapter to plate, snap onto rail
+  - Attach EXVIST adapter to plate, snap onto rail
 
 **Relay Modules:**
 - **Product:** Murrelektronik 52140 Interface Relay (if needed)

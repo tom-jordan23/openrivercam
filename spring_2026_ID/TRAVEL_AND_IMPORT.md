@@ -68,7 +68,7 @@ Keep these with you - irreplaceable or long lead time:
 | Raspberry Pi 5 (×3: 2 sites + 1 spare) | 3 | 0.15 kg | Keep in anti-static bags |
 | Witty Pi 5 HAT+ (×3) | 3 | 0.1 kg | |
 | Pi-EzConnect HAT (×3) | 3 | 0.1 kg | |
-| Quectel EG25-G modems (×3) | 3 | 0.2 kg | With PU201 adapters |
+| Quectel EG25-G modems (×3) | 3 | 0.2 kg | With EXVIST Mini PCIe-USB adapters |
 | MicroSD cards (×6) | 6 | 0.05 kg | Pre-imaged |
 | M.2 SSDs (×3) | 3 | 0.1 kg | Without enclosures |
 | ANNKE C1200 PoE cameras | 3 | 1.0 kg | Fragile, already in carry-on list |

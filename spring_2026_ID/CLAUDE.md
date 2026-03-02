@@ -119,7 +119,7 @@ All components inside enclosures must be securely mounted - no loose items. **Mo
 **Components to mount:**
 - Raspberry Pi 5 + Witty Pi 5 HAT+ + GPIO terminal block riser (stacked)
 - USB flash drive (Samsung FIT Plus) - plugs directly into Pi USB port
-- Quectel modem + PU201 adapter
+- Quectel modem + EXVIST Mini PCIe-USB adapter
 - Relay modules
 - Terminal blocks
 - Fuse holders
@@ -195,7 +195,7 @@ Keep the following at the local PMI office for field service. Covers both Sukabu
 | GPIO terminal block riser | 1 | |
 | Samsung FIT Plus 256GB USB flash drive | 1 | Pre-imaged with OS if possible |
 | SD card (32GB) with OS image | 2 | For quick Pi recovery |
-| Quectel EG25-G modem + PU201 | 1 | Shared spare |
+| Quectel EG25-G modem + EXVIST Mini PCIe-USB | 1 | Shared spare |
 | LTE antenna | 2 | |
 | USB-RS485 adapter | 1 | |
 | IP67 panel-mount LEDs (Red/Yellow/Green) | 1 set | Status indication |
@@ -275,7 +275,7 @@ Keep the following at the local PMI office for field service. Covers both Sukabu
 - [x] Witty Pi 5 HAT+ for scheduling + RTC
 - [x] Adafruit Pi-EzConnect (GPIO terminal block riser)
 - [x] Samsung FIT Plus 256GB USB flash drive (IP67, plugs directly into Pi)
-- [x] Quectel EG25-G modem + PU201 adapter
+- [x] Quectel EG25-G modem + EXVIST Mini PCIe-USB adapter
 - [x] Proxicast ANT-122-S02 MIMO LTE puck antenna (IP67, eliminates SMA bulkhead connectors)
 - [x] USB-RS485 adapter for Modbus/rain gauge
 - [x] 3× IP67 panel-mount LEDs (Red/Yellow/Green)

@@ -220,7 +220,7 @@ def main():
     # LTE MODEM (inside enclosure)
     # ================================================================
     draw_box(ax, (12.5, 12.0), 2.8, 1.5,
-             'Quectel EG25-G', 'LTE Cat-4 Modem\nPU201 USB adapter',
+             'Quectel EG25-G', 'LTE Cat-4 Modem\nEXVIST Mini PCIe-USB adapter',
              color=BOX_NETWORK, fontsize=8, sublabel_size=6)
 
     # Pi USB 2.0 → Modem

@@ -593,7 +593,7 @@
   ;; LTE MODEM SECTION
   ;; ============================================
 
-  ;; Quectel EG25-G Modem + PU201
+  ;; Quectel EG25-G Modem + EXVIST Mini PCIe-USB Adapter
   (symbol
     (lib_id "RF_Module:Modem")
     (at 342.9 203.2 0)
@@ -607,7 +607,7 @@
       (at 342.9 185.42 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Value" "Quectel EG25-G + PU201"
+    (property "Value" "Quectel EG25-G + EXVIST Mini PCIe-USB"
       (at 342.9 187.96 0)
       (effects (font (size 1.27 1.27)))
     )

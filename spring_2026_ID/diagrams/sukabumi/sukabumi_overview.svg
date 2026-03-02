@@ -124,9 +124,9 @@
   <rect x="530" y="160" width="120" height="40" class="box"/>
   <text x="590" y="185" class="component" text-anchor="middle">Quectel EG25-G</text>
 
-  <!-- PU201 Adapter -->
+  <!-- EXVIST Mini PCIe-USB Adapter -->
   <rect x="530" y="205" width="120" height="30" class="box"/>
-  <text x="590" y="225" class="component" text-anchor="middle">PU201 USB Adapter</text>
+  <text x="590" y="225" class="component" text-anchor="middle">EXVIST mPCIe-USB</text>
 
   <!-- Antennas -->
   <rect x="665" y="160" width="50" height="30" class="box"/>

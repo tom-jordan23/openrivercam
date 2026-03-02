@@ -74,7 +74,7 @@ Verify all components before starting assembly:
 - [ ] Heatsink/cooler for Pi 5
 
 ### Connectivity
-- [ ] Quectel EG25-G modem + PU201 USB adapter
+- [ ] Quectel EG25-G modem + EXVIST Mini PCIe-USB adapter
 - [ ] LTE antennas (×2)
 - [ ] SMA bulkhead connectors (×2)
 - [ ] USB-RS485 adapter
@@ -303,7 +303,7 @@ Verify all components before starting assembly:
    - USB-A cable from SSD enclosure → Pi 5 USB 3.0 port (blue)
 
 2. **LTE Modem:**
-   - USB cable from PU201 → Pi 5 USB 2.0 port
+   - USB cable from EXVIST adapter → Pi 5 USB 2.0 port
    - SMA cables from modem → bulkhead connectors
    - External antennas on bulkheads
 

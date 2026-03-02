@@ -4,7 +4,7 @@ Compute Platform,WittyPi5,Witty Pi 5 HAT+ (power mgmt RTC I2C-only),1,$46.00,$46
 Compute Platform,EZCONNECT,Adafruit Pi-EzConnect (ID 2711 GPIO terminal block),1,$19.95,$19.95,Adafruit,https://www.adafruit.com/product/2711,Stacks on Witty Pi 5 HAT+
 Compute Platform,USB-DRIVE,Samsung FIT Plus 256GB USB 3.1 flash drive (MUF-256AB),1,$25.00,$25.00,Amazon,https://www.amazon.com/Samsung-MUF-256AB-AM-Plus-256GB/dp/B07D7Q41PM,IP67 waterproof - 0-60C operating - plugs directly into Pi USB-A
 Compute Platform,MODEM,Quectel EG25-G LTE Cat 4 module,1,$35.00,$35.00,Amazon,https://www.amazon.com/Generic-Quectel-EG25-G-Cellular-M2M-optimized/dp/B0CVQ2YLQQ,Verify Indonesian bands B1/B3/B5/B8/B40
-Compute Platform,MODEM-USB,PU201 USB adapter board for EG25-G,1,$15.00,$15.00,DigiKey,https://www.digikey.com/en/products/detail/techship/PU201/21262919,USB interface for modem
+Compute Platform,MODEM-USB,EXVIST Mini PCIe-USB adapter (P2U52V02USB) for EG25-G,1,$15.00,$15.00,Amazon,https://www.amazon.com/EXVIST-Industrial-Adapter-Compatible-Connection/dp/B08GFM9536,Mini PCIe to USB adapter for EG25-G modem (replaces wrong M.2/WWAN adapter)
 Compute Platform,ANT-PUCK,Proxicast ANT-122-S02 2x2 MIMO LTE puck antenna (IP67 screw mount),1,$65.00,$65.00,Amazon,https://www.amazon.com/Proxicast-Profile-Omni-Directional-Screw-Mount-Antenna/dp/B07DDC9WV5,Main + diversity in single sealed unit - 600-6000 MHz - eliminates bulkhead connectors
 Compute Platform,SD-CARD,MicroSD card 32GB (SanDisk/Samsung),1,$8.00,$8.00,Amazon,https://www.amazon.com/s?k=microSD+32GB+SanDisk,For OS boot
 Compute Platform,HEATSINK,Heatsink for Raspberry Pi 5,1,$8.00,$8.00,Amazon,https://www.amazon.com/s?k=raspberry+pi+5+heatsink,Active or passive

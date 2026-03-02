@@ -5,9 +5,9 @@
 - **Power:** AC utility (220V/50Hz) with 24hr battery backup
 - **Camera:** 2x PoE IP cameras
 - **Purpose:** New training/demo installation
-- **Date:** January 9, 2026
-- **Status:** VERIFIED - Product links checked January 2026
-- **Suppliers Consolidated:** 6 primary suppliers (Adafruit, Amazon, DigiKey, Planet Technology, UUGear, Hydreon)
+- **Date:** February 24, 2026 (reconciled with Sukabumi actuals)
+- **Status:** RECONCILED - Shared components aligned with Sukabumi procured parts
+- **Suppliers Consolidated:** 4 primary suppliers (Adafruit, Amazon, DigiKey, Hydreon)
 
 ---
 
@@ -15,11 +15,9 @@
 
 | Supplier | Primary Products | URL |
 |----------|-----------------|-----|
-| **Adafruit** | Raspberry Pi, HATs, LEDs, terminal blocks | https://www.adafruit.com |
-| **Amazon** | Batteries, cameras, enclosures, general hardware | https://www.amazon.com |
-| **DigiKey** | Industrial PSU, surge protector | https://www.digikey.com |
-| **Planet Technology** | PoE injector | https://planetechusa.com |
-| **UUGear** | Witty Pi 5 HAT+ | https://www.uugear.com |
+| **Adafruit** | Witty Pi 5, USB-RS485, cable glands | https://www.adafruit.com |
+| **Amazon** | Compute, cameras, power system, enclosure, consumables | https://www.amazon.com |
+| **DigiKey** | Industrial PSU, surge protector, vents | https://www.digikey.com |
 | **Hydreon** | Rain gauge | https://store.hydreon.com |
 
 ---
@@ -28,124 +26,102 @@
 
 ### SUPPLIER 1: DIGIKEY
 **URL:** https://www.digikey.com
-**Category:** Industrial Power & Protection
+**Category:** Industrial Power, Protection & Vents
 
-| Item | Description | Part# | Qty | Unit Price | Extended | Product Link |
-|------|-------------|-------|-----|------------|----------|--------------|
-| PWR-001 | Mean Well SDR-120-12 DIN Rail PSU (120W, 12V 10A, 88-264VAC) | SDR-120-12 | 1 | $59.84 | $59.84 | https://www.digikey.com/en/products/detail/mean-well-usa-inc/SDR-120-12/7706193 |
-| PWR-005 | Phoenix Contact Type 2 SPD Surge Protector (3-phase, 40kA) | FLT-SEC-T2-3C-350/25 | 1 | $78.15 | $78.15 | https://www.digikey.com/en/products/detail/phoenix-contact/2905418/3884829 |
-| PWR-009 | Phoenix Contact PTFIX Power Distribution Block (12-pos) | PTFIX-12X1.5-NS35-FE | 2 | $18.50 | $37.00 | https://www.digikey.com/en/products/filter/terminal-blocks/power-distribution/412 |
+| Item | Description | Part# | Qty | Unit Price | Extended | Product Link | Notes |
+|------|-------------|-------|-----|------------|----------|--------------|-------|
+| PWR-001 | Mean Well SDR-120-12 DIN Rail PSU (120W, 12V 10A, 88-264VAC) | SDR-120-12 | 1 | $59.84 | $59.84 | https://www.digikey.com/en/products/detail/mean-well-usa-inc/SDR-120-12/7706193 | Jakarta-specific |
+| PWR-005 | Phoenix Contact Type 2 SPD Surge Protector (3-phase, 40kA) | FLT-SEC-T2-3C-350/25 | 1 | $78.15 | $78.15 | https://www.digikey.com/en/products/detail/phoenix-contact/2905418/3884829 | Jakarta-specific |
+| PWR-009 | Phoenix Contact PTFIX Power Distribution Block (12-pos) | PTFIX-12X1.5-NS35-FE | 2 | $18.50 | $37.00 | https://www.digikey.com/en/products/filter/terminal-blocks/power-distribution/412 | Jakarta-specific |
+| HUM-002 | Amphenol LTW M12 Protective Vent (IP68) | VENT-PS1YBK-N8001 | 2 | $9.95 | $19.90 | https://www.digikey.com/en/products/detail/amphenol-ltw/VENT-PS1YBK-N8001/7898285 | Matched Sukabumi source |
 
-**DigiKey Subtotal: $174.99**
+**DigiKey Subtotal: $194.89**
 
 ---
 
-### SUPPLIER 2: AMAZON
+### SUPPLIER 1: AMAZON
 **URL:** https://www.amazon.com
-**Category:** Batteries, Hardware & General Components
+**Category:** Compute, Cameras, Power System, Enclosure & Consumables
 
-| Item | Description | Qty | Unit Price | Extended | Product Link |
-|------|-------------|-----|------------|----------|--------------|
-| **POWER SYSTEM** | | | | | |
-| PWR-002 | 12V 100Ah LiFePO4 Battery (LiTime/Ampere Time, 1280Wh, BMS) | 1 | $299.99 | $299.99 | https://www.amazon.com/s?k=12V+100Ah+LiFePO4+battery |
-| PWR-003 | 20A LiFePO4 Battery Charger (12V, smart, temp sensor) | 1 | $89.99 | $89.99 | https://www.amazon.com/s?k=20A+LiFePO4+charger+12V |
-| PWR-004 | Victron BatteryProtect 12/24V-65A (Low voltage disconnect) | 1 | $53.55 | $53.55 | https://www.amazon.com/Victron-Energy-Battery-Protect-24-Volt/dp/B01N6ATT8C |
-| PWR-006 | Automotive Blade Fuse Holders (inline, waterproof, 4-pack) | 1 | $12.99 | $12.99 | https://www.amazon.com/s?k=waterproof+blade+fuse+holder |
-| PWR-007 | ATO/ATC Blade Fuses 10A (25-pack) | 1 | $7.99 | $7.99 | https://www.amazon.com/s?k=ATO+blade+fuses+10A |
-| PWR-008 | ATO/ATC Blade Fuses 15A (25-pack) | 1 | $7.99 | $7.99 | https://www.amazon.com/s?k=ATO+blade+fuses+15A |
-| PWR-010 | 35mm DIN Rail with End Stops (2× 1m aluminum) | 2 | $12.99 | $25.98 | https://www.amazon.com/s?k=35mm+DIN+rail+1+meter |
+Items marked **"Matched Sukabumi"** use the exact same product/source ordered for the Sukabumi site.
+Items marked **"Jakarta-specific"** are unique to the Jakarta AC-powered deployment.
 
-**Amazon Power System Subtotal: $498.48**
+| Item | Description | Qty | Unit Price | Extended | Product Link | Notes |
+|------|-------------|-----|------------|----------|--------------|-------|
+| **COMPUTE PLATFORM** | | | | | | |
+| CPU-001 | Raspberry Pi 5 8GB RAM | 1 | $109.00 | $109.00 | https://www.amazon.com/Raspberry-Pi-8GB-SC1112-Quad-core/dp/B0CK2FCG1K | Matched Sukabumi |
+| CPU-003 | Stacking Headers (Geekworm) | 1 | $9.90 | $9.90 | https://www.amazon.com/Geekworm-Stacking-Raspberry-Specifications-Extender/dp/B0827THC7R | Matched Sukabumi |
+| CPU-003B | GPIO Breakout Board (Geekworm G469) | 1 | $9.90 | $9.90 | https://www.amazon.com/Geekworm-G469-Terminal-Breakout-Raspberry/dp/B0DMNJ17PD | Matched Sukabumi (replaces Pi-EzConnect) |
+| CPU-004 | SanDisk 256GB USB Flash Drive | 1 | $30.99 | $30.99 | https://www.amazon.com/SanDisk-256GB-Ultra-Flash-Drive/dp/B0BY2TT9TD | Matched Sukabumi |
+| CPU-007 | Quectel EG25-G LTE Mini PCIe Module | 1 | $75.00 | $75.00 | https://www.amazon.com/Generic-Quectel-EG25-G-Cellular-M2M-optimized/dp/B0CVQ2YLQQ | Matched Sukabumi |
+| CPU-008 | Mini PCIe to USB Adapter (EXVIST P2U52V02USB) | 1 | $24.99 | $24.99 | https://www.amazon.com/EXVIST-Industrial-Adapter-Compatible-Connection/dp/B08GFM9536 | CORRECTED: EG25-G is Mini PCIe, not M.2 |
+| CPU-009 | Proxicast ANT-122-S02 2x2 MIMO LTE Puck Antenna (IP67) | 1 | $64.95 | $64.95 | https://www.amazon.com/Proxicast-Profile-Omni-Directional-Screw-Mount-Antenna/dp/B07DDC9WV5 | Matched Sukabumi |
+| CPU-006 | MicroSD Card 64G x2 Pack (SanDisk) | 1 | $26.92 | $26.92 | https://www.amazon.com/SanDisk-128GB-MicroSDXC-Ultra-Memory/dp/B07XDCZ9J3 | Matched Sukabumi |
+| CPU-011 | Raspberry Pi 5 Active Cooler | 1 | $9.90 | $9.90 | https://www.amazon.com/Raspberry-Pi5-Temperature-Controlled-Aluminium-Dissipation/dp/B0CW164TCW | Matched Sukabumi |
+| **CAMERA SYSTEM** | | | | | | |
+| CAM-001 | ANNKE C1200 PoE IP Camera (12MP, 134° FOV, 2-pack) | 1 | $119.99 | $119.99 | https://www.amazon.com/ANNKE-Security-Surveillance-Detection-Spotlight/dp/B0DBHRMT1V | Jakarta: 2 cameras (Sukabumi ordered single $89.99) |
+| CAM-003 | LINOVISION Industrial 12V PoE Switch (Gigabit, IEEE802.3af/at) | 1 | $85.99 | $85.99 | https://www.amazon.com/LINOVISION-Industrial-Gigabit-DC12V-48V-IEEE802-3af/dp/B09HGWLZSD | Matched Sukabumi (replaces Planet IPOE-260-12V) |
+| CAM-006 | Hikvision DS-1275ZJ Vertical Mounting Plate (stainless) | 2 | $30.99 | $61.98 | https://www.amazon.com/DS-1275ZJ-Vertical-Adapter-Hikvision-Stainless/dp/B0DRDZBR69 | Matched Sukabumi, qty 2 for 2 cameras |
+| CAM-004 | Outdoor Cat6 Shielded Cable (300ft, UV-resistant) | 1 | $79.99 | $79.99 | https://www.amazon.com/s?k=outdoor+Cat6+shielded+cable+300ft+UV | Camera cabling |
+| CAM-005 | IP68 RJ45 Waterproof Coupler (2-pack) | 1 | $12.99 | $12.99 | https://www.amazon.com/s?k=IP68+RJ45+coupler+waterproof | Weatherproof connections |
+| **POWER SYSTEM (Jakarta-specific)** | | | | | | |
+| PWR-002 | 12V 100Ah LiFePO4 Battery (LiTime, 1280Wh, BMS) | 1 | $299.99 | $299.99 | https://www.amazon.com/s?k=12V+100Ah+LiFePO4+battery | Jakarta-specific: 24hr backup |
+| PWR-003 | 20A LiFePO4 Battery Charger (12V, smart, temp sensor) | 1 | $89.99 | $89.99 | https://www.amazon.com/s?k=20A+LiFePO4+charger+12V | Jakarta-specific |
+| PWR-004 | Victron BatteryProtect 12/24V-65A (Low voltage disconnect) | 1 | $53.55 | $53.55 | https://www.amazon.com/Victron-Energy-Battery-Protect-24-Volt/dp/B01N6ATT8C | Jakarta-specific |
+| PWR-006 | Automotive Blade Fuse Holders (inline, waterproof, 4-pack) | 1 | $12.99 | $12.99 | https://www.amazon.com/s?k=waterproof+blade+fuse+holder | Circuit protection |
+| PWR-007 | ATO/ATC Blade Fuses 10A (25-pack) | 1 | $7.99 | $7.99 | https://www.amazon.com/s?k=ATO+blade+fuses+10A | Replacement fuses |
+| PWR-008 | ATO/ATC Blade Fuses 15A (25-pack) | 1 | $7.99 | $7.99 | https://www.amazon.com/s?k=ATO+blade+fuses+15A | Replacement fuses |
+| PWR-010 | 35mm DIN Rail with End Stops (2x 1m aluminum) | 2 | $12.99 | $25.98 | https://www.amazon.com/s?k=35mm+DIN+rail+1+meter | Jakarta-specific: larger enclosure |
+| **ENCLOSURE & MOUNTING** | | | | | | |
+| ENC-001 | IP66 Aluminum Enclosure (400x300x200mm, hinged) | 1 | $89.99 | $89.99 | https://www.amazon.com/s?k=IP66+aluminum+enclosure+400x300x200 | Jakarta-specific: larger for power system |
+| ENC-004 | Cable Gland Assortment (PG9/PG13.5/PG16, 20-pack) | 1 | $18.99 | $18.99 | https://www.amazon.com/s?k=cable+gland+assortment+IP68 | Cable entries |
+| CLIP-TERM | DIN Rail Terminal Block Kit | 1 | $19.99 | $19.99 | https://www.amazon.com/GUETNEU-Terminal-Block-Voltage-Combined/dp/B0BQQDWGXV | Matched Sukabumi |
+| CLIP-RPI | DIN Rail Clip for Raspberry Pi | 1 | $18.99 | $18.99 | https://www.amazon.com/Mount-Bracket-Raspberry-Arduino-BeagleBone/dp/B08HRZVFCX | Matched Sukabumi |
+| ENC-008 | Stainless Steel M3/M4 Hardware Kit (300-piece) | 1 | $16.99 | $16.99 | https://www.amazon.com/s?k=stainless+steel+hardware+kit+M3+M4 | Mounting hardware |
+| **USER INTERFACE** | | | | | | |
+| LED-MULTI | Multi-color LED 5-pack (FILN, 12V-24V, IP67) | 1 | $16.99 | $16.99 | https://www.amazon.com/FILN-Indicator-Anodized-Waterproof-12V-24V/dp/B0C7KSFKTH | Matched Sukabumi |
+| BTN-MAINT | IP67 Momentary Pushbutton 16mm Stainless | 1 | $8.99 | $8.99 | https://www.amazon.com/Gebildet-Momentary-terminals-Stainless-Waterproof/dp/B081JJBN4G | Matched Sukabumi |
+| PWR-12V | 12V Power Couplers - Screw Terminal | 1 | $6.99 | $6.99 | https://www.amazon.com/ANLINK-20-Connectors-Terminal-Security/dp/B0BHYTRP1M | Matched Sukabumi |
+| **HUMIDITY & THERMAL** | | | | | | |
+| COAT-SIL | Conformal Coating | 1 | $18.89 | $18.89 | https://www.amazon.com/1DFAUL-Electronics-Insulating-Waterproof-Electronic/dp/B0FH1ZTGZV | Matched Sukabumi |
+| HUM-003 | PTC Heater 10W for Camera (thermostat, 2-pack) | 1 | $29.98 | $29.98 | https://www.amazon.com/s?k=PTC+heater+12V+10W | Jakarta-specific |
+| HUM-004 | PTC Heater 15W for Enclosure (hygrostat control) | 1 | $19.99 | $19.99 | https://www.amazon.com/s?k=PTC+heater+12V+15W | Jakarta-specific |
+| HUM-006 | Kapton Tape 1/4" x 36yds (masking for coating) | 1 | $9.99 | $9.99 | https://www.amazon.com/s?k=kapton+tape | Conformal coat masking |
+| **CABLES & CONNECTORS** | | | | | | |
+| USB-C-PWR | USB-C Power Cable (1.5m, right-angle) | 1 | $8.00 | $8.00 | https://www.amazon.com/s?k=USB-C+power+cable+right+angle+1.5m | Matched Sukabumi |
+| USB-A-SHORT | USB-A Cables (0.5m, various) 3-pack | 1 | $12.00 | $12.00 | https://www.amazon.com/s?k=short+USB+cable+pack+0.5m | Matched Sukabumi |
+| DI-GREASE | Dielectric Grease (small tube) | 1 | $7.99 | $7.99 | https://www.amazon.com/BTAS-Dielectric-Automotive-Electrical-Connectors/dp/B0D6R543V2 | Matched Sukabumi |
+| **CONSUMABLES** | | | | | | |
+| CONS-001 | Heat Shrink Tubing Kit (assorted, 328-piece) | 1 | $11.99 | $11.99 | https://www.amazon.com/s?k=heat+shrink+tubing+kit | Cable finishing |
+| CONS-002 | Silicone Sealant (RTV, electronics-grade) | 1 | $7.99 | $7.99 | https://www.amazon.com/s?k=silicone+sealant+electronics | Sealing |
+| CONS-003 | UV-Resistant Zip Ties (assorted, 500-pack) | 1 | $12.99 | $12.99 | https://www.amazon.com/s?k=UV+resistant+zip+ties | Cable management |
+| CONS-006 | Isopropyl Alcohol 99% (16oz bottle) | 1 | $8.99 | $8.99 | https://www.amazon.com/s?k=isopropyl+alcohol+99 | Cleaning |
 
-**Combined Power System Total: $673.47**
+**Amazon Subtotal: $1,567.69**
 
-### SUPPLIER 3: ADAFRUIT
+---
+
+### SUPPLIER 2: ADAFRUIT
 **URL:** https://www.adafruit.com
-**Category:** Raspberry Pi & HATs
+**Category:** Witty Pi, Adapters & Cable Glands
 
-| Item | Description | Part# | Qty | Unit Price | Extended | Product Link |
-|------|-------------|-------|-----|------------|----------|--------------|
-| CPU-001 | Raspberry Pi 5 - 8GB RAM | 5813 | 1 | $80.00 | $80.00 | https://www.adafruit.com/product/5813 |
-| CPU-011 | Official Raspberry Pi 5 Active Cooler | 5815 | 1 | $5.00 | $5.00 | https://www.adafruit.com/product/5815 |
-| CPU-003 | Pi-EzConnect Terminal Block HAT | 2711 | 1 | $19.95 | $19.95 | https://www.adafruit.com/product/2711 |
-| CPU-006 | 32GB MicroSD Card (Class 10, A1) | 2820 | 1 | $14.95 | $14.95 | https://www.adafruit.com/product/2820 |
-| UI-005 | USB-RS485 Adapter Module | 4721 | 1 | $11.95 | $11.95 | https://www.adafruit.com/product/4721 |
-| UI-001 | 10mm IP67 Panel Mount LED - Red | 3341 | 1 | $2.95 | $2.95 | https://www.adafruit.com/product/3341 |
-| UI-002 | 10mm IP67 Panel Mount LED - Yellow | 3342 | 1 | $2.95 | $2.95 | https://www.adafruit.com/product/3342 |
-| UI-003 | 10mm IP67 Panel Mount LED - Green | 3343 | 1 | $2.95 | $2.95 | https://www.adafruit.com/product/3343 |
-| ENC-003 | PG9 Cable Glands (10-pack) | 762 | 1 | $7.50 | $7.50 | https://www.adafruit.com/product/762 |
+| Item | Description | Part# | Qty | Unit Price | Extended | Product Link | Notes |
+|------|-------------|-------|-----|------------|----------|--------------|-------|
+| CPU-002 | Witty Pi 5 HAT+ (power mgmt, RTC, I2C-only) | 6449 | 1 | $59.95 | $59.95 | https://www.adafruit.com/product/6449 | Matched Sukabumi |
+| UI-005 | USB to RS485/232 Multi-Protocol Adapter | 5995 | 1 | $21.95 | $21.95 | https://www.adafruit.com/product/5995 | Matched Sukabumi (optional) |
+| ENC-003 | PG9 Cable Glands (10-pack) | 761 | 1 | $7.50 | $7.50 | https://www.adafruit.com/product/761 | Cable entry sealing |
 
-**Adafruit Subtotal: $148.20**
+**Adafruit Subtotal: $89.40**
 
 ---
 
-### SUPPLIER 2: AMAZON (CONTINUED)
-**Category:** Compute, Cameras, Enclosures & Thermal
-
-| Item | Description | Qty | Unit Price | Extended | Product Link |
-|------|-------------|-----|------------|----------|--------------|
-| **COMPUTE PLATFORM** | | | | | |
-| CPU-004 | Samsung FIT Plus 256GB USB 3.1 flash drive (MUF-256AB) | 1 | $25.00 | $25.00 | https://www.amazon.com/Samsung-MUF-256AB-AM-Plus-256GB/dp/B07D7Q41PM |
-| CPU-007/008 | Quectel EG25-G LTE Modem + PU201 USB Adapter | 1 | $119.00 | $119.00 | https://www.amazon.com/s?k=Quectel+EG25-G |
-| CPU-009 | Proxicast ANT-122-S02 2x2 MIMO LTE puck antenna (IP67, screw mount, 600-6000 MHz) | 1 | $65.00 | $65.00 | https://www.amazon.com/Proxicast-Profile-Omni-Directional-Screw-Mount-Antenna/dp/B07DDC9WV5 |
-
-| **CAMERAS & NETWORKING** | | | | | |
-| CAM-001 | ANNKE C1200 PoE IP Camera (12MP, 134° FOV, 2-pack) | 1 | $119.99 | $119.99 | https://www.amazon.com/ANNKE-Security-Surveillance-Spotlight-Weatherproof/dp/B0F4R97PVS |
-| CAM-004 | Outdoor Cat6 Shielded Cable (300ft, UV-resistant) | 1 | $79.99 | $79.99 | https://www.amazon.com/s?k=outdoor+Cat6+shielded+cable+300ft |
-| CAM-005 | IP68 RJ45 Waterproof Coupler (2-pack) | 1 | $12.99 | $12.99 | https://www.amazon.com/s?k=IP68+RJ45+coupler |
-| CAM-006 | Camera Pole Mount Bracket (stainless, 2-pack) | 1 | $22.99 | $22.99 | https://www.amazon.com/s?k=camera+pole+mount+bracket+stainless |
-| **ENCLOSURE & MOUNTING** | | | | | |
-| ENC-001 | IP66 Aluminum Enclosure (400x300x200mm, hinged) | 1 | $89.99 | $89.99 | https://www.amazon.com/s?k=IP66+aluminum+enclosure+400x300x200 |
-| ENC-004/005 | Cable Gland Assortment (PG9/PG13.5/PG16, 20-pack) | 1 | $18.99 | $18.99 | https://www.amazon.com/s?k=cable+gland+assortment+IP68 |
-| ENC-007 | DIN Rail Terminal Block Kit (50-piece, assorted) | 1 | $24.99 | $24.99 | https://www.amazon.com/s?k=DIN+rail+terminal+block+kit |
-| UI-004 | 16mm IP67 Momentary Pushbutton (stainless steel) | 1 | $9.99 | $9.99 | https://www.amazon.com/s?k=16mm+IP67+momentary+pushbutton |
-| ENC-008 | Stainless Steel M3/M4 Hardware Kit (300-piece) | 1 | $16.99 | $16.99 | https://www.amazon.com/s?k=stainless+steel+hardware+kit+M3+M4 |
-| **HUMIDITY & THERMAL** | | | | | |
-| HUM-001 | MG Chemicals 422C Silicone Coating (55mL, 2-pack) | 2 | $18.99 | $37.98 | https://www.amazon.com/MG-Chemicals-Silicone-Conformal-Coating/dp/B085G42TGS |
-| HUM-002 | M12 Waterproof Vent Plugs (IP68, 2-pack) | 1 | $17.98 | $17.98 | https://www.amazon.com/s?k=M12+waterproof+vent+plug |
-| HUM-003 | PTC Heater 10W for Camera (thermostat, 2-pack) | 1 | $29.98 | $29.98 | https://www.amazon.com/s?k=PTC+heater+12V+10W |
-| HUM-004 | PTC Heater 15W for Enclosure (hygrostat control) | 1 | $19.99 | $19.99 | https://www.amazon.com/s?k=PTC+heater+12V+15W |
-| HUM-006 | Kapton Tape 1/4" x 36yds (masking for coating) | 1 | $9.99 | $9.99 | https://www.amazon.com/s?k=kapton+tape |
-| **CONSUMABLES** | | | | | |
-| CONS-001 | Heat Shrink Tubing Kit (assorted, 328-piece) | 1 | $11.99 | $11.99 | https://www.amazon.com/s?k=heat+shrink+tubing+kit |
-| CONS-002 | Silicone Sealant (RTV, electronics-grade) | 1 | $7.99 | $7.99 | https://www.amazon.com/s?k=silicone+sealant+electronics |
-| CONS-003 | UV-Resistant Zip Ties (assorted, 500-pack) | 1 | $12.99 | $12.99 | https://www.amazon.com/s?k=UV+resistant+zip+ties |
-| CONS-006 | Isopropyl Alcohol 99% (16oz bottle) | 1 | $8.99 | $8.99 | https://www.amazon.com/s?k=isopropyl+alcohol+99 |
-
-**Amazon (Continued) Subtotal: $763.79**
-**Amazon TOTAL (Power + Compute + Cameras + Enclosure): $1,262.27**
-
-### SUPPLIER 4: PLANET TECHNOLOGY
-**URL:** https://planetechusa.com or https://networkcamerastore.com
-**Category:** PoE Injector
-
-| Item | Description | Part# | Qty | Unit Price | Extended | Product Link |
-|------|-------------|-------|-----|------------|----------|--------------|
-| CAM-002 | Planet IPOE-260-12V PoE Injector (2-port, 60W, 12V input) | IPOE-260-12V | 1 | $164.00 | $164.00 | https://planetechusa.com/product/ipoe-260-12v-industrial-2-port-10-100-1000t-802-3at-poe-injector-hub-12v-booster/ |
-
-**Planet Technology Subtotal: $164.00**
-
----
-
-### SUPPLIER 5: UUGEAR
-**URL:** https://www.uugear.com
-**Category:** Witty Pi Power Management HAT
-
-| Item | Description | Part# | Qty | Unit Price | Extended | Product Link |
-|------|-------------|-------|-----|------------|----------|--------------|
-| CPU-002 | Witty Pi 5 HAT+ (RTC + power scheduling) | WP5P | 1 | $46.00 | $46.00 | https://www.uugear.com/product/witty-pi-5/ |
-
-**UUGear Subtotal: $46.00**
-
----
-
-### SUPPLIER 6: HYDREON
+### SUPPLIER 3: HYDREON
 **URL:** https://store.hydreon.com
 **Category:** Rain Gauge
 
-| Item | Description | Part# | Qty | Unit Price | Extended | Product Link |
-|------|-------------|-------|-----|------------|----------|--------------|
-| RAIN-001 | Hydreon RG-15 Optical Rain Gauge (solid-state, RS232 TTL 3.3V + pulse output) | RG-15 | 1 | $99.00 | $99.00 | https://store.hydreon.com/RG-15.html |
+| Item | Description | Part# | Qty | Unit Price | Extended | Product Link | Notes |
+|------|-------------|-------|-----|------------|----------|--------------|-------|
+| RAIN-001 | Hydreon RG-15 Optical Rain Gauge (solid-state, RS232 TTL 3.3V + pulse output) | RG-15 | 1 | $99.00 | $99.00 | https://store.hydreon.com/RG-15.html | Same as Sukabumi |
 
 **Hydreon Subtotal: $99.00**
 
@@ -178,15 +154,13 @@ The following items should be purchased locally in Jakarta to reduce shipping co
 
 | Supplier | Subtotal (USD) | Notes |
 |----------|----------------|-------|
-| **1. DigiKey** | $174.99 | Mean Well PSU, surge protector, terminal blocks |
-| **2. Amazon** | $1,262.27 | Batteries, cameras, compute components, enclosure |
-| **3. Adafruit** | $148.20 | Raspberry Pi, HATs, LEDs, cable glands |
-| **4. Planet Technology** | $164.00 | PoE injector (12V native) |
-| **5. UUGear** | $46.00 | Witty Pi 5 HAT+ |
-| **6. Hydreon** | $99.00 | Rain gauge |
-| **Shipped Subtotal** | **$1,894.46** | Components to ship from US/international |
+| **1. Amazon** | $1,567.69 | Compute, cameras, power system, enclosure, consumables |
+| **2. DigiKey** | $194.89 | PSU, surge protector, power distribution, vents |
+| **3. Adafruit** | $89.40 | Witty Pi 5, USB-RS485, cable glands |
+| **4. Hydreon** | $99.00 | Rain gauge |
+| **Shipped Subtotal** | **$1,950.98** | Components to ship from US/international |
 | **Local Sourcing (Jakarta)** | **$96.00** | Grounding, mounting pole, misc hardware |
-| **GRAND TOTAL** | **$1,990.46** | Materials only |
+| **GRAND TOTAL** | **$2,046.98** | Materials only |
 
 ---
 
@@ -194,19 +168,49 @@ The following items should be purchased locally in Jakarta to reduce shipping co
 
 | Item | Estimated Cost (USD) | Notes |
 |------|---------------------|-------|
-| **Equipment (shipped)** | $1,894.46 | Components from 6 suppliers |
+| **Equipment (shipped)** | $1,950.98 | Components from 4 suppliers |
 | **Local sourcing (Jakarta)** | $96.00 | Grounding, pole, mounting hardware |
-| **TOTAL PROJECT COST** | **$1,990.46** | Materials only |
+| **TOTAL PROJECT COST** | **$2,046.98** | Materials only |
 
-**Budget Status:** ✅ Within budget. Combined with Sukabumi ($1,174.90) = **$3,165.36** total for both sites.
+**Budget Status:** ✅ Within budget. Combined with Sukabumi ($948.08 actual) = **$2,995.06** total for both sites.
 **Note:** Equipment travels with installer under humanitarian exemption — no shipping, customs, or contingency costs.
 
-**Cost reduction options (if needed):**
-- Single camera instead of 2: Save ~$60
-- 50Ah battery instead of 100Ah: Save ~$150 (12hr backup)
-- Skip PTC heaters: Save ~$50 (accept humidity risk)
-- Use 4GB Pi instead of 8GB: Save $20
-- **Total potential savings: ~$280** (reduces to $2,472-2,770)
+### Cost Review Items (decision pending)
+
+**Clear savings (low risk):**
+
+| Item | Issue | Potential Savings | Decision |
+|------|-------|-------------------|----------|
+| PWR-005 | 3-phase SPD for single-phase site; single-phase unit ~$30 | ~$45 | [ ] |
+| HUM-003 | Camera PTC heater; ANNKE C1200 is factory-sealed IP67 — external heater can't reach lens | ~$30 | [ ] |
+| CAM-004 | 300ft Cat6 may be excessive if runs <30m each; 100ft spool ~$40 | ~$40 | [ ] |
+| UI-005 | USB-RS485 marked optional; GPIO breakout handles RS232 | ~$22 | [ ] |
+| CPU-006 | 64G x2 pack for OS boot; single 32GB A2 card ($8-12) sufficient | ~$15 | [ ] |
+
+**Trade-off savings (higher risk):**
+
+| Item | Issue | Potential Savings | Decision |
+|------|-------|-------------------|----------|
+| PWR-009 | PTFIX distribution blocks may overlap with CLIP-TERM terminal block kit | ~$37 | [ ] |
+| PWR-002 | 100Ah battery gives 32hr backup; 50Ah gives 16hr — is 24hr+ needed on AC site? | ~$150 | [ ] |
+| PWR-004 | Victron BatteryProtect redundant with LiTime built-in BMS | ~$54 | [ ] |
+
+**Shared consumables (if building both units together):**
+
+| Items | Issue | Potential Savings | Decision |
+|-------|-------|-------------------|----------|
+| CONS-001/002/003/006, HUM-006, DI-GREASE | Heat shrink, sealant, zip ties, IPA, kapton, grease shared from Sukabumi | ~$60 | [ ] |
+
+**Hidden/unrealized costs:**
+
+| Item | Issue | Est. Cost | Decision |
+|------|-------|-----------|----------|
+| RJ45 connectors + crimp tool | Bulk Cat6 spool needs termination hardware — not in BOM | ~$30-40 | [ ] |
+| Amazon search-link price variance | ~15 items use generic search URLs, not locked ASINs — prices may differ | ~$50 buffer | [ ] |
+| COAT-SIL | Generic conformal coating — NOT the MG 422C silicone recommended for >95% RH — verify suitability | ~$5 if substituted | [ ] |
+
+**Total potential savings: $150-450 depending on decisions**
+**Total hidden costs: ~$85-95**
 
 ---
 
@@ -215,9 +219,10 @@ The following items should be purchased locally in Jakarta to reduce shipping co
 ### Consolidation Approach (RECOMMENDED)
 
 **Step 1: Order from all US suppliers to single US address (3-5 days)**
-- DigiKey → Your US address
-- Amazon → Same US address
+- Amazon → Your US address (largest order - most components)
+- DigiKey → Same US address
 - Adafruit → Same US address
+- Hydreon → Same US address
 
 **Step 2: Consolidate & repack (2-3 days)**
 - Combine all US shipments into 1-2 boxes
@@ -230,9 +235,8 @@ The following items should be purchased locally in Jakarta to reduce shipping co
 - HS codes: 8471 (computers), 8517 (modem), 8529 (cameras)
 
 **Step 4: Direct international orders (parallel with Steps 1-3)**
-- UUGear (Witty Pi) → Ships from China, 7-14 days
+- Adafruit (Witty Pi 5, USB-RS485, cable glands) → Ships from US, 3-7 days
 - Hydreon (RG-15 Rain gauge) → Ships from US, 3-7 days
-- Planet Technology → Check if distributor ships to Indonesia
 
 **Total estimated time: 2-3 weeks from order to arrival in Jakarta**
 
@@ -242,10 +246,9 @@ The following items should be purchased locally in Jakarta to reduce shipping co
 
 | Item | Lead Time | Action | Notes |
 |------|-----------|--------|-------|
-| CPU-001 | 1-4 weeks | Check Adafruit stock daily | Pi 5 8GB has periodic shortages |
-| CPU-002 | 1-2 weeks | Order from UUGear now | Ships from Hong Kong |
-| CPU-007/008 | 2-4 weeks | Verify modem availability | Check Amazon or AliExpress |
-| CAM-002 | 1-2 weeks | Check Planet distributor stock | Network Camera Store usually has stock |
+| CPU-001 | 1-4 weeks | Check Amazon stock | Pi 5 8GB has periodic shortages (matched Sukabumi source) |
+| CPU-002 | 1-2 weeks | Order from Adafruit | Witty Pi 5 HAT+ (matched Sukabumi source) |
+| CPU-007 | 2-4 weeks | Verify modem availability | Quectel EG25-G on Amazon (matched Sukabumi source) |
 
 **ORDER THESE FIRST** - Place orders 4-6 weeks before deployment date
 
@@ -255,19 +258,23 @@ The following items should be purchased locally in Jakarta to reduce shipping co
 
 **DigiKey order:**
 - Mean Well SDR-120-12 (usually stock)
-- Phoenix Contact surge protector
-- Terminal blocks
+- Phoenix Contact surge protector + distribution blocks
+- Amphenol LTW M12 vents
 
-**Amazon bulk order:**
-- LiFePO4 battery + charger
-- Cameras (ANNKE C1200 2-pack)
-- Cat6 cable, enclosure, hardware kits
-- Conformal coating, heaters, vents
+**Amazon bulk order (largest order - most items matched to Sukabumi):**
+- Pi 5, active cooler, stacking headers, GPIO breakout, SD cards, USB flash drive
+- Modem + USB adapter, antenna
+- ANNKE C1200 2-pack, LINOVISION PoE switch, camera mounts
+- LiFePO4 battery + charger, Victron BatteryProtect, fuses
+- Enclosure, DIN rail, clips, terminal blocks, hardware
+- LEDs, pushbutton, power couplers
+- Conformal coating, heaters, kapton tape
+- Cables, dielectric grease, consumables
 
 **Adafruit order:**
-- Pi-EzConnect HAT
-- MicroSD card, LEDs, cable glands
+- Witty Pi 5 HAT+
 - USB-RS485 adapter
+- PG9 cable glands
 
 ---
 
@@ -302,7 +309,7 @@ The following items should be purchased locally in Jakarta to reduce shipping co
 | Witty Pi 5 HAT+ | 0.1W | 0.1W | 100% | RTC always on |
 | Quectel EG25-G modem | 6W | 2W | 10% | Transmit peaks, idle most of time |
 | 2× PoE cameras | 15W | 15W | 100% | Continuous recording |
-| Planet PoE injector | 5W | 5W | 100% | Standby + conversion losses |
+| LINOVISION PoE switch | 5W | 5W | 100% | Standby + conversion losses |
 | PTC heaters | 25W | 12.5W | 50% | Nighttime only (18:00-06:00) |
 | **TOTAL** | **63W** | **40.6W** | - | Conservative average |
 
@@ -322,8 +329,8 @@ The following items should be purchased locally in Jakarta to reduce shipping co
 ### Component Compatibility Checklist
 
 ✅ **Pi 5 + Witty Pi 5 HAT+:** Compatible - I2C-only design, no GPIO conflicts
-✅ **Witty Pi 5 + Pi-EzConnect:** Stacks cleanly - both 40-pin pass-through
-✅ **ANNKE C1200 + Planet IPOE-260-12V:** 802.3af/at PoE compatible
+✅ **Witty Pi 5 + Stacking Headers + GPIO Breakout:** Stacks cleanly via 40-pin pass-through
+✅ **ANNKE C1200 + LINOVISION 12V PoE Switch:** 802.3af/at PoE compatible
 ✅ **Mean Well SDR-120-12:** Accepts 88-264VAC (Indonesia 220V OK)
 ✅ **Quectel EG25-G:** Supports Indonesian LTE bands (B1/B3/B5/B8/B40)
 ✅ **All outdoor components:** IP67+ rated, UV-resistant
@@ -334,7 +341,7 @@ The following items should be purchased locally in Jakarta to reduce shipping co
 ### Critical Pre-Deployment Tasks
 
 **DO BEFORE SHIPPING:**
-1. **Apply conformal coating** to all PCBs (Pi 5, Witty Pi, Pi-EzConnect, modem) in low-humidity environment
+1. **Apply conformal coating** to all PCBs (Pi 5, Witty Pi, GPIO breakout, modem) in low-humidity environment — **verify COAT-SIL product is suitable for >95% RH (not MG 422C)**
 2. **Mask connectors** during coating: GPIO pins, USB ports, HDMI, SD card slot, heat sink contact areas
 3. **Pre-configure cameras:** Set static IPs, enable RTSP, set credentials, test ONVIF
 4. **Load OS on SD card:** Install OpenRiverCam software, test Pi 5 + Witty Pi stack boots correctly
@@ -360,10 +367,10 @@ The following items should be purchased locally in Jakarta to reduce shipping co
 | Ampere Time 12V 100Ah | $289 | 100Ah | Budget option, good reviews |
 | Battle Born 100Ah | $949 | 100Ah | Top tier, 10-year warranty (overkill) |
 
-**PoE Injector:**
-- Most alternatives require 48V input → need DC-DC converter
-- Planet IPOE-260-12V is PREFERRED for native 12V operation
-- If unavailable: TRENDnet TPE-115GI ($34) + 12V→48V converter ($45) = $79 total
+**PoE Switch/Injector:**
+- LINOVISION Industrial 12V PoE Switch is PRIMARY choice (matched Sukabumi, $85.99)
+- Alternative: Planet IPOE-260-12V PoE Injector ($164) - native 12V input, industrial grade
+- If both unavailable: TRENDnet TPE-115GI ($34) + 12V→48V converter ($45) = $79 total
 
 ---
 
@@ -402,16 +409,14 @@ The following items should be purchased locally in Jakarta to reduce shipping co
 
 **Week 6 before deployment:**
 - [ ] Verify all product links are still active and valid
-- [ ] Check current prices (this BOM verified January 9, 2026)
-- [ ] Confirm Raspberry Pi 5 8GB stock at Adafruit or authorized dealers
-- [ ] Verify Witty Pi 5 HAT+ availability at UUGear
-- [ ] Check Planet IPOE-260-12V stock at distributors
+- [ ] Check current prices (this BOM reconciled February 24, 2026)
+- [ ] Confirm Raspberry Pi 5 8GB stock on Amazon (same listing as Sukabumi)
+- [ ] Verify Witty Pi 5 HAT+ availability at Adafruit (#6449)
 - [ ] Determine US consolidation address for shipments
 - [ ] Coordinate with local PMI office in Jakarta for receiving
 
 **Week 5 before deployment:**
 - [ ] **ORDER NOW:** Raspberry Pi 5, Witty Pi 5, Quectel modem (long lead items)
-- [ ] **ORDER NOW:** Planet PoE injector
 - [ ] Register modem IMEI with Indonesian POSTEL (start process early)
 - [ ] Purchase & activate Telkomsel SIM card (can be done remotely)
 
@@ -485,17 +490,17 @@ The following items should be purchased locally in Jakarta to reduce shipping co
 2. [ ] Set pole base in concrete, allow 24hr cure
 3. [ ] Mount enclosure to pole with U-bolts
 4. [ ] Install DIN rail inside enclosure
-5. [ ] Mount components on DIN rail (PSU, terminal blocks, BatteryProtect, PoE injector)
+5. [ ] Mount components on DIN rail (PSU, terminal blocks, BatteryProtect, PoE switch)
 6. [ ] Mount Pi 5 + Witty Pi + Pi-EzConnect stack
 7. [ ] Wire AC input through surge protector to Mean Well PSU
 8. [ ] Wire battery + charger + BatteryProtect
-9. [ ] Wire 12V distribution to PoE injector and Pi
+9. [ ] Wire 12V distribution to PoE switch and Pi
 10. [ ] Install PTC heaters with thermostats
 11. [ ] Mount Gore vents in enclosure
 12. [ ] Wire status LEDs and pushbutton to GPIO
 13. [ ] Run Cat6 cables to camera mounting locations
 14. [ ] Install cameras on pole mounts, aim and focus
-15. [ ] Mount Proxicast ANT-122-S02 puck on enclosure (1/2" hole), connect SMA cables to modem
+15. [ ] Mount Proxicast ANT-122-S02 puck on enclosure (12mm hole), connect SMA cables to modem
 16. [ ] Install rain gauge on separate arm
 17. [ ] Cable management with zip ties
 18. [ ] Test all connections with multimeter BEFORE applying power
@@ -524,6 +529,7 @@ The following items should be purchased locally in Jakarta to reduce shipping co
 
 | Date | Version | Changes | Author |
 |------|---------|---------|--------|
+| 2026-02-24 | 3.0 | Reconciled with Sukabumi actuals: matched shared components (GPIO breakout, PoE switch, stacking headers, LEDs, etc.), reduced from 6 to 4 suppliers, added forgotten items (USB cables, DIN clips, power couplers, dielectric grease), updated all prices to match procured costs | Claude (Opus 4.6) |
 | 2026-01-09 | 2.0 | Verified BOM with actual product links, consolidated suppliers | Claude (Comprehensive Researcher) |
 | 2026-01-09 | 1.0 | Initial BOM creation for Jakarta site | - |
 
@@ -545,10 +551,11 @@ The following items should be purchased locally in Jakarta to reduce shipping co
 - **Pi-EzConnect:** Enables future expansion via GPIO screw terminals without soldering
 - **Quectel EG25-G:** Global LTE modem supporting all Indonesian carrier bands, proven reliability
 
-**Cameras:**
+**Cameras & PoE:**
 - **ANNKE C1200 (12MP) vs Reolink (8MP):** 12MP provides better detail for flood water level analysis
 - **PoE vs USB:** Factory-sealed PoE cameras eliminate custom housing complexity and humidity ingress risks
 - **2 cameras vs 1:** Stereo vision enables depth mapping and velocity measurement
+- **LINOVISION PoE switch vs Planet IPOE-260-12V injector:** Matched Sukabumi procurement; lower cost ($86 vs $164); multi-port switch provides expansion flexibility; native 12V input
 
 **Humidity Management:**
 - **MG Chemicals 422C:** Silicone-based coating performs better than acrylic in >95% RH
@@ -557,7 +564,7 @@ The following items should be purchased locally in Jakarta to reduce shipping co
 
 ### What This BOM Does NOT Include
 
-- **Sukabumi site components** - Separate BOM required (USB cameras, solar power)
+- **Sukabumi site components** - Separate BOM (see `BOM_Sukabumi.md` and `sukabumi_parts_procured.csv`)
 - **Spare parts inventory** - See CLAUDE.md for recommended spares
 - **Software licenses** - ORC software is open-source
 - **Labor costs** - Installation assumed to be performed by team/volunteers
@@ -612,11 +619,10 @@ The following items should be purchased locally in Jakarta to reduce shipping co
 ## CONTACT INFORMATION
 
 **Suppliers:**
-- **Adafruit:** support@adafruit.com | +1-212-226-2010
-- **DigiKey:** tech.support@digikey.com | +1-800-344-4539
-- **Planet Technology:** sales@planetechusa.com | +1-510-438-9071
-- **UUGear:** support@uugear.com (email only)
-- **Hydreon:** info@hydreon.com | https://store.hydreon.com
+- **Adafruit:** support@adafruit.com | +1-212-226-2010 (Witty Pi 5, USB-RS485, cable glands)
+- **Amazon:** Standard Amazon customer service (majority of components)
+- **DigiKey:** tech.support@digikey.com | +1-800-344-4539 (PSU, surge protector, vents)
+- **Hydreon:** info@hydreon.com | https://store.hydreon.com (rain gauge)
 
 **Indonesian resources:**
 - **POSTEL (IMEI registration):** https://imei.kemenperin.go.id/
@@ -625,12 +631,33 @@ The following items should be purchased locally in Jakarta to reduce shipping co
 
 ---
 
-**Document prepared:** January 9, 2026
-**Version:** 2.0 (Verified with product links)
+**Document prepared:** January 9, 2026 | **Last updated:** February 24, 2026
+**Version:** 3.0 (Reconciled with Sukabumi actuals)
 **Site:** Jakarta, Indonesia
 **Project:** OpenRiverCam Training/Demo Installation
-**Budget:** $2,752-3,050 USD (fully loaded with shipping & duties)
-**Status:** READY FOR PROCUREMENT
+**Budget:** Jakarta $2,046.98 + Sukabumi $948.08 = **$2,995.06** total (within $3,000 target)
+**Status:** RECONCILED - Ready for procurement
+
+---
+
+## PROCUREMENT NOTES - ITEMS STILL NEEDED
+
+The following items were not ordered with the Sukabumi parts and need to be included in the Jakarta order:
+
+| Item | Reason | Est. Cost | For Site | Notes |
+|------|--------|-----------|----------|-------|
+| Buck converter (12V to 5V) | Not ordered for Sukabumi | TBD | Sukabumi | Power Pi from 12V solar - add to Jakarta order |
+| External ethernet cable | Not ordered for Sukabumi | TBD | Sukabumi | Cat6 outdoor run from enclosure to camera |
+| Fans (enclosure ventilation) | Not ordered for either site | TBD | Both | Active airflow for thermal management |
+| Additional DIN rail clips | Not enough for all components | TBD | Both | Need clips for PoE switch, modem adapter, terminal blocks, etc. |
+| Pole mount solution (Sukabumi) | Not yet specified | TBD | Sukabumi | Must accommodate enclosure box + gore vent strategy |
+| Pole mount solution (Jakarta) | Not yet specified | TBD | Jakarta | Must accommodate enclosure box + gore vent strategy |
+
+**Pole mount notes:** Both sites need a pole mounting solution that works with the selected enclosure boxes and allows for gore vent placement. Research needed on mounting brackets/arms that can securely hold the NEMA 4x / IP66 enclosures while keeping gore vents unobstructed and oriented correctly (vents must face downward to prevent water ingress).
+
+**Fan notes:** Enclosure fans help with thermal management in hot climates. Consider 12V DC fans (80mm or 120mm) with dust filters. Jakarta (coastal/urban) is especially hot and may need active ventilation. Research IP-rated fan+filter units for NEMA enclosures.
+
+**DIN rail clip notes:** The Sukabumi build only ordered 1x Pi clip and 1x terminal block clip kit. Additional DIN-mountable clips are needed for: PoE switch, modem/USB adapter, relay modules, power distribution blocks, and any future expansion. Consider a DIN rail adapter assortment.
 
 ---
 

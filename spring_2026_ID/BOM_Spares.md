@@ -32,7 +32,7 @@ Shared spare components that can service either site.
 | Pi-EzConnect HAT | GPIO terminal block | 1 | $19.95 | $19.95 | Adafruit |
 | M.2 SSD 512GB + enclosure | Storage spare (pre-imaged) | 1 | $58.98 | $58.98 | Amazon |
 | MicroSD 32GB | OS boot card (×2, pre-imaged) | 2 | $14.95 | $29.90 | Adafruit |
-| Quectel EG25-G + PU201 | LTE modem spare | 1 | $119.00 | $119.00 | Amazon |
+| Quectel EG25-G + EXVIST Mini PCIe-USB | LTE modem spare | 1 | $119.00 | $119.00 | Amazon |
 | LTE Antenna 9dBi | Replacement antennas | 2 | $8.50 | $17.00 | Amazon |
 | USB-RS485 Adapter | Modbus interface spare | 1 | $11.95 | $11.95 | Adafruit |
 | IP67 LED (R/Y/G set) | Status LED replacement | 1 | $8.85 | $8.85 | Adafruit |

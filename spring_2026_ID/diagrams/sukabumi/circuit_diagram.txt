@@ -68,7 +68,7 @@
     │         (data only, no PoE on this port)   │  patch        │
     │                                            │               │
     │  USB 2.0 ──► Quectel EG25-G LTE Modem     │               │
-    │              (PU201 USB adapter)           │               │
+    │              (EXVIST Mini PCIe-USB adapter)           │               │
     │              │                             │               │
     │  USB 3.0 ──► Samsung FIT Plus 256GB        │               │
     │              (video/data storage)          │               │

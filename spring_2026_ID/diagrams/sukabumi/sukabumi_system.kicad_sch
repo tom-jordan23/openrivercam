@@ -175,7 +175,7 @@
   ;; LTE MODEM SECTION
   ;; ============================================
 
-  ;; Quectel EG25-G Modem + PU201
+  ;; Quectel EG25-G Modem + EXVIST Mini PCIe-USB Adapter
   (symbol
     (lib_id "RF_Module:Modem")
     (at 254 76.2 0)
@@ -189,11 +189,11 @@
       (at 254 63.5 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Value" "Quectel EG25-G + PU201"
+    (property "Value" "Quectel EG25-G + EXVIST Mini PCIe-USB"
       (at 254 66.04 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Description" "LTE Cat 4 modem with USB adapter, supports Indonesian carriers (Telkomsel)"
+    (property "Description" "LTE Cat 4 Mini PCIe modem with EXVIST P2U52V02USB adapter, supports Indonesian carriers (Telkomsel)"
       (at 254 68.58 0)
       (effects (font (size 1.0 1.0)) hide)
     )
