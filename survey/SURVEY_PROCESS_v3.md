@@ -1426,7 +1426,62 @@ Print this card and keep it in your field notebook.
 
 ---
 
-**Document Version:** 2026-03-03
+## Appendix J: Survey Equipment Rental in Jakarta
+
+If you don't have your own RTK GNSS equipment, several companies in the Jakarta area rent survey-grade instruments. WhatsApp is the primary communication channel for most of these companies — initiate contact there rather than email.
+
+### Jakarta-Based Companies
+
+| Company | Phone / WhatsApp | Email | Location | Equipment |
+|---------|-----------------|-------|----------|-----------|
+| **Indosurta Group** | 021-5315-8019 / 0853-1204-2324 | info@indosurta.co.id | BSD City, Tangerang Selatan | GPS RTK, total station, **Leica Disto D510/X3/D2** |
+| **Dinar Geoinstrument** | +62 878-7521-4418 / +62 822-2026-6662 | marketing@dinargeo.co.id | Pondok Kelapa, Jakarta Timur | GPS RTK, total station, theodolite |
+| **CV. AMS** | 0812-8811-1186 (Susep) | admin@akurasimisisurvey.co.id | Jl. Salman 103, Kebon Jeruk, Jakarta Barat | GPS RTK, total station, theodolite |
+| **Trans Survey** | 021-22544580 / 082119696710 | transsurvey1@gmail.com | Jl. Joglo Raya 27A, Jakarta Barat | GPS RTK, total station |
+| **Sewatotalstation.com** | 0819-0861-1401 (Indra) / 0813-8585-7115 | indonesiasurvey@yahoo.com | Petukangan Utara, Jakarta Selatan | GPS RTK, total station (**Leica brand stocked**) |
+| **PT Duta Basis Dataprima** | 021-22703696 | dutabasis@dutabasis.com | Jl. RC Veteran Raya 1, Bintaro, Jakarta Selatan | Leica 3D scanners, high-end survey equipment |
+| **Duta Survey (Jakarta branch)** | 021-26964517 / 082299296105 | alatsurveytopcon@yahoo.com | Jl. Al-Fajri 14AH, Pasar Minggu, Jakarta Selatan | GPS RTK, total station |
+
+### Companies Serving Jakarta from Nearby Cities
+
+| Company | Phone / WhatsApp | Email | Base | Equipment |
+|---------|-----------------|-------|------|-----------|
+| **CV BNT** | 022-87521608 / 081222229059 | bnt.bdg@gmail.com | Bandung (ships to Jakarta) | GPS RTK, total station, drone |
+| **CV ADHIJASA** | 081318699985 | Visit adhijasa.com | Bandung (delivers to Jakarta) | GPS RTK (Hi-Target, Trimble, Sokkia) |
+| **DND Survey** | 022-5442-0354 / 082129900025 (Hana) | dndsurvey90@gmail.com | Bandung (delivers to Jakarta) | GPS RTK, total station |
+| **MSDI** | Via msdi.co.id/contact-us | (website form) | Bali HQ (serves nationally) | Emlid RS2, Trimble R8S, drone LiDAR |
+
+### Approximate Daily Rental Rates (2025-2026)
+
+| Equipment | IDR/day | USD/day |
+|-----------|---------|---------|
+| GNSS RTK rover (entry-level) | 500,000 - 750,000 | $30 - 46 |
+| GNSS RTK rover (mid-range, e.g. Emlid RS2) | 1,000,000 - 1,700,000 | $61 - 105 |
+| GNSS RTK rover (high-end, e.g. Trimble/Leica) | 1,500,000 - 2,000,000+ | $92 - 125+ |
+| Total station (reflectorless) | 600,000 - 1,200,000 | $37 - 74 |
+| Leica Disto laser distance meter | Contact Indosurta or Sewatotalstation directly | — |
+
+Weekly rates are typically 5-6x the daily rate. Most vendors require a 50% deposit.
+
+### Notes
+
+- **For Leica Disto rental specifically:** Indosurta Group is the best confirmed source (they list Disto D510, X3, D2 on their rental pages). Sewatotalstation.com and PT Duta Basis Dataprima are also worth contacting.
+- **English-speaking service:** MSDI (msdi.co.id) and PT Duta Basis Dataprima (dutabasis.com) have the most professional English-language websites. Indosurta has partial English content.
+- **Rental process:** Most transactions start via WhatsApp message. Expect to provide ID and a deposit. Larger companies (Indosurta, Duta Basis) provide formal rental agreements.
+- **Delivery:** Many companies will deliver equipment to your project site within Jabodetabek (Jakarta, Bogor, Depok, Tangerang, Bekasi).
+
+### Websites
+
+- Indosurta rental page: https://indosurta.co.id/layanan/rental-sewa/
+- CV BNT rental page: https://totalstation.co.id/product/rental-total-station-dan-gps-rtk-geodetik/
+- MSDI rental page: https://www.msdi.co.id/services/rental-gnss-survey-instrument/
+- DND Survey rental page: https://dndsurvey.id/rental-sewa-alatsurvey/
+- Dinar Geoinstrument rental page: https://dinargeo.co.id/rental-sewa-alat-survey/
+- CV AMS rental page: https://akurasimisisurvey.co.id/sewa-alat-survey/
+
+---
+
+**Document Version:** 2026-03-04
 **Author:** Tom Jordan / OpenRiverCam Project
 **Purpose:** Field procedure documentation with explanatory context for non-expert users
 **Supersedes:** SURVEY_PROCESS_v2.md (base-station-only procedure — preserved as reference and fallback documentation)
