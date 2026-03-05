@@ -1,0 +1,15 @@
+#!/bin/bash
+CAM_MAC="d0:3b:f4:01:4d:30"
+LEASE=$(grep -i $CAM_MAC /var/lib/misc/dnsmasq.leases 2>/dev/null)
+
+echo "OpenRiverCam maintenance network:"
+ip -4 addr show eth0 | grep inet
+
+if [ -n "$LEASE" ]; then
+    CAM_IP=$(echo $LEASE | awk '{print $3}')
+    echo "Camera IP: $CAM_IP"
+else
+    echo "Camera: no DHCP lease detected"
+fi
+
+echo "### Tom, don't forget to scrub your private keys before deployment ###"
