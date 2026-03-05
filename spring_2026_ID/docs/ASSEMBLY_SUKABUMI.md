@@ -48,7 +48,8 @@ Apply MG 422C silicone conformal coating to all PCBs:
 - [ ] Configure WiFi hotspot for maintenance mode
 - [ ] Set up LED GPIO control script
 - [ ] Pre-configure Telkomsel APN (if known)
-- [ ] Configure camera static IP and RTSP settings
+- [ ] Configure Pi eth0 static IP (192.168.50.1/24) and dnsmasq DHCP for camera network
+- [ ] Configure camera RTSP settings via web interface
 
 ### 3. Hardware Testing
 
@@ -322,29 +323,84 @@ Verify all components before starting assembly:
 
 5. **Verify all connections before powering on.**
 
-### Step 8: Configure PoE Camera (15 min)
+### Step 8: Configure Pi Camera Network (15 min)
+
+The Pi serves as DHCP server for the camera network on eth0 using dnsmasq. This avoids the ANNKE's default 192.168.1.x subnet, which conflicts with most WiFi routers.
+
+**Note:** The SADP utility (Hikvision's camera discovery tool) does not run on ARM Macs — neither natively nor under Parallels. The dnsmasq approach below eliminates the need for SADP entirely.
+
+1. **Set Pi eth0 to a static IP on the camera network:**
+   ```bash
+   sudo nmcli con mod "Wired connection 1" ipv4.addresses 192.168.50.1/24
+   sudo nmcli con mod "Wired connection 1" ipv4.method manual
+   sudo nmcli con up "Wired connection 1"
+   ```
+   If the connection name differs, find it with `nmcli con show`.
+
+2. **Install and configure dnsmasq as DHCP server on eth0:**
+   ```bash
+   sudo apt install dnsmasq
+   ```
+   Edit `/etc/dnsmasq.conf`:
+   ```
+   interface=eth0
+   bind-interfaces
+   dhcp-range=192.168.50.100,192.168.50.200,24h
+   dhcp-host=<CAMERA_MAC>,192.168.50.139
+   ```
+   Replace `<CAMERA_MAC>` with the camera's MAC address (printed on the camera label, or found via `arp -a` after the camera boots).
+
+   Restart dnsmasq:
+   ```bash
+   sudo systemctl restart dnsmasq
+   sudo systemctl enable dnsmasq
+   ```
+
+3. **Connect and discover the camera:**
+   - Connect camera to PoE injector, connect injector's DATA port to Pi's Ethernet port
+   - Wait 60-90 seconds for camera to boot
+   - The camera will receive 192.168.50.139 via DHCP
+   - Verify:
+     ```bash
+     ping 192.168.50.139
+     ```
+   - If you need to find the MAC address first, temporarily omit the `dhcp-host` line, restart dnsmasq, let the camera get any IP from the range, then check:
+     ```bash
+     cat /var/lib/misc/dnsmasq.leases
+     ```
+
+### Step 9: Configure PoE Camera Settings (15 min)
 
 **Note:** ANNKE C1200 is factory-sealed IP67. No housing assembly required.
 
-1. **Initial camera setup (before field installation):**
-   - Connect camera directly to laptop/switch via PoE
-   - Access web interface (default: 192.168.1.88)
-   - Set static IP (e.g., 192.168.100.10) for field use
+1. **Access camera web interface:**
+   - From the Pi or a laptop on the same network: `http://192.168.50.139`
+   - Default credentials: admin / admin (change password immediately)
+   - Set camera to DHCP (if not already) so it picks up the dnsmasq-assigned address on every boot
    - Enable RTSP stream
    - Set video resolution/framerate per ORC requirements
    - Configure IR to auto-enable in low light
 
-2. **Test RTSP capture:**
+   **Note:** The ANNKE web interface requires a Windows-only browser plugin for live view. Skip the live view — use RTSP via VLC or ffmpeg to verify the camera image instead.
+
+2. **Test RTSP stream with VLC:**
+   ```
+   Open VLC → Media → Open Network Stream →
+   rtsp://admin:password@192.168.50.139:554/stream1
+   ```
+   This works on macOS and Linux without any plugins. You should see a live camera feed.
+
+3. **Test RTSP capture with ffmpeg:**
    ```bash
-   ffmpeg -i rtsp://admin:password@192.168.100.10:554/stream1 -frames:v 1 test.jpg
+   ffmpeg -i rtsp://admin:password@192.168.50.139:554/stream1 -frames:v 1 test.jpg
    ```
 
-3. **Verify IR function:**
+4. **Verify IR function:**
    - Cover camera lens (simulate darkness)
    - IR LEDs should illuminate (visible glow)
-   - Capture should show IR-lit image
+   - Capture test image via ffmpeg, verify IR-lit scene
 
-### Step 9: Mount External Components (30 min)
+### Step 10: Mount External Components (30 min)
 
 **Tools needed:** Adjustable wrench, stainless U-bolts
 
@@ -365,7 +421,7 @@ Verify all components before starting assembly:
    - Position vertically for best reception
    - Apply dielectric grease to SMA connections
 
-### Step 10: Final Assembly & Sealing (15 min)
+### Step 11: Final Assembly & Sealing (15 min)
 
 1. **Cable management:**
    - Route all internal cables neatly
@@ -412,8 +468,8 @@ Verify all components before starting assembly:
 1. Enter maintenance mode (long press button)
 2. Connect to WiFi hotspot
 3. SSH into Pi
-4. Check camera is reachable: `ping 192.168.100.10` (or configured IP)
-5. Test RTSP capture: `ffmpeg -i rtsp://admin:password@192.168.100.10:554/stream1 -frames:v 1 test.jpg`
+4. Check camera is reachable: `ping 192.168.50.139`
+5. Test RTSP capture: `ffmpeg -i rtsp://admin:password@192.168.50.139:554/stream1 -frames:v 1 test.jpg`
 6. Verify image captured
 
 ### Verify IR Light
@@ -484,8 +540,8 @@ See `TROUBLESHOOTING.md` for detailed diagnostics.
 | WiFi hotspot password | |
 | LTE SIM number | |
 | Modem IMEI | |
-| Camera IP address | |
-| Camera RTSP URL | |
+| Camera IP address | 192.168.50.139 |
+| Camera RTSP URL | rtsp://admin:PASSWORD@192.168.50.139:554/stream1 |
 | GPS coordinates | |
 | Installation date | |
 | Installer name | |

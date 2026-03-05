@@ -58,6 +58,7 @@ Items marked **"Jakarta-specific"** are unique to the Jakarta AC-powered deploym
 | CPU-009 | Proxicast ANT-122-S02 2x2 MIMO LTE Puck Antenna (IP67) | 1 | $64.95 | $64.95 | https://www.amazon.com/Proxicast-Profile-Omni-Directional-Screw-Mount-Antenna/dp/B07DDC9WV5 | Matched Sukabumi |
 | CPU-006 | MicroSD Card 64G x2 Pack (SanDisk) | 1 | $26.92 | $26.92 | https://www.amazon.com/SanDisk-128GB-MicroSDXC-Ultra-Memory/dp/B07XDCZ9J3 | Matched Sukabumi |
 | CPU-011 | Raspberry Pi 5 Active Cooler | 1 | $9.90 | $9.90 | https://www.amazon.com/Raspberry-Pi5-Temperature-Controlled-Aluminium-Dissipation/dp/B0CW164TCW | Matched Sukabumi |
+| CPU-012 | Raspberry Pi 5 RTC Battery (rechargeable ML-2020, JST-SH connector) | 2 | $5.00 | $10.00 | https://www.amazon.com/s?k=raspberry+pi+5+RTC+battery | 1 for Jakarta + 1 for Sukabumi (forgotten from Sukabumi order) |
 | **CAMERA SYSTEM** | | | | | | |
 | CAM-001 | ANNKE C1200 PoE IP Camera (12MP, 134° FOV, 2-pack) | 1 | $119.99 | $119.99 | https://www.amazon.com/ANNKE-Security-Surveillance-Detection-Spotlight/dp/B0DBHRMT1V | Jakarta: 2 cameras (Sukabumi ordered single $89.99) |
 | CAM-003 | LINOVISION Industrial 12V PoE Switch (Gigabit, IEEE802.3af/at) | 1 | $85.99 | $85.99 | https://www.amazon.com/LINOVISION-Industrial-Gigabit-DC12V-48V-IEEE802-3af/dp/B09HGWLZSD | Matched Sukabumi (replaces Planet IPOE-260-12V) |
@@ -101,7 +102,7 @@ Items marked **"Jakarta-specific"** are unique to the Jakarta AC-powered deploym
 | CONS-003 | UV-Resistant Zip Ties (assorted, 500-pack) | 1 | $12.99 | $12.99 | https://www.amazon.com/s?k=UV+resistant+zip+ties | Cable management |
 | CONS-006 | Isopropyl Alcohol 99% (16oz bottle) | 1 | $8.99 | $8.99 | https://www.amazon.com/s?k=isopropyl+alcohol+99 | Cleaning |
 
-**Amazon Subtotal: $1,646.69**
+**Amazon Subtotal: $1,656.69**
 
 ---
 
@@ -158,13 +159,13 @@ The following items should be purchased locally in Jakarta to reduce shipping co
 
 | Supplier | Subtotal (USD) | Notes |
 |----------|----------------|-------|
-| **1. Amazon** | $1,646.69 | Compute, cameras, power system, enclosure, consumables |
+| **1. Amazon** | $1,656.69 | Compute, cameras, power system, enclosure, consumables |
 | **2. DigiKey** | $194.89 | PSU, surge protector, power distribution, vents |
 | **3. Adafruit** | $89.40 | Witty Pi 5, USB-RS485, cable glands |
 | **4. Hydreon** | $99.00 | Rain gauge |
-| **Shipped Subtotal** | **$2,029.98** | Components to ship from US/international |
+| **Shipped Subtotal** | **$2,039.98** | Components to ship from US/international |
 | **Local Sourcing (Jakarta)** | **$96.00** | Grounding, mounting pole, misc hardware |
-| **GRAND TOTAL** | **$2,125.98** | Materials only |
+| **GRAND TOTAL** | **$2,135.98** | Materials only |
 
 ---
 
@@ -172,11 +173,11 @@ The following items should be purchased locally in Jakarta to reduce shipping co
 
 | Item | Estimated Cost (USD) | Notes |
 |------|---------------------|-------|
-| **Equipment (shipped)** | $2,029.98 | Components from 4 suppliers |
+| **Equipment (shipped)** | $2,039.98 | Components from 4 suppliers |
 | **Local sourcing (Jakarta)** | $96.00 | Grounding, pole, mounting hardware |
-| **TOTAL PROJECT COST** | **$2,125.98** | Materials only |
+| **TOTAL PROJECT COST** | **$2,135.98** | Materials only |
 
-**Budget Status:** ✅ Within budget. Combined with Sukabumi ($948.08 actual) = **$3,074.06** total for both sites.
+**Budget Status:** ✅ Within budget. Combined with Sukabumi ($948.08 actual) = **$3,084.06** total for both sites.
 **Note:** Equipment travels with installer under humanitarian exemption — no shipping, customs, or contingency costs.
 
 ### Cost Review Items (decision pending)
@@ -640,7 +641,7 @@ The following items should be purchased locally in Jakarta to reduce shipping co
 **Version:** 3.0 (Reconciled with Sukabumi actuals)
 **Site:** Jakarta, Indonesia
 **Project:** OpenRiverCam Training/Demo Installation
-**Budget:** Jakarta $2,125.98 + Sukabumi $948.08 = **$3,074.06** total (within $3,000 target)
+**Budget:** Jakarta $2,135.98 + Sukabumi $948.08 = **$3,084.06** total (within $3,000 target)
 **Status:** RECONCILED - Ready for procurement
 
 ---

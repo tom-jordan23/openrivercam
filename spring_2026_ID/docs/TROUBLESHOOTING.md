@@ -72,6 +72,40 @@ START: No status LEDs lit
                   └──────────┘  └──────────────┘
 ```
 
+### Pi eth0 Has Only IPv6 Address (No IPv4)
+
+If `ip addr` shows only an `inet6` (IPv6) address on eth0 with no `inet` (IPv4) address, the Pi cannot reach the camera.
+
+**Symptoms:**
+- `ping <camera-ip>` fails with "Network is unreachable"
+- `ip addr show eth0` shows `fe80::...` link-local IPv6 but no `192.168.x.x`
+
+**Cause:** The Pi's Ethernet interface hasn't been assigned a static IPv4 address and dnsmasq hasn't been configured yet. Without a static IP, the Pi can't serve DHCP to cameras on the 192.168.50.0/24 network.
+
+**Fix — assign a static IPv4 address and set up dnsmasq:**
+
+Using NetworkManager (Raspberry Pi OS Bookworm):
+```bash
+# Set static IP on eth0
+sudo nmcli con mod "Wired connection 1" ipv4.addresses 192.168.50.1/24
+sudo nmcli con mod "Wired connection 1" ipv4.method manual
+sudo nmcli con up "Wired connection 1"
+
+# Verify
+ip addr show eth0   # should now show 192.168.50.1
+```
+
+If the connection name differs, find it with:
+```bash
+nmcli con show
+```
+
+Then install and configure dnsmasq as DHCP server for cameras — see the assembly guide for your site (ASSEMBLY_SUKABUMI.md or ASSEMBLY_JAKARTA.md) for the full dnsmasq configuration.
+
+This persists across reboots. The Pi acts as DHCP server on the camera network (192.168.50.0/24), assigning predictable IPs to each camera via MAC address reservation.
+
+---
+
 ### Camera Not Working
 
 #### Sukabumi (PoE Camera - Power-Cycled)
@@ -82,7 +116,7 @@ START: No video capture
          ▼
 ┌─────────────────────────┐
 │ Ping camera from Pi:    │
-│ ping 192.168.100.10     │
+│ ping 192.168.50.139     │
 │ (or configured IP)      │
 └───────────┬─────────────┘
             │
@@ -95,7 +129,7 @@ START: No video capture
 │ Check PoE    │  │ Test RTSP:         │
 │ injector:    │  │ ffmpeg -i rtsp://  │
 │ - 12V input? │  │ admin:pass@        │
-│ - LED on?    │  │ 192.168.100.10:554/│
+│ - LED on?    │  │ 192.168.50.139:554/│
 └──────┬───────┘  │ stream1 -frames:v 1│
        │          │ test.jpg           │
   ┌────┴────┐     └─────────┬──────────┘
@@ -125,7 +159,7 @@ START: Camera offline
          ▼
 ┌─────────────────────────┐
 │ Ping camera from Pi:    │
-│ ping 192.168.1.101      │
+│ ping 192.168.50.101     │
 └───────────┬─────────────┘
             │
      ┌──────┴──────┐
@@ -137,7 +171,7 @@ START: Camera offline
 │ Check PoE    │  │ Test RTSP:         │
 │ injector LED │  │ ffmpeg -i rtsp://  │
 │ and camera   │  │ admin:pass@        │
-│ power LED    │  │ 192.168.1.101:554/ │
+│ power LED    │  │ 192.168.50.101:554/│
 └──────┬───────┘  │ stream1 -frames:v 1│
        │          │ test.jpg           │
   ┌────┴────┐     └─────────┬──────────┘
@@ -288,6 +322,51 @@ START: No rain data
 
 ---
 
+## Camera Network Setup
+
+Both sites use the Pi as a DHCP server (dnsmasq) on the 192.168.50.0/24 camera network. Cameras receive predictable IPs via MAC address reservation. See the assembly guides for full setup instructions.
+
+| Site | Pi IP | Camera IPs |
+|------|-------|------------|
+| Sukabumi | 192.168.50.1 | 192.168.50.139 |
+| Jakarta | 192.168.50.1 | 192.168.50.101, 192.168.50.102 |
+
+**Note:** The SADP utility (Hikvision/ANNKE) does not run on ARM Macs — neither natively nor under Parallels. The dnsmasq approach eliminates the need for SADP entirely.
+
+**Note:** The ANNKE web interface requires a Windows-only browser plugin for live view. Use RTSP via VLC or ffmpeg to verify the camera image instead.
+
+### Camera not getting expected IP
+
+1. Check dnsmasq leases: `cat /var/lib/misc/dnsmasq.leases`
+2. Verify the camera's MAC address in `/etc/dnsmasq.conf` matches the label on the camera
+3. Restart dnsmasq: `sudo systemctl restart dnsmasq`
+4. Power-cycle the camera (unplug/replug PoE cable) and wait 60-90s
+
+### Finding camera MAC address
+
+If you don't have the MAC address yet:
+
+1. Temporarily remove any `dhcp-host=` lines from `/etc/dnsmasq.conf`
+2. Restart dnsmasq: `sudo systemctl restart dnsmasq`
+3. Connect camera to PoE injector, wait 60-90s for boot
+4. Check leases: `cat /var/lib/misc/dnsmasq.leases`
+5. The camera will have received an IP from the 192.168.50.100-200 range
+6. Note the MAC address, add it to `/etc/dnsmasq.conf` as a `dhcp-host=` line
+7. Restart dnsmasq and power-cycle the camera
+
+### WiFi subnet conflict (laptop direct access)
+
+The ANNKE C1200 ships with a default IP on 192.168.1.x — the same subnet used by most WiFi routers. If you ever need to access a camera directly from a laptop (before dnsmasq is set up), disable WiFi first:
+```bash
+# macOS:
+networksetup -setairportpower en0 off
+# Linux:
+nmcli radio wifi off
+```
+Then set your laptop to 192.168.1.50/24 and use `arp -a` to find the camera. Re-enable WiFi when done.
+
+---
+
 ## Common Issues & Solutions
 
 ### Power Issues
@@ -310,6 +389,7 @@ START: No rain data
 | PoE camera offline (Sukabumi) | Camera still booting | Wait 60s after Pi wakes |
 | PoE camera not reachable | Wrong IP address | Verify camera static IP setting |
 | PoE camera not reachable | Network config | Check Pi and camera on same subnet |
+| PoE camera not reachable | Pi eth0 IPv6-only | Pi has no IPv4 address — see "Pi eth0 Has Only IPv6 Address" above |
 | Camera image blurry | Focus issue | Adjust lens focus ring |
 | Camera image dark | Exposure settings | Adjust via camera web interface |
 | Camera image washed out | Overexposure | Reduce exposure in settings |
@@ -392,21 +472,30 @@ ping -c 3 8.8.8.8
 mmcli -m 0 --disable && sleep 5 && mmcli -m 0 --enable
 ```
 
-### Network (Jakarta PoE cameras)
+### Network (PoE cameras)
 
 ```bash
-# Ping cameras
-ping -c 3 192.168.1.101
-ping -c 3 192.168.1.102
+# Ping cameras (Sukabumi)
+ping -c 3 192.168.50.139
+
+# Ping cameras (Jakarta)
+ping -c 3 192.168.50.101
+ping -c 3 192.168.50.102
 
 # Test RTSP stream
-ffmpeg -i rtsp://admin:PASSWORD@192.168.1.101:554/stream1 -frames:v 1 /tmp/cam1.jpg
+ffmpeg -i rtsp://admin:PASSWORD@192.168.50.101:554/stream1 -frames:v 1 /tmp/cam1.jpg
+
+# Check DHCP leases
+cat /var/lib/misc/dnsmasq.leases
 
 # Check network interfaces
 ip addr
 
 # Check route table
 ip route
+
+# Check dnsmasq status
+sudo systemctl status dnsmasq
 ```
 
 ### I2C (Rain gauge)

@@ -15,6 +15,7 @@ Amazon,CPU-008,Mini PCIe to USB Adapter (EXVIST P2U52V02USB),,1,$24.99,$24.99,ht
 Amazon,CPU-009,Proxicast ANT-122-S02 2x2 MIMO LTE Puck Antenna (IP67),,1,$64.95,$64.95,https://www.amazon.com/Proxicast-Profile-Omni-Directional-Screw-Mount-Antenna/dp/B07DDC9WV5,Matched Sukabumi (Coupa #484670)
 Amazon,CPU-006,MicroSD Card 64G x2 Pack (SanDisk),,1,$26.92,$26.92,https://www.amazon.com/SanDisk-128GB-MicroSDXC-Ultra-Memory/dp/B07XDCZ9J3,"REVIEW: OS boot only needs single 32GB A2 ($8-12); save ~$15"
 Amazon,CPU-011,Raspberry Pi 5 Active Cooler,,1,$9.90,$9.90,https://www.amazon.com/Raspberry-Pi5-Temperature-Controlled-Aluminium-Dissipation/dp/B0CW164TCW,Matched Sukabumi (Coupa #484671)
+Amazon,CPU-012,Raspberry Pi 5 RTC Battery (rechargeable ML-2020 JST-SH connector),,2,$5.00,$10.00,https://www.amazon.com/s?k=raspberry+pi+5+RTC+battery,1 for Jakarta + 1 for Sukabumi (forgotten from Sukabumi order)
 Amazon,CAM-001,ANNKE C1200 PoE IP Camera (12MP 134deg FOV 2-pack),,1,$119.99,$119.99,https://www.amazon.com/ANNKE-Security-Surveillance-Detection-Spotlight/dp/B0DBHRMT1V,Jakarta: 2 cameras needed (Sukabumi ordered single $89.99)
 Amazon,CAM-003,LINOVISION Industrial 12V PoE Switch (Gigabit IEEE802.3af/at),,1,$85.99,$85.99,https://www.amazon.com/LINOVISION-Industrial-Gigabit-DC12V-48V-IEEE802-3af/dp/B09HGWLZSD,Matched Sukabumi (Coupa #484673) - replaces Planet IPOE-260-12V
 Amazon,CAM-006,Hikvision DS-1275ZJ Vertical Mounting Plate (stainless),,2,$30.99,$61.98,https://www.amazon.com/DS-1275ZJ-Vertical-Adapter-Hikvision-Stainless/dp/B0DRDZBR69,Matched Sukabumi (Coupa #484672) - qty 2 for 2 cameras
@@ -63,9 +64,9 @@ Local,MISC,"Concrete mix, wire nuts, additional cable ties",,100000,$6,,Any hard
 COST SUMMARY BY SUPPLIER,,,,,,,,,
 Supplier,Subtotal,Notes,,,,,,,
 DigiKey,$194.89,"PSU, surge protector, power distribution, vents",,,,,,,
-Amazon,$1567.69,"Compute, cameras, power system, enclosure, consumables",,,,,,,
+Amazon,$1577.69,"Compute, cameras, power system, enclosure, consumables",,,,,,,
 Adafruit,$89.40,"Witty Pi 5, USB-RS485, cable glands",,,,,,,
 Hydreon,$99.00,Rain gauge,,,,,,,
-Shipped Subtotal,$1950.98,Components to ship from US/international,,,,,,,
+Shipped Subtotal,$1960.98,Components to ship from US/international,,,,,,,
 Local Sourcing (Jakarta),$96.00,"Grounding, mounting pole, misc hardware",,,,,,,
-GRAND TOTAL,$2046.98,"Materials only; potential savings $150-450 pending review; hidden costs ~$85-95 (RJ45 kit, price variance)",,,,,,,
+GRAND TOTAL,$2056.98,"Materials only; potential savings $150-450 pending review; hidden costs ~$85-95 (RJ45 kit, price variance)",,,,,,,

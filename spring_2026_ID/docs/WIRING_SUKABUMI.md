@@ -153,7 +153,7 @@ USB-C POWER PATH:
                     │   • Built-in IR LEDs (auto on/off)  │
                     │   • Factory-sealed IP67             │
                     │   • RTSP streaming                  │
-                    │   • Static IP: 192.168.100.10       │
+                    │   • DHCP IP: 192.168.50.139         │
                     │                                     │
                     └─────────────────────────────────────┘
 

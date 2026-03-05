@@ -39,20 +39,65 @@ Apply MG 422C silicone conformal coating to all PCBs:
 
 ### 2. Camera Pre-Configuration
 
-Configure ANNKE C1200 cameras BEFORE deployment:
+Configure ANNKE C1200 cameras BEFORE deployment. The Pi acts as DHCP server on the camera network using dnsmasq, assigning predictable IPs to each camera.
 
-- [ ] Power camera via PoE
-- [ ] Find camera IP (use ONVIF discovery tool or router)
-- [ ] Access web interface (default: admin/admin)
+**Note:** The SADP utility (Hikvision's camera discovery tool) does not run on ARM Macs — neither natively nor under Parallels. The dnsmasq approach below eliminates the need for SADP entirely.
+
+**Note:** The ANNKE web interface requires a Windows-only browser plugin for live view. Use RTSP via VLC or ffmpeg to verify the camera image instead.
+
+**Set up Pi camera network (one-time):**
+
+1. Set Pi eth0 to a static IP on the camera network:
+   ```bash
+   sudo nmcli con mod "Wired connection 1" ipv4.addresses 192.168.50.1/24
+   sudo nmcli con mod "Wired connection 1" ipv4.method manual
+   sudo nmcli con up "Wired connection 1"
+   ```
+
+2. Install and configure dnsmasq as DHCP server on eth0:
+   ```bash
+   sudo apt install dnsmasq
+   ```
+   Edit `/etc/dnsmasq.conf`:
+   ```
+   interface=eth0
+   bind-interfaces
+   dhcp-range=192.168.50.100,192.168.50.200,24h
+   dhcp-host=<CAMERA_1_MAC>,192.168.50.101
+   dhcp-host=<CAMERA_2_MAC>,192.168.50.102
+   ```
+   Replace `<CAMERA_x_MAC>` with each camera's MAC address (printed on the camera label). If you don't have the MACs yet, omit the `dhcp-host` lines, let the cameras get any IP from the range, then check `cat /var/lib/misc/dnsmasq.leases` to find their MACs and update the config.
+
+   Restart dnsmasq:
+   ```bash
+   sudo systemctl restart dnsmasq
+   sudo systemctl enable dnsmasq
+   ```
+
+**Configure each camera:**
+
+1. Connect camera to PoE injector, connect injector DATA port to Pi Ethernet
+2. Wait 60-90 seconds for camera to boot and receive DHCP lease
+3. Verify: `ping 192.168.50.101` (or .102)
+4. Access web interface at `http://192.168.50.101` (default credentials: admin / admin)
+5. Test live view via VLC (works on macOS/Linux without plugins):
+   ```
+   Open VLC → Media → Open Network Stream →
+   rtsp://admin:password@192.168.50.101:554/stream1
+   ```
+
 - [ ] Change admin password (record in secure location)
-- [ ] Set static IP addresses:
-  - Camera 1: 192.168.1.101
-  - Camera 2: 192.168.1.102
+- [ ] Set camera to DHCP so it picks up the dnsmasq-assigned address on every boot
 - [ ] Enable RTSP streaming
 - [ ] Note RTSP URLs:
-  - `rtsp://admin:password@192.168.1.101:554/stream1`
-  - `rtsp://admin:password@192.168.1.102:554/stream2`
-- [ ] Test RTSP with VLC on laptop
+  - `rtsp://admin:password@192.168.50.101:554/stream1`
+  - `rtsp://admin:password@192.168.50.102:554/stream1`
+- [ ] Test RTSP with VLC on laptop (see above)
+- [ ] Test RTSP capture with ffmpeg:
+  ```bash
+  ffmpeg -i rtsp://admin:password@192.168.50.101:554/stream1 -frames:v 1 cam1.jpg
+  ffmpeg -i rtsp://admin:password@192.168.50.102:554/stream1 -frames:v 1 cam2.jpg
+  ```
 - [ ] Adjust image settings (exposure, focus) if needed
 
 ### 3. Software Configuration
@@ -446,13 +491,13 @@ Same as Sukabumi:
 3. SSH into Pi
 4. Ping cameras:
    ```
-   ping 192.168.1.101
-   ping 192.168.1.102
+   ping 192.168.50.101
+   ping 192.168.50.102
    ```
 5. Test RTSP capture:
    ```
-   ffmpeg -i rtsp://admin:pass@192.168.1.101:554/stream1 -frames:v 1 cam1.jpg
-   ffmpeg -i rtsp://admin:pass@192.168.1.102:554/stream2 -frames:v 1 cam2.jpg
+   ffmpeg -i rtsp://admin:pass@192.168.50.101:554/stream1 -frames:v 1 cam1.jpg
+   ffmpeg -i rtsp://admin:pass@192.168.50.102:554/stream1 -frames:v 1 cam2.jpg
    ```
 
 ### Verify LTE Connection
@@ -517,9 +562,9 @@ See `TROUBLESHOOTING.md` for detailed diagnostics.
 | Parameter | Value |
 |-----------|-------|
 | Pi hostname | |
-| Pi IP (static) | 192.168.1.100 |
-| Camera 1 IP | 192.168.1.101 |
-| Camera 2 IP | 192.168.1.102 |
+| Pi IP (static) | 192.168.50.1 |
+| Camera 1 IP | 192.168.50.101 |
+| Camera 2 IP | 192.168.50.102 |
 | Camera password | |
 | WiFi hotspot SSID | |
 | WiFi hotspot password | |
