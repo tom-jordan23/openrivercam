@@ -14,8 +14,8 @@ A ChArUco board combines a checkerboard with ArUco markers. Advantages over a pl
 | Parameter | Value |
 |-----------|-------|
 | Layout | 5 columns x 7 rows |
-| Square size | 39mm |
-| Marker size | 29mm (0.74 ratio) |
+| Square size | 38mm |
+| Marker size | 28mm (0.74 ratio) |
 | ArUco dictionary | `DICT_4X4_50` |
 | ArUco markers | 17 |
 | Checkerboard corners | 24 per image |
@@ -31,7 +31,7 @@ A ChArUco board combines a checkerboard with ArUco markers. Advantages over a pl
 
 ### Verify Print Dimensions
 
-Measure any square with a ruler — it should be **39mm +/- 0.5mm**. If it's off, your printer scaled the image. Re-print with scaling set to exactly 100%.
+Measure any square with a ruler — it should be **38mm +/- 0.5mm**. If it's off, your printer scaled the image. Re-print with scaling set to exactly 100%.
 
 ## Capturing Calibration Images
 
@@ -105,7 +105,7 @@ import glob
 
 # Reconstruct the board
 aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
-board = cv2.aruco.CharucoBoard((5, 7), 0.039, 0.029, aruco_dict)  # meters
+board = cv2.aruco.CharucoBoard((5, 7), 0.038, 0.028, aruco_dict)  # meters
 detector_params = cv2.aruco.DetectorParameters()
 detector = cv2.aruco.ArucoDetector(aruco_dict, detector_params)
 

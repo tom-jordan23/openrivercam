@@ -3,8 +3,8 @@
 
 Board parameters:
     - 5 columns x 7 rows
-    - Square size: 39mm
-    - Marker size: 29mm (ratio 0.74)
+    - Square size: 38mm
+    - Marker size: 28mm (ratio 0.74)
     - Dictionary: DICT_4X4_50
     - 17 ArUco markers, 24 checkerboard corners
 
@@ -25,8 +25,8 @@ import numpy as np
 # Board parameters
 COLS = 5          # number of squares in X
 ROWS = 7          # number of squares in Y
-SQUARE_MM = 39    # square side length in mm
-MARKER_MM = 29    # marker side length in mm
+SQUARE_MM = 38    # square side length in mm
+MARKER_MM = 28    # marker side length in mm (0.74 ratio)
 
 # US Letter at 300 DPI
 DPI = 300
@@ -76,30 +76,33 @@ def generate_board():
     # Generate board at exact pixel dimensions (margin=0, we'll add our own)
     board_img = board.generateImage((BOARD_W_PX, BOARD_H_PX), marginSize=0)
 
-    # Create white letter-sized page and center the board
+    # Create white letter-sized page.
+    # Push the board to the top (small top margin) to leave room for text below.
     page = np.ones((PAGE_H_PX, PAGE_W_PX), dtype=np.uint8) * 255
     x_off = (PAGE_W_PX - BOARD_W_PX) // 2
-    y_off = (PAGE_H_PX - BOARD_H_PX) // 2
+    top_margin = int(3 * PX_PER_MM)  # ~3mm from top edge
+    y_off = top_margin
     page[y_off:y_off + BOARD_H_PX, x_off:x_off + BOARD_W_PX] = board_img
 
     # Convert to BGR for text rendering
     page_color = cv2.cvtColor(page, cv2.COLOR_GRAY2BGR)
 
-    # Add parameter text below the board
-    text_y = y_off + BOARD_H_PX + int(12 * PX_PER_MM)
+    # Add verification text below the board
     font = cv2.FONT_HERSHEY_SIMPLEX
-    font_scale = 0.9
-    color = (0, 0, 0)
-    thickness = 2
-    line_height = int(5 * PX_PER_MM)
+    below_board = y_off + BOARD_H_PX
 
-    lines = [
-        f"ChArUco {COLS}x{ROWS}  |  Square: {SQUARE_MM}mm  |  Marker: {MARKER_MM}mm  |  DICT_4X4_50",
-        "Print at 100% scale (no fit-to-page). Verify: one square = 39mm.",
-    ]
-    for i, line in enumerate(lines):
-        cv2.putText(page_color, line, (x_off, text_y + i * line_height),
-                    font, font_scale, color, thickness, cv2.LINE_AA)
+    # Verification line
+    verify_y = below_board + int(5 * PX_PER_MM)
+    cv2.putText(page_color,
+                f"VERIFY: measure one square with a ruler -- must be {SQUARE_MM}mm",
+                (x_off, verify_y), font, 0.75, (0, 0, 0), 2, cv2.LINE_AA)
+
+    # Parameter reference line
+    params_y = verify_y + int(4.5 * PX_PER_MM)
+    cv2.putText(page_color,
+                f"ChArUco {COLS}x{ROWS} | Square: {SQUARE_MM}mm | "
+                f"Marker: {MARKER_MM}mm | DICT_4X4_50",
+                (x_off, params_y), font, 0.6, (100, 100, 100), 1, cv2.LINE_AA)
 
     # Save with 300 DPI metadata (OpenCV doesn't write PNG pHYs chunk)
     output_dir = os.path.dirname(os.path.abspath(__file__))
