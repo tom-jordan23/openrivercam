@@ -17,6 +17,8 @@ Usage:
 """
 
 import os
+import struct
+import zlib
 import cv2
 import numpy as np
 
@@ -42,6 +44,28 @@ BOARD_H_PX = ROWS * SQUARE_PX
 
 # Actual printed size (may differ from nominal by <0.1mm due to rounding)
 ACTUAL_SQUARE_MM = SQUARE_PX / PX_PER_MM
+
+
+def _set_png_dpi(filepath, dpi):
+    """Inject a pHYs chunk into a PNG file to set DPI metadata.
+
+    macOS Preview (and most image viewers) read the pHYs chunk to determine
+    print size. Without it, the image defaults to 72 DPI and prints enormous.
+    """
+    ppm = int(round(dpi / MM_PER_INCH * 1000))  # pixels per meter
+    # pHYs chunk: 4 bytes X ppm + 4 bytes Y ppm + 1 byte unit (1 = meter)
+    phys_data = struct.pack(">IIB", ppm, ppm, 1)
+    phys_crc = struct.pack(">I", zlib.crc32(b"pHYs" + phys_data) & 0xFFFFFFFF)
+    phys_chunk = struct.pack(">I", 9) + b"pHYs" + phys_data + phys_crc
+
+    with open(filepath, "rb") as f:
+        data = f.read()
+
+    # Insert pHYs right after the IHDR chunk (first chunk after 8-byte PNG signature)
+    # IHDR is always first: 8 (sig) + 4 (len) + 4 (type) + 13 (data) + 4 (crc) = 33 bytes
+    ihdr_end = 33
+    with open(filepath, "wb") as f:
+        f.write(data[:ihdr_end] + phys_chunk + data[ihdr_end:])
 
 
 def generate_board():
@@ -77,10 +101,11 @@ def generate_board():
         cv2.putText(page_color, line, (x_off, text_y + i * line_height),
                     font, font_scale, color, thickness, cv2.LINE_AA)
 
-    # Save
+    # Save with 300 DPI metadata (OpenCV doesn't write PNG pHYs chunk)
     output_dir = os.path.dirname(os.path.abspath(__file__))
     output_path = os.path.join(output_dir, "charuco_5x7_letter.png")
     cv2.imwrite(output_path, page_color)
+    _set_png_dpi(output_path, DPI)
 
     # Print summary
     print(f"ChArUco board generated: {output_path}")
