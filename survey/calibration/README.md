@@ -71,28 +71,37 @@ Camera intrinsic calibration is the first step in establishing the measurement c
 
 Without intrinsic calibration, lens distortion (especially barrel distortion from wide-angle lenses like the ANNKE C1200) causes pixel measurements to be inaccurate. The error is worst near image edges — exactly where river banks and GCPs often appear. Uncorrected distortion can introduce 5-10% velocity errors.
 
-### Reference: OpenRiverCam Manual
+### PyORC Documentation References
 
-The manual covers these concepts in detail:
+The [PyORC documentation](https://localdevices.github.io/pyorc/) covers the full camera configuration workflow:
 
-- **Chapter 4.1** ([`manual/content/04-imaging-concepts/01-pixel-to-physical-transformation.md`](../../manual/content/04-imaging-concepts/01-pixel-to-physical-transformation.md)) — How OpenRiverCam translates pixel measurements into physical measurements using ground control points and coordinate transformation.
+- **[Camera configurations](https://localdevices.github.io/pyorc/user-guide/camera_config/)** — Setting up intrinsic parameters (`camera_matrix`, `dist_coeffs`), ground control points, lens position, and area of interest. This is the main reference for how calibration results feed into PyORC.
 
-- **Chapter 4.2** ([`manual/content/04-imaging-concepts/02-lens-distortion.md`](../../manual/content/04-imaging-concepts/02-lens-distortion.md)) — What causes lens distortion, how it affects velocity measurements (5-10% error if uncorrected), and why calibration corrects it. Explains barrel distortion (common in wide-angle lenses like the ANNKE) and the geographic variation problem (minimal distortion at image center, increasing toward edges).
+- **[Camera intrinsic matrix and distortion coefficients](https://localdevices.github.io/pyorc/user-guide/camera_config/)** — Explains how the camera matrix and distortion coefficients relate pixel coordinates to the real world. PyORC can auto-optimize focal length from 4+ GCPs and radial distortion from 6+ GCPs with varying elevations, but for wide-angle lenses like the ANNKE C1200 (134° FOV), pre-calibrating with this ChArUco board is strongly recommended.
 
-- **Chapter 9** ([`survey/SURVEY_PROCESS_v3.md`](../SURVEY_PROCESS_v3.md)) — Field survey procedures for collecting ground control points with RTK GPS. GCP accuracy (2-3cm) determines the accuracy of all downstream velocity and discharge calculations.
+- **[Ground control points](https://localdevices.github.io/pyorc/user-guide/camera_config/)** — How to measure and enter GCPs (`src` pixel coordinates + `dst` real-world coordinates), water level references (`z_0`, `h_ref`), and CRS settings. GCPs should be well-distributed across the field of view.
 
-- **Chapter 10.2** ([`manual/content/10-software-configuration/02-adding-control-points.md`](../../manual/content/10-software-configuration/02-adding-control-points.md)) — Configuring the coordinate transformation in PtBox by matching surveyed GCPs to their pixel positions in the camera image. Covers reprojection error verification (target: RMS < 5cm).
+- **[Velocimetry](https://localdevices.github.io/pyorc/user-guide/velocimetry/)** — How PyORC uses the calibrated camera configuration to track surface features and compute real-world velocities.
 
 ### Using Calibration Results with PyORC
 
-PyORC ([documentation](https://localdevices.github.io/pyorc/)) uses OpenCV-standard intrinsic parameters. After running calibration with this ChArUco board, pass the results to `pyorc.CameraConfig`:
+After running ChArUco calibration (see code below), pass the resulting `camera_matrix` and `dist_coeffs` to PyORC:
 
-- **`camera_matrix`** — 3x3 intrinsic matrix (focal length in pixels + principal point)
-- **`dist_coeffs`** — distortion coefficients (k1, k2, p1, p2, and optionally k3)
+**API approach:**
+```python
+import pyorc
 
-These can also be supplied via the PyORC CLI with `--focal_length`, `--k1`, `--k2`.
+cam_config = pyorc.CameraConfig(height=3072, width=4096)  # ANNKE C1200 resolution
+# camera_matrix and dist_coeffs are set, then configure GCPs:
+cam_config.set_gcps(src=src, dst=dst, z_0=z_0, crs=crs)
+```
 
-If you provide 6+ ground control points with varying elevations, PyORC can automatically optimize the radial distortion parameters. However, for the ANNKE C1200's 134-degree FOV, pre-calibrating with this ChArUco board is strongly recommended — the distortion is too significant for automatic optimization alone.
+**CLI approach** (if you have the values from calibration):
+```
+pyorc camera-config --focal_length <fx_pixels> --k1 <k1> --k2 <k2> ...
+```
+
+PyORC's built-in lens calibration (`set_lens_calibration()`) uses a standard chessboard pattern via video. This ChArUco board offers a more robust alternative — especially for wide-angle lenses where partial board visibility and edge distortion make plain chessboard detection unreliable.
 
 ## Using in Calibration Code
 
