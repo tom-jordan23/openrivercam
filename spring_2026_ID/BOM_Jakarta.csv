@@ -21,6 +21,8 @@ Amazon,CAM-003,LINOVISION Industrial 12V PoE Switch (Gigabit IEEE802.3af/at),,1,
 Amazon,CAM-006,Hikvision DS-1275ZJ Vertical Mounting Plate (stainless),,2,$30.99,$61.98,https://www.amazon.com/DS-1275ZJ-Vertical-Adapter-Hikvision-Stainless/dp/B0DRDZBR69,Matched Sukabumi (Coupa #484672) - qty 2 for 2 cameras
 Amazon,CAM-004,Outdoor Cat6 Shielded Cable (300ft UV-resistant),,1,$79.99,$79.99,https://www.amazon.com/s?k=outdoor+Cat6+shielded+cable+300ft+UV,"REVIEW: 300ft may be excessive if runs <30m; 100ft ~$40 saves ~$40; NOTE: bulk spool needs RJ45 connectors + crimp tool (~$30 not in BOM)"
 Amazon,CAM-005,IP68 RJ45 Waterproof Coupler (2-pack),,1,$12.99,$12.99,https://www.amazon.com/s?k=IP68+RJ45+coupler+waterproof,Weatherproof connections
+Amazon,RELAY-POE,Electronics-Salon DIN Rail 4-SPDT 10A Relay Module 5V,,1,$18.00,$18.00,https://www.amazon.com/Electronics-Salon-Mount-Interface-Module-Version/dp/B00M1MW5BW,Switches 12V to PoE switch; GPIO or passive USB trigger
+Amazon,BUCK-5V,Mean Well DDR-60G-5 DIN Rail DC-DC Converter (5V 10.8A 9-36V input),,1,$39.00,$39.00,https://www.amazon.com/s?k=DDR-60G-5+Mean+Well,Converts 12V bus to 5V for Pi + modem + LEDs + rain sensor
 Amazon,PWR-002,12V 100Ah LiFePO4 Battery (LiTime 1280Wh BMS),,1,$299.99,$299.99,https://www.amazon.com/LiFePO4-4000-15000-Lifetime-Application-Trolling/dp/B0BJ78JZ2B,"REVIEW: 50Ah ($150) gives 16hr backup if 24hr not required on AC site; save ~$150"
 Amazon,PWR-003,20A LiFePO4 Battery Charger (12V smart temp sensor),,1,$89.99,$89.99,https://www.amazon.com/s?k=20A+LiFePO4+charger+12V+smart,Jakarta-specific: smart charging (search link - verify price at order)
 Amazon,PWR-004,Victron BatteryProtect 12/24V-65A (Low voltage disconnect),,1,$53.55,$53.55,https://www.amazon.com/Victron-Energy-BatteryProtect/dp/B076MRVNPM,"REVIEW: LiTime battery has built-in BMS with cutoff; Victron is redundant layer; save $54"
@@ -33,6 +35,8 @@ Amazon,ENC-004,Cable Gland Assortment (PG9/PG13.5/PG16 20-pack),,1,$18.99,$18.99
 Amazon,CLIP-TERM,DIN Rail Terminal Block Kit,,1,$19.99,$19.99,https://www.amazon.com/GUETNEU-Terminal-Block-Voltage-Combined/dp/B0BQQDWGXV,Matched Sukabumi (Coupa #484671)
 Amazon,CLIP-RPI,DIN Rail Clip for Raspberry Pi,,1,$18.99,$18.99,https://www.amazon.com/Mount-Bracket-Raspberry-Arduino-BeagleBone/dp/B08HRZVFCX,Matched Sukabumi (Coupa #484671) - NEW
 Amazon,ENC-008,Stainless Steel M3/M4 Hardware Kit (300-piece),,1,$16.99,$16.99,https://www.amazon.com/s?k=stainless+steel+hardware+kit+M3+M4,Mounting hardware (search link - verify price at order)
+Amazon,DIN-PCB,Molence C45 PCB DIN Rail Clip-Pairs (10 sets),,1,$9.00,$9.00,https://www.amazon.com/Molence-Mounting-Adapter-Circuit-Bracket/dp/B09KZHY8G4,Mount bare PCBs to DIN rail
+Amazon,DIN-CLIP,CNQLIS 1.65in Aluminum DIN Rail Mounting Clips (10-pack),,1,$13.00,$13.00,https://www.amazon.com/CNQLIS-Universal-Mounting-Bracket-Countersunk/dp/B0CJJ1DBZM,Mount modem and misc items via screws/zip ties
 Amazon,LED-MULTI,Multi-color LED 5-pack (FILN 12V-24V IP67),,1,$16.99,$16.99,https://www.amazon.com/FILN-Indicator-Anodized-Waterproof-12V-24V/dp/B0C7KSFKTH,Matched Sukabumi (Coupa #484675)
 Amazon,BTN-MAINT,IP67 Momentary Pushbutton 16mm Stainless,,1,$8.99,$8.99,https://www.amazon.com/Gebildet-Momentary-terminals-Stainless-Waterproof/dp/B081JJBN4G,Matched Sukabumi (Coupa #484676)
 Amazon,PWR-12V,12V Power Couplers - Screw Terminal,,1,$6.99,$6.99,https://www.amazon.com/ANLINK-20-Connectors-Terminal-Security/dp/B0BHYTRP1M,Matched Sukabumi (Coupa #484674) - NEW
@@ -64,9 +68,9 @@ Local,MISC,"Concrete mix, wire nuts, additional cable ties",,100000,$6,,Any hard
 COST SUMMARY BY SUPPLIER,,,,,,,,,
 Supplier,Subtotal,Notes,,,,,,,
 DigiKey,$194.89,"PSU, surge protector, power distribution, vents",,,,,,,
-Amazon,$1577.69,"Compute, cameras, power system, enclosure, consumables",,,,,,,
+Amazon,$1656.69,"Compute, cameras, power system, enclosure, consumables",,,,,,,
 Adafruit,$89.40,"Witty Pi 5, USB-RS485, cable glands",,,,,,,
 Hydreon,$99.00,Rain gauge,,,,,,,
-Shipped Subtotal,$1960.98,Components to ship from US/international,,,,,,,
+Shipped Subtotal,$2039.98,Components to ship from US/international,,,,,,,
 Local Sourcing (Jakarta),$96.00,"Grounding, mounting pole, misc hardware",,,,,,,
-GRAND TOTAL,$2056.98,"Materials only; potential savings $150-450 pending review; hidden costs ~$85-95 (RJ45 kit, price variance)",,,,,,,
+GRAND TOTAL,$2135.98,"Materials only; potential savings $150-450 pending review; hidden costs ~$85-95 (RJ45 kit, price variance)",,,,,,,
