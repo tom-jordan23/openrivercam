@@ -4,6 +4,9 @@ data/*
 qgis
 qgis/
 qgis/*
+rs-docs
+rs-docs/
+rs-docs/*
 
 # Pi config files with real credentials (use placeholders in tracked files)
 spring_2026_ID/pi/**/*.local
