@@ -1,0 +1,20 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!-- STUB: Pull from live camera to populate. OSD overlays for Jakarta Cam 2. -->
+<VideoOverlay xmlns="http://www.hikvision.com/ver20/XMLSchema" version="2.0">
+  <TextOverlayList>
+    <TextOverlay>
+      <id>1</id>
+      <enabled>true</enabled>
+      <positionX>0</positionX>
+      <positionY>0</positionY>
+      <displayText>ORC Jakarta - Cam 2 Downstream</displayText>
+    </TextOverlay>
+  </TextOverlayList>
+  <DateTimeOverlay>
+    <enabled>true</enabled>
+    <positionX>0</positionX>
+    <positionY>544</positionY>
+    <dateStyle>YYYY-MM-DD</dateStyle>
+    <timeStyle>24hour</timeStyle>
+  </DateTimeOverlay>
+</VideoOverlay>

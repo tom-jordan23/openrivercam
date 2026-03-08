@@ -69,7 +69,10 @@
 | **SD-CARD** | MicroSD card 32GB (SanDisk/Samsung) | 1 | $8.00 | $8.00 | Amazon | For OS boot |
 | **HEATSINK** | Heatsink for Raspberry Pi 5 | 1 | $8.00 | $8.00 | Included or Amazon | Active or passive |
 | **USB-RS485** | USB to RS485 converter (FTDI chip) | 1 | $18.00 | $18.00 | Amazon, DigiKey | For Modbus devices |
-| | | | **Subtotal** | **$319.95** | | |
+| **SENSOR-TH** | Adafruit Sensirion SHT40 Temp/Humidity Sensor (I2C, STEMMA QT) | 1 | $5.95 | $5.95 | [Adafruit](https://www.adafruit.com/product/4885) | Enclosure climate monitoring; ±1.8% RH full range; on-chip heater for high-humidity drift recovery |
+| **CABLE-QT** | Adafruit STEMMA QT to bare wire cable (4-pin JST SH, 200mm) | 1 | $0.95 | $0.95 | [Adafruit](https://www.adafruit.com/product/4209) | Connects SHT40 to G469 screw terminals (SDA=GPIO2, SCL=GPIO3, 3.3V, GND) |
+| **PROBE-TEMP** | DS18B20 Waterproof Temperature Probe (stainless, 1m cable, 4-pack) | 1 | $9.99 | $9.99 | [Amazon](https://www.amazon.com/Temperature-Waterproof-Stainless-Compatible-Raspberry/dp/B0FH4WRN6H) | Outside temp for dew point calculation; 1-Wire GPIO; IP67 |
+| | | | **Subtotal** | **$336.84** | | |
 
 **Notes:**
 - Pi 5 8GB preferred for ORC (4GB minimum would save ~$15)
@@ -256,7 +259,9 @@
 | **SEALANT** | Silicone sealant (outdoor, clear) | 1 | $6.00 | $6.00 | Hardware store | Cable gland sealing |
 | **DI-GREASE** | Dielectric grease (small tube) | 1 | $8.00 | $8.00 | Amazon | Connector protection |
 | **DESICCANT** | Silica gel packets (for initial assembly only) | 1 | $6.00 | $6.00 | Amazon | Not for field maintenance |
-| | | | **Subtotal** | **$69.00** | | |
+| **BAND-SS** | 3/4" Stainless Steel Banding with Buckles (pole mount kit or roll) | 1 | $40.00 | $40.00 | Amazon | No-drill pole mount; 2-3 bands around enclosure + pole |
+| **PAD-EPDM** | EPDM Rubber Sheet 1/8" (12"×12") | 1 | $10.00 | $10.00 | Amazon | Galvanic isolation between carbon steel enclosure and galvanized pole |
+| | | | **Subtotal** | **$119.00** | | |
 
 **Notes:**
 - Use stainless steel 304 minimum (316 preferred for coastal areas)
@@ -270,15 +275,15 @@
 
 | Category | Subtotal |
 |----------|----------|
-| 1. Compute Platform | $319.95 |
+| 1. Compute Platform | $336.84 |
 | 2. PoE Camera System | $417.96 |
 | 3. User Interface | $38.00 |
 | 4. Humidity Protection | $38.00 |
 | 5. Enclosure & Mounting | $146.99 |
 | 6. Rain Gauge | $99.00 |
 | 7. Cables & Connectors | $164.00 |
-| 8. Hardware & Fasteners | $69.00 |
-| **TOTAL (Materials)** | **$1,292.90** |
+| 8. Hardware & Fasteners | $119.00 |
+| **TOTAL (Materials)** | **$1,359.79** |
 
 **Budget Status:** ✅ Within $1,500 target for Sukabumi site
 **Remaining Budget (of $3,000 total):** ~$1,707 for Jakarta site + shared spares

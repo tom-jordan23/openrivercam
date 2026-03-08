@@ -705,7 +705,7 @@ Based on research review, the following items may need attention:
 | **12V PoE switch vs injector** | Medium | SITES.md says "12v PoE switch" but most PoE switches need 48V. Planet IPOE-260-12V is an injector, not a switch. Clarify network topology |
 | **AC input voltage** | Low | Indonesia uses 220V/50Hz. Verify power supply accepts 220V |
 | **Mounting pole** | Low | No specs for pole. Standard camera pole or custom? Height? Material? |
-| **Camera RTSP configuration** | Low | Cameras ship with RTSP disabled. Pre-configure before deployment |
+| **Camera RTSP configuration** | Low | Cameras ship with RTSP disabled. Pre-configure before deployment. See `camera/` for ISAPI config tool |
 
 ### Both Sites
 
@@ -740,6 +740,8 @@ Key documents for BOM development:
 | PoE camera boot times | `/rc-box/research/ip_camera_boot_times.md` | Camera startup timing |
 | PoE power research | `/rc-box/research/poe_power_12v.md` | 12V to PoE conversion |
 | Nitrogen/sealed enclosures | `/rc-box/research/nitrogen_sealed_enclosures.md` | Housing options |
+| Camera ISAPI config research | `research/camera_isapi_config_management.md` | Protocol details, design rationale |
+| Camera config tool + README | `camera/README.md` | CLI tool usage, layout, workflows |
 
 ---
 

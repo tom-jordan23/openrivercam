@@ -6,6 +6,8 @@ DigiKey,HUM-002,Amphenol LTW M12 Protective Vent (IP68),VENT-PS1YBK-N8001,2,$9.9
 Adafruit,CPU-002,Witty Pi 5 HAT+ (power mgmt RTC I2C-only),6449,1,$59.95,$59.95,https://www.adafruit.com/product/6449,Matched Sukabumi (Adafruit Order #3625618)
 Adafruit,UI-005,USB to RS485/232 Multi-Protocol Adapter,5995,1,$21.95,$21.95,https://www.adafruit.com/product/5995,"REVIEW: Optional - GPIO breakout handles RS232; defer to save $22"
 Adafruit,ENC-003,PG9 Cable Glands (10-pack),761,1,$7.50,$7.50,https://www.adafruit.com/product/761,Cable entry sealing
+Adafruit,SENSOR-TH,Sensirion SHT40 Temp/Humidity Sensor (I2C STEMMA QT),4885,1,$5.95,$5.95,https://www.adafruit.com/product/4885,"Enclosure climate monitoring; ±1.8% RH full range; on-chip heater for high-humidity drift recovery; I2C 0x44"
+Adafruit,CABLE-QT,STEMMA QT to bare wire cable (4-pin JST SH 200mm),4209,1,$0.95,$0.95,https://www.adafruit.com/product/4209,Connects SHT40 to Geekworm G469 screw terminals (SDA=GPIO2 SCL=GPIO3 3.3V GND)
 Amazon,CPU-001,Raspberry Pi 5 8GB RAM,,1,$109.00,$109.00,https://www.amazon.com/Raspberry-Pi-8GB-SC1112-Quad-core/dp/B0CK2FCG1K,Matched Sukabumi (Coupa #484665)
 Amazon,CPU-003,Stacking Headers (Geekworm),,1,$9.90,$9.90,https://www.amazon.com/Geekworm-Stacking-Raspberry-Specifications-Extender/dp/B0827THC7R,Matched Sukabumi (Coupa #484665) - NEW
 Amazon,CPU-003B,GPIO Breakout Board (Geekworm G469),,1,$9.90,$9.90,https://www.amazon.com/Geekworm-G469-Terminal-Breakout-Raspberry/dp/B0DMNJ17PD,Matched Sukabumi (Coupa #484666) - replaces Pi-EzConnect
@@ -16,6 +18,7 @@ Amazon,CPU-009,Proxicast ANT-122-S02 2x2 MIMO LTE Puck Antenna (IP67),,1,$64.95,
 Amazon,CPU-006,MicroSD Card 64G x2 Pack (SanDisk),,1,$26.92,$26.92,https://www.amazon.com/SanDisk-128GB-MicroSDXC-Ultra-Memory/dp/B07XDCZ9J3,"REVIEW: OS boot only needs single 32GB A2 ($8-12); save ~$15"
 Amazon,CPU-011,Raspberry Pi 5 Active Cooler,,1,$9.90,$9.90,https://www.amazon.com/Raspberry-Pi5-Temperature-Controlled-Aluminium-Dissipation/dp/B0CW164TCW,Matched Sukabumi (Coupa #484671)
 Amazon,CPU-012,Raspberry Pi 5 RTC Battery (rechargeable ML-2020 JST-SH connector),,2,$5.00,$10.00,https://www.amazon.com/s?k=raspberry+pi+5+RTC+battery,1 for Jakarta + 1 for Sukabumi (forgotten from Sukabumi order)
+Amazon,PROBE-TEMP,DS18B20 Waterproof Temperature Probe (stainless 1m cable 4-pack),,1,$9.99,$9.99,https://www.amazon.com/Temperature-Waterproof-Stainless-Compatible-Raspberry/dp/B0FH4WRN6H,Outside temp for dew point calculation + PTC heater control; 1-Wire GPIO; IP67
 Amazon,CAM-001,ANNKE C1200 PoE IP Camera (12MP 134deg FOV 2-pack),,1,$119.99,$119.99,https://www.amazon.com/ANNKE-Security-Surveillance-Detection-Spotlight/dp/B0DBHRMT1V,Jakarta: 2 cameras needed (Sukabumi ordered single $89.99)
 Amazon,CAM-003,LINOVISION Industrial 12V PoE Switch (Gigabit IEEE802.3af/at),,1,$85.99,$85.99,https://www.amazon.com/LINOVISION-Industrial-Gigabit-DC12V-48V-IEEE802-3af/dp/B09HGWLZSD,Matched Sukabumi (Coupa #484673) - replaces Planet IPOE-260-12V
 Amazon,CAM-006,Hikvision DS-1275ZJ Vertical Mounting Plate (stainless),,2,$30.99,$61.98,https://www.amazon.com/DS-1275ZJ-Vertical-Adapter-Hikvision-Stainless/dp/B0DRDZBR69,Matched Sukabumi (Coupa #484672) - qty 2 for 2 cameras
@@ -23,20 +26,22 @@ Amazon,CAM-004,Outdoor Cat6 Shielded Cable (300ft UV-resistant),,1,$79.99,$79.99
 Amazon,CAM-005,IP68 RJ45 Waterproof Coupler (2-pack),,1,$12.99,$12.99,https://www.amazon.com/s?k=IP68+RJ45+coupler+waterproof,Weatherproof connections
 Amazon,RELAY-POE,Electronics-Salon DIN Rail 4-SPDT 10A Relay Module 5V,,1,$18.00,$18.00,https://www.amazon.com/Electronics-Salon-Mount-Interface-Module-Version/dp/B00M1MW5BW,Switches 12V to PoE switch; GPIO or passive USB trigger
 Amazon,BUCK-5V,Mean Well DDR-60G-5 DIN Rail DC-DC Converter (5V 10.8A 9-36V input),,1,$39.00,$39.00,https://www.amazon.com/s?k=DDR-60G-5+Mean+Well,Converts 12V bus to 5V for Pi + modem + LEDs + rain sensor
-Amazon,PWR-002,12V 100Ah LiFePO4 Battery (LiTime 1280Wh BMS),,1,$299.99,$299.99,https://www.amazon.com/LiFePO4-4000-15000-Lifetime-Application-Trolling/dp/B0BJ78JZ2B,"REVIEW: 50Ah ($150) gives 16hr backup if 24hr not required on AC site; save ~$150"
-Amazon,PWR-003,20A LiFePO4 Battery Charger (12V smart temp sensor),,1,$89.99,$89.99,https://www.amazon.com/s?k=20A+LiFePO4+charger+12V+smart,Jakarta-specific: smart charging (search link - verify price at order)
 Amazon,PWR-004,Victron BatteryProtect 12/24V-65A (Low voltage disconnect),,1,$53.55,$53.55,https://www.amazon.com/Victron-Energy-BatteryProtect/dp/B076MRVNPM,"REVIEW: LiTime battery has built-in BMS with cutoff; Victron is redundant layer; save $54"
 Amazon,PWR-006,Automotive Blade Fuse Holders (inline waterproof 4-pack),,1,$12.99,$12.99,https://www.amazon.com/s?k=waterproof+blade+fuse+holder+inline,Circuit protection (search link - verify price at order)
 Amazon,PWR-007,ATO/ATC Blade Fuses 10A (25-pack),,1,$7.99,$7.99,https://www.amazon.com/s?k=ATO+blade+fuses+10A,Replacement fuses
 Amazon,PWR-008,ATO/ATC Blade Fuses 15A (25-pack),,1,$7.99,$7.99,https://www.amazon.com/s?k=ATO+blade+fuses+15A,Replacement fuses
-Amazon,PWR-010,35mm DIN Rail with End Stops (2x 1m aluminum),,2,$12.99,$25.98,https://www.amazon.com/s?k=35mm+DIN+rail+1+meter+aluminum,Jakarta-specific: larger enclosure (search link - verify price at order)
-Amazon,ENC-001,IP66 Aluminum Enclosure (400x300x200mm hinged),,1,$89.99,$89.99,https://www.amazon.com/s?k=IP66+aluminum+enclosure+400x300x200,Jakarta-specific: larger for power system (search link - verify price at order)
+Amazon,PWR-010,35mm DIN Rail with End Stops (2x 1m aluminum),,2,$12.99,$25.98,https://www.amazon.com/s?k=35mm+DIN+rail+1+meter+aluminum,"2 rails: Rail 1 for PSU + Victron + surge protector; Rail 2 for Pi + PoE switch + modem + relay (cut to fit VEVOR enclosure)"
+Amazon,ENC-001,VEVOR Carbon Steel Hinged IP66 Enclosure (16x12x8in / 406x305x203mm),,1,$60.00,$60.00,https://www.amazon.com/dp/B0924DJGJ9,"Matched Sukabumi — same enclosure for both sites; battery + charger in separate external box (sourced locally)"
 Amazon,ENC-004,Cable Gland Assortment (PG9/PG13.5/PG16 20-pack),,1,$18.99,$18.99,https://www.amazon.com/s?k=cable+gland+assortment+IP68,Cable entries (search link - verify price at order)
 Amazon,CLIP-TERM,DIN Rail Terminal Block Kit,,1,$19.99,$19.99,https://www.amazon.com/GUETNEU-Terminal-Block-Voltage-Combined/dp/B0BQQDWGXV,Matched Sukabumi (Coupa #484671)
 Amazon,CLIP-RPI,DIN Rail Clip for Raspberry Pi,,1,$18.99,$18.99,https://www.amazon.com/Mount-Bracket-Raspberry-Arduino-BeagleBone/dp/B08HRZVFCX,Matched Sukabumi (Coupa #484671) - NEW
 Amazon,ENC-008,Stainless Steel M3/M4 Hardware Kit (300-piece),,1,$16.99,$16.99,https://www.amazon.com/s?k=stainless+steel+hardware+kit+M3+M4,Mounting hardware (search link - verify price at order)
 Amazon,DIN-PCB,Molence C45 PCB DIN Rail Clip-Pairs (10 sets),,1,$9.00,$9.00,https://www.amazon.com/Molence-Mounting-Adapter-Circuit-Bracket/dp/B09KZHY8G4,Mount bare PCBs to DIN rail
 Amazon,DIN-CLIP,CNQLIS 1.65in Aluminum DIN Rail Mounting Clips (10-pack),,1,$13.00,$13.00,https://www.amazon.com/CNQLIS-Universal-Mounting-Bracket-Countersunk/dp/B0CJJ1DBZM,Mount modem and misc items via screws/zip ties
+Amazon,BRACKET-WALL,Heavy-duty SS L-brackets for wall mount (2-pack),,1,$20.00,$20.00,https://www.amazon.com/s?k=heavy+duty+stainless+steel+L+bracket,Bolted to concrete wall; enclosure sits on shelf + banded
+Amazon,ANCHOR-CON,Stainless concrete wedge anchors (M8 x 4-pack),,1,$10.00,$10.00,https://www.amazon.com/s?k=stainless+concrete+wedge+anchor+M8,Into concrete/masonry wall
+Amazon,BAND-SS,3/4in Stainless Steel Banding with Buckles,,1,$40.00,$40.00,https://www.amazon.com/s?k=stainless+steel+banding+3%2F4+inch,Shared between enclosure mount + battery box securing
+Amazon,PAD-EPDM,EPDM Rubber Sheet 1/8in (12x12in),,1,$10.00,$10.00,https://www.amazon.com/s?k=EPDM+rubber+sheet+1%2F8+inch,Galvanic isolation pads
 Amazon,LED-MULTI,Multi-color LED 5-pack (FILN 12V-24V IP67),,1,$16.99,$16.99,https://www.amazon.com/FILN-Indicator-Anodized-Waterproof-12V-24V/dp/B0C7KSFKTH,Matched Sukabumi (Coupa #484675)
 Amazon,BTN-MAINT,IP67 Momentary Pushbutton 16mm Stainless,,1,$8.99,$8.99,https://www.amazon.com/Gebildet-Momentary-terminals-Stainless-Waterproof/dp/B081JJBN4G,Matched Sukabumi (Coupa #484676)
 Amazon,PWR-12V,12V Power Couplers - Screw Terminal,,1,$6.99,$6.99,https://www.amazon.com/ANLINK-20-Connectors-Terminal-Security/dp/B0BHYTRP1M,Matched Sukabumi (Coupa #484674) - NEW
@@ -63,14 +68,17 @@ Local,ENC-010,Mounting Pole (4m galvanized steel 50mm dia),,500000,$32,,Toko ban
 Local,ENC-011,Pole Base Flange + Concrete Anchors,,200000,$13,,Toko bangunan,Source at local hardware
 Local,ENC-012,U-Bolts for Pole Mounting (M8 x 150mm stainless),,100000,$6,,Toko bangunan,Local hardware stores
 Local,RAIN-002,Pole Mount Arm for Rain Gauge,,150000,$10,,Fabricate locally,May fabricate locally if needed
+Local,PWR-002,12V LiFePO4 Battery (50-100Ah),,2500000-5000000,$160-320,,Tokopedia / Shopee / local battery supplier,"Size TBD — buy what's available; 50Ah gives ~16hr backup, 100Ah gives ~32hr; housed in external battery box"
+Local,PWR-003,LiFePO4 Battery Charger (12V 10-20A),,900000,$60,,Tokopedia / Shopee,Goes in battery box alongside battery; AC input from electronics enclosure
+Local,BATT-BOX,Weatherproof Battery Box (marine style or IP55+ enclosure),,500000,$30,,ACE Hardware / Tokopedia,"Size to fit chosen battery + charger; short 12V DC cable run to electronics enclosure"
 Local,MISC,"Concrete mix, wire nuts, additional cable ties",,100000,$6,,Any hardware store,As needed during installation
 ,,,,,,,,,
 COST SUMMARY BY SUPPLIER,,,,,,,,,
 Supplier,Subtotal,Notes,,,,,,,
 DigiKey,$194.89,"PSU, surge protector, power distribution, vents",,,,,,,
-Amazon,$1656.69,"Compute, cameras, power system, enclosure, consumables",,,,,,,
-Adafruit,$89.40,"Witty Pi 5, USB-RS485, cable glands",,,,,,,
+Amazon,$1326.71,"Compute, cameras, enclosure (matched Sukabumi), mounting hardware, consumables",,,,,,,
+Adafruit,$96.30,"Witty Pi 5, USB-RS485, cable glands, SHT40 sensor + cable",,,,,,,
 Hydreon,$99.00,Rain gauge,,,,,,,
-Shipped Subtotal,$2039.98,Components to ship from US/international,,,,,,,
-Local Sourcing (Jakarta),$96.00,"Grounding, mounting pole, misc hardware",,,,,,,
-GRAND TOTAL,$2135.98,"Materials only; potential savings $150-450 pending review; hidden costs ~$85-95 (RJ45 kit, price variance)",,,,,,,
+Shipped Subtotal,$1716.90,Components to ship from US/international,,,,,,,
+Local Sourcing (Jakarta),$346-506,"Grounding, mounting pole, battery + charger + battery box, misc",,,,,,,
+GRAND TOTAL,$2063-2223,"Materials only; local cost depends on battery capacity chosen (50-100Ah)",,,,,,,

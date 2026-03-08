@@ -10,3 +10,7 @@ rs-docs/*
 
 # Pi config files with real credentials (use placeholders in tracked files)
 spring_2026_ID/pi/**/*.local
+
+# Camera config credentials and local overrides
+spring_2026_ID/camera/.env
+spring_2026_ID/camera/**/*.local

@@ -5,8 +5,8 @@
 - **Power:** AC utility (220V/50Hz) with 24hr battery backup
 - **Camera:** 2x PoE IP cameras
 - **Purpose:** New training/demo installation
-- **Date:** February 24, 2026 (reconciled with Sukabumi actuals)
-- **Status:** RECONCILED - Shared components aligned with Sukabumi procured parts
+- **Date:** March 6, 2026 (split enclosure update)
+- **Status:** UPDATED - Split enclosure: electronics in VEVOR 16x12x8" (matched Sukabumi), battery + charger in external box (sourced locally in Jakarta)
 - **Suppliers Consolidated:** 4 primary suppliers (Adafruit, Amazon, DigiKey, Hydreon)
 
 ---
@@ -59,6 +59,7 @@ Items marked **"Jakarta-specific"** are unique to the Jakarta AC-powered deploym
 | CPU-006 | MicroSD Card 64G x2 Pack (SanDisk) | 1 | $26.92 | $26.92 | https://www.amazon.com/SanDisk-128GB-MicroSDXC-Ultra-Memory/dp/B07XDCZ9J3 | Matched Sukabumi |
 | CPU-011 | Raspberry Pi 5 Active Cooler | 1 | $9.90 | $9.90 | https://www.amazon.com/Raspberry-Pi5-Temperature-Controlled-Aluminium-Dissipation/dp/B0CW164TCW | Matched Sukabumi |
 | CPU-012 | Raspberry Pi 5 RTC Battery (rechargeable ML-2020, JST-SH connector) | 2 | $5.00 | $10.00 | https://www.amazon.com/s?k=raspberry+pi+5+RTC+battery | 1 for Jakarta + 1 for Sukabumi (forgotten from Sukabumi order) |
+| PROBE-TEMP | DS18B20 Waterproof Temperature Probe (stainless, 1m cable, 4-pack) | 1 | $9.99 | $9.99 | https://www.amazon.com/Temperature-Waterproof-Stainless-Compatible-Raspberry/dp/B0FH4WRN6H | Outside temp for dew point calculation + PTC heater control; 1-Wire GPIO; IP67 |
 | **CAMERA SYSTEM** | | | | | | |
 | CAM-001 | ANNKE C1200 PoE IP Camera (12MP, 134° FOV, 2-pack) | 1 | $119.99 | $119.99 | https://www.amazon.com/ANNKE-Security-Surveillance-Detection-Spotlight/dp/B0DBHRMT1V | Jakarta: 2 cameras (Sukabumi ordered single $89.99) |
 | CAM-003 | LINOVISION Industrial 12V PoE Switch (Gigabit, IEEE802.3af/at) | 1 | $85.99 | $85.99 | https://www.amazon.com/LINOVISION-Industrial-Gigabit-DC12V-48V-IEEE802-3af/dp/B09HGWLZSD | Matched Sukabumi (replaces Planet IPOE-260-12V) |
@@ -68,21 +69,25 @@ Items marked **"Jakarta-specific"** are unique to the Jakarta AC-powered deploym
 | RELAY-POE | Electronics-Salon DIN Rail 4-SPDT 10A Relay Module, 5V | 1 | $18.00 | $18.00 | https://www.amazon.com/Electronics-Salon-Mount-Interface-Module-Version/dp/B00M1MW5BW | Switches 12V to PoE switch; GPIO or passive USB trigger. See [research](research/poe_switch_relay_research.md) |
 | **POWER SYSTEM (Jakarta-specific)** | | | | | | |
 | BUCK-5V | Mean Well DDR-60G-5 DIN Rail DC-DC Converter (5V 10.8A, 9-36V input) | 1 | $39.00 | $39.00 | [Amazon](https://www.amazon.com/s?k=DDR-60G-5+Mean+Well) | Converts 12V bus to 5V for Pi + modem + LEDs + rain sensor. Same as Sukabumi. See [research](research/dc_dc_buck_converter_research.md) |
-| PWR-002 | 12V 100Ah LiFePO4 Battery (LiTime, 1280Wh, BMS) | 1 | $299.99 | $299.99 | https://www.amazon.com/s?k=12V+100Ah+LiFePO4+battery | Jakarta-specific: 24hr backup |
-| PWR-003 | 20A LiFePO4 Battery Charger (12V, smart, temp sensor) | 1 | $89.99 | $89.99 | https://www.amazon.com/s?k=20A+LiFePO4+charger+12V | Jakarta-specific |
+| ~~PWR-002~~ | ~~12V LiFePO4 Battery~~ | - | - | - | - | **MOVED TO LOCAL SOURCING** — battery + charger housed in external weatherproof box, sourced in Jakarta |
+| ~~PWR-003~~ | ~~LiFePO4 Battery Charger~~ | - | - | - | - | **MOVED TO LOCAL SOURCING** — goes in battery box alongside battery |
 | PWR-004 | Victron BatteryProtect 12/24V-65A (Low voltage disconnect) | 1 | $53.55 | $53.55 | https://www.amazon.com/Victron-Energy-Battery-Protect-24-Volt/dp/B01N6ATT8C | Jakarta-specific |
 | PWR-006 | Automotive Blade Fuse Holders (inline, waterproof, 4-pack) | 1 | $12.99 | $12.99 | https://www.amazon.com/s?k=waterproof+blade+fuse+holder | Circuit protection |
 | PWR-007 | ATO/ATC Blade Fuses 10A (25-pack) | 1 | $7.99 | $7.99 | https://www.amazon.com/s?k=ATO+blade+fuses+10A | Replacement fuses |
 | PWR-008 | ATO/ATC Blade Fuses 15A (25-pack) | 1 | $7.99 | $7.99 | https://www.amazon.com/s?k=ATO+blade+fuses+15A | Replacement fuses |
-| PWR-010 | 35mm DIN Rail with End Stops (2x 1m aluminum) | 2 | $12.99 | $25.98 | https://www.amazon.com/s?k=35mm+DIN+rail+1+meter | Jakarta-specific: larger enclosure |
+| PWR-010 | 35mm DIN Rail with End Stops (2x 1m aluminum) | 2 | $12.99 | $25.98 | https://www.amazon.com/s?k=35mm+DIN+rail+1+meter | 2 rails: Rail 1 for PSU + Victron + surge protector; Rail 2 for Pi + PoE switch + modem + relay (cut to fit VEVOR enclosure) |
 | **ENCLOSURE & MOUNTING** | | | | | | |
-| ENC-001 | IP66 Aluminum Enclosure (400x300x200mm, hinged) | 1 | $89.99 | $89.99 | https://www.amazon.com/s?k=IP66+aluminum+enclosure+400x300x200 | Jakarta-specific: larger for power system |
+| ENC-001 | VEVOR Carbon Steel Hinged IP66 Enclosure (16×12×8" / 406×305×203mm) | 1 | $60.00 | $60.00 | [Amazon](https://www.amazon.com/dp/B0924DJGJ9) | Matched Sukabumi — same enclosure for both sites; battery + charger in separate external box (sourced locally) |
 | ENC-004 | Cable Gland Assortment (PG9/PG13.5/PG16, 20-pack) | 1 | $18.99 | $18.99 | https://www.amazon.com/s?k=cable+gland+assortment+IP68 | Cable entries |
 | CLIP-TERM | DIN Rail Terminal Block Kit | 1 | $19.99 | $19.99 | https://www.amazon.com/GUETNEU-Terminal-Block-Voltage-Combined/dp/B0BQQDWGXV | Matched Sukabumi |
 | CLIP-RPI | DIN Rail Clip for Raspberry Pi | 1 | $18.99 | $18.99 | https://www.amazon.com/Mount-Bracket-Raspberry-Arduino-BeagleBone/dp/B08HRZVFCX | Matched Sukabumi |
 | ENC-008 | Stainless Steel M3/M4 Hardware Kit (300-piece) | 1 | $16.99 | $16.99 | https://www.amazon.com/s?k=stainless+steel+hardware+kit+M3+M4 | Mounting hardware |
 | DIN-PCB | Molence C45 PCB DIN Rail Clip-Pairs (10 sets) | 1 | $9.00 | $9.00 | https://www.amazon.com/Molence-Mounting-Adapter-Circuit-Bracket/dp/B09KZHY8G4 | Mount bare PCBs to DIN rail. See [research](research/din_rail_mounting_clips_research.md) |
 | DIN-CLIP | CNQLIS 1.65" Aluminum DIN Rail Mounting Clips (10-pack) | 1 | $13.00 | $13.00 | https://www.amazon.com/CNQLIS-Universal-Mounting-Bracket-Countersunk/dp/B0CJJ1DBZM | Mount modem, misc items via screws/zip ties. See [research](research/din_rail_mounting_clips_research.md) |
+| BRACKET-WALL | Heavy-duty SS L-brackets for wall mount (2-pack) | 1 | $20.00 | $20.00 | https://www.amazon.com/s?k=heavy+duty+stainless+steel+L+bracket | Bolted to concrete wall; enclosure sits on shelf + banded |
+| ANCHOR-CON | Stainless concrete wedge anchors (M8 × 4-pack) | 1 | $10.00 | $10.00 | https://www.amazon.com/s?k=stainless+concrete+wedge+anchor+M8 | Into concrete/masonry wall |
+| BAND-SS | 3/4" Stainless Steel Banding with Buckles | 1 | $40.00 | $40.00 | https://www.amazon.com/s?k=stainless+steel+banding+3%2F4+inch | Shared between enclosure mount + battery box securing |
+| PAD-EPDM | EPDM Rubber Sheet 1/8" (12"×12") | 1 | $10.00 | $10.00 | https://www.amazon.com/s?k=EPDM+rubber+sheet+1%2F8+inch | Galvanic isolation pads |
 | **USER INTERFACE** | | | | | | |
 | LED-MULTI | Multi-color LED 5-pack (FILN, 12V-24V, IP67) | 1 | $16.99 | $16.99 | https://www.amazon.com/FILN-Indicator-Anodized-Waterproof-12V-24V/dp/B0C7KSFKTH | Matched Sukabumi |
 | BTN-MAINT | IP67 Momentary Pushbutton 16mm Stainless | 1 | $8.99 | $8.99 | https://www.amazon.com/Gebildet-Momentary-terminals-Stainless-Waterproof/dp/B081JJBN4G | Matched Sukabumi |
@@ -102,7 +107,7 @@ Items marked **"Jakarta-specific"** are unique to the Jakarta AC-powered deploym
 | CONS-003 | UV-Resistant Zip Ties (assorted, 500-pack) | 1 | $12.99 | $12.99 | https://www.amazon.com/s?k=UV+resistant+zip+ties | Cable management |
 | CONS-006 | Isopropyl Alcohol 99% (16oz bottle) | 1 | $8.99 | $8.99 | https://www.amazon.com/s?k=isopropyl+alcohol+99 | Cleaning |
 
-**Amazon Subtotal: $1,656.69**
+**Amazon Subtotal: $1,326.71**
 
 ---
 
@@ -115,8 +120,10 @@ Items marked **"Jakarta-specific"** are unique to the Jakarta AC-powered deploym
 | CPU-002 | Witty Pi 5 HAT+ (power mgmt, RTC, I2C-only) | 6449 | 1 | $59.95 | $59.95 | https://www.adafruit.com/product/6449 | Matched Sukabumi |
 | UI-005 | USB to RS485/232 Multi-Protocol Adapter | 5995 | 1 | $21.95 | $21.95 | https://www.adafruit.com/product/5995 | Matched Sukabumi (optional) |
 | ENC-003 | PG9 Cable Glands (10-pack) | 761 | 1 | $7.50 | $7.50 | https://www.adafruit.com/product/761 | Cable entry sealing |
+| SENSOR-TH | Sensirion SHT40 Temp/Humidity Sensor (I2C, STEMMA QT) | 4885 | 1 | $5.95 | $5.95 | https://www.adafruit.com/product/4885 | Enclosure climate monitoring; ±1.8% RH full range; on-chip heater for high-humidity drift recovery |
+| CABLE-QT | STEMMA QT to bare wire cable (4-pin JST SH, 200mm) | 4209 | 1 | $0.95 | $0.95 | https://www.adafruit.com/product/4209 | Connects SHT40 to G469 screw terminals (SDA=GPIO2, SCL=GPIO3, 3.3V, GND) |
 
-**Adafruit Subtotal: $89.40**
+**Adafruit Subtotal: $96.30**
 
 ---
 
@@ -144,9 +151,14 @@ The following items should be purchased locally in Jakarta to reduce shipping co
 | ENC-011 | Pole Base Flange + Concrete Anchors | 200,000 | $13 | Source at local hardware |
 | ENC-012 | U-Bolts for Pole Mounting (M8 x 150mm, stainless) | 100,000 | $6 | Local hardware stores |
 | RAIN-002 | Pole Mount Arm for Rain Gauge | 150,000 | $10 | May fabricate locally if needed |
+| **BATTERY SYSTEM** | | | | |
+| PWR-002 | 12V LiFePO4 Battery (50-100Ah, size TBD) | 2,500,000-5,000,000 | $160-320 | Tokopedia / Shopee / local battery supplier. 50Ah gives ~16hr backup, 100Ah gives ~32hr. Housed in external battery box. |
+| PWR-003 | LiFePO4 Battery Charger (12V, 10-20A) | 900,000 | $60 | Goes in battery box alongside battery. AC input cable from electronics enclosure. |
+| BATT-BOX | Weatherproof Battery Box (marine style or IP55+) | 500,000 | $30 | Size to fit chosen battery + charger. Short 12V DC cable run to electronics enclosure. |
+| **MISC** | | | | |
 | MISC | Concrete mix, wire nuts, additional cable ties | 100,000 | $6 | As needed during installation |
 
-**Local Sourcing Subtotal: ~$96 USD**
+**Local Sourcing Subtotal: ~$346-506 USD** (range depends on battery capacity)
 
 **Recommended Jakarta suppliers:**
 - **Glodok Electronics Market** - Electronics, cable glands, terminal blocks
@@ -159,13 +171,13 @@ The following items should be purchased locally in Jakarta to reduce shipping co
 
 | Supplier | Subtotal (USD) | Notes |
 |----------|----------------|-------|
-| **1. Amazon** | $1,656.69 | Compute, cameras, power system, enclosure, consumables |
+| **1. Amazon** | $1,326.71 | Compute, cameras, enclosure (matched Sukabumi), mounting hardware, consumables |
 | **2. DigiKey** | $194.89 | PSU, surge protector, power distribution, vents |
-| **3. Adafruit** | $89.40 | Witty Pi 5, USB-RS485, cable glands |
+| **3. Adafruit** | $96.30 | Witty Pi 5, USB-RS485, cable glands, SHT40 sensor + cable |
 | **4. Hydreon** | $99.00 | Rain gauge |
-| **Shipped Subtotal** | **$2,039.98** | Components to ship from US/international |
-| **Local Sourcing (Jakarta)** | **$96.00** | Grounding, mounting pole, misc hardware |
-| **GRAND TOTAL** | **$2,135.98** | Materials only |
+| **Shipped Subtotal** | **$1,716.90** | Components to ship from US/international |
+| **Local Sourcing (Jakarta)** | **$346-506** | Grounding, mounting pole, battery + charger + battery box, misc |
+| **GRAND TOTAL** | **$2,063-2,223** | Materials only; range depends on battery capacity (50-100Ah) |
 
 ---
 
@@ -173,12 +185,14 @@ The following items should be purchased locally in Jakarta to reduce shipping co
 
 | Item | Estimated Cost (USD) | Notes |
 |------|---------------------|-------|
-| **Equipment (shipped)** | $2,039.98 | Components from 4 suppliers |
-| **Local sourcing (Jakarta)** | $96.00 | Grounding, pole, mounting hardware |
-| **TOTAL PROJECT COST** | **$2,135.98** | Materials only |
+| **Equipment (shipped)** | $1,716.90 | Components from 4 suppliers |
+| **Local sourcing (Jakarta)** | $346-506 | Battery system, grounding, pole, mounting hardware |
+| **TOTAL PROJECT COST** | **$2,063-2,223** | Materials only; range depends on battery capacity |
 
-**Budget Status:** ✅ Within budget. Combined with Sukabumi ($948.08 actual) = **$3,084.06** total for both sites.
-**Note:** Equipment travels with installer under humanitarian exemption — no shipping, customs, or contingency costs.
+**Budget Status:** ✅ Within budget. Combined with Sukabumi ($948.08 actual) = **$3,011-3,171** total for both sites.
+**Note:** Equipment travels with installer under humanitarian exemption — no shipping, customs, or contingency costs. Battery sourced locally (cannot fly with LiFePO4 >100Wh).
+
+**Enclosure Strategy (updated March 2026):** Electronics enclosure is the same VEVOR 16×12×8" used at Sukabumi. Battery and charger go in a separate weatherproof box sourced locally in Jakarta, sized to whatever battery is available. This gives identical electronics builds for both sites, avoids oversized luggage, and decouples battery selection from enclosure sizing.
 
 ### Cost Review Items (decision pending)
 
@@ -535,6 +549,7 @@ The following items should be purchased locally in Jakarta to reduce shipping co
 
 | Date | Version | Changes | Author |
 |------|---------|---------|--------|
+| 2026-03-06 | 4.0 | Split enclosure approach: electronics in VEVOR 16×12×8" (matched Sukabumi), battery + charger moved to external weatherproof box sourced locally in Jakarta. Reduces shipped cost by ~$420, gives identical electronics builds for both sites, decouples battery sizing from enclosure. Added RELAY-POE, BUCK-5V, DIN-PCB, DIN-CLIP (missing from CSV). | Claude (Opus 4.6) |
 | 2026-02-24 | 3.0 | Reconciled with Sukabumi actuals: matched shared components (GPIO breakout, PoE switch, stacking headers, LEDs, etc.), reduced from 6 to 4 suppliers, added forgotten items (USB cables, DIN clips, power couplers, dielectric grease), updated all prices to match procured costs | Claude (Opus 4.6) |
 | 2026-01-09 | 2.0 | Verified BOM with actual product links, consolidated suppliers | Claude (Comprehensive Researcher) |
 | 2026-01-09 | 1.0 | Initial BOM creation for Jakarta site | - |
@@ -637,12 +652,12 @@ The following items should be purchased locally in Jakarta to reduce shipping co
 
 ---
 
-**Document prepared:** January 9, 2026 | **Last updated:** February 24, 2026
-**Version:** 3.0 (Reconciled with Sukabumi actuals)
+**Document prepared:** January 9, 2026 | **Last updated:** March 6, 2026
+**Version:** 4.0 (Split enclosure — matched Sukabumi + external battery box)
 **Site:** Jakarta, Indonesia
 **Project:** OpenRiverCam Training/Demo Installation
-**Budget:** Jakarta $2,135.98 + Sukabumi $948.08 = **$3,084.06** total (within $3,000 target)
-**Status:** RECONCILED - Ready for procurement
+**Budget:** Jakarta $2,056-2,216 + Sukabumi $948.08 = **$3,004-3,164** total (within $3,000 target)
+**Status:** UPDATED - Ready for procurement (battery sourced locally in Jakarta)
 
 ---
 
@@ -657,10 +672,6 @@ The following items were not ordered with the Sukabumi parts and need to be incl
 | External ethernet cable | Not ordered for Sukabumi | TBD | Sukabumi | Cat6 outdoor run from enclosure to camera |
 | Fans (enclosure ventilation) | Not ordered for either site | TBD | Both | Active airflow for thermal management |
 | Additional DIN rail clips | Not enough for all components | TBD | Both | Need clips for PoE switch, modem adapter, terminal blocks, etc. |
-| Pole mount solution (Sukabumi) | Not yet specified | TBD | Sukabumi | Must accommodate enclosure box + gore vent strategy |
-| Pole mount solution (Jakarta) | Not yet specified | TBD | Jakarta | Must accommodate enclosure box + gore vent strategy |
-
-**Pole mount notes:** Both sites need a pole mounting solution that works with the selected enclosure boxes and allows for gore vent placement. Research needed on mounting brackets/arms that can securely hold the NEMA 4x / IP66 enclosures while keeping gore vents unobstructed and oriented correctly (vents must face downward to prevent water ingress).
 
 **Fan notes:** Enclosure fans help with thermal management in hot climates. Consider 12V DC fans (80mm or 120mm) with dust filters. Jakarta (coastal/urban) is especially hot and may need active ventilation. Research IP-rated fan+filter units for NEMA enclosures.
 

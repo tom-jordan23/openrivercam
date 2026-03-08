@@ -1,0 +1,17 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!-- STUB: Pull from live camera to populate. Main stream (channel 101). -->
+<StreamingChannel xmlns="http://www.hikvision.com/ver20/XMLSchema" version="2.0">
+  <id>101</id>
+  <channelName>Main Stream</channelName>
+  <Video>
+    <videoCodecType>H.265</videoCodecType>
+    <videoResolutionWidth>3840</videoResolutionWidth>
+    <videoResolutionHeight>2160</videoResolutionHeight>
+    <maxFrameRate>2500</maxFrameRate>
+    <constantBitRate>8192</constantBitRate>
+    <videoQualityControlType>VBR</videoQualityControlType>
+  </Video>
+  <Audio>
+    <enabled>false</enabled>
+  </Audio>
+</StreamingChannel>

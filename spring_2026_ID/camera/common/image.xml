@@ -1,0 +1,12 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!-- STUB: Pull from live camera to populate. Image settings (ch 1). -->
+<ImageChannel xmlns="http://www.hikvision.com/ver20/XMLSchema" version="2.0">
+  <id>1</id>
+  <brightnessLevel>50</brightnessLevel>
+  <contrastLevel>50</contrastLevel>
+  <saturationLevel>50</saturationLevel>
+  <sharpnessLevel>50</sharpnessLevel>
+  <WDR>
+    <mode>close</mode>
+  </WDR>
+</ImageChannel>

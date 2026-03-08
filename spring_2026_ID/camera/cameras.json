@@ -1,0 +1,28 @@
+{
+  "cameras": {
+    "sukabumi-cam1": {
+      "host": "192.168.50.139",
+      "site": "sukabumi",
+      "camera": "cam1",
+      "model": "ANNKE C1200",
+      "description": "Sukabumi river gauge - single camera",
+      "username": "admin"
+    },
+    "jakarta-cam1": {
+      "host": "192.168.50.101",
+      "site": "jakarta",
+      "camera": "cam1",
+      "model": "ANNKE C1200",
+      "description": "Jakarta upstream view",
+      "username": "admin"
+    },
+    "jakarta-cam2": {
+      "host": "192.168.50.102",
+      "site": "jakarta",
+      "camera": "cam2",
+      "model": "ANNKE C1200",
+      "description": "Jakarta downstream view",
+      "username": "admin"
+    }
+  }
+}

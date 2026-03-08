@@ -9,6 +9,9 @@ Compute Platform,ANT-PUCK,Proxicast ANT-122-S02 2x2 MIMO LTE puck antenna (IP67 
 Compute Platform,SD-CARD,MicroSD card 32GB (SanDisk/Samsung),1,$8.00,$8.00,Amazon,https://www.amazon.com/s?k=microSD+32GB+SanDisk,For OS boot
 Compute Platform,HEATSINK,Heatsink for Raspberry Pi 5,1,$8.00,$8.00,Amazon,https://www.amazon.com/s?k=raspberry+pi+5+heatsink,Active or passive
 Compute Platform,USB-RS485,USB to RS485 converter (FTDI chip),1,$18.00,$18.00,Amazon,https://www.amazon.com/s?k=USB+RS485+converter+FTDI,For Modbus devices
+Compute Platform,SENSOR-TH,Adafruit Sensirion SHT40 Temp/Humidity Sensor (I2C STEMMA QT),1,$5.95,$5.95,Adafruit,https://www.adafruit.com/product/4885,"Enclosure climate monitoring; ±1.8% RH full range; on-chip heater for high-humidity drift recovery; I2C 0x44"
+Compute Platform,CABLE-QT,Adafruit STEMMA QT to bare wire cable (4-pin JST SH 200mm),1,$0.95,$0.95,Adafruit,https://www.adafruit.com/product/4209,Connects SHT40 to Geekworm G469 screw terminals (SDA=GPIO2 SCL=GPIO3 3.3V GND)
+Compute Platform,PROBE-TEMP,DS18B20 Waterproof Temperature Probe (stainless 1m cable 4-pack),1,$9.99,$9.99,Amazon,https://www.amazon.com/Temperature-Waterproof-Stainless-Compatible-Raspberry/dp/B0FH4WRN6H,Outside temp for dew point calculation; 1-Wire GPIO; IP67
 PoE Camera System,CAM-001,ANNKE C1200 PoE IP Camera (12MP 134deg FOV 2-pack),1,$119.99,$119.99,Amazon,https://www.amazon.com/ANNKE-Security-Surveillance-Detection-Spotlight/dp/B0DBHRMT1V,1 camera installed 1 spare - built-in IR LEDs
 PoE Camera System,CAM-002,Planet IPOE-260-12V PoE Injector (2-port 60W 12V input),1,$164.00,$164.00,Planet Technology,https://planetechusa.com/product/ipoe-260-12v-industrial-2-port-10-100-1000t-802-3at-poe-injector-hub-12v-booster/,Native 12V input - power-cycled with Pi
 PoE Camera System,CAM-004,Outdoor Cat6 Shielded Cable (300ft UV-resistant),1,$79.99,$79.99,Amazon,https://www.amazon.com/s?k=outdoor+Cat6+shielded+cable+300ft+UV,Camera cabling
@@ -45,15 +48,17 @@ Hardware & Fasteners,POLE-CLAMP,Stainless U-bolt clamp (for pole mounting 60mm),
 Hardware & Fasteners,SEALANT,Silicone sealant (outdoor clear),1,$6.00,$6.00,Amazon,https://www.amazon.com/s?k=silicone+sealant+electronics+clear,Cable gland sealing
 Hardware & Fasteners,DI-GREASE,Dielectric grease (small tube),1,$8.00,$8.00,Amazon,https://www.amazon.com/s?k=dielectric+grease+tube,Connector protection
 Hardware & Fasteners,DESICCANT,Silica gel packets (for initial assembly only),1,$6.00,$6.00,Amazon,https://www.amazon.com/s?k=silica+gel+packets,Not for field maintenance
+Hardware & Fasteners,BAND-SS,3/4in Stainless Steel Banding with Buckles (pole mount kit or roll),1,$40.00,$40.00,Amazon,https://www.amazon.com/s?k=stainless+steel+banding+3%2F4+inch,No-drill pole mount; 2-3 bands around enclosure + pole
+Hardware & Fasteners,PAD-EPDM,EPDM Rubber Sheet 1/8in (12x12in),1,$10.00,$10.00,Amazon,https://www.amazon.com/s?k=EPDM+rubber+sheet+1%2F8+inch,Galvanic isolation between carbon steel enclosure and galvanized pole
 ,,,,,,,,
 COST SUMMARY,,,,,,,,
 Category,Subtotal,,,,,,,
-Compute Platform,$319.95,,,,,,,
+Compute Platform,$336.84,,,,,,,
 PoE Camera System,$399.96,,,,,,,
 User Interface,$38.00,,,,,,,
 Humidity Protection,$38.00,,,,,,,
 Enclosure & Mounting,$124.99,,,,,,,
 Rain Gauge,$99.00,,,,,,,
 Cables & Connectors,$86.00,,,,,,,
-Hardware & Fasteners,$69.00,,,,,,,
-TOTAL (Materials),$1174.90,,,,,,,
+Hardware & Fasteners,$119.00,,,,,,,
+TOTAL (Materials),$1241.79,,,,,,,

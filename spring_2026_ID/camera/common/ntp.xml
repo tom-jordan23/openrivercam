@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!-- STUB: Pull from live camera to populate. NTP server config. -->
+<NTPServer xmlns="http://www.hikvision.com/ver20/XMLSchema" version="2.0">
+  <id>1</id>
+  <addressingFormatType>hostname</addressingFormatType>
+  <hostName>pool.ntp.org</hostName>
+  <portNo>123</portNo>
+  <synchronizeInterval>60</synchronizeInterval>
+</NTPServer>

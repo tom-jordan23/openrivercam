@@ -1,6 +1,6 @@
 ================================================================================
     SUKABUMI ORC STATION - ELECTRICAL CIRCUIT DIAGRAM
-    Site: Sukabumi, Indonesia  |  Rev: A  |  Date: 2026-02-16
+    Site: Sukabumi, Indonesia  |  Rev: 2.0  |  Date: 2026-03-08
 ================================================================================
 
     EXTERNAL POWER SYSTEM (existing at site)
@@ -8,158 +8,298 @@
 
     ┌─────────────┐      ┌──────────────────┐      ┌──────────────┐
     │  200W Solar  │──────│  Charge          │──────│  12V 50Ah    │
-    │  Panel       │  PV  │  Controller      │  BAT │  Battery     │
-    └─────────────┘      │  (site-provided)  │      └──────────────┘
-                         └────────┬─────────┘
-                                  │ 12V DC OUT
-                                  │ (18 AWG, RED +, BLK -)
-                                  │
-                          ┌───────┴────────┐
-                     ─────┤  M12 Cable     ├─────
-                     ENCL │  Gland         │ EXT
-                          └───────┬────────┘
-                                  │
+    │  Panel       │  PV  │  Controller      │  BAT │  LiFePO4     │
+    └─────────────┘      │  (site-provided)  │      │  Battery     │
+                         └────────┬─────────┘      └──────┬───────┘
+                                  │                       │
+                                  │ 12V DC OUT            │ 12V DC
+                                  │ (18 AWG, RED +, BLK -)│
+                                  └───────┬───────────────┘
+                                          │
+                                  ┌───────┴────────┐
+                             ─────┤  M12 Cable     ├─────
+                             ENCL │  Gland         │ EXT
+                                  └───────┬────────┘
+                                          │
+
     ══════════════════════════════════════════════════════════════════
-     INSIDE COMPUTE ENCLOSURE (IP67)
+     INSIDE COMPUTE ENCLOSURE (VEVOR IP66)
     ══════════════════════════════════════════════════════════════════
-                                  │
-                    ┌─────────────┴──────────────┐
-                    │  TERMINAL BLOCK TB1         │
-                    │  (Main Power Distribution)  │
-                    │                             │
-                    │  +12V ──┬──────┬────────    │
-                    │         │      │            │
-                    │  GND  ──┼──────┼────────    │
-                    └─────────┼──────┼────────────┘
-                              │      │
-              ┌───────────────┘      └──────────────────┐
-              │                                         │
-     CIRCUIT 1: COMPUTE                      CIRCUIT 2: CAMERA (PoE)
-     ─────────────────                       ─────────────────────────
-              │                                         │
-              │ 12V                                     │ 12V
-              ▼                                         ▼
-    ┌─────────────────┐                       ┌─────────────────┐
-    │  Witty Pi 5     │                       │  FUSE 5A        │
-    │  HAT+           │                       │  (inline blade) │
-    │                 │                       └────────┬────────┘
-    │  IN: 12V DC     │                                │ 12V
-    │  (5-26V range)  │                                ▼
-    │                 │                       ┌─────────────────────┐
-    │  Features:      │                       │  Planet IPOE-260    │
-    │  - RTC          │                       │  PoE Injector       │
-    │  - Sleep/wake   │                       │                     │
-    │  - Temp sensor  │                       │  IN: 12V DC         │
-    │  - Switched 12V─┼───────────────────────│  OUT: 48V PoE       │
-    │    (sync w/Pi)  │  12V switched rail    │  (802.3af/at)       │
-    │                 │                       │                     │
-    │  OUT: 5V USB-C  │                       │  ┌──DATA──┐  ┌──D+P──┐
-    └────────┬────────┘                       └──┤        ├──┤       ├─┘
-             │                                   └───┬────┘  └───┬───┘
-             │ 5V USB-C                              │           │
-             ▼                                       │           │
-    ┌────────────────────────────────────────────┐   │  Cat6 outdoor cable
-    │                                            │   │  (shielded, through
-    │             RASPBERRY PI 5                 │   │   M12 gland + IP68
-    │                                            │   │   RJ45 coupler)
-    │  PWR ← USB-C ← Witty Pi 5V                │   │           │
-    │                                            │◄──┘           │
-    │  ETH ← PoE Injector DATA port             │  short        │
-    │         (data only, no PoE on this port)   │  patch        │
-    │                                            │               │
-    │  USB 2.0 ──► Quectel EG25-G LTE Modem     │               │
-    │              (EXVIST Mini PCIe-USB adapter)           │               │
-    │              │                             │               │
-    │  USB 3.0 ──► Samsung FIT Plus 256GB        │               │
-    │              (video/data storage)          │               │
-    │                                            │               │
-    │  GPIO ACTIVE SIGNALS (accent detail below) │               │
-    │                                            │               │
-    └────────────────────────────────────────────┘               │
-                                                                 │
-    ══════════════════════════════════════════════════════════════│═══
-     OUTSIDE ENCLOSURE                                           │
-    ═════════════════════════════════════════════════════════════════
-                                                                 │
-                                                                 ▼
-                                                       ┌─────────────────┐
-                                                       │  ANNKE C1200    │
-                                                       │  PoE Camera     │
-                                                       │  (IP67)         │
-                                                       │                 │
-                                                       │  48V PoE in     │
-                                                       │  RTSP out       │
-                                                       │  ~12W draw      │
-                                                       └─────────────────┘
+                                          │
+                            ┌─────────────┴──────────────┐
+                            │  TERMINAL BLOCK TB1         │
+                            │  (Main Power Distribution)  │
+                            │                             │
+                            │  +12V ──┬──────┬──────┬──   │
+                            │         │      │      │     │
+                            │  GND  ──┼──────┼──────┼──   │
+                            └─────────┼──────┼──────┼─────┘
+                                      │      │      │
+                  ┌───────────────────┘      │      └─────────────────┐
+                  │                          │                        │
+         CIRCUIT 1: COMPUTE       CIRCUIT 2: CAMERA (PoE)     CIRCUIT 3: RAIN
+         ─────────────────        ────────────────────────     ──────────────
+                  │                          │                        │
+                  │ 12V                      │ 12V                    │ 12V
+                  ▼                          ▼                        ▼
+        ┌─────────────────┐        ┌─────────────────┐     ┌──────────────────┐
+        │  FUSE 5A        │        │  FUSE 5A        │     │  (direct 12V)    │
+        │  (inline blade) │        │  (inline blade) │     │                  │
+        └────────┬────────┘        └────────┬────────┘     │  See RAIN GAUGE  │
+                 │                          │              │  section below   │
+                 │ 12V                      │ 12V          └──────────────────┘
+                 ▼                          ▼
+        ┌─────────────────┐        ┌─────────────────────┐
+        │  DDR-60G-5      │        │  DDR-60G-12         │
+        │  DC-DC Converter│        │  DC-DC Converter    │
+        │                 │        │                     │
+        │  IN:  9-36V DC  │        │  IN:  9-36V DC      │
+        │  OUT: 5V 10.8A  │        │  OUT: 12V regulated  │
+        │  (DIN rail)     │        │  (DIN rail)          │
+        └────────┬────────┘        └────────┬─────────────┘
+                 │                          │
+                 │ 5V                       │ 12V regulated
+                 ▼                          ▼
+        ┌─────────────────┐        ┌─────────────────────┐
+        │  Witty Pi 5     │        │  RELAY-POE          │
+        │  HAT+           │        │  (DIN rail 4-SPDT)  │
+        │                 │        │                     │
+        │  IN: 5V DC      │        │  Coil: USB-powered  │
+        │  (pass-through) │        │  from Pi 5 USB port │
+        │                 │        │                     │
+        │  Features:      │        │  Pi ON  = relay     │
+        │  - Backup RTC   │        │    closed = PoE ON  │
+        │  - Sleep/wake   │        │  Pi OFF = relay     │
+        │    scheduling   │        │    open = PoE OFF   │
+        │  - Power mgmt   │        │                     │
+        │    (backup)     │        │  NO: 12V regulated  │
+        │                 │        │  COM: to PoE switch │
+        │  OUT: 5V USB-C  │        └────────┬─────────────┘
+        └────────┬────────┘                 │
+                 │                          │ 12V (switched)
+                 │ 5V USB-C                 ▼
+                 ▼                 ┌─────────────────────┐
+        ┌──────────────────────────────────────┐  │  LINOVISION         │
+        │                                      │  │  Industrial PoE     │
+        │             RASPBERRY PI 5           │  │  Switch             │
+        │             (8GB RAM)                │  │                     │
+        │                                      │  │  IN: 12V DC         │
+        │  PWR ← USB-C ← Witty Pi 5V          │  │  OUT: 802.3af/at    │
+        │                                      │  │  (Gigabit)          │
+        │  RTC: ML-2020 rechargeable coin cell │  │                     │
+        │       (primary RTC for Rainbow       │  │  Port 1: PoE+Data ──┼──►
+        │        Sensing image)                │  │  Uplink: Data only  │
+        │                                      │  └──────────┬──────────┘
+        │  USB 2.0 ──► Quectel EG25-G Modem   │             │
+        │              (EXVIST Mini PCIe-USB)  │             │  Cat6 outdoor
+        │                                      │             │  shielded cable
+        │  USB 3.0 ──► Samsung FIT Plus 256GB  │             │  (through M12 gland
+        │              (video/data storage)    │             │   + IP68 RJ45 coupler)
+        │                                      │             │
+        │  USB 2.0 ──► RELAY-POE coil power   │             │
+        │              (passive trigger)       │             │
+        │                                      │             │
+        │  ETH ◄──── LINOVISION uplink port   │             │
+        │            (data only, no PoE)      │◄────────────┘
+        │                                      │  short patch cable
+        │  GPIO ──► See GPIO DETAIL below      │
+        │                                      │
+        └──────────────────────────────────────┘
+
+
+    ══════════════════════════════════════════════════════════════════
+     OUTSIDE ENCLOSURE
+    ══════════════════════════════════════════════════════════════════
+
+                                                          │
+                                                          │ Cat6 PoE
+                                                          ▼
+                                                ┌─────────────────┐
+                                                │  ANNKE C1200    │
+                                                │  PoE IP Camera  │
+                                                │  (IP67)         │
+                                                │                 │
+                                                │  12MP, 134deg   │
+                                                │  Built-in IR    │
+                                                │  48V PoE in     │
+                                                │  RTSP stream    │
+                                                │  ~12W draw      │
+                                                │                 │
+                                                │  Pole-mounted   │
+                                                │  (stainless     │
+                                                │   bracket)      │
+                                                └─────────────────┘
 
 
     ──────────────────────────────────────────────────────────────
-    GPIO DETAIL (Pi 5 via Pi-EzConnect HAT screw terminals)
+    GPIO DETAIL (Pi 5 via Pi-EzConnect screw terminals)
     ──────────────────────────────────────────────────────────────
 
     3.3V RAIL
       │
       ├──[330 Ohm]──►|── GND    GPIO 17: Green LED  (System OK)
       │              (green)
-      ├──[330 Ohm]──►|── GND    GPIO 27: Yellow LED (Working)
+      ├──[330 Ohm]──►|── GND    GPIO 27: Yellow LED (Working/Uploading)
       │             (yellow)
       └──[330 Ohm]──►|── GND    GPIO 22: Red LED    (Error)
                      (red)
 
     GPIO 23 ──┤ ├── GND          Maintenance Button
               (NO pushbutton)     (internal pull-up enabled)
-              (long press 3s =    (through M16 cable gland)
-               maintenance mode)
+              (IP67 panel mount)  (through M16 cable gland)
+              (long press 3s =    (recessed to prevent
+               maintenance mode)   accidental activation)
+
+
+    ──────────────────────────────────────────────────────────────
+    I2C BUS (GPIO 2 SDA, GPIO 3 SCL)
+    ──────────────────────────────────────────────────────────────
+
+    Pi 5 GPIO Header
+      │
+      ├── SDA (GPIO 2) ──┬──────────────────────────────────────
+      ├── SCL (GPIO 3) ──┼──┬───────────────────────────────────
+      ├── 3.3V ──────────┼──┼──┬────────────────────────────────
+      └── GND ───────────┼──┼──┼──┬─────────────────────────────
+                         │  │  │  │
+                         │  │  │  │   ┌───────────────────────┐
+                         └──┼──┼──┼───│  SHT40 Temp/Humidity  │
+                            └──┼──┼───│  Sensor (I2C 0x44)    │
+                               └──┼───│                       │
+                                  └───│  STEMMA QT to bare    │
+                                      │  wire cable (200mm)   │
+                                      │  INSIDE enclosure     │
+                                      └───────────────────────┘
+
+    NOTE: Witty Pi 5 HAT+ also on I2C bus (addr 0x69).
+    No conflicts with SHT40 (0x44).
+
+
+    ──────────────────────────────────────────────────────────────
+    1-WIRE BUS (GPIO 24)
+    ──────────────────────────────────────────────────────────────
+
+    3.3V ──[4.7k Ohm]──┬── GPIO 24 (1-Wire data)
+                        │
+                        │   ┌───────────────────────┐
+                        ├───│  DS18B20 Waterproof    │
+                        │   │  Temperature Probe     │
+                        │   │  (stainless, 1m cable) │
+                        │   │                        │
+    GND ────────────────┼───│  OUTSIDE enclosure     │
+                        │   │  (through PG9 gland)   │
+                        │   │  IP67 rated            │
+                        │   └───────────────────────┘
+                        │
+                        └── Pull-up resistor on
+                            Pi-EzConnect terminals
+
+
+    ──────────────────────────────────────────────────────────────
+    UART (GPIO 14 TX, GPIO 15 RX) - RAIN GAUGE
+    ──────────────────────────────────────────────────────────────
+
+    Hydreon RG-15 (solid-state optical rain gauge)
+      │
+      ├── VCC ← 12V from TB1 (direct, no regulator)
+      ├── GND ← TB1 GND
+      ├── TX  → GPIO 15 (Pi UART RX)     RS232 TTL 3.3V
+      └── RX  ← GPIO 14 (Pi UART TX)     (through PG9 cable gland)
+
+    NOTE: RG-15 powered at 12V (7-24V range), signal at 3.3V TTL.
+    No level shifter needed. Resolution: 0.2mm (configurable).
+    Self-cleaning lens, no moving parts.
+    Mounted outside on pole arm, built-in mounting holes.
 
 
     ──────────────────────────────────────────────────────────────
     LTE ANTENNA DETAIL
     ──────────────────────────────────────────────────────────────
 
-    Quectel EG25-G
+    Quectel EG25-G (via EXVIST Mini PCIe-USB adapter)
       │
-      ├── SMA Main ──► M12 bulkhead ──► Proxicast ANT-122-S02
-      │                                 MIMO LTE Puck Antenna
-      └── SMA Aux  ──► M12 bulkhead ──┘ (IP67, roof-mounted)
+      ├── U.FL Main ──► SMA pigtail ──► Proxicast ANT-122-S02
+      │                                 2x2 MIMO LTE Puck Antenna
+      └── U.FL Aux  ──► SMA pigtail ──┘ (IP67, 12mm hole mount
+                                          on enclosure roof)
+
+    NOTE: Single sealed puck antenna with Main + Diversity ports.
+    12mm hole drilled in enclosure top, puck screws down with
+    rubber gasket. No SMA bulkhead connectors needed.
+    Internal SMA cables route to modem U.FL connectors.
+    Frequency: 600-6000 MHz (all Indonesian LTE bands).
 
 
     ──────────────────────────────────────────────────────────────
-    RAIN GAUGE (optional, if installed)
+    WITTY PI 5 (GPIO 4 - reserved)
     ──────────────────────────────────────────────────────────────
 
-    Hydreon RG-15 (12V, RS232 TTL 3.3V serial)
-      │
-      ├── VCC ← 12V from TB1
-      ├── GND ← TB1 GND
-      ├── TX  → GPIO 15 (UART RX)     (through PG9 cable gland)
-      └── RX  ← GPIO 14 (UART TX)
+    GPIO 4 is reserved for Witty Pi 5 HAT+ interrupt signal.
+    Witty Pi provides backup sleep/wake scheduling and power
+    management. Primary RTC is the Pi 5's built-in RTC with
+    ML-2020 rechargeable coin cell (used by Rainbow Sensing image).
 
 
 ================================================================================
     VOLTAGE SUMMARY                  FUSE / PROTECTION SUMMARY
 ================================================================================
-    Solar system:   12V nom          PoE circuit:   5A inline fuse
-    Witty Pi in:    12V (5-26V ok)   Witty Pi:      internal protection
-    Pi 5 (USB-C):   5V              Pi USB ports:   built-in OCP
-    PoE injector:   12V in/48V out   LEDs:          330 Ohm series R
-    Camera (PoE):  48V               Button GPIO:   internal pull-up
-    GPIO signals:   3.3V
+    Solar system:   12V nom (10-14V) Compute circuit:  5A inline fuse
+    DDR-60G-5 out:  5V regulated     Camera circuit:   5A inline fuse
+    DDR-60G-12 out: 12V regulated    DDR-60G-5:        built-in OCP/OVP
+    Witty Pi in:    5V (pass-thru)   DDR-60G-12:       built-in OCP/OVP
+    Pi 5 (USB-C):   5V               Pi USB ports:     built-in OCP
+    PoE switch in:  12V (switched)   LEDs:             330 Ohm series R
+    Camera (PoE):   48V              Button GPIO:      internal pull-up
+    GPIO signals:   3.3V             DS18B20:          4.7k Ohm pull-up
     LTE modem:      5V (USB bus)
+    Rain gauge:     12V (7-24V ok)
+    SHT40 sensor:   3.3V (I2C bus)
+    DS18B20 probe:  3.3V (1-Wire)
 ================================================================================
     WIRE COLORS: RED = +12V  |  BLACK = GND  |  BLUE = DATA  |  GREEN = GPIO
-    WIRE GAUGE:  18 AWG (power)  |  22 AWG (signal)  |  Cat6 (Ethernet)
+    WIRE GAUGE:  18 AWG (power)  |  22 AWG (signal/GPIO)  |  Cat6 (Ethernet)
 ================================================================================
-    POWER BUDGET:  Peak ~42W (3.5A @ 12V)  |  Sleep ~0.6W (50mA @ 12V)
-    CYCLE: 2.5 min ON / 12.5 min SLEEP  (96 cycles/day)
+    POWER BUDGET (per cycle):
+      Active (~2.5 min):  Pi 5 15W + Modem 5W + PoE camera 12W + misc 2W = ~34W
+      Sleep (~12.5 min):  Witty Pi standby ~0.3W
+      Daily energy: ~94 Wh/day  (within 200W panel / 50Ah battery capacity)
+      Battery autonomy: ~3.2 days (no sun)
 ================================================================================
 
+    GPIO PIN ASSIGNMENT TABLE
+    ──────────────────────────────────────────────────────────────
+    GPIO  │ Function         │ Protocol  │ Notes
+    ──────┼──────────────────┼───────────┼───────────────────────
+      2   │ SDA              │ I2C       │ SHT40 sensor (0x44)
+      3   │ SCL              │ I2C       │ SHT40 sensor
+      4   │ Witty Pi         │ Reserved  │ Backup scheduling
+     14   │ UART TX          │ Serial    │ → Hydreon RG-15 RX
+     15   │ UART RX          │ Serial    │ ← Hydreon RG-15 TX
+     17   │ Green LED        │ Output    │ System OK
+     22   │ Red LED          │ Output    │ Error
+     23   │ Button           │ Input     │ Maintenance (3s hold)
+     24   │ DS18B20          │ 1-Wire    │ Outside temp probe
+     27   │ Yellow LED       │ Output    │ Working/uploading
+    ──────┴──────────────────┴───────────┴───────────────────────
+
     NOTES:
-    1. PoE injector powered via Witty Pi switched 12V rail - camera
-       power-cycles in sync with Pi wake/sleep schedule.
-    2. No heaters installed (Sukabumi tropical climate, power budget).
-    3. Conformal coating MG 422C applied to all exposed PCBs.
-    4. Dielectric grease on all outdoor electrical connections.
-    5. Gore vent on enclosure for pressure equalization.
-    6. Carrier: Telkomsel (Indonesia).
+    1. PoE switch powered via relay triggered by Pi USB power -
+       camera power-cycles in sync with Pi wake/sleep schedule.
+       Pi ON = relay closed = PoE switch ON = camera ON.
+    2. DDR-60G converters provide regulated voltage from battery
+       (which varies 10-14V depending on charge state).
+    3. No heaters installed (Sukabumi tropical foothills climate,
+       solar power budget constraint).
+    4. Conformal coating MG 422C applied to all exposed PCBs
+       (Pi 5, Witty Pi 5, Pi-EzConnect). Mask connectors.
+    5. Dielectric grease on all outdoor electrical connections.
+    6. Gore M12 vent on enclosure for pressure equalization.
+    7. Carrier: Telkomsel (Indonesia, best rural coverage).
+    8. Pi 5 built-in RTC with ML-2020 coin cell is primary RTC.
+       Witty Pi 5 provides backup scheduling/power management.
+    9. Samsung FIT Plus USB drive is IP67 waterproof, plugs
+       directly into Pi USB-A 3.0 port.
+   10. SHT40 mounted inside enclosure for climate monitoring.
+       DS18B20 probe routed outside for ambient/dew point calc.
 
 ================================================================================
