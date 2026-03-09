@@ -54,10 +54,13 @@ START: No status LEDs lit
               Blown       OK
                  │           │
                  ▼           ▼
-           Replace    ┌────────────────┐
-           fuse       │ Check Witty Pi │
-                      │ power LED      │
-                      └───────┬────────┘
+           Replace    ┌──────────────────────┐
+           fuse       │ Check power path:    │
+                      │ Sukabumi: Witty Pi   │
+                      │   power LED          │
+                      │ Jakarta: DDR-60G-5   │
+                      │   5V output          │
+                      └───────┬──────────────┘
                               │
                         ┌─────┴─────┐
                         │           │
@@ -127,25 +130,26 @@ START: No video capture
      ▼             ▼
 ┌──────────────┐  ┌────────────────────┐
 │ Check PoE    │  │ Test RTSP:         │
-│ injector:    │  │ ffmpeg -i rtsp://  │
+│ switch:      │  │ ffmpeg -i rtsp://  │
 │ - 12V input? │  │ admin:pass@        │
 │ - LED on?    │  │ 192.168.50.139:554/│
-└──────┬───────┘  │ stream1 -frames:v 1│
-       │          │ test.jpg           │
-  ┌────┴────┐     └─────────┬──────────┘
-  │         │               │
-No LED    LED on      ┌─────┴─────┐
+│ - Relay USB  │  │ stream1 -frames:v 1│
+│   connected? │  │ test.jpg           │
+└──────┬───────┘  └─────────┬──────────┘
+       │                    │
+  ┌────┴────┐         ┌─────┴─────┐
   │         │         │           │
-  ▼         ▼       Fails      Success
-┌─────┐  ┌────────┐   │           │
-│Check│  │Check   │   ▼           ▼
-│12V  │  │Cat6    │ ┌───────┐  ┌────────┐
-│fuse │  │cable & │ │Check  │  │Camera  │
-│& PoE│  │RJ45    │ │camera │  │OK,     │
-│injec│  │connect-│ │creds &│  │check   │
-│power│  │ions    │ │RTSP   │  │ORC     │
-└─────┘  └────────┘ │config │  │config  │
-                    └───────┘  └────────┘
+No LED    LED on    Fails      Success
+  │         │         │           │
+  ▼         ▼         ▼           ▼
+┌─────┐  ┌────────┐ ┌───────┐  ┌────────┐
+│Check│  │Check   │ │Check  │  │Camera  │
+│12V  │  │Cat6    │ │camera │  │OK,     │
+│fuse │  │cable & │ │creds &│  │check   │
+│& PoE│  │CNLINKO │ │RTSP   │  │ORC     │
+│sw   │  │connect-│ │config │  │config  │
+│power│  │ions    │ └───────┘  └────────┘
+└─────┘  └────────┘
 
 NOTE: Camera takes ~45-60s to boot after Pi wakes.
 Wait before testing if system just powered on.
@@ -169,7 +173,7 @@ START: Camera offline
      ▼             ▼
 ┌──────────────┐  ┌────────────────────┐
 │ Check PoE    │  │ Test RTSP:         │
-│ injector LED │  │ ffmpeg -i rtsp://  │
+│ switch LED   │  │ ffmpeg -i rtsp://  │
 │ and camera   │  │ admin:pass@        │
 │ power LED    │  │ 192.168.50.101:554/│
 └──────┬───────┘  │ stream1 -frames:v 1│
@@ -183,11 +187,11 @@ No LED    LED on      ┌─────┴─────┐
 │Check│  │Check   │   ▼           ▼
 │12V  │  │Cat6    │ ┌───────┐  ┌────────┐
 │to   │  │cable   │ │Check  │  │Camera  │
-│PoE  │  │continu-│ │camera │  │OK,     │
-│injec│  │ity     │ │creds &│  │check   │
-│tor  │  └────────┘ │RTSP   │  │ORC     │
-└─────┘             │config │  │config  │
-                    └───────┘  └────────┘
+│PoE  │  │& bulk- │ │camera │  │OK,     │
+│sw & │  │head    │ │creds &│  │check   │
+│relay│  │connect-│ │RTSP   │  │ORC     │
+└─────┘  │ions    │ │config │  │config  │
+         └────────┘ └───────┘  └────────┘
 ```
 
 ### No LTE Connectivity
@@ -236,15 +240,15 @@ START: No data connection
                      └──────────┘  └────────────┘
 ```
 
-### IR Light Not Working (Sukabumi Only)
+### Camera IR Not Working
 
 ```
 START: No IR illumination at night
          │
          ▼
 ┌─────────────────────────────┐
-│ Cover Tendelux photocell    │
-│ with hand (simulate dark)   │
+│ Cover camera lens with hand │
+│ or cloth (simulate dark)    │
 └───────────┬─────────────────┘
             │
      ┌──────┴──────┐
@@ -253,35 +257,31 @@ START: No IR illumination at night
      │             │
      ▼             ▼
 ┌──────────────┐  ┌────────────┐
-│ Check relay  │  │ Photocell  │
-│ - Listen for │  │ working,   │
-│   click on   │  │ check      │
-│   Pi boot    │  │ threshold  │
-└──────┬───────┘  │ adjustment │
-       │          └────────────┘
+│ Check camera │  │ IR working │
+│ IR settings  │  │ Check      │
+│ in web UI    │  │ light      │
+│ at           │  │ threshold  │
+│ camera-ip    │  │ adjustment │
+└──────┬───────┘  └────────────┘
+       │
   ┌────┴────┐
   │         │
-No click  Click heard
-  │         │
-  ▼         ▼
-┌─────────┐ ┌──────────────────┐
-│ Check   │ │ Check 12V to IR: │
-│ USB     │ │ Measure voltage  │
-│ relay   │ │ at Tendelux      │
-│ power & │ │ terminals        │
-│ control │ └────────┬─────────┘
-└─────────┘          │
-              ┌──────┴──────┐
-              │             │
-           No 12V        12V OK
-              │             │
-              ▼             ▼
-        ┌──────────┐  ┌──────────┐
-        │ Check    │  │ Tendelux │
-        │ fuse in  │  │ may be   │
-        │ IR       │  │ faulty,  │
-        │ circuit  │  │ replace  │
-        └──────────┘  └──────────┘
+IR on in  IR disabled
+settings     │
+  │          ▼
+  ▼     ┌──────────┐
+┌─────┐ │ Enable   │
+│Check│ │ IR auto  │
+│PoE  │ │ mode in  │
+│power│ │ camera   │
+│to   │ │ web UI   │
+│cam  │ └──────────┘
+└─────┘
+
+NOTES:
+- ANNKE C1200 has built-in IR LEDs controlled by internal photocell
+- IR settings are in the camera web interface, not on the Pi
+- Both sites use the same ANNKE C1200 with built-in IR
 ```
 
 ### Rain Gauge Not Reporting
@@ -291,32 +291,35 @@ START: No rain data
          │
          ▼
 ┌────────────────────────────┐
-│ I2C scan:                  │
-│ i2cdetect -y 1             │
+│ Check UART device:         │
+│ ls /dev/ttyAMA0            │
+│ ls /dev/serial0            │
 └───────────┬────────────────┘
             │
      ┌──────┴──────┐
      │             │
-  Not found     Found at address
+  Not found     Found
      │             │
      ▼             ▼
 ┌──────────────┐  ┌────────────────┐
-│ Check wiring │  │ Test reading:  │
-│ VCC: 3.3V    │  │ (use library   │
-│ GND: Ground  │  │ test script)   │
-│ SDA: GPIO 2  │  └────────┬───────┘
-│ SCL: GPIO 3  │           │
-└──────────────┘     ┌─────┴─────┐
+│ Check wiring │  │ Test serial:   │
+│ VCC: 12V     │  │ cat /dev/      │
+│ GND: Ground  │  │ ttyAMA0        │
+│ TX: GPIO 15  │  │ (tip bucket,   │
+│ RX: GPIO 14  │  │ watch output)  │
+└──────────────┘  └────────┬───────┘
+                           │
+                     ┌─────┴─────┐
                      │           │
                   No data     Data OK
                      │           │
                      ▼           ▼
                ┌──────────┐  ┌────────────┐
-               │ Manually │  │ Check ORC  │
-               │ tip      │  │ rain gauge │
-               │ bucket,  │  │ config     │
-               │ check    │  │            │
-               │ response │  └────────────┘
+               │ Check    │  │ Check ORC  │
+               │ 12V pwr  │  │ rain gauge │
+               │ to RG-15 │  │ config     │
+               │ TX/RX    │  │            │
+               │ wiring   │  └────────────┘
                └──────────┘
 ```
 
@@ -340,7 +343,7 @@ Both sites use the Pi as a DHCP server (dnsmasq) on the 192.168.50.0/24 camera n
 1. Check dnsmasq leases: `cat /var/lib/misc/dnsmasq.leases`
 2. Verify the camera's MAC address in `/etc/dnsmasq.conf` matches the label on the camera
 3. Restart dnsmasq: `sudo systemctl restart dnsmasq`
-4. Power-cycle the camera (unplug/replug PoE cable) and wait 60-90s
+4. Power-cycle the camera (unplug/replug PoE cable or cycle relay) and wait 60-90s
 
 ### Finding camera MAC address
 
@@ -348,7 +351,7 @@ If you don't have the MAC address yet:
 
 1. Temporarily remove any `dhcp-host=` lines from `/etc/dnsmasq.conf`
 2. Restart dnsmasq: `sudo systemctl restart dnsmasq`
-3. Connect camera to PoE injector, wait 60-90s for boot
+3. Connect camera to PoE switch, wait 60-90s for boot
 4. Check leases: `cat /var/lib/misc/dnsmasq.leases`
 5. The camera will have received an IP from the 192.168.50.100-200 range
 6. Note the MAC address, add it to `/etc/dnsmasq.conf` as a `dhcp-host=` line
@@ -376,18 +379,21 @@ Then set your laptop to 192.168.1.50/24 and use `arp -a` to find the camera. Re-
 | System won't boot | Dead battery (Sukabumi) | Charge battery, check solar panel |
 | System won't boot | Blown fuse | Replace fuse, investigate cause |
 | System won't boot | Faulty USB-C cable | Replace power cable to Pi |
-| Intermittent shutdowns | Low battery voltage | Check BatteryProtect setting |
+| System won't boot | DDR-60G-5 failure (Jakarta) | Check 5V output with multimeter |
+| Intermittent shutdowns (Sukabumi) | Low battery voltage | Check solar charge controller |
+| Intermittent shutdowns (Jakarta) | BMS low-voltage cutoff | Check charger and battery health |
 | Intermittent shutdowns | Loose connection | Check all terminal connections |
 
 ### Camera Issues (Both Sites Use PoE Cameras)
 
 | Problem | Possible Cause | Solution |
 |---------|---------------|----------|
-| PoE camera offline | PoE injector fault | Check injector power/data LEDs |
+| PoE camera offline | PoE switch fault | Check switch power/data LEDs |
+| PoE camera offline | Relay not energized | Check relay USB cable to Pi |
 | PoE camera offline | Cat6 cable fault | Test cable continuity |
-| PoE camera offline | 12V power to injector | Check fuse, terminal connections |
+| PoE camera offline | 12V power to switch | Check fuse, terminal connections |
 | PoE camera offline (Sukabumi) | Camera still booting | Wait 60s after Pi wakes |
-| PoE camera not reachable | Wrong IP address | Verify camera static IP setting |
+| PoE camera not reachable | Wrong IP address | Verify camera DHCP settings |
 | PoE camera not reachable | Network config | Check Pi and camera on same subnet |
 | PoE camera not reachable | Pi eth0 IPv6-only | Pi has no IPv4 address — see "Pi eth0 Has Only IPv6 Address" above |
 | Camera image blurry | Focus issue | Adjust lens focus ring |
@@ -398,23 +404,23 @@ Then set your laptop to 192.168.1.50/24 and use `arp -a` to find the camera. Re-
 
 | Problem | Possible Cause | Solution |
 |---------|---------------|----------|
-| No LTE signal | Antenna disconnected | Check SMA connections |
+| No LTE signal | Antenna disconnected | Check puck antenna connections |
 | No LTE signal | Wrong bands | Verify EG25-G band config |
 | No LTE data | APN not configured | Set Telkomsel APN |
 | No LTE data | IMEI not registered | Register with POSTEL |
 | No LTE data | SIM deactivated | Check with carrier |
-| Slow upload | Poor signal | Relocate antenna, add gain |
+| Slow upload | Poor signal | Relocate antenna, check puck position |
 
 ### Environmental Issues
 
 | Problem | Possible Cause | Solution |
 |---------|---------------|----------|
 | Condensation inside enclosure | Gore vent blocked | Clear vent obstruction |
-| Condensation inside enclosure | Failed seal | Reseal cable glands |
+| Condensation inside enclosure | Failed seal | Reseal bulkheads/glands |
 | Condensation inside enclosure | PTC heater fault (Jakarta) | Check heater wiring |
 | Corrosion on connectors | Missing dielectric grease | Clean, apply grease |
-| High internal temp | Direct sun exposure | Add shade, improve ventilation |
-| Water ingress | Failed cable gland | Replace gland, reseal |
+| High internal temp | Direct sun exposure | Add shade, check fans (Jakarta) |
+| Water ingress | Failed bulkhead seal | Replace bulkhead, reseal |
 
 ---
 
@@ -437,7 +443,6 @@ free -h
 
 # Check running services
 systemctl status orc
-systemctl status wittypi
 ```
 
 ### USB Devices
@@ -445,6 +450,9 @@ systemctl status wittypi
 ```bash
 # List USB devices
 lsusb
+
+# Check USB flash drive
+lsblk
 
 # List video devices
 ls /dev/video*
@@ -498,14 +506,34 @@ ip route
 sudo systemctl status dnsmasq
 ```
 
-### I2C (Rain gauge)
+### UART (Rain gauge)
 
 ```bash
-# Scan I2C bus
-i2cdetect -y 1
+# Check UART device exists
+ls /dev/ttyAMA0 /dev/serial0
 
-# Read from I2C device (address varies)
-i2cget -y 1 0x20
+# Read rain gauge output (Ctrl+C to stop)
+cat /dev/ttyAMA0
+
+# Configure serial port (if needed)
+stty -F /dev/ttyAMA0 9600 cs8 -cstopb -parenb
+```
+
+### I2C (SHT40 sensor)
+
+```bash
+# Scan I2C bus (SHT40 should appear at 0x44)
+i2cdetect -y 1
+```
+
+### 1-Wire (DS18B20 probe)
+
+```bash
+# List 1-Wire devices
+ls /sys/bus/w1/devices/
+
+# Read temperature (device ID varies)
+cat /sys/bus/w1/devices/28-*/temperature
 ```
 
 ### GPIO (LEDs, button)
@@ -524,18 +552,21 @@ echo 1 > /sys/class/gpio/gpio17/value
 echo 0 > /sys/class/gpio/gpio17/value
 ```
 
-### Relay Control (Sukabumi IR)
+### Relay Control (PoE switch power)
 
 ```bash
-# List USB serial devices
-ls /dev/ttyUSB* /dev/ttyACM*
+# The Electronics-Salon relay is USB-powered (passive trigger).
+# Relay energizes when Pi USB port provides power.
+# To manually cycle the PoE switch:
 
-# Control Numato relay (example)
-echo "relay on 0" > /dev/ttyACM0
-echo "relay off 0" > /dev/ttyACM0
+# Check relay USB device is connected
+lsusb
+
+# Power cycle: briefly unbind/rebind USB (or reboot Pi)
+# The relay de-energizes when Pi shuts down or USB is disconnected.
 ```
 
-### Witty Pi
+### Witty Pi (Sukabumi Only)
 
 ```bash
 # Check Witty Pi status
@@ -631,14 +662,14 @@ Contact technical support if:
 - [ ] Visual inspection of enclosure (no damage, sealed)
 - [ ] Check status LEDs functioning
 - [ ] Verify data uploads occurring
-- [ ] Check antenna connections (finger-tight)
+- [ ] Check antenna connection (finger-tight on puck mount)
 
 ### Quarterly
 
 - [ ] Clean camera lens (if accessible)
-- [ ] Check all cable gland seals
+- [ ] Check all bulkhead and gland seals
 - [ ] Verify Gore vents not blocked
-- [ ] Check rain gauge funnel (clear debris)
+- [ ] Check rain gauge (clear any debris from RG-15 lens)
 - [ ] Test maintenance mode access
 - [ ] Review system logs for warnings
 
@@ -653,5 +684,15 @@ Contact technical support if:
 
 ---
 
-**Document Version:** 1.0
-**Last Updated:** January 9, 2026
+**Document Version:** 2.0
+**Last Updated:** March 9, 2026
+**Changes from v1.0:**
+- Updated power-on diagnostics: Jakarta uses DDR-60G-5 (no Witty Pi), Sukabumi keeps Witty Pi
+- Removed "Check BatteryProtect setting" references (BMS handles cutoff)
+- Replaced "PoE injector" with "PoE switch" throughout
+- Replaced I2C rain gauge diagnostics with UART diagnostics for Hydreon RG-15
+- Replaced "IR Light Not Working (Sukabumi Only)" with "Camera IR" section for built-in IR (both sites)
+- Updated relay control section (was Numato USB serial → now Electronics-Salon USB-powered)
+- Updated Witty Pi commands section (Jakarta: removed, Sukabumi: kept)
+- Added UART, 1-Wire, and I2C sensor command references
+- Updated bulkhead/gland references throughout

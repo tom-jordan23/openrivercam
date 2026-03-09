@@ -30,33 +30,35 @@
 ┌────────────────────────────────────────────────────────────────────────────┐
 │                          COMPUTE ENCLOSURE                                  │
 │                                                                            │
-│   12V IN ──┬──[FUSE 5A]──► PLANET PoE INJECTOR ──► PoE CAMERA            │
+│   12V IN ──┬──► DDR-60G-5 (12V→5V) ──► WITTY PI 5 ──► PI 5              │
 │            │                                                               │
-│            └──► WITTY PI 5 (12V direct) ──► PI 5                          │
-│                                                                            │
-│   ┌─────────────────────────────────────────────────────────────────┐     │
-│   │                    PI 5 + HAT STACK                              │     │
-│   │  ┌─────────────┐                                                │     │
-│   │  │ Pi-EzConnect│◄── GPIO terminals for LEDs, button, sensors    │     │
-│   │  ├─────────────┤                                                │     │
-│   │  │ Witty Pi 5  │◄── Power management, RTC, scheduling           │     │
-│   │  │   HAT+      │                                                │     │
-│   │  ├─────────────┤                                                │     │
-│   │  │   Pi 5      │◄── USB: SSD, Modem | ETH: PoE Camera          │     │
-│   │  │   8GB       │                                                │     │
-│   │  └─────────────┘                                                │     │
-│   └─────────────────────────────────────────────────────────────────┘     │
+│            └──► DDR-60G-12 (12V→12V reg) ──► RELAY ──► PoE SWITCH       │
+│                                                         │                 │
+│   ┌─────────────────────────────────────────────────────┼───────────────┐ │
+│   │                    PI 5 + HAT STACK                  │               │ │
+│   │  ┌─────────────┐                                    │               │ │
+│   │  │ Geekworm    │◄── GPIO terminals for LEDs,        │               │ │
+│   │  │ G469        │    button, sensors                  │               │ │
+│   │  ├─────────────┤                                    │               │ │
+│   │  │ Witty Pi 5  │◄── Power management, RTC,           │               │ │
+│   │  │   HAT+      │    scheduling (solar duty cycling) │               │ │
+│   │  ├─────────────┤                                    │               │ │
+│   │  │   Pi 5      │◄── USB: Flash Drive, Modem, Relay  │               │ │
+│   │  │   8GB       │    ETH: PoE Switch uplink          │               │ │
+│   │  └─────────────┘                                    │               │ │
+│   └─────────────────────────────────────────────────────┘               │ │
 │                                                                            │
 │   USB CONNECTIONS:                                                         │
-│   ├── USB 3.0 (blue) ──► SSD Enclosure                                   │
-│   └── USB 2.0 ──► Quectel Modem (EXVIST mPCIe-USB)                                  │
+│   ├── USB 3.0 (blue) ──► SanDisk 256GB USB Flash Drive                   │
+│   ├── USB 2.0 ──► Quectel Modem (EXVIST mPCIe-USB)                       │
+│   └── USB 2.0 ──► Relay coil power (passive trigger)                     │
 │                                                                            │
 │   ETHERNET CONNECTION:                                                     │
-│   └── ETH Port ──► Planet PoE Injector (DATA) ──► Camera via Cat6        │
+│   └── ETH Port ──► LINOVISION PoE Switch (uplink) ──► Camera via Cat6   │
 │                                                                            │
-│   ANTENNAS:                                                               │
-│   ├── SMA Bulkhead 1 ──► LTE Antenna (Main)                              │
-│   └── SMA Bulkhead 2 ──► LTE Antenna (Diversity)                         │
+│   ANTENNA:                                                                 │
+│   └── Proxicast ANT-122-S02 Puck Antenna (12mm hole mount, IP67)         │
+│       Main + Diversity SMA pigtails to modem U.FL connectors             │
 │                                                                            │
 └────────────────────────────────────────────────────────────────────────────┘
            │                                         │
@@ -64,8 +66,8 @@
            ▼                                         ▼
     ┌──────────────────────────┐            ┌────────────────┐
     │    ANNKE C1200 PoE       │            │   RAIN GAUGE   │
-    │    CAMERA (IP67)         │            │   (I2C/GPIO)   │
-    │  [Built-in IR, factory   │            │                │
+    │    CAMERA (IP67)         │            │   Hydreon RG-15│
+    │  [Built-in IR, factory   │            │   (UART/GPIO)  │
     │   sealed, power-cycled   │            │                │
     │   with Pi via PoE]       │            │                │
     └──────────────────────────┘            └────────────────┘
@@ -82,35 +84,35 @@
 
 SOLAR CONTROLLER 12V OUTPUT
           │
-          │ (18 AWG wire, through M12 gland)
+          │ (18 AWG wire, through SP13 DC power bulkhead)
           ▼
     ┌─────────────────────────────────────────────────────────────┐
     │                    TERMINAL BLOCK TB1                        │
     │   ┌─────┬─────┬─────┬─────┬─────┬─────┬─────┬─────┐        │
-    │   │ 12+ │ 12+ │ 12- │ 12- │ GND │ GND │ GND │ GND │        │
-    │   │ IN  │ OUT │ IN  │ OUT │     │     │     │     │        │
-    │   └──┬──┴──┬──┴──┬──┴──┬──┴──┬──┴─────┴─────┴─────┘        │
-    │      │     │     │     │     │                               │
-    └──────┼─────┼─────┼─────┼─────┼───────────────────────────────┘
+    │   │ 12+ │ 12+ │ 12+ │ 12- │ 12- │ GND │ GND │ GND │        │
+    │   │ IN  │ CPU │ CAM │ IN  │ OUT │     │     │     │        │
+    │   └──┬──┴──┬──┴──┬──┴──┬──┴──┬──┴──┬──┴─────┴─────┘        │
+    │      │     │     │     │     │     │                         │
+    └──────┼─────┼─────┼─────┼─────┼─────┼─────────────────────────┘
+           │     │     │     │     │     │
+           │     │     │     │     │     └──► GND bus (all ground returns)
            │     │     │     │     │
-           │     │     │     │     └──► GND bus (all ground returns)
+           │     │     │     │     └──► LED cathodes, button, sensors
            │     │     │     │
-           │     │     │     └──► LED cathodes, button, sensors
+           │     │     │     └──► 12V return from all 12V devices
            │     │     │
-           │     │     └──► 12V return from all 12V devices
+           │     │     └──[FUSE 5A]──► DDR-60G-12 ──► RELAY ──► PoE Switch
            │     │
-           │     ├──[FUSE 5A]──► Planet PoE Injector ──► PoE Camera
-           │     │
-           │     └──► Witty Pi 5 power input (12V direct)
+           │     └──[FUSE 5A]──► DDR-60G-5 (12V→5V) ──► Witty Pi 5
            │
            └──► From solar controller 12V+
 
 
-USB-C POWER PATH:
+5V POWER PATH:
 ┌────────────────┐      ┌─────────────┐      ┌─────────────┐
-│ 12V Terminal   │──►   │ 12V → 5V    │──►   │ Witty Pi 5  │
-│ Block          │      │ USB-C       │      │ HAT+ USB-C  │
-│                │      │ Adapter     │      │ Input       │
+│ 12V Terminal   │──►   │ DDR-60G-5   │──►   │ Witty Pi 5  │
+│ Block (TB1)    │      │ DC-DC Conv  │      │ HAT+ (5V    │
+│                │      │ 12V → 5V    │      │  input)     │
 └────────────────┘      └─────────────┘      └──────┬──────┘
                                                     │
                                                     ▼
@@ -119,6 +121,20 @@ USB-C POWER PATH:
                                              │ Pi 5        │
                                              │ (powered    │
                                              │ via HAT)    │
+                                             └─────────────┘
+
+12V REGULATED PATH (CAMERA):
+┌────────────────┐      ┌─────────────┐      ┌─────────────┐
+│ 12V Terminal   │──►   │ DDR-60G-12  │──►   │ RELAY       │
+│ Block (TB1)    │      │ DC-DC Conv  │      │ (USB-powered│
+│                │      │ 12V → 12V   │      │  from Pi)   │
+└────────────────┘      │ regulated   │      └──────┬──────┘
+                        └─────────────┘             │
+                                                    ▼
+                                             ┌─────────────┐
+                                             │ LINOVISION  │
+                                             │ PoE Switch  │
+                                             │ (12V in)    │
                                              └─────────────┘
 ```
 
@@ -131,20 +147,30 @@ USB-C POWER PATH:
 │                         POE CAMERA CIRCUIT                                  │
 └─────────────────────────────────────────────────────────────────────────────┘
 
-                    PLANET IPOE-260-12V PoE INJECTOR
+                    ELECTRONICS-SALON RELAY MODULE
                     ┌─────────────────────────────────────┐
+                    │  Coil: USB-powered from Pi 5        │
+                    │  Pi ON  = relay closed = PoE ON     │
+                    │  Pi OFF = relay open = PoE OFF      │
                     │                                     │
-                    │  ┌─────────┐       ┌─────────┐     │
-12V+ ──[FUSE 5A]───►│  │  12V+   │       │  DATA   │◄────┼──── Short Ethernet
-                    │  │  INPUT  │       │ (to Pi) │     │     to Pi 5 ETH port
-12V- (GND) ────────►│  │  12V-   │       ├─────────┤     │
-                    │  │  INPUT  │       │DATA+PWR │◄────┼──── Cat6 outdoor cable
-                    │  └─────────┘       │(to cam) │     │     to camera
-                    │                    └─────────┘     │
+12V reg ──────────►│  NO (12V regulated in)              │
+(from DDR-60G-12)  │  COM (12V switched out) ──────────►│──►
                     └─────────────────────────────────────┘
-                                              │
+                                                          │
+                    LINOVISION INDUSTRIAL PoE SWITCH       │
+                    ┌─────────────────────────────────────┐│
+                    │                                     ││
+                    │  ┌─────────┐       ┌─────────┐     ││
+12V switched ──────►│  │  12V+   │       │ UPLINK  │◄────┼┼── Short Ethernet
+                    │  │  INPUT  │       │ (to Pi) │     ││    to Pi 5 ETH port
+GND ───────────────►│  │  12V-   │       ├─────────┤     ││
+                    │  │  INPUT  │       │  PoE    │◄────┼┼── Cat6 outdoor cable
+                    │  └─────────┘       │  OUT    │     ││    to camera
+                    │                    └─────────┘     ││
+                    └─────────────────────────────────────┘│
+                                              │            │
                                               │ Cat6 outdoor (shielded)
-                                              │ through IP68 RJ45 feedthrough
+                                              │ through CNLINKO bulkhead
                                               ▼
                     ┌─────────────────────────────────────┐
                     │       ANNKE C1200 PoE CAMERA        │
@@ -158,27 +184,30 @@ USB-C POWER PATH:
                     └─────────────────────────────────────┘
 
 OPERATION:
-1. Witty Pi wakes → 12V powers PoE injector
-2. PoE injector provides 48V PoE to camera over Ethernet
-3. Camera boots (~45-60s), establishes static IP
-4. Pi captures video via RTSP over Ethernet connection
-5. Camera IR LEDs auto-enable in low light (built-in photocell)
-6. Witty Pi sleeps → 12V cuts off → camera powers down
+1. Witty Pi wakes → Pi boots → USB powers relay coil
+2. Relay closes → 12V regulated to PoE switch
+3. PoE switch provides 48V PoE to camera over Ethernet
+4. Camera boots (~45-60s), establishes DHCP IP
+5. Pi captures video via RTSP over Ethernet connection
+6. Camera IR LEDs auto-enable in low light (built-in photocell)
+7. Witty Pi sleeps → Pi shuts down → USB power lost → relay opens → camera off
 
 ADVANTAGE: Camera power-cycled with Pi saves solar budget.
 Built-in IR eliminates need for separate IR light and relay.
+DDR-60G converters provide regulated voltage from battery
+(which varies 10-14V depending on charge state).
 ```
 
 ---
 
-## GPIO Connections (Pi-EzConnect)
+## GPIO Connections (Geekworm G469)
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                       PI-EZCONNECT GPIO MAP                                 │
+│                       GEEKWORM G469 GPIO MAP                                │
 └─────────────────────────────────────────────────────────────────────────────┘
 
-Pi-EzConnect Terminal Block (top of HAT stack)
+Geekworm G469 Terminal Block (top of HAT stack)
 ┌────────────────────────────────────────────────────────────────────────────┐
 │                                                                            │
 │  3V3  5V  SDA SCL GP4 GND GP17 GP27 GP22 3V3 GP10 GP9 GP11 GND ...       │
@@ -195,9 +224,9 @@ Pi-EzConnect Terminal Block (top of HAT stack)
          │   │       │
          │   │       └──► GND bus (LED cathodes, button)
          │   │
-         │   └──► Rain gauge SCL (I2C clock)
+         │   └──► SHT40 SCL (I2C clock, addr 0x44)
          │
-         └──► Rain gauge SDA (I2C data)
+         └──► SHT40 SDA (I2C data)
 
 
 STATUS LED WIRING:
@@ -231,18 +260,53 @@ MAINTENANCE BUTTON WIRING:
 └────────────────────────────────────────────────────────────────────────────┘
 
 
-RAIN GAUGE WIRING (I2C):
+RAIN GAUGE WIRING (UART):
 ┌────────────────────────────────────────────────────────────────────────────┐
 │                                                                            │
-│   DFRobot SEN0575            Pi-EzConnect                                 │
+│   Hydreon RG-15              Geekworm G469 / TB1                          │
 │   ┌──────────────┐           ┌─────────────┐                              │
-│   │  VCC (red)   │───────────│    3V3      │                              │
-│   │  GND (black) │───────────│    GND      │                              │
-│   │  SDA (blue)  │───────────│  GPIO 2/SDA │                              │
-│   │  SCL (yellow)│───────────│  GPIO 3/SCL │                              │
+│   │  VCC         │───────────│  12V (TB1)  │  (7-24V input range)        │
+│   │  GND         │───────────│  GND (TB1)  │                              │
+│   │  TX (out)    │───────────│  GPIO 15/RX │  RS232 TTL 3.3V             │
+│   │  RX (in)     │───────────│  GPIO 14/TX │  RS232 TTL 3.3V             │
 │   └──────────────┘           └─────────────┘                              │
 │                                                                            │
-│   I2C Address: Check datasheet (typically 0x1D or similar)                │
+│   No level shifter needed. RG-15 signal is 3.3V TTL.                     │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+
+
+SHT40 TEMPERATURE/HUMIDITY SENSOR (I2C):
+┌────────────────────────────────────────────────────────────────────────────┐
+│                                                                            │
+│   SHT40 (I2C addr 0x44)     Geekworm G469                                │
+│   ┌──────────────┐           ┌─────────────┐                              │
+│   │  VCC         │───────────│    3V3      │                              │
+│   │  GND         │───────────│    GND      │                              │
+│   │  SDA         │───────────│  GPIO 2/SDA │                              │
+│   │  SCL         │───────────│  GPIO 3/SCL │                              │
+│   └──────────────┘           └─────────────┘                              │
+│                                                                            │
+│   STEMMA QT to bare wire cable (200mm). Inside enclosure.                │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+
+
+DS18B20 WATERPROOF TEMPERATURE PROBE (1-Wire):
+┌────────────────────────────────────────────────────────────────────────────┐
+│                                                                            │
+│   3.3V ──[4.7kΩ]──┬── GPIO 24 (1-Wire data)                              │
+│                    │                                                       │
+│                    │   ┌───────────────────────┐                           │
+│                    ├───│  DS18B20 Waterproof    │                           │
+│                    │   │  Temperature Probe     │                           │
+│                    │   │  (stainless, 1m cable) │                           │
+│   GND ─────────────┼───│                        │                           │
+│                    │   │  OUTSIDE enclosure     │                           │
+│                    │   │  (through PG9 gland)   │                           │
+│                    │   └───────────────────────┘                           │
+│                    │                                                       │
+│                    └── Pull-up resistor on Geekworm G469 terminals        │
 │                                                                            │
 └────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -262,25 +326,26 @@ INSIDE ENCLOSURE                    │    OUTSIDE ENCLOSURE
 │  Raspberry Pi 5 │                 │    │      ANNKE C1200 PoE            │
 │                 │                 │    │      CAMERA (IP67)              │
 │   ┌─────────┐   │  ┌───────────┐  │    │                                 │
-│   │Ethernet │◄──┼──│Planet PoE │──┼────┼──► Camera via Cat6 outdoor     │
-│   │  Port   │   │  │Injector   │  │    │    (factory-sealed housing)    │
-│   └─────────┘   │  │(DATA port)│  │    │                                 │
+│   │Ethernet │◄──┼──│LINOVISION │──┼────┼──► Camera via Cat6 outdoor     │
+│   │  Port   │   │  │PoE Switch │  │    │    (factory-sealed housing)    │
+│   └─────────┘   │  │(uplink)   │  │    │                                 │
 │                 │  └───────────┘  │    │   [Built-in IR LEDs]           │
 └─────────────────┘    │            │    │                                 │
-                  DATA+PWR port     │    └─────────────────────────────────┘
+                  PoE port          │    └─────────────────────────────────┘
                        │            │
                        │ Cat6       │
                        ▼            │
               ┌─────────────────┐   │
-              │ IP68 RJ45       │◄──┘
-              │ Feedthrough     │
+              │ CNLINKO         │◄──┘
+              │ Ethernet        │
+              │ Bulkhead (IP67) │
               │ (enclosure wall)│
               └─────────────────┘
 
 CABLE DETAILS:
 - Cat6 outdoor shielded cable (UV-resistant jacket)
-- IP68 RJ45 waterproof coupler at enclosure wall
-- Apply dielectric grease to outdoor RJ45 connections
+- CNLINKO weatherproof ethernet bulkhead at enclosure wall (IP67)
+- Apply dielectric grease to outdoor connections
 - Secure cable to pole with UV-resistant cable ties
 ```
 
@@ -294,37 +359,35 @@ CABLE DETAILS:
 └─────────────────────────────────────────────────────────────────────────────┘
 
     ┌─────────────────────────────────────────────────────────────────────┐
-    │ [Gore Vent]                                          [Gore Vent]    │
+    │ [Gore Vent]              [Puck Antenna]              [Gore Vent]    │
+    │                          (12mm hole)                                 │
     │                                                                     │
     │  ┌──────────────────────────────────────────────────────────────┐  │
     │  │                        DIN RAIL                               │  │
     │  │  ┌──────────┐  ┌────────┐  ┌──────┐  ┌──────────────────┐   │  │
-    │  │  │ PI STACK │  │PoE Inj │  │ FUSE │  │  TERMINAL BLOCK  │   │  │
-    │  │  │          │  │ Planet │  │HOLDER│  │  12V+ 12V- GND   │   │  │
+    │  │  │ PI STACK │  │LINOVIS.│  │ RELAY│  │  DDR-60G-5/12    │   │  │
+    │  │  │ (3 HATs) │  │PoE Sw  │  │MODULE│  │  FUSE  │  TB1    │   │  │
     │  │  └──────────┘  └────────┘  └──────┘  └──────────────────┘   │  │
     │  └──────────────────────────────────────────────────────────────┘  │
     │                                                                     │
-    │  ┌────────────┐      ┌────────────────┐                            │
-    │  │    SSD     │      │  LTE MODEM     │                            │
-    │  │  (Velcro)  │      │  + EXVIST mPCIe       │                            │
-    │  └────────────┘      │  (Velcro)      │                            │
-    │                      └────────────────┘                            │
+    │  ┌────────────────┐                                                │
+    │  │  LTE MODEM     │                                                │
+    │  │  + EXVIST mPCIe│                                                │
+    │  │  (Velcro)      │                                                │
+    │  └────────────────┘                                                │
     │                                                                     │
-    │  [SMA]  [SMA]                                                      │
-    │  Ant 1  Ant 2                                                      │
-    │                                                                     │
-    │  ○ ○ ○   [●]        [M12]    [RJ45]   [M12]                        │
-    │  LEDs   Button      12V in   PoE cam  Rain                         │
-    │  R Y G              power    (IP68)   gauge                        │
+    │  ○ ○ ○   [●]        [CNLINKO]   [SP13]    [PG9]   [PG9]           │
+    │  LEDs   Button      PoE cam     12V in    Rain    DS18B20          │
+    │  R Y G              (IP67)      power     gauge   probe            │
     │                                                                     │
     └─────────────────────────────────────────────────────────────────────┘
 
 LEGEND:
 ○ = 10mm LED (panel mount)
 ● = 16mm Button (panel mount)
-[M12] = Cable gland size
-[RJ45] = IP68 RJ45 feedthrough for PoE camera
-[SMA] = SMA bulkhead antenna connector
+[CNLINKO] = Weatherproof ethernet bulkhead (IP67)
+[SP13] = Weatherproof DC power bulkhead (IP68)
+[PG9] = Cable gland for sensor cables
 ```
 
 ---
@@ -350,8 +413,8 @@ Print and attach to terminal blocks:
 ```
 TB1 - MAIN POWER
 ┌────┬────┬────┬────┬────┬────┐
-│12+ │12+ │12- │12- │GND │GND │
-│ IN │OUT │ IN │OUT │    │    │
+│12+ │12+ │12+ │12- │GND │GND │
+│ IN │CPU │CAM │ IN │    │    │
 └────┴────┴────┴────┴────┴────┘
 ```
 
@@ -359,6 +422,14 @@ TB1 - MAIN POWER
 
 **PRINT THIS DOCUMENT - LAMINATE FOR FIELD USE**
 
-**Document Version:** 2.0
-**Last Updated:** February 11, 2026
-**Change:** Updated from USB camera + IR relay to PoE camera (ANNKE C1200) approach
+**Document Version:** 3.0
+**Last Updated:** March 9, 2026
+**Changes from v2.0:**
+- Replaced Planet IPOE-260-12V PoE injector with LINOVISION PoE Switch + Electronics-Salon relay
+- Added DDR-60G-5 (12V→5V for Witty Pi/Pi power) and DDR-60G-12 (12V→12V regulated for PoE switch)
+- Renamed Pi-EzConnect → Geekworm G469
+- Replaced M.2 SSD with SanDisk 256GB USB flash drive
+- Replaced DFRobot SEN0575 I2C rain gauge with Hydreon RG-15 UART (GPIO 14/15)
+- Added SHT40 temp/humidity sensor (I2C) and DS18B20 temperature probe (1-Wire)
+- Replaced SMA bulkheads with Proxicast ANT-122-S02 puck antenna (12mm hole)
+- Replaced cable glands with CNLINKO ethernet bulkhead and SP13 DC power bulkhead

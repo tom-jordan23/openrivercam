@@ -18,7 +18,8 @@
             ┌───────────────┐
             │ SURGE         │
             │ PROTECTOR     │
-            │ (Type 2)      │
+            │ (Heschen      │
+            │  HS-40-N 2P)  │
             └───────┬───────┘
                     │
                     ▼
@@ -33,12 +34,9 @@
                     │                   │  LiFePO4 BATTERY  │
                     │                   │  12V 100Ah        │
                     │                   │  (1280Wh)         │
-                    │                   └─────────┬─────────┘
-                    │                             │
-                    │                             ▼
-                    │                   ┌───────────────────┐
-                    │                   │ BATTERY PROTECT   │
-                    │                   │ (Victron 65A)     │
+                    │                   │  BMS built-in     │
+                    │                   │  low-voltage      │
+                    │                   │  cutoff           │
                     │                   └─────────┬─────────┘
                     │                             │
                     └────────────┬────────────────┘
@@ -53,9 +51,9 @@
               │                    │                    │
               ▼                    ▼                    ▼
     ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐
-    │  POE INJECTOR   │  │   PI 5 POWER    │  │  PTC HEATERS    │
-    │  Planet         │  │   (USB-C or     │  │  (Camera +      │
-    │  IPOE-260-12V   │  │   Witty Pi)     │  │   Enclosure)    │
+    │  PoE SWITCH     │  │   DDR-60G-5     │  │  PTC HEATER     │
+    │  LINOVISION     │  │   (12V → 5V)   │  │  (Enclosure)    │
+    │  + RELAY        │  │   → Pi 5 USB-C  │  │  + FANS         │
     └────────┬────────┘  └─────────────────┘  └─────────────────┘
              │
       ┌──────┴──────┐
@@ -78,11 +76,11 @@
 
                     BUILDING 220V AC
                           │
-                          │ (through M25 cable gland)
+                          │ (through SP13 DC power bulkhead)
                           ▼
                 ┌─────────────────────┐
-                │    CABLE GLAND     │
-                │       M25          │
+                │  SP13 DC POWER      │
+                │  BULKHEAD (IP68)    │
                 └─────────┬──────────┘
                           │
      ┌────────────────────┼────────────────────┐
@@ -90,8 +88,8 @@
      │ Brown              │ Blue               │ Green/Yellow
      ▼                    ▼                    ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
-│                   PHOENIX CONTACT SURGE PROTECTOR                       │
-│                       (Type 2, 40kA)                                    │
+│                   HESCHEN HS-40-N 2P SURGE PROTECTOR                    │
+│                       (40kA, 275V)                                      │
 │  ┌─────┐  ┌─────┐  ┌─────┐                                             │
 │  │  L  │  │  N  │  │ PE  │                                             │
 │  │ IN  │  │ IN  │  │ IN  │                                             │
@@ -154,6 +152,7 @@ FROM MEAN WELL 12V OUTPUT
                                    │                     │
                                    │  BMS Built-in:      │
                                    │  - Over-discharge   │
+                                   │    (low-V cutoff)   │
                                    │  - Over-charge      │
                                    │  - Over-current     │
                                    │  - Temperature      │
@@ -161,25 +160,11 @@ FROM MEAN WELL 12V OUTPUT
                                               │
                                               ▼
                                    ┌─────────────────────┐
-                                   │  VICTRON BATTERY    │
-                                   │  PROTECT 65A        │
-                                   │                     │
-                                   │  Set: 11.0V cutoff  │
-                                   │       11.5V recover │
-                                   │                     │
-                                   │  IN+ ◄── Battery +  │
-                                   │  IN- ◄── Battery -  │
-                                   │  OUT+ ──► Load +    │
-                                   │  OUT- ──► Load -    │
-                                   └──────────┬──────────┘
-                                              │
-                                              ▼
-                                   ┌─────────────────────┐
                                    │  TERMINAL BLOCK     │
-                                   │  TB2 (Battery 12V)  │
+                                   │  TB1 (System 12V)   │
                                    │                     │
-                                   │  Powers loads when  │
-                                   │  AC fails           │
+                                   │  Battery feeds TB1  │
+                                   │  when AC fails      │
                                    └─────────────────────┘
 
 
@@ -189,18 +174,17 @@ POWER PATH LOGIC:
 │  AC PRESENT:                                                               │
 │  - Mean Well powers all loads directly via TB1                            │
 │  - Charger maintains battery at float voltage                              │
-│  - BatteryProtect passes through (battery as backup)                      │
+│  - Battery on standby (BMS manages health)                                │
 │                                                                            │
 │  AC FAILS:                                                                 │
 │  - Mean Well output drops to 0V                                           │
-│  - Battery discharges through BatteryProtect to TB2                       │
-│  - All loads continue on battery power                                    │
-│  - BatteryProtect disconnects at 11.0V to protect battery                 │
+│  - Battery discharges through TB1 to all loads                            │
+│  - BMS disconnects at low-voltage cutoff to protect battery               │
 │                                                                            │
 │  AC RESTORED:                                                              │
 │  - Mean Well resumes powering loads                                       │
 │  - Charger resumes charging battery                                       │
-│  - BatteryProtect reconnects when battery >11.5V                          │
+│  - BMS reconnects when battery recovers                                   │
 │                                                                            │
 └────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -221,11 +205,11 @@ POWER PATH LOGIC:
             │    │    │    │    │    │    │    │
             │    │    │    └────┴────┴────┴────┴──► All GND returns
             │    │    │
-            │    │    └──[FUSE 10A]──► POE INJECTOR (12V+ input)
+            │    │    └──[FUSE 10A]──► RELAY → LINOVISION PoE SWITCH (12V)
             │    │
-            │    └──[FUSE 5A]──► WITTY PI 5 / PI POWER
+            │    └──[FUSE 5A]──► DDR-60G-5 (12V→5V) → USB-C → PI 5
             │
-            └──[FUSE 5A]──► PTC HEATERS (via thermostat/hygrostat)
+            └──[FUSE 5A]──► PTC HEATER (via hygrostat) + FANS
 
 
 FUSE SPECIFICATIONS:
@@ -233,9 +217,9 @@ FUSE SPECIFICATIONS:
 │  FUSE        │  RATING  │  PROTECTS                                        │
 ├──────────────┼──────────┼────────────────────────────────────────────────────┤
 │  F1 (Main)   │  15A     │  Entire 12V bus from battery/PSU                 │
-│  F2 (PoE)    │  10A     │  PoE injector (60W max = 5A, plus margin)        │
-│  F3 (Pi)     │  5A      │  Pi + accessories (25W max = 2A, plus margin)    │
-│  F4 (Heater) │  5A      │  PTC heaters (25W max = 2A, plus margin)         │
+│  F2 (PoE)    │  10A     │  Relay + PoE switch (60W max = 5A, plus margin)  │
+│  F3 (Pi)     │  5A      │  DDR-60G-5 + Pi (25W max = 2A, plus margin)     │
+│  F4 (Heater) │  5A      │  PTC heater + fans (25W max, plus margin)       │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -254,55 +238,67 @@ FUSE SPECIFICATIONS:
     │
     ▼
 ┌───────────────────────────────────────────────────────────────────────────┐
-│                    PLANET IPOE-260-12V                                    │
-│                    (Industrial PoE Injector)                              │
+│               ELECTRONICS-SALON DIN RAIL RELAY MODULE                     │
+│               (4-SPDT, USB-powered coil)                                  │
+│                                                                           │
+│  Coil power: USB cable from Pi 5 USB port                                │
+│  Pi ON  = relay energized = NO contact closed = 12V passes               │
+│  Pi OFF = relay de-energized = NO contact open = 12V cut                 │
+│                                                                           │
+│  IN (12V from TB1) ──► NO contact ──► OUT (12V to PoE switch)           │
+└───────────────────────────────────┬───────────────────────────────────────┘
+                                    │
+                                    │ 12V (switched)
+                                    ▼
+┌───────────────────────────────────────────────────────────────────────────┐
+│                    LINOVISION INDUSTRIAL PoE SWITCH                       │
+│                    (Gigabit, 12V DC input)                                │
 │                                                                           │
 │  ┌─────────────────────────────────────────────────────────────────────┐ │
-│  │  DC INPUT          DATA IN          POE OUT 1       POE OUT 2       │ │
-│  │  ┌─────┐          ┌──────┐         ┌────────┐      ┌────────┐      │ │
-│  │  │ 12+ │          │ RJ45 │         │  RJ45  │      │  RJ45  │      │ │
-│  │  │ 12- │          │      │         │ 802.3at│      │ 802.3at│      │ │
-│  │  └──┬──┘          └───┬──┘         └───┬────┘      └───┬────┘      │ │
-│  └─────┼─────────────────┼────────────────┼───────────────┼───────────┘ │
-│        │                 │                │               │             │
-└────────┼─────────────────┼────────────────┼───────────────┼─────────────┘
-         │                 │                │               │
-From TB1─┘                 │                │               │
-                           │                │               │
-              ┌────────────┘                │               │
-              │                             │               │
-              ▼                             │               │
-    ┌─────────────────┐                     │               │
-    │  Raspberry Pi 5 │                     │               │
-    │  Ethernet Port  │                     │               │
-    │                 │                     │               │
-    │  (short patch   │                     │               │
-    │   cable)        │                     │               │
-    └─────────────────┘                     │               │
-                                            │               │
-                              ┌─────────────┘               │
-                              │                             │
-                    ┌─────────┴─────────┐         ┌────────┴─────────┐
-                    │  M20 CABLE GLAND  │         │  M20 CABLE GLAND │
-                    └─────────┬─────────┘         └────────┬─────────┘
-                              │                            │
-                              │ Cat6 Outdoor               │ Cat6 Outdoor
-                              │ Shielded Cable             │ Shielded Cable
-                              │ (to Camera 1)              │ (to Camera 2)
-                              │                            │
-                    ┌─────────┴─────────┐         ┌────────┴─────────┐
-                    │  IP68 RJ45 COUPLER│         │  IP68 RJ45 COUPLER│
-                    │  (at camera)      │         │  (at camera)      │
-                    └─────────┬─────────┘         └────────┬─────────┘
-                              │                            │
-                              ▼                            ▼
-                    ┌─────────────────┐           ┌─────────────────┐
-                    │   ANNKE C1200   │           │   ANNKE C1200   │
-                    │   Camera 1      │           │   Camera 2      │
-                    │                 │           │                 │
-                    │   IP: .101      │           │   IP: .102      │
-                    │   12MP, PoE+    │           │   12MP, PoE+    │
-                    └─────────────────┘           └─────────────────┘
+│  │  DC INPUT        UPLINK         POE OUT 1        POE OUT 2         │ │
+│  │  ┌─────┐        ┌──────┐       ┌────────┐       ┌────────┐        │ │
+│  │  │ 12+ │        │ RJ45 │       │  RJ45  │       │  RJ45  │        │ │
+│  │  │ 12- │        │      │       │ 802.3at│       │ 802.3at│        │ │
+│  │  └──┬──┘        └───┬──┘       └───┬────┘       └───┬────┘        │ │
+│  └─────┼───────────────┼──────────────┼─────────────────┼────────────┘ │
+│        │               │              │                 │             │
+└────────┼───────────────┼──────────────┼─────────────────┼─────────────┘
+         │               │              │                 │
+From      │               │              │                 │
+relay ────┘               │              │                 │
+                          │              │                 │
+              ┌───────────┘              │                 │
+              │                          │                 │
+              ▼                          │                 │
+    ┌─────────────────┐                  │                 │
+    │  Raspberry Pi 5 │                  │                 │
+    │  Ethernet Port  │                  │                 │
+    │                 │                  │                 │
+    │  (short patch   │                  │                 │
+    │   cable to      │                  │                 │
+    │   uplink port)  │                  │                 │
+    └─────────────────┘                  │                 │
+                                         │                 │
+                           ┌─────────────┘                 │
+                           │                               │
+                 ┌─────────┴──────────┐          ┌────────┴──────────┐
+                 │  CNLINKO ETHERNET  │          │  CNLINKO ETHERNET │
+                 │  BULKHEAD (IP67)   │          │  BULKHEAD (IP67)  │
+                 └─────────┬──────────┘          └────────┬──────────┘
+                           │                              │
+                           │ Cat6 10ft cable               │ Cat6 10ft cable
+                           │ (pre-terminated)              │ (pre-terminated)
+                           │ (to Camera 1)                │ (to Camera 2)
+                           │                              │
+                 ┌─────────┴──────────┐          ┌────────┴──────────┐
+                 │   ANNKE C1200     │          │   ANNKE C1200     │
+                 │   Camera 1        │          │   Camera 2        │
+                 │                   │          │                   │
+                 │   IP: .101        │          │   IP: .102        │
+                 │   12MP, PoE+      │          │   12MP, PoE+      │
+                 │   Built-in IR     │          │   Built-in IR     │
+                 │   IP67 sealed     │          │   IP67 sealed     │
+                 └───────────────────┘          └───────────────────┘
 
 
 NETWORK TOPOLOGY:
@@ -310,11 +306,11 @@ NETWORK TOPOLOGY:
 │                                                                            │
 │   Pi 5 (192.168.50.1)                                                     │
 │      │                                                                     │
-│      │ Ethernet (to PoE injector DATA port)                               │
+│      │ Ethernet (to PoE switch UPLINK port)                               │
 │      │                                                                     │
 │      ├─────────────────────────────────────────────────────────┐          │
 │      │                                                         │          │
-│      │                     PoE Injector                        │          │
+│      │                  LINOVISION PoE Switch                  │          │
 │      │                   (Layer 2 switch)                      │          │
 │      │                                                         │          │
 │      ├─────────────────────┬───────────────────────────────────┤          │
@@ -327,11 +323,11 @@ NETWORK TOPOLOGY:
 
 ---
 
-## GPIO Connections (Pi-EzConnect)
+## GPIO Connections (Geekworm G469)
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                       PI-EZCONNECT GPIO MAP                                 │
+│                       GEEKWORM G469 GPIO MAP                                │
 └─────────────────────────────────────────────────────────────────────────────┘
 
 Same as Sukabumi site:
@@ -358,27 +354,64 @@ MAINTENANCE BUTTON WIRING:
 └────────────────────────────────────────────────────────────────────────────┘
 
 
-RAIN GAUGE WIRING (I2C):
+RAIN GAUGE WIRING (UART):
 ┌────────────────────────────────────────────────────────────────────────────┐
 │                                                                            │
-│   DFRobot SEN0575            Pi-EzConnect                                 │
+│   Hydreon RG-15              Geekworm G469 / TB1                          │
 │   ┌──────────────┐           ┌─────────────┐                              │
-│   │  VCC (red)   │───────────│    3V3      │                              │
-│   │  GND (black) │───────────│    GND      │                              │
-│   │  SDA (blue)  │───────────│  GPIO 2/SDA │                              │
-│   │  SCL (yellow)│───────────│  GPIO 3/SCL │                              │
+│   │  VCC         │───────────│  12V (TB1)  │  (7-24V input range)        │
+│   │  GND         │───────────│  GND (TB1)  │                              │
+│   │  TX (out)    │───────────│  GPIO 15/RX │  RS232 TTL 3.3V             │
+│   │  RX (in)     │───────────│  GPIO 14/TX │  RS232 TTL 3.3V             │
 │   └──────────────┘           └─────────────┘                              │
+│                                                                            │
+│   No level shifter needed. RG-15 signal is 3.3V TTL.                     │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+
+
+SHT40 TEMPERATURE/HUMIDITY SENSOR (I2C):
+┌────────────────────────────────────────────────────────────────────────────┐
+│                                                                            │
+│   SHT40 (I2C addr 0x44)     Geekworm G469                                │
+│   ┌──────────────┐           ┌─────────────┐                              │
+│   │  VCC         │───────────│    3V3      │                              │
+│   │  GND         │───────────│    GND      │                              │
+│   │  SDA         │───────────│  GPIO 2/SDA │                              │
+│   │  SCL         │───────────│  GPIO 3/SCL │                              │
+│   └──────────────┘           └─────────────┘                              │
+│                                                                            │
+│   STEMMA QT to bare wire cable (200mm). Inside enclosure.                │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+
+
+DS18B20 WATERPROOF TEMPERATURE PROBE (1-Wire):
+┌────────────────────────────────────────────────────────────────────────────┐
+│                                                                            │
+│   3.3V ──[4.7kΩ]──┬── GPIO 24 (1-Wire data)                              │
+│                    │                                                       │
+│                    │   ┌───────────────────────┐                           │
+│                    ├───│  DS18B20 Waterproof    │                           │
+│                    │   │  Temperature Probe     │                           │
+│                    │   │  (stainless, 1m cable) │                           │
+│   GND ─────────────┼───│                        │                           │
+│                    │   │  OUTSIDE enclosure     │                           │
+│                    │   │  (through PG9 gland)   │                           │
+│                    │   └───────────────────────┘                           │
+│                    │                                                       │
+│                    └── Pull-up resistor on Geekworm G469 terminals        │
 │                                                                            │
 └────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## PTC Heater Wiring
+## PTC Heater & Fan Wiring
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                         PTC HEATER SYSTEM                                   │
+│                    PTC HEATER & FAN SYSTEM                                  │
 └─────────────────────────────────────────────────────────────────────────────┘
 
 12V FROM TB1
@@ -389,23 +422,23 @@ RAIN GAUGE WIRING (I2C):
     │                                                              │
     ▼                                                              ▼
 ┌───────────────────────────────────────┐     ┌───────────────────────────────┐
-│     ENCLOSURE HEATER (15W)            │     │    CAMERA HEATERS (10W×2)     │
-│                                       │     │    (if cameras need heating)  │
-│  12V+ ──► [HYGROSTAT] ──► PTC+ ──┐    │     │                               │
-│                             PTC  │    │     │  12V+ ──► [THERMOSTAT] ──►    │
-│  GND ────────────────────► PTC- ─┘    │     │           PTC heaters ──► GND │
+│     ENCLOSURE HEATER (15W)            │     │     40 CFM FANS (×2)          │
 │                                       │     │                               │
-│  Hygrostat setting: ON when >70% RH   │     │  Thermostat: ON when <25°C    │
-│                                       │     │  (prevents condensation)      │
+│  12V+ ──► [HYGROSTAT] ──► PTC+ ──┐    │     │  12V+ ──► Fan 1 + ──┐         │
+│                             PTC  │    │     │                     │         │
+│  GND ────────────────────► PTC- ─┘    │     │  12V+ ──► Fan 2 + ──┤         │
+│                                       │     │                     │         │
+│  Hygrostat setting: ON when >70% RH   │     │  GND ──► Fan 1/2 - ┘         │
+│                                       │     │                               │
+│                                       │     │  Always-on when 12V present  │
 └───────────────────────────────────────┘     └───────────────────────────────┘
 
 
 NOTES:
-- PTC heaters are self-regulating (won't overheat)
+- PTC heater is self-regulating (won't overheat)
 - Hygrostat controls enclosure heater based on humidity
-- Thermostat controls camera heaters based on temperature
-- Both help prevent condensation in humid tropical environment
-- If cameras are rated for outdoor use (ANNKE C1200), camera heaters optional
+- ANNKE C1200 cameras are factory-sealed IP67 — no camera heaters needed
+- Fans provide internal air circulation
 ```
 
 ---
@@ -415,11 +448,12 @@ NOTES:
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                    ENCLOSURE INTERNAL LAYOUT (Top View)                     │
-│                    (400mm × 300mm × 200mm)                                  │
+│                    VEVOR NEMA 4x (16"×12"×8")                              │
 └─────────────────────────────────────────────────────────────────────────────┘
 
     ┌─────────────────────────────────────────────────────────────────────────┐
-    │ [Gore Vent]              [Gore Vent]              [Gore Vent]           │
+    │ [Gore Vent]              [Puck Antenna]              [Gore Vent]       │
+    │                          (12mm hole)                                    │
     │                                                                         │
     │  ┌────────────────────────────────────────────────────────────────────┐│
     │  │                     UPPER DIN RAIL                                 ││
@@ -432,26 +466,21 @@ NOTES:
     │  ┌────────────────────────────────────────────────────────────────────┐│
     │  │                     LOWER DIN RAIL                                 ││
     │  │ ┌──────────┐  ┌───────────┐  ┌────────────┐  ┌─────────────────┐  ││
-    │  │ │ PI STACK │  │ POE       │  │ BATTERY    │  │ TERMINAL        │  ││
-    │  │ │ (3 HATs) │  │ INJECTOR  │  │ PROTECT    │  │ BLOCK TB2       │  ││
+    │  │ │ PI STACK │  │ LINOVISION│  │ RELAY      │  │ DDR-60G-5       │  ││
+    │  │ │ (2 HATs) │  │ PoE SWITCH│  │ MODULE     │  │ BUCK CONVERTER  │  ││
     │  │ └──────────┘  └───────────┘  └────────────┘  └─────────────────┘  ││
     │  └────────────────────────────────────────────────────────────────────┘│
     │                                                                         │
-    │  ┌────────────┐  ┌────────────┐  ┌────────────┐                        │
-    │  │    SSD     │  │ LTE MODEM  │  │  CHARGER   │                        │
-    │  │  (Velcro)  │  │  (Velcro)  │  │            │                        │
-    │  └────────────┘  └────────────┘  └────────────┘                        │
+    │  ┌────────────┐  ┌────────────┐                [FAN 1]  [FAN 2]       │
+    │  │ LTE MODEM  │  │  CHARGER   │                                        │
+    │  │  (Velcro)  │  │            │                                        │
+    │  └────────────┘  └────────────┘                                        │
     │                                                                         │
-    │                    ┌────────────────────────────┐                       │
-    │                    │     LiFePO4 BATTERY        │                       │
-    │                    │     100Ah (floor mount)    │                       │
-    │                    └────────────────────────────┘                       │
+    │  [CNLINKO] [CNLINKO]                                                   │
+    │   Cam1 ETH  Cam2 ETH                                                  │
     │                                                                         │
-    │  [SMA]  [SMA]                                                           │
-    │  Ant 1  Ant 2                                                           │
-    │                                                                         │
-    │  [M25]    [M20]    [M20]    [M16]    [PG9]                              │
-    │  AC in    Cam1     Cam2     Ground   Rain                               │
+    │  [SP13]     [M16]     [PG9]    [PG9]                                   │
+    │  AC in      Ground    Rain     DS18B20                                 │
     │                                                                         │
     │  ○ ○ ○   [●]                                                            │
     │  LEDs   Button                                                          │
@@ -462,8 +491,10 @@ NOTES:
 LEGEND:
 ○ = 10mm LED (panel mount)
 ● = 16mm Button (panel mount)
+[CNLINKO] = Weatherproof ethernet bulkhead connector (IP67)
+[SP13] = Weatherproof DC power bulkhead connector (IP68)
 [M##] = Cable gland size
-[SMA] = SMA bulkhead antenna connector
+[PG9] = Cable gland for sensor cables
 ```
 
 ---
@@ -541,16 +572,10 @@ GROUND RESISTANCE: Measure with multimeter
 Print and attach:
 
 ```
-TB1 - MAIN 12V (from PSU)
+TB1 - MAIN 12V (from PSU / Battery)
 ┌────┬────┬────┬────┬────┬────┐
 │12+ │12+ │12+ │12- │12- │GND │
 │PSU │PoE │ Pi │PSU │RET │    │
-└────┴────┴────┴────┴────┴────┘
-
-TB2 - BATTERY 12V (from BatteryProtect)
-┌────┬────┬────┬────┬────┬────┐
-│12+ │12+ │12- │12- │GND │GND │
-│BAT │OUT │BAT │OUT │    │    │
 └────┴────┴────┴────┴────┴────┘
 
 GROUND BAR
@@ -564,5 +589,22 @@ GROUND BAR
 
 **PRINT THIS DOCUMENT - LAMINATE FOR FIELD USE**
 
-**Document Version:** 1.0
-**Last Updated:** January 9, 2026
+**Document Version:** 2.0
+**Last Updated:** March 9, 2026
+**Changes from v1.0:**
+- Removed Victron BatteryProtect (LiFePO4 BMS has built-in cutoff)
+- Removed Witty Pi 5 (Pi 5 built-in RTC sufficient for 24hr operation)
+- Replaced Phoenix Contact surge protector with Heschen HS-40-N 2P
+- Replaced Planet IPOE-260-12V PoE injector with LINOVISION PoE Switch + Electronics-Salon relay
+- Added DDR-60G-5 buck converter (12V→5V) for Pi power
+- Replaced Pi-EzConnect with Geekworm G469
+- Replaced M.2 SSD with SanDisk USB flash drive
+- Replaced DFRobot SEN0575 I2C rain gauge with Hydreon RG-15 UART
+- Added SHT40 temp/humidity sensor and DS18B20 temperature probe
+- Replaced SMA bulkheads with Proxicast puck antenna (single 12mm hole)
+- Replaced M20 cable glands with CNLINKO weatherproof ethernet bulkheads
+- Replaced M25 AC cable gland with SP13 DC power bulkhead
+- Removed camera PTC heaters (ANNKE C1200 is IP67 factory-sealed)
+- Added 40 CFM fans for internal air circulation
+- Removed TB2 (no separate battery bus without BatteryProtect)
+- Pi stack is 2-board (Pi 5 + G469), not 3

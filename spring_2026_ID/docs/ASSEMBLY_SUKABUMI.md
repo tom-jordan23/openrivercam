@@ -17,7 +17,7 @@ Apply MG 422C silicone conformal coating to all PCBs:
 **Boards to Coat:**
 - [ ] Raspberry Pi 5
 - [ ] Witty Pi 5 HAT+
-- [ ] Pi-EzConnect terminal block HAT
+- [ ] Geekworm G469 terminal block HAT
 
 **Note:** No relay module needed - PoE camera has built-in IR.
 
@@ -53,11 +53,11 @@ Apply MG 422C silicone conformal coating to all PCBs:
 
 ### 3. Hardware Testing
 
-- [ ] Test Pi 5 + Witty Pi 5 + Pi-EzConnect stack boots correctly
-- [ ] Verify SSD is recognized via USB
+- [ ] Test Pi 5 + Witty Pi 5 + Geekworm G469 stack boots correctly (3-board stack)
+- [ ] Verify USB flash drive is recognized
 - [ ] Test LTE modem connects (with test SIM)
 - [ ] Test PoE camera RTSP stream works
-- [ ] Test PoE injector powers camera when 12V applied
+- [ ] Test PoE switch powers camera when relay energized
 - [ ] Verify LEDs light up on GPIO control
 
 ---
@@ -69,23 +69,29 @@ Verify all components before starting assembly:
 ### Compute Stack
 - [ ] Raspberry Pi 5 8GB (coated)
 - [ ] Witty Pi 5 HAT+ (coated)
-- [ ] Pi-EzConnect HAT (coated)
-- [ ] M.2 SSD 512GB in USB enclosure
-- [ ] MicroSD card 32GB (with OS)
+- [ ] Geekworm G469 HAT (coated)
+- [ ] SanDisk 256GB USB flash drive
+- [ ] MicroSD card 64GB (with OS)
 - [ ] Heatsink/cooler for Pi 5
+- [ ] ML-2020 RTC battery for Pi 5
 
 ### Connectivity
 - [ ] Quectel EG25-G modem + EXVIST Mini PCIe-USB adapter
-- [ ] LTE antennas (×2)
-- [ ] SMA bulkhead connectors (×2)
-- [ ] USB-RS485 adapter
+- [ ] Proxicast ANT-122-S02 MIMO LTE puck antenna (IP67, 12mm hole mount)
 
 ### PoE Camera System
 - [ ] ANNKE C1200 PoE camera (12MP, built-in IR, factory-sealed IP67)
-- [ ] Planet IPOE-260-12V PoE injector (native 12V input)
+- [ ] LINOVISION Industrial PoE Switch (Gigabit, 12V DC input)
+- [ ] Electronics-Salon DIN Rail relay module (USB-powered coil)
+- [ ] DDR-60G-5 DC-DC converter (12V→5V for Witty Pi/Pi power)
+- [ ] DDR-60G-12 DC-DC converter (12V→12V regulated for PoE switch)
 - [ ] Cat6 outdoor shielded cable (to camera)
-- [ ] IP68 RJ45 waterproof coupler (enclosure feedthrough)
+- [ ] CNLINKO weatherproof ethernet bulkhead, IP67 (enclosure feedthrough)
 - [ ] Pole mount bracket (stainless steel)
+
+### Climate Monitoring
+- [ ] SHT40 temperature/humidity sensor (I2C, inside enclosure)
+- [ ] DS18B20 waterproof temperature probe (1-Wire, outside enclosure)
 
 ### User Interface
 - [ ] IP67 LEDs: Red, Yellow, Green
@@ -97,13 +103,14 @@ Verify all components before starting assembly:
 - [ ] DIN rail 35mm (×1-2)
 - [ ] DIN rail clips for Pi
 - [ ] Terminal blocks
-- [ ] Cable glands (M12, M16, M20)
+- [ ] SP13 weatherproof DC power bulkhead (IP68, for 12V input)
+- [ ] CNLINKO weatherproof ethernet bulkhead (IP67, for PoE camera)
 - [ ] Gore M12 vents (×2 for enclosure)
 
 ### Rain Gauge
-- [ ] DFRobot SEN0575 tipping bucket
-- [ ] Mounting bracket
-- [ ] 2-conductor cable (5m)
+- [ ] Hydreon RG-15 optical rain gauge (UART RS232 TTL 3.3V)
+- [ ] Built-in mounting holes (no separate bracket needed)
+- [ ] Cable (5m)
 
 ### Hardware & Consumables
 - [ ] Stainless steel hardware kit
@@ -121,17 +128,18 @@ Verify all components before starting assembly:
 
 1. **Mark hole positions:**
    - 2× M12 holes for Gore vents (opposite sides for airflow)
-   - 2× M12 holes for SMA antenna bulkheads
-   - 1× hole for IP68 RJ45 feedthrough (Ethernet to PoE camera)
-   - 1× M12 hole for 12V power input
+   - 1× 12mm hole for Proxicast puck antenna (enclosure top)
+   - 1× hole for CNLINKO ethernet bulkhead (PoE camera)
+   - 1× hole for SP13 DC power bulkhead (12V input)
    - 3× 10mm holes for status LEDs
    - 1× 16mm hole for pushbutton
    - 1× PG9 hole for rain gauge cable
+   - 1× PG9 hole for DS18B20 temperature probe
 
 2. **Drill holes:**
    - Use step bit for clean cuts in plastic/metal
    - Deburr all holes
-   - Test-fit cable glands and LEDs
+   - Test-fit bulkheads, glands, and LEDs
 
 3. **Install Gore vents:**
    - Thread M12 vents into holes
@@ -153,15 +161,16 @@ Verify all components before starting assembly:
         ↑
    [Witty Pi 5 HAT+]
         ↑
-   [Pi-EzConnect HAT]
+   [Geekworm G469 HAT]
    ```
 
 2. **Assembly:**
    - Install heatsink on Pi 5 CPU (thermal pad contact)
+   - Install ML-2020 RTC battery in Pi 5
    - Align Witty Pi 5 HAT+ GPIO header with Pi 5 header
    - Press down firmly until fully seated
    - Secure with standoffs if provided
-   - Align Pi-EzConnect on top of Witty Pi 5
+   - Align Geekworm G469 on top of Witty Pi 5
    - Press down firmly
    - Secure entire stack with long standoffs
 
@@ -179,27 +188,31 @@ Verify all components before starting assembly:
    - Snap onto DIN rail
    - Verify secure fit
 
-2. **Mount other components:**
-   - Planet PoE injector (use Velcro or screw mount)
+2. **Mount DIN rail components:**
+   - LINOVISION PoE switch
+   - Electronics-Salon relay module
+   - DDR-60G-5 buck converter (12V→5V)
+   - DDR-60G-12 buck converter (12V→12V regulated)
    - Terminal blocks (snap onto rail)
    - Fuse holder (snap onto rail or screw mount)
 
 3. **Mount items without DIN holes:**
-   - SSD enclosure: Use Velcro/Dual-Lock on enclosure floor
    - Quectel modem: Use Velcro/Dual-Lock
 
 4. **Layout:**
    ```
    ┌─────────────────────────────────────────┐
    │  [Gore Vent]              [Gore Vent]   │
+   │              [Puck Antenna]             │
    │                                         │
    │  ┌──────────────────────────────────┐   │
    │  │         DIN RAIL                 │   │
-   │  │ [Pi Stack] [PoE Inj] [Fuse][Term]│   │
+   │  │ [Pi Stack] [PoE Sw] [Relay]      │   │
+   │  │ [DDR-5] [DDR-12] [Fuse] [Term]  │   │
    │  └──────────────────────────────────┘   │
    │                                         │
-   │  [SSD]     [Modem]                      │
-   │  (velcro)  (velcro)                     │
+   │  [Modem]                                │
+   │  (velcro)                               │
    │                                         │
    │  ○ ○ ○  [●]                             │
    │  LEDs   Button                          │
@@ -220,7 +233,7 @@ Verify all components before starting assembly:
    - Secure with nut from inside
    - Should be slightly recessed to prevent accidental press
 
-3. **Wire LEDs to Pi-EzConnect:**
+3. **Wire LEDs to Geekworm G469:**
    ```
    LED Wiring (common cathode):
 
@@ -243,7 +256,7 @@ Verify all components before starting assembly:
    Suggested: GPIO 23 (active low)
    ```
 
-5. **Use Pi-EzConnect screw terminals:**
+5. **Use Geekworm G469 screw terminals:**
    - Strip wire ends 5-6mm
    - Insert into terminal
    - Tighten screw firmly
@@ -255,18 +268,20 @@ Verify all components before starting assembly:
 
 1. **12V Input from solar controller:**
    - Run 18AWG wire from solar controller 12V output
-   - Through M12 cable gland into enclosure
+   - Through SP13 DC power bulkhead into enclosure
    - To input terminal block
 
 2. **Power distribution:**
    ```
-   Solar 12V ──┬── Inline Fuse (5A) ── Planet PoE Injector ── Camera
+   Solar 12V ──┬── Inline Fuse (5A) ── DDR-60G-5 (12V→5V) ──► Witty Pi 5 ──► Pi 5
                │
-               └── Witty Pi 5 (direct 12V input) ── Pi 5
+               └── Inline Fuse (5A) ── DDR-60G-12 (12V→12V reg) ──► Relay ──► PoE Switch
 
-   Note: Witty Pi 5 accepts 5-26V input directly.
-   PoE injector and Pi are on same switched 12V circuit.
-   Camera boots when Pi wakes, powers down when Pi sleeps.
+   Note: DDR-60G converters regulate voltage from battery
+   (which varies 10-14V depending on charge state).
+   Witty Pi 5 receives clean 5V, passes through to Pi 5.
+   PoE switch receives regulated 12V through relay.
+   Camera boots when Pi wakes (relay closes), powers down when Pi sleeps.
    ```
 
 3. **Terminal block connections:**
@@ -279,49 +294,71 @@ Verify all components before starting assembly:
 
 1. **Circuit overview:**
    ```
-   Solar 12V ── Fuse ──► Planet IPOE-260-12V ──► Cat6 ──► ANNKE C1200
-                                │
-                                └── Short Ethernet ──► Pi 5 Ethernet port
+   Solar 12V ── Fuse ── DDR-60G-12 ──► Relay ──► LINOVISION PoE Switch
+                                                       │
+                                          Uplink port ──► Pi 5 Ethernet port
+                                          PoE port ──► CNLINKO bulkhead ──► Camera
    ```
 
 2. **Connections:**
    - 12V+ from terminal block → fuse holder input
-   - Fuse holder output → PoE injector 12V+ input
-   - PoE injector 12V- → terminal block GND
-   - Short Ethernet patch cable: PoE injector DATA port → Pi 5 Ethernet
-   - Cat6 outdoor cable: PoE injector DATA+POWER port → IP68 RJ45 coupler → Camera
+   - Fuse holder output → DDR-60G-12 input (+)
+   - DDR-60G-12 output (12V regulated) → relay NO input
+   - Relay COM output → PoE switch 12V+ input
+   - PoE switch GND → terminal block GND
+   - USB cable from relay coil → Pi 5 USB port
+   - Short Ethernet patch cable: PoE switch uplink port → Pi 5 Ethernet
+   - Cat6 outdoor cable: PoE switch PoE port → CNLINKO bulkhead → Camera
 
 3. **Operation:**
-   - When Pi/Witty Pi wakes, 12V powers PoE injector
-   - PoE injector provides 48V PoE to camera over Ethernet
+   - When Pi/Witty Pi wakes, USB powers relay coil → relay closes
+   - 12V regulated flows to PoE switch
+   - PoE switch provides 48V PoE to camera over Ethernet
    - Camera boots (~45-60s), built-in IR activates automatically at night
-   - Pi captures video via RTSP over Ethernet (camera has static IP)
-   - When Pi sleeps, 12V cuts off, camera powers down
+   - Pi captures video via RTSP over Ethernet (camera has DHCP IP)
+   - When Pi sleeps, USB power lost → relay opens → camera powers down
 
 ### Step 7: Connect Peripherals (15 min)
 
-1. **SSD:**
-   - USB-A cable from SSD enclosure → Pi 5 USB 3.0 port (blue)
+1. **USB flash drive:**
+   - SanDisk 256GB directly into Pi 5 USB-A 3.0 port (blue)
 
 2. **LTE Modem:**
    - USB cable from EXVIST adapter → Pi 5 USB 2.0 port
-   - SMA cables from modem → bulkhead connectors
-   - External antennas on bulkheads
+   - SMA pigtails from modem → puck antenna (via 12mm hole mount)
 
-3. **PoE Camera:**
+3. **Puck antenna:**
+   - Mount Proxicast ANT-122-S02 in 12mm hole on enclosure top
+   - Internal SMA cables route to modem U.FL connectors
+
+4. **PoE Camera:**
    - Already connected via Step 6
-   - Verify Ethernet from PoE injector to Pi 5 port
-   - Verify Cat6 cable routed to IP68 feedthrough
+   - Verify Ethernet from PoE switch uplink to Pi 5 port
+   - Verify Cat6 cable routed to CNLINKO bulkhead
 
-4. **Rain Gauge:**
-   - I2C cable through PG9 gland
-   - Connect to Pi-EzConnect I2C terminals:
+5. **Rain Gauge:**
+   - UART cable through PG9 gland
+   - Connect to Geekworm G469 terminals / TB1:
+     - VCC → 12V (TB1, 7-24V input range)
+     - GND → GND (TB1)
+     - TX → GPIO 15 (Pi RX)
+     - RX → GPIO 14 (Pi TX)
+
+6. **SHT40 sensor (inside enclosure):**
+   - STEMMA QT to bare wire cable to Geekworm G469:
      - VCC → 3.3V
      - GND → GND
-     - SDA → GPIO 2 (SDA)
-     - SCL → GPIO 3 (SCL)
+     - SDA → GPIO 2
+     - SCL → GPIO 3
 
-5. **Verify all connections before powering on.**
+7. **DS18B20 probe (outside enclosure):**
+   - Route cable through PG9 gland
+   - Connect to Geekworm G469:
+     - Data → GPIO 24 (with 4.7kΩ pull-up to 3.3V)
+     - VCC → 3.3V
+     - GND → GND
+
+8. **Verify all connections before powering on.**
 
 ### Step 8: Configure Pi Camera Network (15 min)
 
@@ -357,7 +394,7 @@ The Pi serves as DHCP server for the camera network on eth0 using dnsmasq. This 
    ```
 
 3. **Connect and discover the camera:**
-   - Connect camera to PoE injector, connect injector's DATA port to Pi's Ethernet port
+   - Connect camera to PoE switch, connect switch uplink port to Pi's Ethernet port
    - Wait 60-90 seconds for camera to boot
    - The camera will receive 192.168.50.139 via DHCP
    - Verify:
@@ -409,17 +446,17 @@ The Pi serves as DHCP server for the camera network on eth0 using dnsmasq. This 
    - Use stainless U-bolts to secure ANNKE C1200 bracket
    - Aim camera at target water area
    - Secure Cat6 cable along pole with UV-resistant cable ties
-   - Apply dielectric grease to outdoor RJ45 connection
+   - Connect Cat6 to CNLINKO bulkhead exterior connector
 
 3. **Rain gauge mounting:**
-   - Mount on separate arm, away from obstructions
+   - Mount Hydreon RG-15 on pole arm, away from obstructions
+   - Built-in mounting holes, no separate bracket needed
    - Level the gauge (critical for accuracy)
    - Route cable to enclosure
 
-4. **Antenna mounting:**
-   - Mount LTE antennas on enclosure exterior
-   - Position vertically for best reception
-   - Apply dielectric grease to SMA connections
+4. **Antenna:**
+   - Puck antenna already mounted on enclosure top (Step 1)
+   - Verify secure and weatherproof seal
 
 ### Step 11: Final Assembly & Sealing (15 min)
 
@@ -428,9 +465,9 @@ The Pi serves as DHCP server for the camera network on eth0 using dnsmasq. This 
    - Use cable ties to bundle
    - Ensure no cables block Gore vents
 
-2. **Seal cable glands:**
-   - Tighten all glands firmly
-   - Apply thin silicone bead around each gland exterior
+2. **Seal bulkheads and glands:**
+   - Tighten all bulkheads and glands firmly
+   - Apply thin silicone bead around each exterior connection
 
 3. **Final checks:**
    - [ ] All connections secure
@@ -450,7 +487,7 @@ The Pi serves as DHCP server for the camera network on eth0 using dnsmasq. This 
 ### First Boot
 
 1. **Verify solar battery voltage:** Should be >12V
-2. **Connect 12V input** to enclosure
+2. **Connect 12V input** to enclosure (SP13 bulkhead)
 3. **Observe:**
    - Witty Pi LED should light
    - Pi 5 should boot (activity LED flashing)
@@ -487,9 +524,9 @@ The Pi serves as DHCP server for the camera network on eth0 using dnsmasq. This 
 
 ### Verify Rain Gauge
 
-1. Run I2C scan: `i2cdetect -y 1`
-2. Should show device at expected address
-3. Manually tip bucket, verify count increments
+1. Check UART device: `ls /dev/ttyAMA0` or `ls /dev/serial0`
+2. Test serial communication: `cat /dev/ttyAMA0` (tip bucket, check for data)
+3. Manually tip bucket, verify data received
 
 ---
 
@@ -502,10 +539,10 @@ See `TROUBLESHOOTING.md` for detailed diagnostics.
 | Symptom | Check |
 |---------|-------|
 | No boot | Battery voltage, fuses, Witty Pi power LED |
-| No camera | PoE injector powered? Camera IP reachable? Ethernet cables? |
+| No camera | PoE switch powered? Relay USB connected? Camera IP reachable? Ethernet cables? |
 | No IR | Cover lens to trigger. Check camera IR settings in web UI. |
-| No LTE | Antennas tight? SIM inserted? IMEI registered? |
-| No rain data | I2C address? Cable connections? |
+| No LTE | Antenna tight? SIM inserted? IMEI registered? |
+| No rain data | UART connection? GPIO 14/15 wiring? |
 
 ---
 
@@ -513,12 +550,12 @@ See `TROUBLESHOOTING.md` for detailed diagnostics.
 
 ### Monthly
 - Visual inspection of enclosure seals
-- Check antenna connections
+- Check antenna connection
 - Verify status LEDs functioning
 
 ### Quarterly
 - Clean camera lens (through housing if sealed)
-- Check cable gland tightness
+- Check bulkhead tightness
 - Verify rain gauge not clogged
 
 ### Annually
@@ -548,6 +585,15 @@ See `TROUBLESHOOTING.md` for detailed diagnostics.
 
 ---
 
-**Document Version:** 2.0
-**Last Updated:** February 11, 2026
-**Change:** Updated from USB camera + IR relay to PoE camera (ANNKE C1200) approach
+**Document Version:** 3.0
+**Last Updated:** March 9, 2026
+**Changes from v2.0:**
+- Renamed Pi-EzConnect → Geekworm G469
+- Replaced M.2 SSD with SanDisk 256GB USB flash drive
+- Replaced Planet IPOE-260-12V with LINOVISION PoE Switch + Electronics-Salon relay
+- Added DDR-60G-5 (12V→5V) and DDR-60G-12 (12V→12V regulated) buck converters
+- Replaced DFRobot SEN0575 I2C rain gauge with Hydreon RG-15 UART (GPIO 14/15)
+- Added SHT40 temp/humidity sensor (I2C) and DS18B20 temperature probe (1-Wire)
+- Replaced SMA bulkheads with Proxicast ANT-122-S02 puck antenna (12mm hole)
+- Replaced cable glands with CNLINKO ethernet bulkhead and SP13 DC power bulkhead
+- Removed USB-RS485 adapter

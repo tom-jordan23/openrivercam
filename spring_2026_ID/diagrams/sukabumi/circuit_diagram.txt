@@ -132,7 +132,7 @@
 
 
     ──────────────────────────────────────────────────────────────
-    GPIO DETAIL (Pi 5 via Pi-EzConnect screw terminals)
+    GPIO DETAIL (Pi 5 via Geekworm G469 screw terminals)
     ──────────────────────────────────────────────────────────────
 
     3.3V RAIL
@@ -192,7 +192,7 @@
                         │   └───────────────────────┘
                         │
                         └── Pull-up resistor on
-                            Pi-EzConnect terminals
+                            Geekworm G469 terminals
 
 
     ──────────────────────────────────────────────────────────────
@@ -291,7 +291,7 @@
     3. No heaters installed (Sukabumi tropical foothills climate,
        solar power budget constraint).
     4. Conformal coating MG 422C applied to all exposed PCBs
-       (Pi 5, Witty Pi 5, Pi-EzConnect). Mask connectors.
+       (Pi 5, Witty Pi 5, Geekworm G469). Mask connectors.
     5. Dielectric grease on all outdoor electrical connections.
     6. Gore M12 vent on enclosure for pressure equalization.
     7. Carrier: Telkomsel (Indonesia, best rural coverage).
