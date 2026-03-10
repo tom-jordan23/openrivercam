@@ -12,6 +12,7 @@ import json
 import os
 import sys
 import textwrap
+from datetime import datetime
 from pathlib import Path
 
 try:
@@ -250,6 +251,35 @@ def resolve_endpoints(args_endpoints: list[str]) -> list[str]:
     return list(ENDPOINTS.keys())
 
 
+def backup_live_config(
+    session, base_url: str, camera_name: str, camera: dict,
+    endpoints: list[str], timeout: int, verbose: bool,
+) -> Path:
+    """Back up live camera config for the given endpoints before a push.
+
+    Creates camera/backups/<camera_name>/<YYYYMMDD_HHMMSS>/ and writes one
+    XML file per endpoint.  Returns the backup directory path.
+    """
+    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    backup_dir = SCRIPT_DIR / "backups" / camera_name / stamp
+    backup_dir.mkdir(parents=True, exist_ok=True)
+
+    for ep in endpoints:
+        isapi_path = ENDPOINTS[ep]
+        try:
+            if verbose:
+                print(f"  backup GET {isapi_path}")
+            resp = isapi_get(session, base_url, isapi_path, timeout)
+            root = parse_xml(resp.text)
+            root = scrub_sensitive(root)
+            xml_str = pretty_xml(root)
+            (backup_dir / f"{ep}.xml").write_text(xml_str)
+        except Exception as exc:
+            print(f"  Warning: backup failed for {ep}: {exc}", file=sys.stderr)
+
+    return backup_dir
+
+
 # ---------------------------------------------------------------------------
 # Commands
 # ---------------------------------------------------------------------------
@@ -342,6 +372,16 @@ def cmd_push(args):
     print(f"Pushing to {args.camera_name} ({camera['host']})")
     if args.dry_run:
         print("  (dry run — no changes will be made)")
+
+    # Auto-backup live config before pushing
+    if not args.dry_run and not args.no_backup:
+        pushable = [ep for ep in endpoints if resolve_config_path(camera, ep) is not None]
+        if pushable:
+            backup_dir = backup_live_config(
+                session, base_url, args.camera_name, camera,
+                pushable, args.timeout, args.verbose,
+            )
+            print(f"  Backed up live config to {backup_dir.relative_to(SCRIPT_DIR)}/")
 
     errors = 0
     skipped = 0
@@ -550,6 +590,8 @@ def build_parser() -> argparse.ArgumentParser:
     p_push = sub.add_parser("push", help="Upload XML files to camera")
     p_push.add_argument("camera_name", help="Camera name from cameras.json")
     p_push.add_argument("endpoints", nargs="*", help="Specific endpoints (default: all)")
+    p_push.add_argument("--no-backup", action="store_true",
+                        help="Skip automatic pre-push backup of live config")
 
     # diff
     p_diff = sub.add_parser("diff", help="Show differences (local vs live)")

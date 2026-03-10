@@ -77,9 +77,13 @@ with network access to the cameras.
 
 ```
 camera/
-├── camtool.py              # CLI tool (single file, ~340 lines)
+├── camtool.py              # CLI tool
 ├── cameras.json            # Camera inventory (name → IP, site, username)
 ├── .env                    # Camera password (gitignored, not committed)
+│
+├── backups/                # Auto-created pre-push backups (gitignored)
+│   └── <camera>/<YYYYMMDD_HHMMSS>/
+│       └── <endpoint>.xml
 │
 ├── common/                 # Baseline configs shared by ALL cameras
 │   ├── streaming_101.xml   # Main stream: codec, resolution, FPS, bitrate
@@ -146,7 +150,7 @@ camtool.py [-h] [--password PWD] [--dry-run] [--verbose] [--timeout N]
 |----------|---------|:---:|:---:|:---:|
 | `info`   | Print device model, firmware, serial, MAC | GET | - | - |
 | `pull`   | Download live config → XML files | GET | - | Yes |
-| `push`   | Upload XML files → camera | - | PUT | - |
+| `push`   | Upload XML files → camera (backs up live config first) | GET | PUT | Yes |
 | `diff`   | Show differences (local XML vs live) | GET | - | - |
 | `verify` | Like diff but exit 0/1/2 for scripting | GET | - | - |
 
@@ -176,6 +180,11 @@ python3 camtool.py pull jakarta-cam1
 # 2. Review the pulled XML files in jakarta/cam1/
 # 3. Move shared settings to common/, keep camera-specific in site dir
 # 4. Commit to git
+
+# 5. Test that push + backup works end-to-end
+python3 camtool.py push jakarta-cam1 streaming_101
+#   Should print: "Backed up live config to backups/jakarta-cam1/<timestamp>/"
+ls backups/jakarta-cam1/          # confirm backup was written
 ```
 
 ### Pushing a config change
@@ -185,11 +194,15 @@ python3 camtool.py pull jakarta-cam1
 # 2. Dry run to see what would happen
 python3 camtool.py push sukabumi-cam1 streaming_101 --dry-run
 
-# 3. Push for real
+# 3. Push for real (automatically backs up live config first)
 python3 camtool.py push sukabumi-cam1 streaming_101
+#   -> backups/sukabumi-cam1/20260310_143022/streaming_101.xml
 
 # 4. Verify it took effect
 python3 camtool.py diff sukabumi-cam1 streaming_101
+
+# To skip the backup (not recommended):
+python3 camtool.py push sukabumi-cam1 streaming_101 --no-backup
 ```
 
 ### Checking for config drift
@@ -212,6 +225,24 @@ python3 camtool.py push jakarta-cam1
 # 3. Verify everything matches
 python3 camtool.py verify jakarta-cam1
 ```
+
+### Recovering from a bad push
+
+Every `push` automatically backs up the live config before writing. If a push
+introduces a bad setting, restore from the backup:
+
+```bash
+# 1. Find the backup
+ls backups/jakarta-cam1/
+
+# 2. Copy the backup file over the current config
+cp backups/jakarta-cam1/20260310_143022/streaming_101.xml jakarta/cam1/streaming_101.xml
+
+# 3. Push the restored config
+python3 camtool.py push jakarta-cam1 streaming_101
+```
+
+Backups are gitignored — they're a local safety net, not version-controlled.
 
 ---
 
