@@ -1,0 +1,128 @@
+================================================================================
+    JAKARTA ORC STATION - DIN RAIL LAYOUT
+    Site: Jakarta, Indonesia  |  Rev: 1.0  |  Date: 2026-03-11
+================================================================================
+
+    VEVOR IP66 ENCLOSURE (406 x 305 x 203 mm)
+    Backplate: ~370 mm internal width
+    Two horizontal 35mm DIN rails, usable length: ~350 mm each
+
+    ┌────────────────────────────────────────────────────────────────────────┐
+    │                                                                        │
+    │  ══════════════════ UPPER RAIL - POWER (295 / 350 mm) ══════════════  │
+    │                                                                        │
+    │  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  │
+    │  ┌─────────┐┌───────────┐┌─────┐┌─────────────┐┌───────────┐         │
+    │  │   SPD   ││SDR-120-12 ││FUSE ││  DDR-60G-5  ││ Power     │         │
+    │  │HS-40-N  ││           ││ 5A  ││  12V -> 5V  ││ Dist.     │         │
+    │  │         ││Mean Well  ││     ││             ││ Block     │         │
+    │  │ 2P surge││220V AC -> ││(com-││  (Pi power) ││           │         │
+    │  │ protect ││ 12V DC    ││pute)││             ││ 12V bus   │         │
+    │  │         ││ DIN rail  ││     ││  DIN clip   ││           │         │
+    │  └─────────┘└───────────┘└─────┘└─────────────┘└───────────┘         │
+    │  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  │
+    │    36 mm      40 mm      25 mm    52.5 mm        60 mm               │
+    │  ├─ end ─┤                                             ├─ end ─┤      │
+    │    10 mm              233.5 mm + gaps = ~295 mm          10 mm        │
+    │                       ~~~~~~~~~~~~~~~~~~~~~~~~~                       │
+    │                                              free: ~55 mm ──┤         │
+    │                                                                        │
+    │  ──────────────────────────────────────────────────────────────────    │
+    │                                                                        │
+    │  ════════════════ LOWER RAIL - COMPUTE (285 / 350 mm) ══════════════  │
+    │                                                                        │
+    │  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  │
+    │  ┌────────────────┐┌────────────────┐┌──────────┐┌─────────┐          │
+    │  │ Pi 5 + G469    ││ Relay (4-SPDT) ││PoE Switch││ Quectel │          │
+    │  │                ││                ││          ││  Modem  │          │
+    │  │ Compute core   ││ PoE power ctrl ││LINOVISION││ EG25-G  │          │
+    │  │                ││                ││Industrial││         │          │
+    │  │ CLIP-RPI +     ││ Built-in DIN   ││          ││ EXVIST  │          │
+    │  │ C45 DIN clips  ││ clip           ││Alum clip ││alum clip│          │
+    │  └────────────────┘└────────────────┘└──────────┘└─────────┘          │
+    │  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  │
+    │     85 mm             88 mm            50 mm      42 mm               │
+    │  ├─ end ─┤                                             ├─ end ─┤      │
+    │    10 mm              285 mm total                       10 mm        │
+    │                       ~~~~~~~~~~                                      │
+    │                                              free: ~65 mm ──┤         │
+    │                                                                        │
+    └────────────────────────────────────────────────────────────────────────┘
+
+
+    ══════════════════════════════════════════════════════════════════
+     COMPONENT MOUNTING DETAILS
+    ══════════════════════════════════════════════════════════════════
+
+    UPPER RAIL (left to right):
+    ──────────────────────────────────────────────────────────────
+    Pos │ Component         │ Width   │ Mounting      │ Notes
+    ────┼───────────────────┼─────────┼───────────────┼──────────────────
+     ES │ End stop          │  10 mm  │ Snap-on       │ Left end
+      1 │ SPD (HS-40-N)     │  36 mm  │ Built-in clip │ 2P surge protector
+      2 │ SDR-120-12        │  40 mm  │ Built-in clip │ 220V AC -> 12V DC
+      3 │ Fuse 5A (compute) │  25 mm  │ Aluminum clip │ Inline blade fuse
+      4 │ DDR-60G-5         │  52.5mm │ Built-in clip │ 12V->5V for Pi 5
+      5 │ Power dist. block │  60 mm  │ Built-in clip │ 12V bus distrib.
+     ES │ End stop          │  10 mm  │ Snap-on       │ Right end
+    ────┴───────────────────┴─────────┴───────────────┴──────────────────
+                                  TOTAL: 213.5 mm + gaps = ~295 mm
+
+    LOWER RAIL (left to right):
+    ──────────────────────────────────────────────────────────────
+    Pos │ Component         │ Width   │ Mounting      │ Notes
+    ────┼───────────────────┼─────────┼───────────────┼──────────────────
+     ES │ End stop          │  10 mm  │ Snap-on       │ Left end
+      1 │ Pi 5 + G469 stack │  85 mm  │ CLIP-RPI + C45│ Compute core
+      2 │ Relay (4-SPDT)    │  88 mm  │ Built-in clip │ Switches PoE power
+      3 │ PoE switch        │  50 mm  │ Aluminum clip │ LINOVISION, 2 cams
+      4 │ Quectel modem     │  42 mm  │ Aluminum clip │ EG25-G + EXVIST
+     ES │ End stop          │  10 mm  │ Snap-on       │ Right end
+    ────┴───────────────────┴─────────┴───────────────┴──────────────────
+                                  TOTAL: 265 mm + gaps = ~285 mm
+
+
+    ══════════════════════════════════════════════════════════════════
+     NOTES
+    ══════════════════════════════════════════════════════════════════
+
+    1. DIN rails cut to ~340 mm to fit inside 370 mm internal width
+       with clearance for cable routing on both sides.
+
+    2. Upper rail mounts ~60 mm from top of backplate.
+       Lower rail mounts ~60 mm below upper rail (center-to-center).
+
+    3. SPD (surge protector) goes FIRST on upper rail (leftmost).
+       AC mains enters from left side cable gland, hits SPD before
+       anything else.
+
+    4. SDR-120-12 PSU is AC-powered. All components to its right
+       on the upper rail are DC (12V bus).
+
+    5. PoE switch powers TWO cameras (vs. one at Sukabumi).
+       No relay needed for Jakarta - cameras run continuously
+       on AC power.
+
+    6. Pi 5 + G469 mounted via CLIP-RPI DIN adapter + C45 clips
+       for the G469 board.
+
+    7. Leave cable routing space between rails and at right side
+       of each rail (free space area).
+
+    8. Aluminum DIN clips (e.g., Phoenix Contact 1201578) used for
+       components without built-in DIN mounting (fuses, PoE switch,
+       modem).
+
+    9. End stops prevent lateral sliding during transport/vibration.
+
+   10. Route AC wiring along upper-left only (SPD to PSU).
+       Route 12V DC wiring along remainder of upper rail.
+       Route USB, Ethernet, and GPIO wiring along lower rail.
+
+   11. Samsung FIT Plus USB drive plugs directly into Pi USB-A port
+       (no DIN rail space needed).
+
+   12. See jakarta_overview.svg for electrical connections between
+       these components.
+
+================================================================================

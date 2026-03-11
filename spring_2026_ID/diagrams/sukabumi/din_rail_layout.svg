@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 520" width="900" height="520">
+  <defs>
+    <style>
+      .title { font: bold 20px sans-serif; fill: #1a1a1a; }
+      .subtitle { font: 12px sans-serif; fill: #666; }
+      .section-title { font: bold 12px sans-serif; fill: #333; }
+      .component { font: 11px sans-serif; fill: #333; }
+      .component-detail { font: 9px sans-serif; fill: #666; }
+      .dim-text { font: 9px sans-serif; fill: #888; }
+      .dim-bold { font: bold 9px sans-serif; fill: #555; }
+      .note-text { font: 9px sans-serif; fill: #333; }
+      .clip-label { font: italic 8px sans-serif; fill: #999; }
+
+      .enclosure { fill: #f5f5f5; stroke: #999; stroke-width: 2; rx: 10; }
+      .din-rail { fill: #bdbdbd; stroke: #9e9e9e; stroke-width: 1; rx: 2; }
+      .end-stop { fill: #757575; stroke: #616161; stroke-width: 1; rx: 1; }
+
+      .box-power { fill: #ffebee; stroke: #c62828; stroke-width: 1.5; rx: 5; }
+      .box-compute { fill: #e3f2fd; stroke: #1565c0; stroke-width: 1.5; rx: 5; }
+      .box-camera-teal { fill: #e0f2f1; stroke: #00695c; stroke-width: 1.5; rx: 5; }
+      .box-fuse { fill: #fff3e0; stroke: #e65100; stroke-width: 1.5; rx: 3; }
+
+      .box-legend { fill: #fff; stroke: #999; stroke-width: 1; rx: 6; }
+      .box-note { fill: #fffde7; stroke: #ccc; stroke-width: 1; rx: 6; }
+
+      .dim-line { stroke: #aaa; stroke-width: 0.5; fill: none; }
+      .dim-bracket { stroke: #888; stroke-width: 0.8; fill: none; }
+      .free-zone { fill: #f0f0f0; stroke: #ccc; stroke-width: 1; stroke-dasharray: 4,3; rx: 3; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="900" height="520" fill="#fafafa"/>
+
+  <!-- Title -->
+  <text x="450" y="24" class="title" text-anchor="middle">Sukabumi ORC Station &#x2014; DIN Rail Layout</text>
+  <text x="450" y="40" class="subtitle" text-anchor="middle">Solar-Powered | 1 Camera | VEVOR IP66 (406&#xd7;305&#xd7;203 mm) | Rev 1.0 | 2026-03-11</text>
+
+  <!-- ==================== -->
+  <!-- ENCLOSURE OUTLINE    -->
+  <!-- ==================== -->
+  <rect x="40" y="55" width="820" height="340" class="enclosure"/>
+  <text x="55" y="73" class="section-title">VEVOR IP66 Enclosure Backplate (~370 mm internal width)</text>
+
+  <!-- ==================== -->
+  <!-- UPPER RAIL - POWER   -->
+  <!-- ==================== -->
+  <text x="55" y="93" class="section-title" fill="#c62828">UPPER RAIL &#x2014; POWER</text>
+
+  <!-- DIN rail bar -->
+  <rect x="65" y="98" width="700" height="8" class="din-rail"/>
+
+  <!-- Left end stop -->
+  <rect x="65" y="108" width="16" height="55" class="end-stop"/>
+  <text x="73" y="175" class="dim-text" text-anchor="middle">10</text>
+
+  <!-- TB1 Terminal Block (60mm) -->
+  <rect x="85" y="108" width="120" height="55" class="box-power"/>
+  <text x="145" y="128" class="component" text-anchor="middle">Terminal Block</text>
+  <text x="145" y="141" class="component" text-anchor="middle">TB1</text>
+  <text x="145" y="154" class="component-detail" text-anchor="middle">12V bus distribution</text>
+  <text x="145" y="175" class="dim-bold" text-anchor="middle">60 mm</text>
+  <text x="145" y="185" class="clip-label" text-anchor="middle">built-in clip</text>
+
+  <!-- Fuse 5A (compute) (25mm) -->
+  <rect x="211" y="108" width="50" height="55" class="box-fuse"/>
+  <text x="236" y="128" class="component" text-anchor="middle">FUSE</text>
+  <text x="236" y="141" class="component" text-anchor="middle">5A</text>
+  <text x="236" y="154" class="component-detail" text-anchor="middle">(compute)</text>
+  <text x="236" y="175" class="dim-bold" text-anchor="middle">25 mm</text>
+  <text x="236" y="185" class="clip-label" text-anchor="middle">alum clip</text>
+
+  <!-- DDR-60G-5 (52.5mm) -->
+  <rect x="267" y="108" width="105" height="55" class="box-power"/>
+  <text x="319" y="125" class="component" text-anchor="middle">DDR-60G-5</text>
+  <text x="319" y="138" class="component-detail" text-anchor="middle">12V &#x2192; 5V</text>
+  <text x="319" y="151" class="component-detail" text-anchor="middle">Pi 5 power</text>
+  <text x="319" y="175" class="dim-bold" text-anchor="middle">52.5 mm</text>
+  <text x="319" y="185" class="clip-label" text-anchor="middle">built-in clip</text>
+
+  <!-- Fuse 5A (camera) (25mm) -->
+  <rect x="378" y="108" width="50" height="55" class="box-fuse"/>
+  <text x="403" y="128" class="component" text-anchor="middle">FUSE</text>
+  <text x="403" y="141" class="component" text-anchor="middle">5A</text>
+  <text x="403" y="154" class="component-detail" text-anchor="middle">(camera)</text>
+  <text x="403" y="175" class="dim-bold" text-anchor="middle">25 mm</text>
+  <text x="403" y="185" class="clip-label" text-anchor="middle">alum clip</text>
+
+  <!-- DDR-60G-12 (52.5mm) -->
+  <rect x="434" y="108" width="105" height="55" class="box-power"/>
+  <text x="486" y="125" class="component" text-anchor="middle">DDR-60G-12</text>
+  <text x="486" y="138" class="component-detail" text-anchor="middle">12V &#x2192; 12V reg</text>
+  <text x="486" y="151" class="component-detail" text-anchor="middle">camera circuit</text>
+  <text x="486" y="175" class="dim-bold" text-anchor="middle">52.5 mm</text>
+  <text x="486" y="185" class="clip-label" text-anchor="middle">built-in clip</text>
+
+  <!-- Right end stop -->
+  <rect x="545" y="108" width="16" height="55" class="end-stop"/>
+  <text x="553" y="175" class="dim-text" text-anchor="middle">10</text>
+
+  <!-- Free space indicator -->
+  <rect x="570" y="108" width="185" height="55" class="free-zone"/>
+  <text x="662" y="140" class="dim-text" text-anchor="middle">free space</text>
+  <text x="662" y="153" class="dim-text" text-anchor="middle">~85 mm</text>
+
+  <!-- Rail utilization -->
+  <text x="65" y="200" class="dim-bold">265 mm used / 350 mm rail (76%)</text>
+
+  <!-- ==================== -->
+  <!-- LOWER RAIL - COMPUTE -->
+  <!-- ==================== -->
+  <text x="55" y="224" class="section-title" fill="#1565c0">LOWER RAIL &#x2014; COMPUTE</text>
+
+  <!-- DIN rail bar -->
+  <rect x="65" y="229" width="700" height="8" class="din-rail"/>
+
+  <!-- Left end stop -->
+  <rect x="65" y="239" width="16" height="55" class="end-stop"/>
+  <text x="73" y="306" class="dim-text" text-anchor="middle">10</text>
+
+  <!-- Pi 5 + G469 (85mm) -->
+  <rect x="85" y="239" width="170" height="55" class="box-compute"/>
+  <text x="170" y="256" class="component" text-anchor="middle">Pi 5 + G469</text>
+  <text x="170" y="269" class="component-detail" text-anchor="middle">compute core</text>
+  <text x="170" y="282" class="component-detail" text-anchor="middle">+ Samsung FIT USB</text>
+  <text x="170" y="306" class="dim-bold" text-anchor="middle">85 mm</text>
+  <text x="170" y="316" class="clip-label" text-anchor="middle">standoffs / C45</text>
+
+  <!-- Relay 4-SPDT (88mm) -->
+  <rect x="261" y="239" width="176" height="55" class="box-compute"/>
+  <text x="349" y="256" class="component" text-anchor="middle">Relay (4-SPDT)</text>
+  <text x="349" y="269" class="component-detail" text-anchor="middle">PoE power control</text>
+  <text x="349" y="282" class="component-detail" text-anchor="middle">USB-triggered from Pi</text>
+  <text x="349" y="306" class="dim-bold" text-anchor="middle">88 mm</text>
+  <text x="349" y="316" class="clip-label" text-anchor="middle">built-in clip</text>
+
+  <!-- PoE Switch (50mm) -->
+  <rect x="443" y="239" width="100" height="55" class="box-camera-teal"/>
+  <text x="493" y="256" class="component" text-anchor="middle">PoE Switch</text>
+  <text x="493" y="269" class="component-detail" text-anchor="middle">LINOVISION</text>
+  <text x="493" y="282" class="component-detail" text-anchor="middle">1 camera</text>
+  <text x="493" y="306" class="dim-bold" text-anchor="middle">50 mm</text>
+  <text x="493" y="316" class="clip-label" text-anchor="middle">alum clip</text>
+
+  <!-- Quectel Modem (42mm) -->
+  <rect x="549" y="239" width="84" height="55" class="box-camera-teal"/>
+  <text x="591" y="256" class="component" text-anchor="middle">Quectel</text>
+  <text x="591" y="269" class="component-detail" text-anchor="middle">EG25-G</text>
+  <text x="591" y="282" class="component-detail" text-anchor="middle">LTE modem</text>
+  <text x="591" y="306" class="dim-bold" text-anchor="middle">42 mm</text>
+  <text x="591" y="316" class="clip-label" text-anchor="middle">alum clip</text>
+
+  <!-- Right end stop -->
+  <rect x="639" y="239" width="16" height="55" class="end-stop"/>
+  <text x="647" y="306" class="dim-text" text-anchor="middle">10</text>
+
+  <!-- Free space indicator -->
+  <rect x="664" y="239" width="91" height="55" class="free-zone"/>
+  <text x="709" y="270" class="dim-text" text-anchor="middle">free</text>
+  <text x="709" y="283" class="dim-text" text-anchor="middle">~65 mm</text>
+
+  <!-- Rail utilization -->
+  <text x="65" y="331" class="dim-bold">285 mm used / 350 mm rail (81%)</text>
+
+  <!-- ==================== -->
+  <!-- LEGEND               -->
+  <!-- ==================== -->
+  <rect x="40" y="400" width="250" height="100" class="box-legend"/>
+  <text x="55" y="418" class="section-title">LEGEND</text>
+
+  <rect x="55" y="426" width="30" height="12" class="box-power"/>
+  <text x="92" y="436" class="component">Power components</text>
+
+  <rect x="55" y="444" width="30" height="12" class="box-fuse"/>
+  <text x="92" y="454" class="component">Fuses</text>
+
+  <rect x="55" y="462" width="30" height="12" class="box-compute"/>
+  <text x="92" y="472" class="component">Compute components</text>
+
+  <rect x="55" y="480" width="30" height="12" class="box-camera-teal"/>
+  <text x="92" y="490" class="component">Network / camera</text>
+
+  <!-- ==================== -->
+  <!-- NOTES                -->
+  <!-- ==================== -->
+  <rect x="300" y="400" width="560" height="100" class="box-note"/>
+  <text x="315" y="418" class="section-title">MOUNTING NOTES</text>
+  <text x="315" y="434" class="note-text">1. DIN rails cut to ~340 mm (370 mm internal width minus clearance).</text>
+  <text x="315" y="448" class="note-text">2. Upper rail ~60 mm from backplate top. Lower rail ~60 mm below (C-to-C).</text>
+  <text x="315" y="462" class="note-text">3. Route 12V power along upper rail, USB/ETH/GPIO along lower rail.</text>
+  <text x="315" y="476" class="note-text">4. Aluminum clips for fuses, PoE switch, modem. End stops both ends.</text>
+  <text x="315" y="490" class="note-text">5. Samsung FIT Plus USB plugs directly into Pi (no rail space needed).</text>
+
+  <!-- Footer -->
+  <text x="450" y="514" class="subtitle" text-anchor="middle">OpenRiverCam &#x2014; Sukabumi Site | Rev 1.0 | 2026-03-11</text>
+</svg>
