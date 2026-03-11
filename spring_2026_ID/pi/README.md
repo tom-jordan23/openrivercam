@@ -43,7 +43,9 @@ contains a real file.
 
 | Repo path | Pi path | Description | Shared / Site | Credentials? | Upstream candidate? |
 |-----------|---------|-------------|---------------|:------------:|:-------------------:|
-| *(none yet — files added incrementally)* | | | | | |
+| `shared/etc/dnsmasq.d/maintenance.conf` | `/etc/dnsmasq.d/maintenance.conf` | DHCP server for camera PoE network on eth0 | Shared | No | No |
+| `sukabumi/etc/cloud/templates/hosts.debian.tmpl` | `/etc/cloud/templates/hosts.debian.tmpl` | Hosts file template with camera hostname | Sukabumi | No | No |
+| `sukabumi/etc/NetworkManager/system-connections/camera-net.nmconnection` | `/etc/NetworkManager/system-connections/camera-net.nmconnection` | Static IP (192.168.50.1) for eth0 camera network | Sukabumi | No | No |
 
 **Column guide:**
 - **Credentials?** — Yes if the file contains passwords, keys, or secrets that
