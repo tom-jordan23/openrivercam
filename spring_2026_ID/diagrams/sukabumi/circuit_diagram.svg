@@ -1,0 +1,490 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1300 950" width="1300" height="950">
+  <defs>
+    <style>
+      /* Typography */
+      .title { font: bold 22px sans-serif; fill: #1a1a1a; }
+      .subtitle { font: 13px sans-serif; fill: #666; }
+      .section-title { font: bold 13px sans-serif; fill: #333; }
+      .component { font: 12px sans-serif; fill: #333; }
+      .component-detail { font: 10px sans-serif; fill: #666; }
+      .label { font: 9px sans-serif; fill: #555; }
+      .label-bold { font: bold 9px sans-serif; }
+      .note-text { font: 10px sans-serif; fill: #333; }
+      .table-header { font: bold 10px sans-serif; fill: #333; }
+      .table-cell { font: 10px sans-serif; fill: #444; }
+      .gland-label { font: italic 9px sans-serif; fill: #777; }
+
+      /* Wire styles */
+      .wire-12v { stroke: #cc0000; stroke-width: 2.5; fill: none; }
+      .wire-5v-usbc { stroke: #e67300; stroke-width: 2; fill: none; }
+      .wire-usb { stroke: #0044cc; stroke-width: 2; fill: none; }
+      .wire-poe { stroke: #008080; stroke-width: 2.5; fill: none; }
+      .wire-eth { stroke: #005f6b; stroke-width: 2; fill: none; }
+      .wire-gpio { stroke: #2e7d32; stroke-width: 1.5; fill: none; }
+      .wire-rf { stroke: #f57c00; stroke-width: 2; fill: none; stroke-dasharray: 8,4; }
+
+      /* Enclosure */
+      .enclosure-dashed { fill: none; stroke: #888; stroke-width: 2; stroke-dasharray: 10,5; rx: 12; }
+
+      /* Component boxes - pastel fills matching PDF */
+      .box-power { fill: #fffde7; stroke: #bbb; stroke-width: 1.5; rx: 8; }
+      .box-compute { fill: #e3f2fd; stroke: #90caf9; stroke-width: 1.5; rx: 8; }
+      .box-sensor { fill: #e0f7fa; stroke: #80deea; stroke-width: 1.5; rx: 8; }
+      .box-outdoor { fill: #e8f5e9; stroke: #a5d6a7; stroke-width: 1.5; rx: 8; }
+      .box-camera { fill: #ffebee; stroke: #ef9a9a; stroke-width: 1.5; rx: 8; }
+      .box-white { fill: #fff; stroke: #bbb; stroke-width: 1.2; rx: 6; }
+      .box-legend { fill: #fff; stroke: #999; stroke-width: 1.2; rx: 6; }
+      .box-note { fill: #fff9e6; stroke: #ccc; stroke-width: 1; rx: 6; }
+      .box-table { fill: #fff; stroke: #999; stroke-width: 1; rx: 6; }
+
+      /* LEDs */
+      .led-green { fill: #4caf50; stroke: #388e3c; stroke-width: 1; }
+      .led-yellow { fill: #ffc107; stroke: #f9a825; stroke-width: 1; }
+      .led-red { fill: #f44336; stroke: #c62828; stroke-width: 1; }
+
+      /* Misc */
+      .fuse-box { fill: #fff3e0; stroke: #ff9800; stroke-width: 1.5; rx: 3; }
+      .resistor { fill: #f5f5f5; stroke: #666; stroke-width: 1; rx: 2; }
+    </style>
+
+    <!-- Arrow markers -->
+    <marker id="arr" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#333"/>
+    </marker>
+    <marker id="arr-red" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#cc0000"/>
+    </marker>
+    <marker id="arr-orange" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#e67300"/>
+    </marker>
+    <marker id="arr-blue" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#0044cc"/>
+    </marker>
+    <marker id="arr-teal" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#008080"/>
+    </marker>
+    <marker id="arr-eth" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#005f6b"/>
+    </marker>
+    <marker id="arr-green" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#2e7d32"/>
+    </marker>
+  </defs>
+
+  <!-- ==================== -->
+  <!-- BACKGROUND           -->
+  <!-- ==================== -->
+  <rect width="1300" height="950" fill="#fafafa"/>
+
+  <!-- ==================== -->
+  <!-- TITLE                -->
+  <!-- ==================== -->
+  <text x="650" y="30" class="title" text-anchor="middle">SUKABUMI ORC STATION &#x2014; SYSTEM WIRING DIAGRAM</text>
+  <text x="650" y="48" class="subtitle" text-anchor="middle">OpenRiverCam | Rev 3.0 | 2026-03-10 | Solar-Powered PoE Camera System</text>
+
+  <!-- ==================== -->
+  <!-- OUTSIDE LEFT: SOLAR / BATTERY (yellow/cream power area) -->
+  <!-- ==================== -->
+  <rect x="20" y="70" width="180" height="310" class="box-power"/>
+  <text x="110" y="92" class="section-title" text-anchor="middle">POWER (Site-Provided)</text>
+
+  <!-- Solar Panel -->
+  <rect x="35" y="105" width="150" height="50" class="box-white"/>
+  <text x="110" y="128" class="component" text-anchor="middle">200W Solar Panel</text>
+  <text x="110" y="143" class="component-detail" text-anchor="middle">Monocrystalline</text>
+
+  <!-- Charge Controller -->
+  <rect x="35" y="170" width="150" height="45" class="box-white"/>
+  <text x="110" y="190" class="component" text-anchor="middle">Charge Controller</text>
+  <text x="110" y="203" class="component-detail" text-anchor="middle">(site-provided)</text>
+
+  <!-- Battery -->
+  <rect x="35" y="230" width="150" height="55" class="box-white"/>
+  <text x="110" y="252" class="component" text-anchor="middle">12V 50Ah Battery</text>
+  <text x="110" y="267" class="component-detail" text-anchor="middle">LiFePO4</text>
+
+  <!-- Solar wiring: Panel -> Controller -> Battery -->
+  <line x1="110" y1="155" x2="110" y2="170" class="wire-12v"/>
+  <line x1="110" y1="215" x2="110" y2="230" class="wire-12v"/>
+  <text x="125" y="167" class="label-bold" fill="#cc0000">12V</text>
+
+  <!-- Battery to M12 gland -->
+  <line x1="185" y1="258" x2="220" y2="258" class="wire-12v"/>
+  <text x="125" y="228" class="label-bold" fill="#cc0000">12V DC</text>
+  <text x="125" y="238" class="label" fill="#cc0000">18 AWG</text>
+
+  <!-- M12 Cable Gland annotation -->
+  <rect x="218" y="248" width="8" height="20" fill="#888" rx="2"/>
+  <text x="222" y="283" class="gland-label" text-anchor="middle">M12</text>
+  <text x="222" y="293" class="gland-label" text-anchor="middle">gland</text>
+
+  <!-- ==================== -->
+  <!-- IP67 COMPUTE ENCLOSURE (dashed border, center) -->
+  <!-- ==================== -->
+  <rect x="230" y="62" width="610" height="425" class="enclosure-dashed"/>
+  <text x="535" y="80" class="section-title" text-anchor="middle">IP67 COMPUTE ENCLOSURE</text>
+
+  <!-- ==================== -->
+  <!-- TERMINAL BLOCK TB1   -->
+  <!-- ==================== -->
+  <rect x="250" y="240" width="160" height="55" class="box-white"/>
+  <text x="330" y="262" class="component" text-anchor="middle">Terminal Block</text>
+  <text x="330" y="277" class="component-detail" text-anchor="middle">TB1 (Power Distribution)</text>
+
+  <!-- Battery (through gland) to TB1 -->
+  <line x1="226" y1="258" x2="250" y2="265" class="wire-12v" marker-end="url(#arr-red)"/>
+
+  <!-- ==================== -->
+  <!-- DDR-60G-5 (12V to 5V DC-DC) -->
+  <!-- ==================== -->
+  <rect x="250" y="310" width="160" height="50" class="box-white"/>
+  <text x="330" y="332" class="component" text-anchor="middle">DDR-60G-5</text>
+  <text x="330" y="346" class="component-detail" text-anchor="middle">12V&#x2192;5V DC-DC, 10.8A</text>
+
+  <!-- TB1 to DDR-60G-5 (12V bus) -->
+  <line x1="330" y1="295" x2="330" y2="310" class="wire-12v"/>
+  <text x="340" y="306" class="label-bold" fill="#cc0000">12V</text>
+
+  <!-- ==================== -->
+  <!-- RASPBERRY PI 5 (blue compute area) -->
+  <!-- ==================== -->
+  <rect x="435" y="165" width="200" height="80" class="box-compute"/>
+  <text x="535" y="190" class="component" text-anchor="middle">Raspberry Pi 5 (8GB)</text>
+  <text x="535" y="205" class="component-detail" text-anchor="middle">Rainbow Sensing image</text>
+  <text x="535" y="218" class="component-detail" text-anchor="middle">5V USB-C powered | ML-2020 RTC</text>
+  <text x="535" y="231" class="component-detail" text-anchor="middle">Built-in RTC for scheduling</text>
+
+  <!-- DDR-60G-5 to Pi 5 (5V USB-C, direct connection) -->
+  <line x1="410" y1="335" x2="460" y2="335" class="wire-5v-usbc"/>
+  <line x1="460" y1="335" x2="460" y2="245" class="wire-5v-usbc" marker-end="url(#arr-orange)"/>
+  <text x="465" y="300" class="label-bold" fill="#e67300">5V</text>
+  <text x="465" y="312" class="label" fill="#e67300">USB-C</text>
+
+  <!-- ==================== -->
+  <!-- QUECTEL LTE MODEM    -->
+  <!-- ==================== -->
+  <rect x="435" y="95" width="200" height="55" class="box-compute"/>
+  <text x="535" y="115" class="component" text-anchor="middle">Quectel EG25-G</text>
+  <text x="535" y="130" class="component-detail" text-anchor="middle">LTE Cat-4 Modem | EXVIST mPCIe-USB</text>
+  <text x="535" y="142" class="component-detail" text-anchor="middle">USB 2.0 from Pi</text>
+
+  <!-- Pi to Modem (USB 2.0) -->
+  <line x1="535" y1="165" x2="535" y2="150" class="wire-usb" marker-end="url(#arr-blue)"/>
+  <text x="544" y="160" class="label-bold" fill="#0044cc">USB 2.0</text>
+
+  <!-- ==================== -->
+  <!-- SAMSUNG FIT PLUS     -->
+  <!-- ==================== -->
+  <rect x="435" y="260" width="200" height="45" class="box-compute"/>
+  <text x="535" y="280" class="component" text-anchor="middle">Samsung FIT Plus 256GB</text>
+  <text x="535" y="294" class="component-detail" text-anchor="middle">USB 3.1 flash drive (IP67)</text>
+
+  <!-- Pi to Samsung (USB 3.0) -->
+  <line x1="560" y1="245" x2="560" y2="260" class="wire-usb" marker-end="url(#arr-blue)"/>
+  <text x="569" y="256" class="label-bold" fill="#0044cc">USB 3.0</text>
+
+  <!-- ==================== -->
+  <!-- Pi-EzConnect GPIO    -->
+  <!-- ==================== -->
+  <rect x="435" y="320" width="200" height="50" class="box-compute"/>
+  <text x="535" y="340" class="component" text-anchor="middle">Pi-EzConnect (Adafruit 2711)</text>
+  <text x="535" y="354" class="component-detail" text-anchor="middle">GPIO Screw Terminal Block</text>
+
+  <!-- Pi to Pi-EzConnect (40-pin GPIO) -->
+  <line x1="535" y1="305" x2="535" y2="320" class="wire-gpio"/>
+  <text x="544" y="316" class="label" fill="#2e7d32">40-pin GPIO</text>
+
+  <!-- ==================== -->
+  <!-- PROXICAST ANTENNA (outside, top right) -->
+  <!-- ==================== -->
+  <rect x="860" y="70" width="220" height="65" class="box-outdoor"/>
+  <text x="970" y="93" class="component" text-anchor="middle">Proxicast ANT-122-S02</text>
+  <text x="970" y="108" class="component-detail" text-anchor="middle">MIMO LTE Puck (IP67)</text>
+  <text x="970" y="121" class="component-detail" text-anchor="middle">SMA bulkhead mount</text>
+
+  <!-- Modem to Antenna (RF / SMA) -->
+  <line x1="635" y1="110" x2="680" y2="110" class="wire-usb"/>
+  <line x1="680" y1="110" x2="680" y2="85" class="wire-rf"/>
+  <!-- SMA bulkhead through enclosure wall -->
+  <rect x="838" y="80" width="6" height="16" fill="#888" rx="1"/>
+  <text x="841" y="108" class="gland-label" text-anchor="middle">SMA</text>
+  <text x="841" y="118" class="gland-label" text-anchor="middle">bulkhead</text>
+  <line x1="680" y1="85" x2="844" y2="85" class="wire-rf"/>
+  <line x1="844" y1="85" x2="860" y2="88" class="wire-rf" marker-end="url(#arr)"/>
+
+  <!-- ==================== -->
+  <!-- CAMERA POWER PATH (from TB1, with fuse, relay, PoE switch) -->
+  <!-- ==================== -->
+
+  <!-- TB1 to fuse (12V bus for camera circuit) -->
+  <line x1="330" y1="295" x2="330" y2="400" class="wire-12v"/>
+
+  <!-- 5A Fuse -->
+  <rect x="318" y="397" width="25" height="16" class="fuse-box"/>
+  <text x="330" y="409" class="label" text-anchor="middle" fill="#e65100">5A</text>
+
+  <!-- Fuse to DDR-60G-12 -->
+  <line x1="330" y1="413" x2="330" y2="425" class="wire-12v"/>
+
+  <!-- DDR-60G-12 -->
+  <rect x="250" y="425" width="160" height="50" class="box-white"/>
+  <text x="330" y="447" class="component" text-anchor="middle">DDR-60G-12</text>
+  <text x="330" y="461" class="component-detail" text-anchor="middle">12V&#x2192;12V regulated DC-DC</text>
+
+  <!-- DDR-60G-12 to Relay -->
+  <line x1="410" y1="450" x2="450" y2="450" class="wire-12v" marker-end="url(#arr-red)"/>
+  <text x="425" y="444" class="label-bold" fill="#cc0000">12V reg</text>
+
+  <!-- RELAY-POE -->
+  <rect x="450" y="425" width="160" height="50" class="box-white"/>
+  <text x="530" y="447" class="component" text-anchor="middle">RELAY-POE</text>
+  <text x="530" y="461" class="component-detail" text-anchor="middle">USB-triggered, DIN rail 4-SPDT</text>
+
+  <!-- Pi USB to Relay (USB trigger) -->
+  <line x1="620" y1="220" x2="640" y2="220" class="wire-usb"/>
+  <line x1="640" y1="220" x2="640" y2="435" class="wire-usb"/>
+  <line x1="640" y1="435" x2="610" y2="435" class="wire-usb" marker-end="url(#arr-blue)"/>
+  <text x="647" y="340" class="label-bold" fill="#0044cc">USB</text>
+  <text x="647" y="352" class="label" fill="#0044cc">(relay ctrl)</text>
+
+  <!-- ==================== -->
+  <!-- LINOVISION PoE SWITCH -->
+  <!-- ==================== -->
+  <rect x="670" y="380" width="160" height="70" class="box-white"/>
+  <text x="750" y="400" class="component" text-anchor="middle">LINOVISION Industrial</text>
+  <text x="750" y="414" class="component-detail" text-anchor="middle">PoE Switch, 12V input</text>
+  <text x="750" y="428" class="component-detail" text-anchor="middle">Switched via relay</text>
+  <text x="750" y="442" class="component-detail" text-anchor="middle">Pi ON=relay closed=PoE ON</text>
+
+  <!-- Relay to PoE Switch (switched 12V) -->
+  <line x1="610" y1="450" x2="670" y2="450" class="wire-12v"/>
+  <text x="636" y="465" class="label-bold" fill="#cc0000">switched</text>
+
+  <!-- PoE Switch uplink to Pi ETH (data only) -->
+  <line x1="750" y1="380" x2="750" y2="210" class="wire-eth"/>
+  <line x1="750" y1="210" x2="635" y2="210" class="wire-eth" marker-end="url(#arr-eth)"/>
+  <text x="700" y="290" class="label-bold" fill="#005f6b">DATA</text>
+  <text x="700" y="302" class="label" fill="#005f6b">(Ethernet)</text>
+
+  <!-- PoE Switch PoE port to outdoor cable -->
+  <line x1="830" y1="420" x2="860" y2="420" class="wire-poe"/>
+  <!-- M12 gland + IP68 RJ45 coupler at enclosure boundary -->
+  <rect x="838" y="412" width="6" height="16" fill="#888" rx="1"/>
+  <text x="841" y="440" class="gland-label" text-anchor="middle">M12 gland</text>
+  <text x="841" y="450" class="gland-label" text-anchor="middle">+ IP68 RJ45</text>
+
+  <!-- Outdoor Cat6 to camera -->
+  <line x1="844" y1="420" x2="870" y2="420" class="wire-poe"/>
+  <line x1="870" y1="420" x2="870" y2="510" class="wire-poe"/>
+  <line x1="870" y1="510" x2="920" y2="510" class="wire-poe" marker-end="url(#arr-teal)"/>
+  <text x="878" y="475" class="label-bold" fill="#008080">Cat6 PoE</text>
+  <text x="878" y="487" class="label" fill="#008080">48V + Data</text>
+
+  <!-- ==================== -->
+  <!-- ANNKE C1200 CAMERA (outside, right, red/pink area) -->
+  <!-- ==================== -->
+  <rect x="910" y="470" width="220" height="110" class="box-camera"/>
+  <text x="1020" y="495" class="component" text-anchor="middle">ANNKE C1200</text>
+  <text x="1020" y="510" class="component-detail" text-anchor="middle">PoE Camera (IP67)</text>
+  <text x="1020" y="524" class="component-detail" text-anchor="middle">12MP | Built-in IR LEDs</text>
+  <text x="1020" y="538" class="component-detail" text-anchor="middle">48V PoE powered | 134&#xb0; FOV</text>
+  <text x="1020" y="552" class="component-detail" text-anchor="middle">Stainless pole mount bracket</text>
+  <text x="1020" y="566" class="component-detail" text-anchor="middle">RTSP stream | ~12W draw</text>
+
+  <!-- ==================== -->
+  <!-- SENSORS: Hydreon RG-15 (outside, light cyan area) -->
+  <!-- ==================== -->
+  <rect x="860" y="155" width="220" height="110" class="box-sensor"/>
+  <text x="970" y="178" class="component" text-anchor="middle">Hydreon RG-15</text>
+  <text x="970" y="193" class="component-detail" text-anchor="middle">Rain Gauge</text>
+  <text x="970" y="208" class="component-detail" text-anchor="middle">UART Serial 3.3V</text>
+  <text x="970" y="223" class="component-detail" text-anchor="middle">GPIO 14 (TX) / GPIO 15 (RX)</text>
+  <text x="970" y="238" class="component-detail" text-anchor="middle">12V power from TB1</text>
+  <text x="970" y="253" class="component-detail" text-anchor="middle">Outdoor, PG9 gland</text>
+
+  <!-- Pi-EzConnect GPIO to RG-15 (UART + 12V) -->
+  <line x1="635" y1="345" x2="680" y2="345" class="wire-gpio"/>
+  <line x1="680" y1="345" x2="680" y2="290" class="wire-gpio"/>
+  <line x1="680" y1="290" x2="770" y2="290" class="wire-gpio"/>
+  <line x1="770" y1="290" x2="770" y2="210" class="wire-gpio"/>
+  <!-- PG9 gland at enclosure boundary -->
+  <rect x="838" y="202" width="6" height="16" fill="#888" rx="1"/>
+  <text x="841" y="230" class="gland-label" text-anchor="middle">PG9</text>
+  <text x="841" y="240" class="gland-label" text-anchor="middle">gland</text>
+  <line x1="770" y1="210" x2="844" y2="210" class="wire-gpio"/>
+  <line x1="844" y1="210" x2="860" y2="210" class="wire-gpio" marker-end="url(#arr-green)"/>
+  <text x="790" y="285" class="label-bold" fill="#2e7d32">GPIO 14/15</text>
+  <text x="790" y="297" class="label" fill="#2e7d32">UART TX/RX</text>
+
+  <!-- 12V from TB1 to RG-15 -->
+  <line x1="410" y1="268" x2="425" y2="268" class="wire-12v"/>
+  <line x1="425" y1="268" x2="425" y2="155" class="wire-12v"/>
+  <line x1="425" y1="155" x2="838" y2="155" class="wire-12v"/>
+  <line x1="844" y1="155" x2="860" y2="180" class="wire-12v" marker-end="url(#arr-red)"/>
+  <text x="620" y="149" class="label-bold" fill="#cc0000">12V from TB1</text>
+
+  <!-- ==================== -->
+  <!-- STATUS LEDs + BUTTON (from Pi-EzConnect, outside enclosure) -->
+  <!-- ==================== -->
+  <rect x="1100" y="155" width="180" height="280" class="box-outdoor"/>
+  <text x="1190" y="178" class="section-title" text-anchor="middle">STATUS LEDs</text>
+
+  <!-- Green LED -->
+  <rect x="1130" y="192" width="30" height="12" class="resistor"/>
+  <text x="1145" y="201" class="label" text-anchor="middle">330&#x2126;</text>
+  <circle cx="1185" cy="198" r="11" class="led-green"/>
+  <text x="1205" y="195" class="component">GPIO 17</text>
+  <text x="1205" y="207" class="component-detail">System OK</text>
+
+  <!-- Yellow LED -->
+  <rect x="1130" y="230" width="30" height="12" class="resistor"/>
+  <text x="1145" y="239" class="label" text-anchor="middle">330&#x2126;</text>
+  <circle cx="1185" cy="236" r="11" class="led-yellow"/>
+  <text x="1205" y="233" class="component">GPIO 27</text>
+  <text x="1205" y="245" class="component-detail">Working</text>
+
+  <!-- Red LED -->
+  <rect x="1130" y="268" width="30" height="12" class="resistor"/>
+  <text x="1145" y="277" class="label" text-anchor="middle">330&#x2126;</text>
+  <circle cx="1185" cy="274" r="11" class="led-red"/>
+  <text x="1205" y="271" class="component">GPIO 22</text>
+  <text x="1205" y="283" class="component-detail">Error</text>
+
+  <!-- IP67 Pushbutton -->
+  <rect x="1120" y="310" width="150" height="60" class="box-white"/>
+  <text x="1195" y="332" class="component" text-anchor="middle">IP67 Pushbutton</text>
+  <text x="1195" y="346" class="component-detail" text-anchor="middle">GPIO 23 (pull-up)</text>
+  <text x="1195" y="360" class="component-detail" text-anchor="middle">Long press 3s = Maintenance</text>
+
+  <!-- M16 gland annotation for button/LEDs -->
+  <text x="1190" y="395" class="gland-label" text-anchor="middle">M16 gland</text>
+  <rect x="1096" y="250" width="6" height="16" fill="#888" rx="1"/>
+  <text x="1099" y="281" class="gland-label" text-anchor="middle">M16</text>
+
+  <!-- GPIO wires from Pi-EzConnect to LEDs/Button -->
+  <line x1="635" y1="355" x2="660" y2="355" class="wire-gpio"/>
+  <line x1="660" y1="355" x2="660" y2="330" class="wire-gpio"/>
+  <line x1="660" y1="330" x2="840" y2="330" class="wire-gpio"/>
+  <!-- Through enclosure wall -->
+  <line x1="840" y1="330" x2="1102" y2="330" class="wire-gpio"/>
+  <!-- Branch to LEDs -->
+  <line x1="1102" y1="198" x2="1130" y2="198" class="wire-gpio"/>
+  <line x1="1102" y1="236" x2="1130" y2="236" class="wire-gpio"/>
+  <line x1="1102" y1="274" x2="1130" y2="274" class="wire-gpio"/>
+  <!-- Vertical trunk line -->
+  <line x1="1102" y1="198" x2="1102" y2="340" class="wire-gpio"/>
+  <!-- Branch to button -->
+  <line x1="1102" y1="340" x2="1120" y2="340" class="wire-gpio"/>
+
+  <!-- ==================== -->
+  <!-- WIRE LEGEND (bottom left) -->
+  <!-- ==================== -->
+  <rect x="20" y="600" width="210" height="160" class="box-legend"/>
+  <text x="125" y="620" class="section-title" text-anchor="middle">WIRE LEGEND</text>
+
+  <line x1="35" y1="638" x2="80" y2="638" class="wire-12v"/>
+  <text x="90" y="642" class="component">12V DC Power (18 AWG)</text>
+
+  <line x1="35" y1="658" x2="80" y2="658" class="wire-5v-usbc"/>
+  <text x="90" y="662" class="component">5V USB-C (to Pi)</text>
+
+  <line x1="35" y1="678" x2="80" y2="678" class="wire-poe"/>
+  <text x="90" y="682" class="component">48V PoE (Cat6)</text>
+
+  <line x1="35" y1="698" x2="80" y2="698" class="wire-eth"/>
+  <text x="90" y="702" class="component">Ethernet Data</text>
+
+  <line x1="35" y1="718" x2="80" y2="718" class="wire-usb"/>
+  <text x="90" y="722" class="component">USB Data</text>
+
+  <line x1="35" y1="738" x2="80" y2="738" class="wire-gpio"/>
+  <text x="90" y="742" class="component">GPIO / Signal (22 AWG)</text>
+
+  <!-- ==================== -->
+  <!-- VOLTAGE / PROTECTION TABLE (bottom left, below legend) -->
+  <!-- ==================== -->
+  <rect x="20" y="770" width="310" height="170" class="box-table"/>
+  <text x="175" y="790" class="section-title" text-anchor="middle">VOLTAGE / PROTECTION</text>
+
+  <!-- Table rows -->
+  <text x="35" y="810" class="table-header">Circuit</text>
+  <text x="165" y="810" class="table-header">Voltage</text>
+  <text x="250" y="810" class="table-header">Protection</text>
+  <line x1="30" y1="815" x2="320" y2="815" stroke="#ccc" stroke-width="0.5"/>
+
+  <text x="35" y="830" class="table-cell">Solar system</text>
+  <text x="165" y="830" class="table-cell">12V nom</text>
+  <text x="250" y="830" class="table-cell">&#x2014;</text>
+
+  <text x="35" y="846" class="table-cell">DDR-60G-5 out</text>
+  <text x="165" y="846" class="table-cell">5V reg</text>
+  <text x="250" y="846" class="table-cell">Built-in OCP/OVP</text>
+
+  <text x="35" y="862" class="table-cell">Pi 5 (USB-C)</text>
+  <text x="165" y="862" class="table-cell">5V</text>
+  <text x="250" y="862" class="table-cell">From DDR-60G-5</text>
+
+  <text x="35" y="878" class="table-cell">DDR-60G-12 out</text>
+  <text x="165" y="878" class="table-cell">12V reg</text>
+  <text x="250" y="878" class="table-cell">Built-in OCP/OVP</text>
+
+  <text x="35" y="894" class="table-cell">PoE switch</text>
+  <text x="165" y="894" class="table-cell">12V</text>
+  <text x="250" y="894" class="table-cell">Switched via relay</text>
+
+  <text x="35" y="910" class="table-cell">Camera (PoE)</text>
+  <text x="165" y="910" class="table-cell">48V</text>
+  <text x="250" y="910" class="table-cell">802.3af/at</text>
+
+  <text x="35" y="926" class="table-cell">LTE modem</text>
+  <text x="165" y="926" class="table-cell">5V USB</text>
+  <text x="250" y="926" class="table-cell">Pi USB OCP</text>
+
+  <text x="35" y="942" class="table-cell">GPIO signals</text>
+  <text x="165" y="942" class="table-cell">3.3V</text>
+  <text x="250" y="942" class="table-cell">330&#x2126; series R</text>
+
+  <!-- ==================== -->
+  <!-- NOTES (bottom center/right) -->
+  <!-- ==================== -->
+  <rect x="340" y="600" width="520" height="340" class="box-note"/>
+  <text x="600" y="620" class="section-title" text-anchor="middle">NOTES</text>
+
+  <text x="355" y="640" class="note-text">1. Camera power-cycled via relay triggered by Pi USB.</text>
+  <text x="370" y="654" class="note-text">Pi ON = relay closed = PoE ON = camera boots.</text>
+
+  <text x="355" y="674" class="note-text">2. No heaters (Sukabumi tropical climate, solar power budget).</text>
+
+  <text x="355" y="694" class="note-text">3. Conformal coating MG 422C on all exposed PCBs</text>
+  <text x="370" y="708" class="note-text">(Pi 5, Pi-EzConnect).</text>
+
+  <text x="355" y="728" class="note-text">4. Dielectric grease on all outdoor electrical connections.</text>
+
+  <text x="355" y="748" class="note-text">5. Gore vent on enclosure for pressure equalization.</text>
+
+  <text x="355" y="768" class="note-text">6. Carrier: Telkomsel (Indonesia).</text>
+
+  <text x="355" y="788" class="note-text">7. Cycle: 2.5 min ON / 12.5 min SLEEP (96 cycles/day).</text>
+  <text x="370" y="802" class="note-text">Active: ~34W. Sleep: ~1.5W (Pi halt).</text>
+
+  <text x="355" y="822" class="note-text">8. Pi 5 built-in RTC (ML-2020 coin cell) provides scheduling</text>
+  <text x="370" y="836" class="note-text">via Rainbow Sensing image.</text>
+
+  <!-- ==================== -->
+  <!-- POWER FLOW SUMMARY (bottom right) -->
+  <!-- ==================== -->
+  <rect x="870" y="600" width="270" height="170" class="box-note"/>
+  <text x="1005" y="620" class="section-title" text-anchor="middle">POWER FLOW</text>
+
+  <text x="885" y="640" class="note-text">Solar Panel</text>
+  <text x="885" y="654" class="note-text">  &#x2192; Charge Controller</text>
+  <text x="885" y="668" class="note-text">  &#x2192; 12V Battery</text>
+  <text x="885" y="682" class="note-text">  &#x2192; TB1 (12V bus)</text>
+  <text x="885" y="700" class="note-text" font-weight="bold">Compute path:</text>
+  <text x="885" y="714" class="note-text">  TB1 &#x2192; DDR-60G-5 &#x2192; 5V USB-C &#x2192; Pi 5</text>
+  <text x="885" y="732" class="note-text" font-weight="bold">Camera path:</text>
+  <text x="885" y="746" class="note-text">  TB1 &#x2192; 5A fuse &#x2192; DDR-60G-12</text>
+  <text x="885" y="760" class="note-text">  &#x2192; Relay &#x2192; PoE Switch &#x2192; Camera</text>
+
+</svg>

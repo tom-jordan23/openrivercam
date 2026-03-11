@@ -1,6 +1,6 @@
 ================================================================================
     SUKABUMI ORC STATION - ELECTRICAL CIRCUIT DIAGRAM
-    Site: Sukabumi, Indonesia  |  Rev: 2.0  |  Date: 2026-03-08
+    Site: Sukabumi, Indonesia  |  Rev: 3.0  |  Date: 2026-03-10
 ================================================================================
 
     EXTERNAL POWER SYSTEM (existing at site)
@@ -61,30 +61,30 @@
                  │ 5V                       │ 12V regulated
                  ▼                          ▼
         ┌─────────────────┐        ┌─────────────────────┐
-        │  Witty Pi 5     │        │  RELAY-POE          │
-        │  HAT+           │        │  (DIN rail 4-SPDT)  │
+        │  USB-C Cable    │        │  RELAY-POE          │
+        │  (5V to Pi 5)   │        │  (DIN rail 4-SPDT)  │
         │                 │        │                     │
-        │  IN: 5V DC      │        │  Coil: USB-powered  │
-        │  (pass-through) │        │  from Pi 5 USB port │
-        │                 │        │                     │
-        │  Features:      │        │  Pi ON  = relay     │
-        │  - Backup RTC   │        │    closed = PoE ON  │
-        │  - Sleep/wake   │        │  Pi OFF = relay     │
-        │    scheduling   │        │    open = PoE OFF   │
-        │  - Power mgmt   │        │                     │
-        │    (backup)     │        │  NO: 12V regulated  │
-        │                 │        │  COM: to PoE switch │
-        │  OUT: 5V USB-C  │        └────────┬─────────────┘
-        └────────┬────────┘                 │
-                 │                          │ 12V (switched)
-                 │ 5V USB-C                 ▼
-                 ▼                 ┌─────────────────────┐
-        ┌──────────────────────────────────────┐  │  LINOVISION         │
+        │  DDR-60G-5 out  │        │  Coil: USB-powered  │
+        │  → USB-C → Pi   │        │  from Pi 5 USB port │
+        └────────┬────────┘        │                     │
+                 │                 │  Pi ON  = relay     │
+                 │ 5V USB-C       │    closed = PoE ON  │
+                 ▼                 │  Pi OFF = relay     │
+        ┌──────────────────────────────────────┐  │    open = PoE OFF   │
+        │                                      │  │                     │
+        │             RASPBERRY PI 5           │  │  NO: 12V regulated  │
+        │             (8GB RAM)                │  │  COM: to PoE switch │
+        │                                      │  └────────┬─────────────┘
+        │  PWR ← USB-C ← DDR-60G-5 (5V)       │           │
+        │                                      │           │ 12V (switched)
+        │                                      │           ▼
+        │                                      │  ┌─────────────────────┐
+        │                                      │  │  LINOVISION         │
         │                                      │  │  Industrial PoE     │
-        │             RASPBERRY PI 5           │  │  Switch             │
-        │             (8GB RAM)                │  │                     │
+        │                                      │  │  Switch             │
+        │                                      │  │                     │
         │                                      │  │  IN: 12V DC         │
-        │  PWR ← USB-C ← Witty Pi 5V          │  │  OUT: 802.3af/at    │
+        │                                      │  │  OUT: 802.3af/at    │
         │                                      │  │  (Gigabit)          │
         │  RTC: ML-2020 rechargeable coin cell │  │                     │
         │       (primary RTC for Rainbow       │  │  Port 1: PoE+Data ──┼──►
@@ -171,9 +171,6 @@
                                       │  INSIDE enclosure     │
                                       └───────────────────────┘
 
-    NOTE: Witty Pi 5 HAT+ also on I2C bus (addr 0x69).
-    No conflicts with SHT40 (0x44).
-
 
     ──────────────────────────────────────────────────────────────
     1-WIRE BUS (GPIO 24)
@@ -230,15 +227,6 @@
     Frequency: 600-6000 MHz (all Indonesian LTE bands).
 
 
-    ──────────────────────────────────────────────────────────────
-    WITTY PI 5 (GPIO 4 - reserved)
-    ──────────────────────────────────────────────────────────────
-
-    GPIO 4 is reserved for Witty Pi 5 HAT+ interrupt signal.
-    Witty Pi provides backup sleep/wake scheduling and power
-    management. Primary RTC is the Pi 5's built-in RTC with
-    ML-2020 rechargeable coin cell (used by Rainbow Sensing image).
-
 
 ================================================================================
     VOLTAGE SUMMARY                  FUSE / PROTECTION SUMMARY
@@ -246,12 +234,11 @@
     Solar system:   12V nom (10-14V) Compute circuit:  5A inline fuse
     DDR-60G-5 out:  5V regulated     Camera circuit:   5A inline fuse
     DDR-60G-12 out: 12V regulated    DDR-60G-5:        built-in OCP/OVP
-    Witty Pi in:    5V (pass-thru)   DDR-60G-12:       built-in OCP/OVP
-    Pi 5 (USB-C):   5V               Pi USB ports:     built-in OCP
-    PoE switch in:  12V (switched)   LEDs:             330 Ohm series R
-    Camera (PoE):   48V              Button GPIO:      internal pull-up
-    GPIO signals:   3.3V             DS18B20:          4.7k Ohm pull-up
-    LTE modem:      5V (USB bus)
+    Pi 5 (USB-C):   5V               DDR-60G-12:       built-in OCP/OVP
+    PoE switch in:  12V (switched)   Pi USB ports:     built-in OCP
+    Camera (PoE):   48V              LEDs:             330 Ohm series R
+    GPIO signals:   3.3V             Button GPIO:      internal pull-up
+    LTE modem:      5V (USB bus)     DS18B20:          4.7k Ohm pull-up
     Rain gauge:     12V (7-24V ok)
     SHT40 sensor:   3.3V (I2C bus)
     DS18B20 probe:  3.3V (1-Wire)
@@ -261,9 +248,9 @@
 ================================================================================
     POWER BUDGET (per cycle):
       Active (~2.5 min):  Pi 5 15W + Modem 5W + PoE camera 12W + misc 2W = ~34W
-      Sleep (~12.5 min):  Witty Pi standby ~0.3W
-      Daily energy: ~94 Wh/day  (within 200W panel / 50Ah battery capacity)
-      Battery autonomy: ~3.2 days (no sun)
+      Sleep (~12.5 min):  Pi halt state ~1.5W
+      Daily energy: ~166 Wh/day  (within 200W panel / 50Ah battery capacity)
+      Battery autonomy: ~3.6 days (no sun)
 ================================================================================
 
     GPIO PIN ASSIGNMENT TABLE
@@ -272,7 +259,6 @@
     ──────┼──────────────────┼───────────┼───────────────────────
       2   │ SDA              │ I2C       │ SHT40 sensor (0x44)
       3   │ SCL              │ I2C       │ SHT40 sensor
-      4   │ Witty Pi         │ Reserved  │ Backup scheduling
      14   │ UART TX          │ Serial    │ → Hydreon RG-15 RX
      15   │ UART RX          │ Serial    │ ← Hydreon RG-15 TX
      17   │ Green LED        │ Output    │ System OK
@@ -291,12 +277,12 @@
     3. No heaters installed (Sukabumi tropical foothills climate,
        solar power budget constraint).
     4. Conformal coating MG 422C applied to all exposed PCBs
-       (Pi 5, Witty Pi 5, Geekworm G469). Mask connectors.
+       (Pi 5, Geekworm G469). Mask connectors.
     5. Dielectric grease on all outdoor electrical connections.
     6. Gore M12 vent on enclosure for pressure equalization.
     7. Carrier: Telkomsel (Indonesia, best rural coverage).
-    8. Pi 5 built-in RTC with ML-2020 coin cell is primary RTC.
-       Witty Pi 5 provides backup scheduling/power management.
+    8. Pi 5 built-in RTC with ML-2020 coin cell provides
+       scheduling via Rainbow Sensing image.
     9. Samsung FIT Plus USB drive is IP67 waterproof, plugs
        directly into Pi USB-A 3.0 port.
    10. SHT40 mounted inside enclosure for climate monitoring.

@@ -174,53 +174,43 @@
   <!-- ==================== -->
   <!-- COMPUTE STACK -->
   <!-- ==================== -->
-  <rect x="50" y="355" width="240" height="330" class="box-compute"/>
+  <rect x="50" y="355" width="240" height="260" class="box-compute"/>
   <text x="170" y="380" class="section-title" text-anchor="middle">COMPUTE STACK</text>
 
-  <!-- Witty Pi 5 -->
-  <rect x="70" y="395" width="200" height="55" class="box"/>
-  <text x="170" y="417" class="component" text-anchor="middle">Witty Pi 5 HAT+</text>
-  <text x="170" y="432" class="component-detail" text-anchor="middle">Backup scheduling + power mgmt</text>
-  <text x="170" y="444" class="component-detail" text-anchor="middle">5V pass-through to Pi</text>
-
   <!-- Raspberry Pi 5 -->
-  <rect x="70" y="460" width="200" height="60" class="box"/>
-  <text x="170" y="485" class="component" text-anchor="middle">Raspberry Pi 5 (8GB)</text>
-  <text x="170" y="500" class="component-detail" text-anchor="middle">ML-2020 RTC (primary)</text>
-  <text x="170" y="512" class="component-detail" text-anchor="middle">Rainbow Sensing image</text>
+  <rect x="70" y="395" width="200" height="60" class="box"/>
+  <text x="170" y="420" class="component" text-anchor="middle">Raspberry Pi 5 (8GB)</text>
+  <text x="170" y="435" class="component-detail" text-anchor="middle">ML-2020 RTC + Rainbow Sensing</text>
+  <text x="170" y="447" class="component-detail" text-anchor="middle">5V USB-C powered</text>
 
   <!-- G469 GPIO Breakout -->
-  <rect x="70" y="530" width="200" height="45" class="box"/>
-  <text x="170" y="552" class="component" text-anchor="middle">Geekworm G469</text>
-  <text x="170" y="567" class="component-detail" text-anchor="middle">GPIO Terminal Breakout</text>
+  <rect x="70" y="465" width="200" height="45" class="box"/>
+  <text x="170" y="487" class="component" text-anchor="middle">Geekworm G469</text>
+  <text x="170" y="502" class="component-detail" text-anchor="middle">GPIO Terminal Breakout</text>
 
   <!-- USB Drive -->
-  <rect x="70" y="585" width="200" height="35" class="box"/>
-  <text x="170" y="607" class="component" text-anchor="middle">SanDisk 256GB USB Flash</text>
+  <rect x="70" y="520" width="200" height="35" class="box"/>
+  <text x="170" y="542" class="component" text-anchor="middle">SanDisk 256GB USB Flash</text>
 
   <!-- Modem -->
-  <rect x="70" y="630" width="200" height="40" class="box"/>
-  <text x="170" y="650" class="component" text-anchor="middle">Quectel EG25-G</text>
-  <text x="170" y="663" class="component-detail" text-anchor="middle">LTE Cat 4 + EXVIST mPCIe-USB</text>
+  <rect x="70" y="565" width="200" height="40" class="box"/>
+  <text x="170" y="585" class="component" text-anchor="middle">Quectel EG25-G</text>
+  <text x="170" y="598" class="component-detail" text-anchor="middle">LTE Cat 4 + EXVIST mPCIe-USB</text>
 
-  <!-- Power to compute -->
+  <!-- Power to compute (5V direct to Pi via USB-C) -->
   <line x1="440" y1="250" x2="440" y2="310" class="wire-5v"/>
   <line x1="440" y1="310" x2="300" y2="310" class="wire-5v"/>
   <line x1="300" y1="310" x2="300" y2="420" class="wire-5v"/>
   <line x1="300" y1="420" x2="270" y2="420" class="wire-5v" marker-end="url(#arr-grn)"/>
   <text x="305" y="375" class="component-detail" fill="#090">5V</text>
 
-  <!-- Witty to Pi -->
-  <line x1="170" y1="450" x2="170" y2="460" class="wire-5v"/>
-  <text x="180" y="458" class="component-detail" fill="#090">5V</text>
-
   <!-- Pi to USB drive -->
-  <line x1="155" y1="520" x2="155" y2="585" class="wire-usb"/>
-  <text x="140" y="560" class="component-detail" fill="#00c">USB3</text>
+  <line x1="155" y1="455" x2="155" y2="520" class="wire-usb"/>
+  <text x="140" y="495" class="component-detail" fill="#00c">USB3</text>
 
   <!-- Pi to modem -->
-  <line x1="185" y1="520" x2="185" y2="630" class="wire-usb"/>
-  <text x="190" y="580" class="component-detail" fill="#00c">USB2</text>
+  <line x1="185" y1="455" x2="185" y2="565" class="wire-usb"/>
+  <text x="190" y="515" class="component-detail" fill="#00c">USB2</text>
 
   <!-- ==================== -->
   <!-- LTE ANTENNA -->
@@ -236,10 +226,10 @@
   <text x="410" y="448" class="component" text-anchor="middle">2x SMA pigtails (int.)</text>
 
   <!-- Modem to antenna -->
-  <line x1="270" y1="650" x2="310" y2="650" class="wire-usb"/>
-  <line x1="310" y1="650" x2="310" y2="443" class="wire-rf"/>
+  <line x1="270" y1="585" x2="310" y2="585" class="wire-usb"/>
+  <line x1="310" y1="585" x2="310" y2="443" class="wire-rf"/>
   <line x1="310" y1="443" x2="330" y2="443" class="wire-rf"/>
-  <text x="313" y="550" class="component-detail" fill="#f80">RF</text>
+  <text x="313" y="520" class="component-detail" fill="#f80">RF</text>
 
   <!-- ==================== -->
   <!-- SENSORS -->
@@ -263,20 +253,20 @@
   <text x="412" y="608" class="component-detail" text-anchor="middle">UART | 12V | outdoor</text>
 
   <!-- Sensor connections from G469 -->
-  <line x1="270" y1="545" x2="290" y2="545" class="wire-i2c"/>
-  <line x1="290" y1="545" x2="330" y2="545" class="wire-i2c"/>
-  <text x="295" y="540" class="component-detail" fill="#a0a">I2C</text>
+  <line x1="270" y1="480" x2="290" y2="480" class="wire-i2c"/>
+  <line x1="290" y1="480" x2="330" y2="545" class="wire-i2c"/>
+  <text x="295" y="475" class="component-detail" fill="#a0a">I2C</text>
 
-  <line x1="270" y1="555" x2="280" y2="555" class="wire-1wire"/>
-  <line x1="280" y1="555" x2="280" y2="545" class="wire-1wire"/>
+  <line x1="270" y1="490" x2="280" y2="490" class="wire-1wire"/>
+  <line x1="280" y1="490" x2="280" y2="545" class="wire-1wire"/>
   <line x1="280" y1="545" x2="280" y2="545" class="wire-1wire"/>
-  <line x1="280" y1="555" x2="425" y2="555" class="wire-1wire"/>
+  <line x1="280" y1="490" x2="425" y2="555" class="wire-1wire"/>
   <text x="350" y="568" class="component-detail" fill="#c60">1-Wire</text>
 
-  <line x1="270" y1="565" x2="275" y2="565" class="wire-uart"/>
-  <line x1="275" y1="565" x2="275" y2="595" class="wire-uart"/>
+  <line x1="270" y1="500" x2="275" y2="500" class="wire-uart"/>
+  <line x1="275" y1="500" x2="275" y2="595" class="wire-uart"/>
   <line x1="275" y1="595" x2="330" y2="595" class="wire-uart"/>
-  <text x="280" y="590" class="component-detail" fill="#069">UART</text>
+  <text x="280" y="555" class="component-detail" fill="#069">UART</text>
 
   <!-- ==================== -->
   <!-- STATUS & UI -->
@@ -297,10 +287,10 @@
   <text x="415" y="730" class="component-detail" text-anchor="middle">IP67 Button (GPIO 23, 3s hold)</text>
 
   <!-- GPIO to UI -->
-  <line x1="270" y1="555" x2="290" y2="555" class="wire-gpio"/>
-  <line x1="290" y1="555" x2="290" y2="695" class="wire-gpio"/>
+  <line x1="270" y1="490" x2="290" y2="490" class="wire-gpio"/>
+  <line x1="290" y1="490" x2="290" y2="695" class="wire-gpio"/>
   <line x1="290" y1="695" x2="310" y2="695" class="wire-gpio"/>
-  <text x="293" y="650" class="component-detail" fill="#0a0">GPIO</text>
+  <text x="293" y="600" class="component-detail" fill="#0a0">GPIO</text>
 
   <!-- ==================== -->
   <!-- HUMIDITY CONTROL -->
@@ -354,8 +344,8 @@
   <text x="724" y="550" class="component-detail" fill="#f60">12V</text>
 
   <!-- Ethernet from Pi to PoE uplink -->
-  <line x1="270" y1="490" x2="295" y2="490" class="wire-eth"/>
-  <line x1="295" y1="490" x2="295" y2="760" class="wire-eth"/>
+  <line x1="270" y1="425" x2="295" y2="425" class="wire-eth"/>
+  <line x1="295" y1="425" x2="295" y2="760" class="wire-eth"/>
   <line x1="295" y1="760" x2="550" y2="760" class="wire-eth"/>
   <line x1="550" y1="760" x2="550" y2="725" class="wire-eth"/>
   <line x1="550" y1="725" x2="550" y2="710" class="wire-eth" marker-end="url(#arr-teal)"/>
@@ -477,13 +467,13 @@
   <rect x="30" y="815" width="1130" height="220" class="box" fill="#fffde7"/>
   <text x="50" y="840" class="section-title">ASSEMBLY NOTES</text>
 
-  <text x="50" y="863" class="component">1. Stack Order: Pi 5 (bottom) + Witty Pi 5 HAT+ (middle) + Geekworm G469 (top) - DIN rail clip mount</text>
-  <text x="50" y="883" class="component">2. Apply MG 422C silicone conformal coat to: Pi 5, Witty Pi 5, G469. Mask connectors/headers</text>
+  <text x="50" y="863" class="component">1. Pi 5 (bottom) + Geekworm G469 (top) - DIN rail clip mount</text>
+  <text x="50" y="883" class="component">2. Apply MG 422C silicone conformal coat to: Pi 5, G469. Mask connectors/headers</text>
   <text x="50" y="903" class="component">3. DDR-60G-5: Regulated 5V for compute (12V bus varies with battery charge state)</text>
   <text x="50" y="923" class="component">4. LINOVISION PoE switch: Native 12V input, powers both cameras continuously (not duty-cycled)</text>
   <text x="50" y="943" class="component">5. PTC heaters: Self-regulating. Enclosure 15W with hygrostat (>70%RH). Camera 5-7W with thermostat</text>
   <text x="50" y="963" class="component">6. DS18B20 (outside) feeds dew point calculation → controls PTC heaters above dew point</text>
-  <text x="50" y="983" class="component">7. Pi 5 built-in RTC (ML-2020 coin cell) is primary. Witty Pi 5 provides backup scheduling/power mgmt</text>
+  <text x="50" y="983" class="component">7. Pi 5 built-in RTC (ML-2020 coin cell) provides scheduling via Rainbow Sensing image</text>
   <text x="50" y="1003" class="component">8. Battery box separate from electronics. Short 12V DC cable run between boxes</text>
   <text x="50" y="1023" class="component">9. Victron BatteryProtect: LVD @ 11.5V disconnect, 12.8V reconnect, prevents deep discharge</text>
 
@@ -495,14 +485,13 @@
 
   <text x="50" y="1092" class="component" font-family="monospace">GPIO  2  SDA        I2C      SHT40 sensor (0x44)</text>
   <text x="50" y="1108" class="component" font-family="monospace">GPIO  3  SCL        I2C      SHT40 sensor</text>
-  <text x="50" y="1124" class="component" font-family="monospace">GPIO  4  Witty Pi   Resrvd   Backup scheduling interrupt</text>
-  <text x="50" y="1140" class="component" font-family="monospace">GPIO 14  UART TX    Serial   To Hydreon RG-15 RX</text>
-  <text x="50" y="1156" class="component" font-family="monospace">GPIO 15  UART RX    Serial   From Hydreon RG-15 TX</text>
-  <text x="50" y="1172" class="component" font-family="monospace">GPIO 17  Green LED  Output   System OK</text>
-  <text x="50" y="1188" class="component" font-family="monospace">GPIO 22  Red LED    Output   Error</text>
-  <text x="50" y="1204" class="component" font-family="monospace">GPIO 23  Button     Input    Maintenance mode (3s hold)</text>
-  <text x="50" y="1220" class="component" font-family="monospace">GPIO 24  DS18B20    1-Wire   Outside temp (4.7k pull-up)</text>
-  <text x="50" y="1236" class="component" font-family="monospace">GPIO 27  Yellow LED Output   Working/uploading</text>
+  <text x="50" y="1124" class="component" font-family="monospace">GPIO 14  UART TX    Serial   To Hydreon RG-15 RX</text>
+  <text x="50" y="1140" class="component" font-family="monospace">GPIO 15  UART RX    Serial   From Hydreon RG-15 TX</text>
+  <text x="50" y="1156" class="component" font-family="monospace">GPIO 17  Green LED  Output   System OK</text>
+  <text x="50" y="1172" class="component" font-family="monospace">GPIO 22  Red LED    Output   Error</text>
+  <text x="50" y="1188" class="component" font-family="monospace">GPIO 23  Button     Input    Maintenance mode (3s hold)</text>
+  <text x="50" y="1204" class="component" font-family="monospace">GPIO 24  DS18B20    1-Wire   Outside temp (4.7k pull-up)</text>
+  <text x="50" y="1220" class="component" font-family="monospace">GPIO 27  Yellow LED Output   Working/uploading</text>
 
   <!-- ==================== -->
   <!-- POWER BUDGET -->
@@ -535,5 +524,5 @@
   <text x="950" y="1235" class="component-detail">DDR-60G: built-in OCP/OVP | Victron BP: LVD protection</text>
 
   <!-- Footer -->
-  <text x="750" y="1340" class="subtitle" text-anchor="middle">OpenRiverCam - Jakarta Site | Rev 2.0 | 2026-03-08</text>
+  <text x="750" y="1340" class="subtitle" text-anchor="middle">OpenRiverCam - Jakarta Site | Rev 3.0 | 2026-03-10</text>
 </svg>
