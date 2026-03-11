@@ -47,9 +47,9 @@ in the Pi's dnsmasq (`pi/shared/etc/dnsmasq.d/maintenance.conf`).
 ```bash
 cd spring_2026_ID/camera/
 
-# 1. Provide camera password (pick one method)
-export CAMERA_PASSWORD=yourpassword
-# or: echo "CAMERA_PASSWORD=yourpassword" > .env   (gitignored)
+# 1. Create .env from the example and fill in the password
+cp .env.example .env
+nano .env   # replace placeholder with real password (gitignored)
 
 # 2. Verify connectivity
 python3 camtool.py info sukabumi-cam1
@@ -270,7 +270,7 @@ Camera passwords are **never committed** to git.
 
 1. `--password` CLI flag (one-off use)
 2. `CAMERA_PASSWORD` environment variable
-3. `camera/.env` file (gitignored): `CAMERA_PASSWORD=yourpassword`
+3. `camera/.env` file (copy from `.env.example`, gitignored)
 
 ### Sensitive XML fields
 
