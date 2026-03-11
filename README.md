@@ -4,13 +4,7 @@ River monitoring for flood early warning using camera-based surface velocity mea
 
 ## Current Focus
 
-Building the Sukabumi device first, then ordering and building the Jakarta device.
-
-### Current Problems to Solve
-
-1. **Camera power cycling** - Managing when the PoE camera is powered on/off to conserve solar energy
-2. **Video capture and transfer timing** - Coordinating when video is recorded and how/when it gets transferred off-device
-3. **Rain sensor integration** - Incorporating rain detection into the monitoring workflow
+Equipment ordered. Assembling the Sukabumi device, then Jakarta.
 
 ### Deployment Overview
 
@@ -23,15 +17,16 @@ Building the Sukabumi device first, then ordering and building the Jakarta devic
 
 | Site | Power | Camera | Status |
 |------|-------|--------|--------|
-| **Sukabumi** | Solar (existing 200W/50Ah) | Factory-sealed PoE (1 camera) | Replacing failed unit due to humidity damage |
-| **Jakarta** | AC utility + 24hr UPS | Factory-sealed PoE (1 camera) | New training/demonstration site |
+| **Sukabumi** | Solar (existing 200W/50Ah) | Factory-sealed PoE (1 camera) | Assembly in progress |
+| **Jakarta** | AC utility + 24hr UPS | Factory-sealed PoE (1 camera) | Pending Sukabumi completion |
 
-### Planning Status
+### Project Status
 
 - **Research phases 1-5:** Complete (mounting, humidity, UI, cameras, connectivity)
-- **BOMs:** In progress - site-specific bills of materials with pricing
+- **BOMs:** Complete - equipment ordered
 - **Travel/import strategy:** Documented - what to carry vs source locally
 - **Wiring diagrams:** Complete for both sites
+- **Assembly:** Sukabumi build in progress
 
 ## Repository Structure
 
@@ -46,6 +41,9 @@ spring_2026_ID/
 ├── BOM_Spares.md/csv        # Spare parts for PMI office
 ├── diagrams/                # KiCad schematics and wiring diagrams
 ├── docs/                    # Assembly and wiring documentation
+├── camera/                  # Camera config management (camtool.py + ISAPI XML)
+├── pi/                      # Pi OS overlay files (network, dnsmasq, MOTD)
+├── build_notes/             # Assembly notes and photos
 └── research/                # Technical research (25+ documents)
 ```
 
@@ -87,7 +85,7 @@ survey/
 
 ## Next Steps
 
-1. Finalize BOMs with current pricing and lead times
-2. Order long-lead items
-3. Request humanitarian letter from sponsoring organization
-4. Pre-configure and conformal coat electronics before travel
+1. Assemble and test Sukabumi device
+2. Conformal coat electronics before travel
+3. Assemble and test Jakarta device
+4. Request humanitarian letter from sponsoring organization
