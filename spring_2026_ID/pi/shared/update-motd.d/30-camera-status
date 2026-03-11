@@ -1,15 +1,24 @@
 #!/bin/bash
-CAM_MAC="d0:3b:f4:01:4d:30"
-LEASE=$(grep -i $CAM_MAC /var/lib/misc/dnsmasq.leases 2>/dev/null)
+CAM_HOST="camera"
+CAM_IP="192.168.50.139"
 
-echo "OpenRiverCam maintenance network:"
-ip -4 addr show eth0 | grep inet
-
-if [ -n "$LEASE" ]; then
-    CAM_IP=$(echo $LEASE | awk '{print $3}')
-    echo "Camera IP: $CAM_IP"
+echo ""
+echo "=== OpenRiverCam Camera Network ==="
+PI_IP=$(ip -4 -o addr show eth0 2>/dev/null | awk '{print $4}')
+if [ -n "$PI_IP" ]; then
+    echo "  Pi (eth0):  $PI_IP"
 else
-    echo "Camera: no DHCP lease detected"
+    echo "  Pi (eth0):  no IP configured"
 fi
 
-echo "### Tom, don't forget to scrub your private keys before deployment ###"
+# Check if camera is reachable (TCP port 80, 1s timeout)
+if timeout 1 bash -c "echo >/dev/tcp/$CAM_IP/80" 2>/dev/null; then
+    echo "  Camera:     $CAM_IP ($CAM_HOST) - reachable"
+else
+    # Fall back to ARP check — camera may block ping/HTTP but still be on the network
+    if ip neigh show dev eth0 2>/dev/null | grep -q "$CAM_IP"; then
+        echo "  Camera:     $CAM_IP ($CAM_HOST) - on network (not responding on port 80)"
+    else
+        echo "  Camera:     $CAM_IP ($CAM_HOST) - not detected"
+    fi
+fi
