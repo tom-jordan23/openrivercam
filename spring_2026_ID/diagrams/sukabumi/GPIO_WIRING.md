@@ -1,0 +1,653 @@
+# GPIO Wiring Guide — Sukabumi ORC Station
+
+**Rev B — 2026-03-12**
+**Hardware:** Raspberry Pi 5 → Witty Pi 5 HAT+ → Stacking Headers → Geekworm G469 Breakout
+
+---
+
+## Safety Rules
+
+Read this section completely before touching any wire.
+
+### Rule 1: Always Wire With Power OFF
+
+**Disconnect the 12V battery and USB-C cable before wiring anything.**
+The Pi, relay module, LEDs, and PoE switch must all be completely unpowered while
+you connect or disconnect wires. Wiring while powered risks short circuits that can
+instantly destroy components.
+
+**How to verify power is off:**
+- No lights on the Pi (no red LED, no green LED)
+- No lights on the relay module
+- No lights on the PoE switch
+- Witty Pi display is blank
+
+### Rule 2: 12V Can Damage the Pi Instantly
+
+The Raspberry Pi GPIO pins operate at **3.3V**. If 12V touches any GPIO pin, the Pi
+is destroyed immediately and cannot be repaired.
+
+**The two voltage domains in this system:**
+
+| Domain | Voltage | Where It Goes | Wire Gauge |
+|--------|---------|---------------|------------|
+| Logic (low voltage) | 3.3V / 5V | G469 breakout → relay module inputs | 22 AWG |
+| Power (high voltage) | 12V DC | TB1 → relay module outputs → loads | 18-22 AWG |
+
+**These two domains connect ONLY inside the relay module.** The relay module keeps
+them electrically isolated. You must never bridge them yourself.
+
+### Rule 3: Double-Check Before Powering On
+
+After completing any wiring step, visually trace each wire from end to end before
+reconnecting power. Use the verification checklists at the end of each section.
+
+### Rule 4: Screw Terminals — Get a Good Grip
+
+- Strip wire to **7-8mm** (about 5/16 inch) of exposed conductor
+- Use **wire ferrules** on stranded wire — bare strands can splay and short to
+  adjacent terminals
+- After inserting the wire, tug gently to confirm it's held securely
+- Tighten firmly but don't overtorque — you'll strip the screw
+
+### Rule 5: Wire Colors Matter
+
+Use consistent colors to reduce mistakes. Suggested scheme:
+
+| Color | Purpose |
+|-------|---------|
+| **Red** | 12V positive power |
+| **Black** | Ground (GND) |
+| **Yellow** or **Orange** | 5V (Pi power to relay module) |
+| **Blue** or **White** | GPIO signal wires |
+| **Green** | UART / serial data |
+
+If you don't have colored wire, **label both ends** of every wire with tape
+and a marker before connecting.
+
+### Rule 6: If Something Smells or Smokes — Disconnect Immediately
+
+Unplug the battery connector. Do not reconnect until you've found and fixed the
+problem. A burning smell means a component is being destroyed right now.
+
+---
+
+## Tools Needed
+
+- Small Phillips screwdriver (for G469 and relay screw terminals)
+- Wire strippers (for 18-22 AWG)
+- Wire ferrule crimper + ferrules (strongly recommended)
+- Multimeter set to DC voltage and continuity modes
+- Masking tape + marker (for labeling wires)
+- Needle-nose pliers (helpful for inserting wires)
+
+---
+
+## Understanding the Relay Module
+
+The Electronics-Salon module has two sides with screw terminals. Understanding
+what each terminal does is critical before wiring.
+
+### Module Layout
+
+```
+  ┌─────────────────────────────────────────────────────────────────┐
+  │                  ELECTRONICS-SALON                              │
+  │              4-CHANNEL SPDT RELAY MODULE                        │
+  │                                                                 │
+  │  INPUT SIDE (low voltage — from Pi)                             │
+  │  ┌─────┬─────┬─────┬─────┬─────┬─────┐                        │
+  │  │ VCC │ GND │ IN1 │ IN2 │ IN3 │ IN4 │  ← screw terminals     │
+  │  └─────┴─────┴─────┴─────┴─────┴─────┘                        │
+  │                                                                 │
+  │  [LED1] [LED2] [LED3] [LED4]  ← indicator LEDs                 │
+  │  [RELAY1] [RELAY2] [RELAY3] [RELAY4]  ← physical relays        │
+  │                                                                 │
+  │  OUTPUT SIDE (high voltage — 12V to loads)                      │
+  │  ┌─────┬─────┬─────┬─────┬─────┬─────┬─────┬─────┬─────┬─────┬─────┬─────┐
+  │  │ NC1 │ COM1│ NO1 │ NC2 │ COM2│ NO2 │ NC3 │ COM3│ NO3 │ NC4 │ COM4│ NO4 │
+  │  └─────┴─────┴─────┴─────┴─────┴─────┴─────┴─────┴─────┴─────┴─────┴─────┘
+  │                                                                 │
+  │  ══════════════════════════════════════  ← DIN rail snap mount  │
+  └─────────────────────────────────────────────────────────────────┘
+```
+
+**Verify your module's terminal labels match this layout before wiring.**
+Some modules reverse the order or use different labeling. Read the silkscreen
+printing on the PCB.
+
+### What COM, NO, and NC Mean
+
+Each relay channel has three output terminals. Think of it as a switch:
+
+```
+                         ┌── NO  (Normally Open)     ← disconnected when relay is OFF
+           12V ── COM ──┤
+                         └── NC  (Normally Closed)   ← connected when relay is OFF
+```
+
+| Terminal | Name | When Relay is OFF (GPIO LOW) | When Relay is ON (GPIO HIGH) |
+|----------|------|------------------------------|------------------------------|
+| **COM** | Common | Connected to NC | Connected to NO |
+| **NO** | Normally Open | Disconnected from COM | **Connected to COM** |
+| **NC** | Normally Closed | Connected to COM | Disconnected from COM |
+
+**We use only COM and NO.** When the GPIO pin goes HIGH, the relay closes the
+COM→NO path, and 12V flows to the load (PoE switch or LED). When the GPIO pin
+goes LOW (or Pi is off), the path opens and the load loses power.
+
+**NC terminals are not used.** Leave them empty.
+
+### Input Side Explained
+
+| Terminal | What It Does | Connects To |
+|----------|-------------|-------------|
+| **VCC** | Powers the relay module's logic circuit | Pi 5V (from G469 Pin 2) |
+| **GND** | Ground reference for the module | Pi GND (from G469 Pin 6) |
+| **IN1** | Control signal for relay channel 1 | GPIO 24 (Pin 18) — PoE switch |
+| **IN2** | Control signal for relay channel 2 | GPIO 17 (Pin 11) — Green LED |
+| **IN3** | Control signal for relay channel 3 | GPIO 27 (Pin 13) — Yellow LED |
+| **IN4** | Control signal for relay channel 4 | GPIO 22 (Pin 15) — Red LED |
+
+The input side accepts **3.3V signals** from the Pi GPIO. The module has built-in
+Darlington transistor drivers that amplify the 3.3V signal to drive the relay coils.
+You do not need any external resistors or transistors.
+
+---
+
+## Pi 5 40-Pin Header — Pin Map
+
+Physical pin numbers. Left side = odd pins, right side = even pins.
+Orientation: GPIO header at top-right corner of the Pi board.
+
+```
+         ┌──────────────────────────────────────────────────┐
+         │                  40-PIN HEADER                    │
+         │                                                   │
+  Pin 1  │  [3V3 Power]    ●  ●  [5V Power]      ★ VCC    │  Pin 2
+  Pin 3  │  [GPIO 2  SDA ] ●  ●  [5V Power]               │  Pin 4
+  Pin 5  │  [GPIO 3  SCL ] ●  ●  [GND]           ★ GND    │  Pin 6
+  Pin 7  │  [GPIO 4      ] ●  ●  [GPIO 14  TXD]  ★ UART   │  Pin 8
+  Pin 9  │  [GND]          ●  ●  [GPIO 15  RXD]  ★ UART   │  Pin 10
+  Pin 11 │  [GPIO 17     ] ●  ●  [GPIO 18]                 │  Pin 12
+         │   ★ Green LED                                     │
+  Pin 13 │  [GPIO 27     ] ●  ●  [GND]                     │  Pin 14
+         │   ★ Yellow LED         ★ Button GND               │
+  Pin 15 │  [GPIO 22     ] ●  ●  [GPIO 23]       ★ Button  │  Pin 16
+         │   ★ Red LED                                       │
+  Pin 17 │  [3V3 Power]    ●  ●  [GPIO 24]       ★ Relay   │  Pin 18
+  Pin 19 │  [GPIO 10  MOSI] ●  ●  [GND]                    │  Pin 20
+  Pin 21 │  [GPIO 9   MISO] ●  ●  [GPIO 25]               │  Pin 22
+  Pin 23 │  [GPIO 11  SCLK] ●  ●  [GPIO 8   CE0]         │  Pin 24
+  Pin 25 │  [GND]          ●  ●  [GPIO 7   CE1]           │  Pin 26
+  Pin 27 │  [GPIO 0  ID_SD] ●  ●  [GPIO 1   ID_SC]       │  Pin 28
+         │   ⛔ EEPROM           ⛔ EEPROM                   │
+  Pin 29 │  [GPIO 5      ] ●  ●  [GND]                    │  Pin 30
+  Pin 31 │  [GPIO 6      ] ●  ●  [GPIO 12]                │  Pin 32
+  Pin 33 │  [GPIO 13     ] ●  ●  [GND]                    │  Pin 34
+  Pin 35 │  [GPIO 19     ] ●  ●  [GPIO 16]                │  Pin 36
+  Pin 37 │  [GPIO 26     ] ●  ●  [GPIO 20]                │  Pin 38
+  Pin 39 │  [GND]          ●  ●  [GPIO 21]                │  Pin 40
+         │                                                   │
+         └───────────────────────────────────────────────────┘
+
+  ★ = Used in this project     ⛔ = Reserved (never use)
+```
+
+### Reserved Pins (Do Not Use)
+
+| GPIO | Pin | Function | Reserved By |
+|------|-----|----------|-------------|
+| GPIO 2 | 3 | I2C1 SDA | Witty Pi 5 HAT+ (addr 0x51) |
+| GPIO 3 | 5 | I2C1 SCL | Witty Pi 5 HAT+ (addr 0x51) |
+| GPIO 0 | 27 | ID_SD (EEPROM) | HAT identification bus |
+| GPIO 1 | 28 | ID_SC (EEPROM) | HAT identification bus |
+
+---
+
+## Step-by-Step Wiring Instructions
+
+**Complete these steps in order. Do not skip ahead.**
+
+### Before You Start
+
+- [ ] Pi, Witty Pi, and G469 breakout are assembled as a stack (but NOT powered)
+- [ ] 12V battery is **disconnected**
+- [ ] USB-C cable is **unplugged**
+- [ ] Relay module is snapped onto DIN rail
+- [ ] You have labeled wire or colored wire available
+- [ ] You have a multimeter
+
+---
+
+### Step 1: Wire the Relay Module Input Side (Low Voltage)
+
+These 6 wires go from the G469 terminal block to the relay module input terminals.
+All are 22 AWG signal wire.
+
+**Cut 6 wires** to appropriate length (measure the distance between the G469 and relay
+module on your DIN rail, add 3cm slack on each end). Strip 7-8mm on each end. Crimp
+ferrules.
+
+| Wire # | From (G469 Terminal) | To (Relay Terminal) | Label | Color |
+|--------|---------------------|---------------------|-------|-------|
+| 1 | Pin 2 — 5V | VCC | "5V" | Yellow/Orange |
+| 2 | Pin 6 — GND | GND | "GND" | Black |
+| 3 | Pin 18 — GPIO 24 | IN1 | "PoE relay" | Blue/White |
+| 4 | Pin 11 — GPIO 17 | IN2 | "Green LED" | Blue/White |
+| 5 | Pin 13 — GPIO 27 | IN3 | "Yellow LED" | Blue/White |
+| 6 | Pin 15 — GPIO 22 | IN4 | "Red LED" | Blue/White |
+
+**Wiring procedure for each wire:**
+
+1. Insert the ferrule end into the **G469** screw terminal for the correct pin
+2. Tighten the screw — tug to confirm grip
+3. Route the wire neatly to the relay module (avoid crossing over other wires)
+4. Insert the other ferrule end into the correct **relay input** screw terminal
+5. Tighten the screw — tug to confirm grip
+
+### Step 1 Verification (DO THIS BEFORE CONTINUING)
+
+Use your multimeter in **continuity mode** (beep mode). Touch one probe to each
+end of every connection and confirm you get a beep:
+
+- [ ] G469 Pin 2 (5V) ↔ Relay VCC — beep
+- [ ] G469 Pin 6 (GND) ↔ Relay GND — beep
+- [ ] G469 Pin 18 (GPIO 24) ↔ Relay IN1 — beep
+- [ ] G469 Pin 11 (GPIO 17) ↔ Relay IN2 — beep
+- [ ] G469 Pin 13 (GPIO 27) ↔ Relay IN3 — beep
+- [ ] G469 Pin 15 (GPIO 22) ↔ Relay IN4 — beep
+
+Now check for shorts — **none of these should beep:**
+
+- [ ] Relay VCC ↔ Relay GND — NO beep (if this beeps, you have a short — STOP)
+- [ ] Relay VCC ↔ any IN terminal — NO beep
+- [ ] Any IN terminal ↔ any other IN terminal — NO beep
+- [ ] Any IN terminal ↔ GND — NO beep
+
+---
+
+### Step 2: Wire the Relay Module Output Side — CH1 (PoE Switch)
+
+Channel 1 switches 12V power to the LINOVISION PoE switch. This is the highest-current
+connection (~3-5A), so use **18 AWG** wire.
+
+**Cut 2 wires:**
+
+| Wire # | From | To | Label | Color | Gauge |
+|--------|------|----|-------|-------|-------|
+| 7 | TB1 12V output | Relay CH1 **COM** | "12V → relay" | Red | 18 AWG |
+| 8 | Relay CH1 **NO** | PoE switch 12V (+) input | "relay → PoE" | Red | 18 AWG |
+
+```
+                    Relay Module CH1
+                   ┌────────────────┐
+  TB1 12V ── RED ──┤ COM1           │
+     (18 AWG)      │      NO1 ──────┤── RED ── PoE Switch 12V (+)
+                   │      NC1       │            (18 AWG)
+                   └───(empty)──────┘
+```
+
+**CRITICAL:** Connect to **COM** and **NO** only. Leave **NC** empty.
+
+**Also connect the PoE switch ground:**
+
+| Wire # | From | To | Label | Color | Gauge |
+|--------|------|----|-------|-------|-------|
+| 9 | TB1 GND | PoE switch GND (-) input | "GND → PoE" | Black | 18 AWG |
+
+### Step 2 Verification
+
+- [ ] Continuity: TB1 12V terminal ↔ Relay CH1 COM — beep
+- [ ] Continuity: Relay CH1 NO ↔ PoE switch 12V input — beep
+- [ ] Continuity: TB1 GND ↔ PoE switch GND — beep
+- [ ] NO short: Relay CH1 COM ↔ Relay CH1 NO — **NO beep** (relay is off, path is open)
+- [ ] NO short: TB1 12V ↔ TB1 GND — **NO beep**
+
+---
+
+### Step 3: Wire the Relay Module Output Side — CH2/3/4 (Status LEDs)
+
+Each LED channel switches 12V to a panel-mount LED. These are low current (~20mA),
+so 22 AWG is fine.
+
+**12V feed to LED relay channels:**
+
+The three COM terminals (CH2, CH3, CH4) all need 12V. Run a single wire from TB1 12V
+to CH2 COM, then daisy-chain short jumpers between COM terminals:
+
+| Wire # | From | To | Label | Color | Gauge |
+|--------|------|----|-------|-------|-------|
+| 10 | TB1 12V output | Relay CH2 **COM** | "12V → LEDs" | Red | 22 AWG |
+| 11 | Relay CH2 **COM** | Relay CH3 **COM** | (jumper) | Red | 22 AWG |
+| 12 | Relay CH3 **COM** | Relay CH4 **COM** | (jumper) | Red | 22 AWG |
+
+**How to daisy-chain COM terminals:** Insert two wires into the same screw terminal
+(most industrial screw terminals accept two wires). If the terminal only fits one wire,
+use a short DIN terminal block to split the connection.
+
+**LED connections from relay NO terminals:**
+
+| Wire # | From | To | Label | Color | Gauge |
+|--------|------|----|-------|-------|-------|
+| 13 | Relay CH2 **NO** | Green LED (+) red wire | "CH2 → Green" | Red | 22 AWG |
+| 14 | Relay CH3 **NO** | Yellow LED (+) red wire | "CH3 → Yellow" | Red | 22 AWG |
+| 15 | Relay CH4 **NO** | Red LED (+) red wire | "CH4 → Red" | Red | 22 AWG |
+
+**LED ground returns:**
+
+| Wire # | From | To | Label | Color | Gauge |
+|--------|------|----|-------|-------|-------|
+| 16 | Green LED (-) black wire | GND bus (TB1 GND) | "LED GND" | Black | 22 AWG |
+| 17 | Yellow LED (-) black wire | GND bus (TB1 GND) | "LED GND" | Black | 22 AWG |
+| 18 | Red LED (-) black wire | GND bus (TB1 GND) | "LED GND" | Black | 22 AWG |
+
+**Tip:** You can combine the three LED ground wires at a single GND terminal block
+position rather than running three separate wires to TB1.
+
+```
+                    Relay Module CH2/3/4
+                   ┌────────────────────┐
+  TB1 12V ── RED ──┤ COM2 ─┬─ COM3 ─┬─ COM4    (daisy-chained)
+     (22 AWG)      │       │        │          │
+                   │  NO2  │   NO3  │   NO4    │
+                   └───┬───┘───┬────┘───┬──────┘
+                       │       │        │
+                   Green(+) Yellow(+) Red(+)     LED (+) red wires
+                       │       │        │
+                     [LED]   [LED]    [LED]      (panel mount, 12V)
+                       │       │        │
+                   Green(-) Yellow(-) Red(-)     LED (-) black wires
+                       │       │        │
+                       └───────┴────────┘
+                               │
+                           GND bus ── BLACK ── TB1 GND
+```
+
+### Step 3 Verification
+
+- [ ] Continuity: TB1 12V ↔ Relay CH2 COM — beep
+- [ ] Continuity: Relay CH2 COM ↔ Relay CH3 COM — beep (daisy-chain)
+- [ ] Continuity: Relay CH3 COM ↔ Relay CH4 COM — beep (daisy-chain)
+- [ ] Continuity: Relay CH2 NO ↔ Green LED (+) — beep
+- [ ] Continuity: Relay CH3 NO ↔ Yellow LED (+) — beep
+- [ ] Continuity: Relay CH4 NO ↔ Red LED (+) — beep
+- [ ] Continuity: Green LED (-) ↔ GND bus — beep
+- [ ] Continuity: Yellow LED (-) ↔ GND bus — beep
+- [ ] Continuity: Red LED (-) ↔ GND bus — beep
+- [ ] NO short: Any COM ↔ its NO — **NO beep** (relay is off)
+- [ ] NO short: Any LED (+) ↔ any LED (-) — **NO beep**
+
+---
+
+### Step 4: Wire the Maintenance Pushbutton
+
+The pushbutton is a simple switch between GPIO 23 and GND. The Pi's internal
+pull-up resistor (enabled in software) holds GPIO 23 at 3.3V when the button is
+not pressed. Pressing the button connects GPIO 23 to GND, which the software
+reads as a button press.
+
+**This is a 3.3V logic circuit — no 12V involved.**
+
+| Wire # | From (G469 Terminal) | To | Label | Color | Gauge |
+|--------|---------------------|-----|-------|-------|-------|
+| 19 | Pin 16 — GPIO 23 | Button terminal 1 | "BTN signal" | Blue/White | 22 AWG |
+| 20 | Pin 14 — GND | Button terminal 2 | "BTN GND" | Black | 22 AWG |
+
+The pushbutton has two terminals. It does not matter which terminal gets which wire
+(a momentary switch is not polarized).
+
+```
+        3.3V (internal pull-up, enabled by software)
+          │
+          ├─── GPIO 23 (Pin 16) ──── read by systemd service
+          │
+     ┌────┴────┐
+     │  Button │  IP67 momentary (normally open)
+     │  (E380) │  16mm stainless panel mount
+     └────┬────┘
+          │
+         GND (Pin 14)
+```
+
+**Cable routing:** The button wires pass through the enclosure wall via a M16
+cable gland. Apply dielectric grease to the cable gland threads.
+
+### Step 4 Verification
+
+- [ ] Continuity: G469 Pin 16 ↔ button terminal 1 — beep
+- [ ] Continuity: G469 Pin 14 ↔ button terminal 2 — beep
+- [ ] Button NOT pressed: button terminal 1 ↔ terminal 2 — **NO beep**
+- [ ] Button PRESSED (hold it): button terminal 1 ↔ terminal 2 — **beep**
+
+---
+
+### Step 5: Wire the Hydreon RG-15 Rain Gauge (UART)
+
+The rain gauge uses 3.3V serial communication (UART) plus 12V power.
+
+**CRITICAL: The data wires (TX/RX) are 3.3V logic. The power wire is 12V.
+Do not mix them up. If 12V reaches a GPIO pin, the Pi is destroyed.**
+
+The RG-15 has a 4-wire pigtail cable. Confirm your wire colors match the
+Hydreon documentation before connecting:
+
+| RG-15 Wire Color | Function | Voltage | Connects To |
+|-------------------|----------|---------|-------------|
+| **Red** | VIN (power) | **12V** | TB1 12V output |
+| **Black** | GND | 0V | G469 Pin 9 (GND) |
+| **Green** | RX (data in) | 3.3V logic | G469 Pin 8 (GPIO 14 / TXD) |
+| **Yellow** | TX (data out) | 3.3V logic | G469 Pin 10 (GPIO 15 / RXD) |
+
+**⚠ STOP — Read this before wiring:**
+- The **red wire (12V power)** goes to **TB1**, NOT to the G469 breakout
+- If you connect the red wire to any G469 pin, you will send 12V into the Pi and
+  destroy it instantly
+- The green and yellow wires are **crossed**: Pi TX connects to rain gauge RX, and
+  Pi RX connects to rain gauge TX (this is normal for serial communication)
+
+| Wire # | From | To | Label | Color | Gauge |
+|--------|------|----|-------|-------|-------|
+| 21 | RG-15 red wire (VIN) | TB1 12V output | "RG15 12V" | — | 22 AWG |
+| 22 | RG-15 black wire (GND) | G469 Pin 9 (GND) | "RG15 GND" | — | 22 AWG |
+| 23 | RG-15 green wire (RX) | G469 Pin 8 (GPIO 14 / TXD) | "RG15 data" | — | 22 AWG |
+| 24 | RG-15 yellow wire (TX) | G469 Pin 10 (GPIO 15 / RXD) | "RG15 data" | — | 22 AWG |
+
+```
+  G469 Pin 8  (GPIO 14 TXD) ────── RG-15 green  (RX)  ← Pi talks, gauge listens
+  G469 Pin 10 (GPIO 15 RXD) ────── RG-15 yellow (TX)  ← gauge talks, Pi listens
+  G469 Pin 9  (GND)         ────── RG-15 black  (GND) ← shared ground
+  TB1 12V                   ────── RG-15 red    (VIN) ← 12V POWER (NOT GPIO!)
+```
+
+**Cable routing:** RG-15 cable enters enclosure through PG9 cable gland.
+
+**UART config required on the Pi (do this during software setup):**
+```
+# Add to /boot/firmware/config.txt
+dtoverlay=uart0
+dtoverlay=disable-bt
+```
+
+### Step 5 Verification
+
+- [ ] Continuity: RG-15 red wire ↔ TB1 12V terminal — beep
+- [ ] Continuity: RG-15 black wire ↔ G469 Pin 9 (GND) — beep
+- [ ] Continuity: RG-15 green wire ↔ G469 Pin 8 (GPIO 14) — beep
+- [ ] Continuity: RG-15 yellow wire ↔ G469 Pin 10 (GPIO 15) — beep
+
+**CRITICAL safety check — none of these should beep:**
+
+- [ ] RG-15 red wire (12V) ↔ G469 Pin 8 (GPIO 14) — **NO beep**
+- [ ] RG-15 red wire (12V) ↔ G469 Pin 10 (GPIO 15) — **NO beep**
+- [ ] RG-15 red wire (12V) ↔ G469 Pin 9 (GND) — **NO beep**
+- [ ] RG-15 red wire (12V) ↔ any other G469 pin — **NO beep**
+
+**If any of the safety checks beep, STOP. You have a wiring error that will
+destroy the Pi. Trace the wires and fix it before proceeding.**
+
+---
+
+## Final Pre-Power Verification
+
+Complete this entire checklist before reconnecting the battery or USB-C cable.
+
+### Visual Inspection
+
+- [ ] No bare wire strands poking out of any screw terminal
+- [ ] No wire insulation caught under any screw terminal (strip was too long)
+- [ ] No wires crossing between the G469 and any 12V terminal on TB1
+- [ ] All NC terminals on relay module are **empty** (no wires)
+- [ ] Wire colors/labels match the tables above
+
+### Continuity Checks (multimeter, beep mode)
+
+**Power connections — should beep:**
+- [ ] TB1 12V ↔ Relay CH1 COM
+- [ ] TB1 12V ↔ Relay CH2 COM
+- [ ] TB1 12V ↔ Relay CH3 COM
+- [ ] TB1 12V ↔ Relay CH4 COM
+- [ ] G469 Pin 2 (5V) ↔ Relay VCC
+- [ ] G469 Pin 6 (GND) ↔ Relay GND
+
+**Signal connections — should beep:**
+- [ ] G469 Pin 18 (GPIO 24) ↔ Relay IN1
+- [ ] G469 Pin 11 (GPIO 17) ↔ Relay IN2
+- [ ] G469 Pin 13 (GPIO 27) ↔ Relay IN3
+- [ ] G469 Pin 15 (GPIO 22) ↔ Relay IN4
+- [ ] G469 Pin 16 (GPIO 23) ↔ Button terminal
+- [ ] G469 Pin 14 (GND) ↔ Button terminal (other side)
+- [ ] G469 Pin 8 (GPIO 14) ↔ RG-15 green wire
+- [ ] G469 Pin 10 (GPIO 15) ↔ RG-15 yellow wire
+
+### Isolation Checks (CRITICAL — must NOT beep)
+
+These verify that 12V cannot reach the Pi GPIO:
+
+- [ ] TB1 12V ↔ G469 Pin 2 (5V) — **NO beep**
+- [ ] TB1 12V ↔ G469 Pin 6 (GND) — **NO beep**
+- [ ] TB1 12V ↔ G469 Pin 8 (GPIO 14) — **NO beep**
+- [ ] TB1 12V ↔ G469 Pin 10 (GPIO 15) — **NO beep**
+- [ ] TB1 12V ↔ G469 Pin 11 (GPIO 17) — **NO beep**
+- [ ] TB1 12V ↔ G469 Pin 13 (GPIO 27) — **NO beep**
+- [ ] TB1 12V ↔ G469 Pin 15 (GPIO 22) — **NO beep**
+- [ ] TB1 12V ↔ G469 Pin 16 (GPIO 23) — **NO beep**
+- [ ] TB1 12V ↔ G469 Pin 18 (GPIO 24) — **NO beep**
+- [ ] Relay VCC ↔ Relay GND — **NO beep**
+
+**If ALL checks pass, wiring is safe to power on.**
+
+---
+
+## First Power-On Procedure
+
+1. **Reconnect the 12V battery** to TB1
+2. Observe: nothing should happen yet (Pi is off, no USB-C connected)
+3. **Connect USB-C** from Witty Pi to the Pi (or let Witty Pi supply power)
+4. Pi begins booting — observe:
+   - Pi red LED turns on (power)
+   - Pi green LED flashes (SD card activity)
+   - Relay module LEDs should be OFF (GPIO pins default to LOW at boot)
+5. Once booted and systemd services are running, relay module LEDs will light
+   as services assert their GPIO pins
+6. If anything unexpected happens (relay module LEDs all on at boot, smoke,
+   clicking sounds without software running) — **disconnect battery immediately**
+
+---
+
+## Channel Summary
+
+| Channel | Relay Input | GPIO | G469 Pin | Load (12V side) | Purpose |
+|---------|------------|------|----------|-----------------|---------|
+| CH1 | IN1 | GPIO 24 | Pin 18 | PoE switch 12V power | Camera power cycling |
+| CH2 | IN2 | GPIO 17 | Pin 11 | Green LED 12V | System OK indicator |
+| CH3 | IN3 | GPIO 27 | Pin 13 | Yellow LED 12V | Working indicator |
+| CH4 | IN4 | GPIO 22 | Pin 15 | Red LED 12V | Error indicator |
+
+---
+
+## Pin Assignment Summary
+
+**Total GPIO pins used:** 7 (of 26 available)
+**Total GPIO pins reserved (I2C + EEPROM):** 4
+**Total GPIO pins free:** 15
+
+### All Used Pins
+
+| GPIO | Physical Pin | Function | Connects To |
+|------|-------------|----------|-------------|
+| GPIO 2 | 3 | I2C SDA | Witty Pi 5 (reserved) |
+| GPIO 3 | 5 | I2C SCL | Witty Pi 5 (reserved) |
+| GPIO 14 | 8 | UART TX | RG-15 rain gauge RX |
+| GPIO 15 | 10 | UART RX | RG-15 rain gauge TX |
+| GPIO 17 | 11 | Relay IN2 | Green LED (via relay) |
+| GPIO 22 | 15 | Relay IN4 | Red LED (via relay) |
+| GPIO 23 | 16 | Button input | Maintenance pushbutton |
+| GPIO 24 | 18 | Relay IN1 | PoE switch (via relay) |
+| GPIO 27 | 13 | Relay IN3 | Yellow LED (via relay) |
+
+### Available Pins
+
+| GPIO | Pin | Notes |
+|------|-----|-------|
+| GPIO 4 | 7 | General purpose |
+| GPIO 5 | 29 | General purpose |
+| GPIO 6 | 31 | General purpose |
+| GPIO 7 | 26 | SPI CE1 |
+| GPIO 8 | 24 | SPI CE0 |
+| GPIO 9 | 21 | SPI MISO |
+| GPIO 10 | 19 | SPI MOSI |
+| GPIO 11 | 23 | SPI SCLK |
+| GPIO 12 | 32 | PWM0 capable |
+| GPIO 13 | 33 | PWM1 capable |
+| GPIO 16 | 36 | General purpose |
+| GPIO 18 | 12 | PWM0 capable |
+| GPIO 19 | 35 | PWM1 capable |
+| GPIO 20 | 38 | General purpose |
+| GPIO 21 | 40 | General purpose |
+| GPIO 25 | 22 | General purpose |
+| GPIO 26 | 37 | General purpose |
+
+---
+
+## Systemd Services (to be created)
+
+Each GPIO function will have a corresponding systemd service:
+
+| Service | GPIO | Type | Description |
+|---------|------|------|-------------|
+| `relay-poe.service` | GPIO 24 | oneshot, RemainAfterExit | Assert HIGH at boot to power PoE switch |
+| `led-status.service` | GPIO 17, 27, 22 | simple (long-running) | Manage LED state based on system status |
+| `maintenance-button.service` | GPIO 23 | simple (long-running) | Monitor button, trigger maintenance mode |
+| `rain-gauge.service` | GPIO 14, 15 | simple (long-running) | Read UART data from Hydreon RG-15 |
+
+---
+
+## Notes
+
+1. **Geekworm G469 vs Pi-EzConnect:** The system circuit diagram labels the breakout
+   as "Pi-EzConnect (Adafruit 2711)" but the actual procured part is the **Geekworm
+   G469**. Functionally equivalent — both are passive 40-pin terminal block breakouts.
+
+2. **Wire gauge:** 22 AWG stranded for all signal and LED wires. 18 AWG stranded for
+   the PoE switch 12V power path (up to 5A).
+
+3. **Ferrules:** Use wire ferrules on all stranded wire inserted into screw terminals.
+   Bare stranded wire can splay under the screw, causing intermittent contact or
+   shorts to adjacent terminals.
+
+4. **Wire routing:** Keep 12V power wires (red, 18 AWG) physically separated from
+   GPIO signal wires (blue/white, 22 AWG) to minimize electrical noise.
+
+5. **Pi 5 GPIO voltage:** All GPIO pins are **3.3V logic**. Connecting 5V or 12V
+   directly to any GPIO pin will permanently destroy the Pi's processor.
+
+6. **Witty Pi 5 power behavior:** When the Pi sleeps, the Witty Pi 5 performs a full
+   hard power cut. The 5V rail, all GPIO, and all USB ports go completely dead. The
+   relay module loses VCC power and all 4 relays de-energize — the PoE switch and
+   LEDs turn off automatically without any software cleanup.
+
+7. **Relay click noise:** You will hear an audible click each time a relay channel
+   turns on or off. This is normal — it's the mechanical contact inside the relay
+   moving. If you hear rapid clicking (more than once per second), something is wrong
+   with the control signal.
