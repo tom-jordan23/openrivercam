@@ -19,7 +19,7 @@
         <!-- ENCLOSURE -->
         <!-- ==================== -->
         <mxCell id="enclosure" value="VEVOR COMPUTE ENCLOSURE (IP66, 16x12x8in, DIN rail mounting)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;strokeWidth=2;verticalAlign=top;fontStyle=1;fontSize=11;align=left;spacingLeft=10;spacingTop=5;" vertex="1" parent="1">
-          <mxGeometry x="30" y="70" width="820" height="590" as="geometry"/>
+          <mxGeometry x="30" y="70" width="820" height="600" as="geometry"/>
         </mxCell>
 
         <!-- ==================== -->
@@ -130,7 +130,7 @@
           <mxGeometry x="600" y="240" width="235" height="230" as="geometry"/>
         </mxCell>
 
-        <mxCell id="relay" value="RELAY-POE&lt;br&gt;&lt;font style=&quot;font-size:9px&quot;&gt;USB-triggered (passive)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;" vertex="1" parent="1">
+        <mxCell id="relay" value="RELAY-POE&lt;br&gt;&lt;font style=&quot;font-size:9px&quot;&gt;GPIO-triggered (4-CH SPDT)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;" vertex="1" parent="1">
           <mxGeometry x="620" y="280" width="100" height="40" as="geometry"/>
         </mxCell>
 
@@ -149,7 +149,7 @@
         <mxCell id="e-relay-poe" value="switched" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#cc0000;strokeWidth=2;fontColor=#cc0000;fontSize=9;" edge="1" source="relay" target="poe-switch" parent="1">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
-        <mxCell id="e-pi-relay-usb" value="USB (coil)" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#0000cc;strokeWidth=2;fontColor=#0000cc;fontSize=9;" edge="1" source="pi5" target="relay" parent="1">
+        <mxCell id="e-pi-relay-usb" value="GPIO (IN1-IN4)" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#00aa00;strokeWidth=2;fontColor=#00aa00;fontSize=9;" edge="1" source="pi5" target="relay" parent="1">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
         <mxCell id="e-uplink-pi" value="ETH" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#006699;strokeWidth=2;fontColor=#006699;fontSize=9;" edge="1" source="uplink" target="pi5" parent="1">
@@ -209,7 +209,7 @@
         <!-- STATUS & UI -->
         <!-- ==================== -->
         <mxCell id="ui-group" value="STATUS &amp; MAINTENANCE" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f5e9;strokeColor=#2e7d32;strokeWidth=1.5;verticalAlign=top;fontStyle=1;fontSize=11;align=center;spacingTop=5;" vertex="1" parent="1">
-          <mxGeometry x="50" y="545" width="280" height="100" as="geometry"/>
+          <mxGeometry x="50" y="545" width="280" height="125" as="geometry"/>
         </mxCell>
 
         <mxCell id="leds" value="Green (GPIO 17) System OK&lt;br&gt;Yellow (GPIO 27) Working&lt;br&gt;Red (GPIO 22) Error" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;fontSize=10;align=left;spacingLeft=5;" vertex="1" parent="1">
@@ -220,10 +220,17 @@
           <mxGeometry x="240" y="575" width="80" height="55" as="geometry"/>
         </mxCell>
 
+        <mxCell id="power-button" value="Power Button&lt;br&gt;&lt;font style=&quot;font-size:9px&quot;&gt;Pi 5 J2 header&lt;br&gt;on/off/force-off&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="70" y="635" width="245" height="25" as="geometry"/>
+        </mxCell>
+
         <mxCell id="e-gpio-leds" value="GPIO" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#00aa00;strokeWidth=1.5;fontColor=#00aa00;fontSize=9;" edge="1" source="ezconnect" target="leds" parent="1">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
         <mxCell id="e-gpio-btn" value="GPIO" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#00aa00;strokeWidth=1.5;fontColor=#00aa00;fontSize=9;" edge="1" source="ezconnect" target="button" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e-pi-pwrbtn" value="J2" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#333333;strokeWidth=1.5;fontColor=#333333;fontSize=9;" edge="1" source="pi5" target="power-button" parent="1">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
 
@@ -244,21 +251,21 @@
         <!-- ==================== -->
         <!-- ASSEMBLY NOTES -->
         <!-- ==================== -->
-        <mxCell id="notes" value="&lt;b&gt;ASSEMBLY NOTES&lt;/b&gt;&lt;br&gt;&lt;br&gt;1. Stack Order: Pi 5 (bottom) + Pi-EzConnect (top) - all on DIN rail clip&lt;br&gt;2. Apply MG 422C silicone conformal coat to: Pi 5, Pi-EzConnect. Mask connectors/headers&lt;br&gt;3. DDR-60G-5: Regulated 5V for compute. DDR-60G-12: Regulated 12V for PoE switch (battery varies 10-14V)&lt;br&gt;4. Relay-POE: Passive USB trigger from Pi. Pi ON = relay closed = PoE switch powered = camera boots&lt;br&gt;5. Proxicast puck antenna: 12mm hole in enclosure top, rubber gasket seal. Internal SMA pigtails to modem U.FL&lt;br&gt;6. SHT40 (inside enclosure) monitors climate. DS18B20 probe (outside, PG9 gland) for ambient temp/dew point&lt;br&gt;7. Pi 5 built-in RTC (ML-2020 coin cell) provides scheduling via Rainbow Sensing image&lt;br&gt;8. Gore M12 vent for pressure equalization. No heaters (solar power budget). Carrier: Telkomsel" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fffde7;strokeColor=#333333;strokeWidth=1.5;align=left;spacingLeft=10;fontSize=10;verticalAlign=top;spacingTop=5;" vertex="1" parent="1">
+        <mxCell id="notes" value="&lt;b&gt;ASSEMBLY NOTES&lt;/b&gt;&lt;br&gt;&lt;br&gt;1. Stack Order: Pi 5 (bottom) + Pi-EzConnect (top) - all on DIN rail clip&lt;br&gt;2. Apply MG 422C silicone conformal coat to: Pi 5, Pi-EzConnect. Mask connectors/headers&lt;br&gt;3. DDR-60G-5: Regulated 5V for compute. DDR-60G-12: Regulated 12V for PoE switch (battery varies 10-14V)&lt;br&gt;4. Relay-POE: GPIO-triggered 4-CH SPDT. IN1 (GPIO 24) = PoE switch. IN2/3/4 (GPIO 17/27/22) = LEDs&lt;br&gt;5. Proxicast puck antenna: 12mm hole in enclosure top, rubber gasket seal. Internal SMA pigtails to modem U.FL&lt;br&gt;6. SHT40 (inside enclosure) monitors climate. DS18B20 probe (outside, PG9 gland) for ambient temp/dew point&lt;br&gt;7. Pi 5 built-in RTC (ML-2020 coin cell) provides scheduling via Rainbow Sensing image&lt;br&gt;8. Gore M12 vent for pressure equalization. No heaters (solar power budget). Carrier: Telkomsel&lt;br&gt;9. External power button wired to Pi 5 J2 header (not GPIO). Press to power on/off; hold 5s to force-off" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fffde7;strokeColor=#333333;strokeWidth=1.5;align=left;spacingLeft=10;fontSize=10;verticalAlign=top;spacingTop=5;" vertex="1" parent="1">
           <mxGeometry x="30" y="670" width="1130" height="200" as="geometry"/>
         </mxCell>
 
         <!-- ==================== -->
         <!-- GPIO PIN TABLE -->
         <!-- ==================== -->
-        <mxCell id="gpio-table" value="&lt;b&gt;GPIO PIN ASSIGNMENTS&lt;/b&gt;&lt;br&gt;&lt;br&gt;&lt;font face=&quot;Courier New&quot;&gt;GPIO  2   SDA         I2C       SHT40 sensor (0x44)&lt;br&gt;GPIO  3   SCL         I2C       SHT40 sensor&lt;br&gt;GPIO 14   UART TX     Serial    To Hydreon RG-15 RX&lt;br&gt;GPIO 15   UART RX     Serial    From Hydreon RG-15 TX&lt;br&gt;GPIO 17   Green LED   Output    System OK&lt;br&gt;GPIO 22   Red LED     Output    Error&lt;br&gt;GPIO 23   Button      Input     Maintenance mode (3s hold)&lt;br&gt;GPIO 24   DS18B20     1-Wire    Outside temp (4.7k pull-up)&lt;br&gt;GPIO 27   Yellow LED  Output    Working/uploading&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;align=left;spacingLeft=10;fontSize=10;verticalAlign=top;spacingTop=5;" vertex="1" parent="1">
+        <mxCell id="gpio-table" value="&lt;b&gt;GPIO PIN ASSIGNMENTS&lt;/b&gt;&lt;br&gt;&lt;br&gt;&lt;font face=&quot;Courier New&quot;&gt;GPIO  2   SDA         I2C       SHT40 sensor (0x44)&lt;br&gt;GPIO  3   SCL         I2C       SHT40 sensor&lt;br&gt;GPIO 14   UART TX     Serial    To Hydreon RG-15 RX&lt;br&gt;GPIO 15   UART RX     Serial    From Hydreon RG-15 TX&lt;br&gt;GPIO  4   DS18B20     1-Wire    Outside temp (4.7k pull-up)&lt;br&gt;GPIO 17   Relay IN2   Output    LED Green / System OK&lt;br&gt;GPIO 22   Relay IN4   Output    LED Red / Error&lt;br&gt;GPIO 23   Button      Input     Maintenance mode (3s hold)&lt;br&gt;GPIO 24   Relay IN1   Output    PoE switch&lt;br&gt;GPIO 27   Relay IN3   Output    LED Yellow / Working/uploading&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;align=left;spacingLeft=10;fontSize=10;verticalAlign=top;spacingTop=5;" vertex="1" parent="1">
           <mxGeometry x="30" y="880" width="570" height="200" as="geometry"/>
         </mxCell>
 
         <!-- ==================== -->
         <!-- FUSE SCHEDULE -->
         <!-- ==================== -->
-        <mxCell id="fuses" value="&lt;b&gt;FUSE SCHEDULE&lt;/b&gt;&lt;br&gt;&lt;br&gt;Compute circuit (DDR-60G-5): 5A inline blade fuse&lt;br&gt;Camera circuit (DDR-60G-12): 5A inline blade fuse&lt;br&gt;LEDs: 330 Ohm series resistors | All DDR-60G: built-in OCP/OVP" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;align=left;spacingLeft=10;fontSize=10;verticalAlign=top;spacingTop=5;" vertex="1" parent="1">
+        <mxCell id="fuses" value="&lt;b&gt;FUSE SCHEDULE&lt;/b&gt;&lt;br&gt;&lt;br&gt;Compute circuit (DDR-60G-5): 5A inline blade fuse&lt;br&gt;Camera circuit (DDR-60G-12): 5A inline blade fuse&lt;br&gt;LEDs: 12V via relay CH2/3/4 | All DDR-60G: built-in OCP/OVP" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;align=left;spacingLeft=10;fontSize=10;verticalAlign=top;spacingTop=5;" vertex="1" parent="1">
           <mxGeometry x="620" y="880" width="540" height="80" as="geometry"/>
         </mxCell>
 

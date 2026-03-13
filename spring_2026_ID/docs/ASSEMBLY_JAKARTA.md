@@ -20,6 +20,7 @@ Apply MG 422C silicone conformal coating to all PCBs:
 
 **Masking (Use Kapton tape):**
 - GPIO header pins (all 40 pins)
+- J2 power button header (2-pin, near USB-C port)
 - USB-A and USB-C ports
 - HDMI ports
 - Ethernet port
@@ -145,7 +146,7 @@ Configure ANNKE C1200 cameras BEFORE deployment. The Pi acts as DHCP server on t
 ### Camera System
 - [ ] ANNKE C1200 PoE cameras (×2, factory-sealed IP67)
 - [ ] LINOVISION Industrial PoE Switch (Gigabit, 12V DC input)
-- [ ] Electronics-Salon DIN Rail relay module (USB-powered coil)
+- [ ] Electronics-Salon 4-channel SPDT DIN Rail relay module (GPIO-triggered via G469)
 - [ ] Cat6 outdoor shielded cables, 10ft pre-terminated (×4)
 - [ ] CNLINKO weatherproof ethernet bulkheads, IP67 (×2)
 - [ ] Camera pole mount brackets (×2)
@@ -158,9 +159,9 @@ Configure ANNKE C1200 cameras BEFORE deployment. The Pi acts as DHCP server on t
 - [ ] 40 CFM fans (×2, for internal air circulation)
 
 ### User Interface
-- [ ] IP67 LEDs: Red, Yellow, Green
-- [ ] IP67 momentary pushbutton
-- [ ] Current-limiting resistors (330Ω)
+- [ ] 12V IP67 panel-mount LEDs: Red, Yellow, Green
+- [ ] IP67 momentary pushbutton (maintenance mode, GPIO 23)
+- [ ] IP67 momentary pushbutton (external power button, Pi 5 J2 header)
 
 ### Enclosure & Mounting
 - [ ] VEVOR NEMA 4x enclosure (16"×12"×8")
@@ -238,7 +239,8 @@ Configure ANNKE C1200 cameras BEFORE deployment. The Pi acts as DHCP server on t
    - 1× M16 hole for ground cable
    - 2× holes for 40 CFM fans
    - 3× 10mm holes for status LEDs
-   - 1× 16mm hole for pushbutton
+   - 1× 16mm hole for maintenance pushbutton
+   - 1× 16mm hole for external power button
    - 1× PG9 hole for rain gauge cable
    - 1× PG9 hole for DS18B20 temperature probe
 
@@ -325,10 +327,15 @@ Configure ANNKE C1200 cameras BEFORE deployment. The Pi acts as DHCP server on t
 
 2. **Mount Electronics-Salon relay module** on lower DIN rail
 
-3. **Wire relay module:**
-   - USB cable from relay coil → Pi 5 USB port (powers coil when Pi is on)
-   - 12V+ from TB1 → relay NO (normally open) input
-   - Relay COM output → LINOVISION PoE switch 12V+ input
+3. **Wire relay module (via Geekworm G469 terminals):**
+   - Relay VCC → 5V from G469
+   - Relay GND → GND from G469
+   - GPIO 24 → IN1 (PoE switch power)
+   - GPIO 17 → IN2 (Green LED)
+   - GPIO 27 → IN3 (Yellow LED)
+   - GPIO 22 → IN4 (Red LED)
+   - 12V+ from TB1 → relay CH1 NO (normally open) input
+   - Relay CH1 COM output → LINOVISION PoE switch 12V+ input
    - TB1 GND → PoE switch GND input
 
 4. **Connect Ethernet cables:**
@@ -343,15 +350,21 @@ Configure ANNKE C1200 cameras BEFORE deployment. The Pi acts as DHCP server on t
 
 ### Step 7: Install User Interface (15 min)
 
-Same as Sukabumi:
-
-1. Install LEDs in panel holes (Red/Yellow/Green)
-2. Install pushbutton
-3. Wire to Geekworm G469 terminals:
-   - Green LED: GPIO 17 → 330Ω → LED → GND
-   - Yellow LED: GPIO 27 → 330Ω → LED → GND
-   - Red LED: GPIO 22 → 330Ω → LED → GND
+1. Install 12V panel-mount LEDs in panel holes (Red/Yellow/Green)
+2. Install maintenance pushbutton
+3. Install external power button
+4. Wire LEDs through relay channels (12V switched by relay):
+   - Green LED: 12V from TB1 → relay CH2 COM → LED → GND (GPIO 17 → IN2)
+   - Yellow LED: 12V from TB1 → relay CH3 COM → LED → GND (GPIO 27 → IN3)
+   - Red LED: 12V from TB1 → relay CH4 COM → LED → GND (GPIO 22 → IN4)
+5. Wire maintenance pushbutton to Geekworm G469 terminals:
    - Button: GPIO 23 → Button → GND
+6. Wire external power button to Pi 5 J2 header:
+   - J2 is a dedicated 2-pin power button header on the Pi 5, located near the USB-C port
+   - This is NOT a GPIO pin — it is hardware-level power control
+   - Connect two wires (22 AWG) from J2 pin 1 and J2 pin 2 to the IP67 momentary switch
+   - Polarity does not matter (momentary short between the two pins)
+   - Behavior: brief press powers on (from halted), brief press initiates clean shutdown (while running), ~10s hold forces power off (if frozen)
 
 ### Step 8: Install Humidity Control & Climate Monitoring (20 min)
 
@@ -376,7 +389,7 @@ Same as Sukabumi:
 4. **Install DS18B20 waterproof temperature probe:**
    - Route probe cable through PG9 gland to outside enclosure
    - Connect to Geekworm G469:
-     - Data → GPIO 24 (with 4.7kΩ pull-up to 3.3V)
+     - Data → GPIO 4 / Pin 7 (with 4.7kΩ pull-up to 3.3V)
      - VCC → 3.3V
      - GND → GND
 
@@ -395,7 +408,7 @@ Same as Sukabumi:
    - GND → GND (TB1)
    - TX → GPIO 15 (Pi RX)
    - RX → GPIO 14 (Pi TX)
-6. **Relay USB:** USB cable from Electronics-Salon relay → Pi 5 USB port
+6. **Relay GPIO:** Already wired in Step 6 (VCC, GND, IN1-IN4 from G469)
 
 ### Step 10: Mount Enclosure on Pole (30 min)
 
@@ -460,6 +473,7 @@ Same as Sukabumi:
    - [ ] Gore vents clear
    - [ ] Surge protector installed
    - [ ] Fans unobstructed
+   - [ ] External power button wired to Pi 5 J2 header
 
 4. **Close enclosure** (leave AC disconnected)
 
@@ -484,9 +498,12 @@ Same as Sukabumi:
    - Charging indicator should light
    - Battery voltage rising (if depleted)
 
-### Verify Pi Boot
+### Power On Pi
 
-1. Wait 2-3 minutes for full boot
+1. **Press the external power button** (brief press) to power on the Pi 5
+   - The Pi does not auto-power-on from 5V alone — the J2 power button (or software config) is required
+   - If the Pi was previously shut down cleanly, a brief press on the external power button will boot it
+2. Wait 2-3 minutes for full boot
 2. Status LEDs should indicate:
    - Green = OK
    - Yellow blink = working
@@ -558,8 +575,8 @@ See `TROUBLESHOOTING.md` for detailed diagnostics.
 | Symptom | Check |
 |---------|-------|
 | No power | AC voltage? Surge protector? PSU LED? |
-| No Pi boot | Fuse? 12V at terminals? DDR-60G-5 output? USB-C power? |
-| Cameras offline | PoE switch powered? Relay USB connected? Cable continuity? Ping test? |
+| No Pi boot | Fuse? 12V at terminals? DDR-60G-5 output? USB-C power? Power button pressed? J2 wiring? |
+| Cameras offline | PoE switch powered? Relay GPIO wiring correct? Cable continuity? Ping test? |
 | No LTE | Antenna? SIM? IMEI registered? |
 | Battery not charging | Charger LED? Battery terminals? |
 

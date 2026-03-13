@@ -1,5 +1,7 @@
 # GPIO Stacking Analysis: Witty Pi 4 vs. Witty Pi 5 with Adafruit Pi-EzConnect
 
+> **HISTORICAL DOCUMENT** — This research was conducted when the design included a Witty Pi HAT. The final build uses a Rainbow Sensing image which does not require the Witty Pi. Retained for reference only.
+
 **Context:** Determining if Witty Pi HAT can stack cleanly with Adafruit Pi-EzConnect for GPIO terminal block riser functionality.
 
 ---

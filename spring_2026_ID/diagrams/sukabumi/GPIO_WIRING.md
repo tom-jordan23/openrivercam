@@ -1,7 +1,7 @@
 # GPIO Wiring Guide — Sukabumi ORC Station
 
 **Rev B — 2026-03-12**
-**Hardware:** Raspberry Pi 5 → Witty Pi 5 HAT+ → Stacking Headers → Geekworm G469 Breakout
+**Hardware:** Raspberry Pi 5 → Stacking Headers → Geekworm G469 Breakout
 
 ---
 
@@ -20,7 +20,6 @@ instantly destroy components.
 - No lights on the Pi (no red LED, no green LED)
 - No lights on the relay module
 - No lights on the PoE switch
-- Witty Pi display is blank
 
 ### Rule 2: 12V Can Damage the Pi Instantly
 
@@ -166,8 +165,11 @@ Orientation: GPIO header at top-right corner of the Pi board.
          │                                                   │
   Pin 1  │  [3V3 Power]    ●  ●  [5V Power]      ★ VCC    │  Pin 2
   Pin 3  │  [GPIO 2  SDA ] ●  ●  [5V Power]               │  Pin 4
+         │   ★ SHT40 I2C                                    │
   Pin 5  │  [GPIO 3  SCL ] ●  ●  [GND]           ★ GND    │  Pin 6
+         │   ★ SHT40 I2C                                    │
   Pin 7  │  [GPIO 4      ] ●  ●  [GPIO 14  TXD]  ★ UART   │  Pin 8
+         │   ★ DS18B20                                      │
   Pin 9  │  [GND]          ●  ●  [GPIO 15  RXD]  ★ UART   │  Pin 10
   Pin 11 │  [GPIO 17     ] ●  ●  [GPIO 18]                 │  Pin 12
          │   ★ Green LED                                     │
@@ -198,10 +200,14 @@ Orientation: GPIO header at top-right corner of the Pi board.
 
 | GPIO | Pin | Function | Reserved By |
 |------|-----|----------|-------------|
-| GPIO 2 | 3 | I2C1 SDA | Witty Pi 5 HAT+ (addr 0x51) |
-| GPIO 3 | 5 | I2C1 SCL | Witty Pi 5 HAT+ (addr 0x51) |
 | GPIO 0 | 27 | ID_SD (EEPROM) | HAT identification bus |
 | GPIO 1 | 28 | ID_SC (EEPROM) | HAT identification bus |
+
+### I2C Bus (Shared)
+
+GPIO 2 (Pin 3) and GPIO 3 (Pin 5) are the I2C1 bus. These are shared by all I2C
+devices. Currently used by the SHT40 temperature/humidity sensor at address 0x44.
+Additional I2C devices can be added at different addresses without conflict.
 
 ---
 
@@ -211,7 +217,7 @@ Orientation: GPIO header at top-right corner of the Pi board.
 
 ### Before You Start
 
-- [ ] Pi, Witty Pi, and G469 breakout are assembled as a stack (but NOT powered)
+- [ ] Pi and G469 breakout are assembled as a stack (but NOT powered)
 - [ ] 12V battery is **disconnected**
 - [ ] USB-C cable is **unplugged**
 - [ ] Relay module is snapped onto DIN rail
@@ -422,7 +428,59 @@ cable gland. Apply dielectric grease to the cable gland threads.
 
 ---
 
-### Step 5: Wire the Hydreon RG-15 Rain Gauge (UART)
+### Step 5: Wire the External Power Button (Pi 5 J2 Header)
+
+The Raspberry Pi 5 has a dedicated **J2 power button header** — a 2-pin header
+located near the USB-C port on the Pi board. Shorting these two pins briefly
+acts exactly like pressing the onboard power button: it powers on the Pi from
+halt state, or initiates a clean shutdown when running.
+
+**This is NOT on the G469 breakout.** The J2 header is on the Pi board itself.
+You need to run a 2-wire cable from J2 through the G469 stack to an external
+momentary switch.
+
+**This is a 3.3V logic circuit — no 12V involved.**
+
+| Wire # | From | To | Label | Color | Gauge |
+|--------|------|----|-------|-------|-------|
+| 32 | Pi 5 J2 pin 1 | Power button terminal 1 | "PWR BTN" | Blue/White | 22 AWG |
+| 33 | Pi 5 J2 pin 2 | Power button terminal 2 | "PWR BTN" | Blue/White | 22 AWG |
+
+The power button is a simple momentary switch (normally open). It does not
+matter which terminal gets which wire (not polarized).
+
+```
+     Pi 5 J2 Header
+     ┌─────┐
+     │ 1 2 │  ← 2-pin header near USB-C port
+     └──┬──┘
+        │
+   ┌────┴────┐
+   │  Button │  IP67 momentary (normally open)
+   │         │  16mm stainless panel mount
+   └────┬────┘
+        │
+       (other pin)
+```
+
+**Cable routing:** The power button wires pass through the enclosure wall via a
+cable gland (can share the M16 gland with the maintenance button if both fit).
+
+**Behavior:**
+- **Pi is off (halted):** Brief press powers on the Pi
+- **Pi is running:** Brief press initiates clean shutdown
+- **Pi is frozen:** Hold for ~10 seconds to force power off
+
+### Step 5 Verification
+
+- [ ] Continuity: J2 pin 1 ↔ power button terminal 1 — beep
+- [ ] Continuity: J2 pin 2 ↔ power button terminal 2 — beep
+- [ ] Button NOT pressed: terminal 1 ↔ terminal 2 — **NO beep**
+- [ ] Button PRESSED: terminal 1 ↔ terminal 2 — **beep**
+
+---
+
+### Step 6: Wire the Hydreon RG-15 Rain Gauge (UART)
 
 The rain gauge uses 3.3V serial communication (UART) plus 12V power.
 
@@ -469,7 +527,7 @@ dtoverlay=uart0
 dtoverlay=disable-bt
 ```
 
-### Step 5 Verification
+### Step 6 Verification
 
 - [ ] Continuity: RG-15 red wire ↔ TB1 12V terminal — beep
 - [ ] Continuity: RG-15 black wire ↔ G469 Pin 9 (GND) — beep
@@ -485,6 +543,95 @@ dtoverlay=disable-bt
 
 **If any of the safety checks beep, STOP. You have a wiring error that will
 destroy the Pi. Trace the wires and fix it before proceeding.**
+
+---
+
+### Step 7: Wire the DS18B20 Temperature Probe (1-Wire)
+
+The DS18B20 is a waterproof stainless steel temperature probe mounted **outside**
+the enclosure. It measures ambient air temperature for dew point calculations.
+
+**This is a 3.3V logic circuit — no 12V involved.**
+
+The DS18B20 requires a **4.7k Ohm pull-up resistor** between the data line and 3.3V.
+
+| Wire # | From (G469 Terminal) | To | Label | Color | Gauge |
+|--------|---------------------|-----|-------|-------|-------|
+| 25 | Pin 1 — 3V3 | DS18B20 red wire (VDD) | "DS18 3V3" | Red | 22 AWG |
+| 26 | Pin 7 — GPIO 4 | DS18B20 yellow/white wire (DATA) | "DS18 data" | Blue/White | 22 AWG |
+| 27 | Pin 9 — GND | DS18B20 black wire (GND) | "DS18 GND" | Black | 22 AWG |
+
+**Pull-up resistor:** Solder or crimp a **4.7k Ohm resistor** between Pin 1 (3V3)
+and Pin 7 (GPIO 4) on the G469 terminal block. Both legs insert into the same
+screw terminals as wires 25 and 26.
+
+```
+  G469 Pin 1  (3V3)  ──┬── DS18B20 red   (VDD)
+                        │
+                    [4.7k Ohm]  ← pull-up resistor
+                        │
+  G469 Pin 7  (GPIO 4) ─┼── DS18B20 yellow (DATA)
+                        │
+                        └── read by 1-Wire driver
+  G469 Pin 9  (GND)  ──── DS18B20 black  (GND)
+```
+
+**Cable routing:** DS18B20 cable enters enclosure through PG9 cable gland.
+Apply dielectric grease to the gland threads.
+
+**1-Wire config required on the Pi (do this during software setup):**
+```
+# Add to /boot/firmware/config.txt
+dtoverlay=w1-gpio,gpiopin=4
+```
+
+### Step 7 Verification
+
+- [ ] Continuity: G469 Pin 1 (3V3) ↔ DS18B20 red wire — beep
+- [ ] Continuity: G469 Pin 7 (GPIO 4) ↔ DS18B20 yellow wire — beep
+- [ ] Continuity: G469 Pin 9 (GND) ↔ DS18B20 black wire — beep
+- [ ] Pull-up: G469 Pin 1 (3V3) ↔ G469 Pin 7 (GPIO 4) — multimeter reads ~4.7k Ohm
+- [ ] NO short: DS18B20 red wire ↔ DS18B20 black wire — **NO beep**
+
+---
+
+### Step 8: Wire the SHT40 Temperature/Humidity Sensor (I2C)
+
+The SHT40 is mounted **inside** the enclosure to monitor internal climate
+(humidity, temperature). It connects via I2C using a STEMMA QT cable.
+
+**This is a 3.3V logic circuit — no 12V involved.**
+
+The SHT40 breakout board has a STEMMA QT connector. Use a **STEMMA QT to bare
+wire cable (~200mm)** to connect to the G469 screw terminals.
+
+| Wire # | From (G469 Terminal) | To (SHT40 cable wire) | Label | Color | Gauge |
+|--------|---------------------|----------------------|-------|-------|-------|
+| 28 | Pin 1 — 3V3 | Red wire (VIN) | "SHT 3V3" | Red | — |
+| 29 | Pin 3 — GPIO 2 (SDA) | Blue wire (SDA) | "SHT SDA" | Blue | — |
+| 30 | Pin 5 — GPIO 3 (SCL) | Yellow wire (SCL) | "SHT SCL" | Yellow | — |
+| 31 | Pin 9 — GND | Black wire (GND) | "SHT GND" | Black | — |
+
+**Note:** STEMMA QT cable wire colors may vary by manufacturer. Verify against
+the cable's documentation before connecting.
+
+```
+  G469 Pin 1  (3V3)    ──── SHT40 VIN  (red)
+  G469 Pin 3  (GPIO 2) ──── SHT40 SDA  (blue)    I2C address 0x44
+  G469 Pin 5  (GPIO 3) ──── SHT40 SCL  (yellow)
+  G469 Pin 9  (GND)    ──── SHT40 GND  (black)
+```
+
+**Mounting:** Secure the SHT40 breakout board inside the enclosure with a small
+adhesive standoff or cable tie mount. Position away from heat sources (Pi, DC-DC
+converters) for accurate readings.
+
+### Step 8 Verification
+
+- [ ] Continuity: G469 Pin 1 (3V3) ↔ SHT40 VIN — beep
+- [ ] Continuity: G469 Pin 3 (GPIO 2) ↔ SHT40 SDA — beep
+- [ ] Continuity: G469 Pin 5 (GPIO 3) ↔ SHT40 SCL — beep
+- [ ] Continuity: G469 Pin 9 (GND) ↔ SHT40 GND — beep
 
 ---
 
@@ -519,13 +666,19 @@ Complete this entire checklist before reconnecting the battery or USB-C cable.
 - [ ] G469 Pin 14 (GND) ↔ Button terminal (other side)
 - [ ] G469 Pin 8 (GPIO 14) ↔ RG-15 green wire
 - [ ] G469 Pin 10 (GPIO 15) ↔ RG-15 yellow wire
+- [ ] G469 Pin 7 (GPIO 4) ↔ DS18B20 data wire
+- [ ] G469 Pin 3 (GPIO 2) ↔ SHT40 SDA
+- [ ] G469 Pin 5 (GPIO 3) ↔ SHT40 SCL
 
 ### Isolation Checks (CRITICAL — must NOT beep)
 
 These verify that 12V cannot reach the Pi GPIO:
 
 - [ ] TB1 12V ↔ G469 Pin 2 (5V) — **NO beep**
+- [ ] TB1 12V ↔ G469 Pin 3 (GPIO 2) — **NO beep**
+- [ ] TB1 12V ↔ G469 Pin 5 (GPIO 3) — **NO beep**
 - [ ] TB1 12V ↔ G469 Pin 6 (GND) — **NO beep**
+- [ ] TB1 12V ↔ G469 Pin 7 (GPIO 4) — **NO beep**
 - [ ] TB1 12V ↔ G469 Pin 8 (GPIO 14) — **NO beep**
 - [ ] TB1 12V ↔ G469 Pin 10 (GPIO 15) — **NO beep**
 - [ ] TB1 12V ↔ G469 Pin 11 (GPIO 17) — **NO beep**
@@ -542,8 +695,8 @@ These verify that 12V cannot reach the Pi GPIO:
 ## First Power-On Procedure
 
 1. **Reconnect the 12V battery** to TB1
-2. Observe: nothing should happen yet (Pi is off, no USB-C connected)
-3. **Connect USB-C** from Witty Pi to the Pi (or let Witty Pi supply power)
+2. Observe: nothing should happen yet (Pi is off, USB-C power available but Pi is halted)
+3. **Press the external power button** (connected to Pi 5 J2 header) briefly
 4. Pi begins booting — observe:
    - Pi red LED turns on (power)
    - Pi green LED flashes (SD card activity)
@@ -568,16 +721,17 @@ These verify that 12V cannot reach the Pi GPIO:
 
 ## Pin Assignment Summary
 
-**Total GPIO pins used:** 7 (of 26 available)
-**Total GPIO pins reserved (I2C + EEPROM):** 4
-**Total GPIO pins free:** 15
+**Total GPIO pins used:** 10 (of 28 total)
+**Total GPIO pins reserved (EEPROM):** 2
+**Total GPIO pins free:** 16
 
 ### All Used Pins
 
 | GPIO | Physical Pin | Function | Connects To |
 |------|-------------|----------|-------------|
-| GPIO 2 | 3 | I2C SDA | Witty Pi 5 (reserved) |
-| GPIO 3 | 5 | I2C SCL | Witty Pi 5 (reserved) |
+| GPIO 2 | 3 | I2C SDA | SHT40 sensor (0x44) |
+| GPIO 3 | 5 | I2C SCL | SHT40 sensor |
+| GPIO 4 | 7 | 1-Wire data | DS18B20 temperature probe |
 | GPIO 14 | 8 | UART TX | RG-15 rain gauge RX |
 | GPIO 15 | 10 | UART RX | RG-15 rain gauge TX |
 | GPIO 17 | 11 | Relay IN2 | Green LED (via relay) |
@@ -590,7 +744,6 @@ These verify that 12V cannot reach the Pi GPIO:
 
 | GPIO | Pin | Notes |
 |------|-----|-------|
-| GPIO 4 | 7 | General purpose |
 | GPIO 5 | 29 | General purpose |
 | GPIO 6 | 31 | General purpose |
 | GPIO 7 | 26 | SPI CE1 |
@@ -620,6 +773,7 @@ Each GPIO function will have a corresponding systemd service:
 | `led-status.service` | GPIO 17, 27, 22 | simple (long-running) | Manage LED state based on system status |
 | `maintenance-button.service` | GPIO 23 | simple (long-running) | Monitor button, trigger maintenance mode |
 | `rain-gauge.service` | GPIO 14, 15 | simple (long-running) | Read UART data from Hydreon RG-15 |
+| `climate-monitor.service` | GPIO 2, 3, 4 | simple (long-running) | Read SHT40 (I2C) and DS18B20 (1-Wire) |
 
 ---
 
@@ -642,10 +796,11 @@ Each GPIO function will have a corresponding systemd service:
 5. **Pi 5 GPIO voltage:** All GPIO pins are **3.3V logic**. Connecting 5V or 12V
    directly to any GPIO pin will permanently destroy the Pi's processor.
 
-6. **Witty Pi 5 power behavior:** When the Pi sleeps, the Witty Pi 5 performs a full
-   hard power cut. The 5V rail, all GPIO, and all USB ports go completely dead. The
-   relay module loses VCC power and all 4 relays de-energize — the PoE switch and
-   LEDs turn off automatically without any software cleanup.
+6. **Pi 5 power button (J2 header):** The external power button connects to the
+   Pi 5's dedicated J2 power button header (2-pin, near USB-C port). This is NOT
+   a GPIO pin — it's a hardware power control. Brief press = power on or clean
+   shutdown. 10-second hold = force power off. The J2 wires route through the
+   G469 stack but do not use the G469 screw terminals.
 
 7. **Relay click noise:** You will hear an audible click each time a relay channel
    turns on or off. This is normal — it's the mechanical contact inside the relay

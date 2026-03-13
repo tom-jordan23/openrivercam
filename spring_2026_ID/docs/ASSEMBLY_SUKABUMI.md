@@ -16,7 +16,6 @@ Apply MG 422C silicone conformal coating to all PCBs:
 
 **Boards to Coat:**
 - [ ] Raspberry Pi 5
-- [ ] Witty Pi 5 HAT+
 - [ ] Geekworm G469 terminal block HAT
 
 **Note:** No relay module needed - PoE camera has built-in IR.
@@ -43,22 +42,22 @@ Apply MG 422C silicone conformal coating to all PCBs:
 
 - [ ] Flash OS image to MicroSD card
 - [ ] Boot Pi 5 and verify ORC software runs
-- [ ] Configure Witty Pi 5 schedule (15-minute wake cycle)
+- [ ] Configure Pi 5 RTC wake schedule (15-minute wake cycle via ML-2020 coin cell)
 - [ ] Test PoE camera RTSP capture (ffmpeg)
 - [ ] Configure WiFi hotspot for maintenance mode
-- [ ] Set up LED GPIO control script
+- [ ] Set up LED relay control script (GPIO 17/27/22 → relay channels → 12V LEDs)
 - [ ] Pre-configure Telkomsel APN (if known)
 - [ ] Configure Pi eth0 static IP (192.168.50.1/24) and dnsmasq DHCP for camera network
 - [ ] Configure camera RTSP settings via web interface
 
 ### 3. Hardware Testing
 
-- [ ] Test Pi 5 + Witty Pi 5 + Geekworm G469 stack boots correctly (3-board stack)
+- [ ] Test Pi 5 + Geekworm G469 stack boots correctly (2-board stack)
 - [ ] Verify USB flash drive is recognized
 - [ ] Test LTE modem connects (with test SIM)
 - [ ] Test PoE camera RTSP stream works
 - [ ] Test PoE switch powers camera when relay energized
-- [ ] Verify LEDs light up on GPIO control
+- [ ] Verify LEDs light up via relay channels (GPIO 17/27/22)
 
 ---
 
@@ -68,7 +67,6 @@ Verify all components before starting assembly:
 
 ### Compute Stack
 - [ ] Raspberry Pi 5 8GB (coated)
-- [ ] Witty Pi 5 HAT+ (coated)
 - [ ] Geekworm G469 HAT (coated)
 - [ ] SanDisk 256GB USB flash drive
 - [ ] MicroSD card 64GB (with OS)
@@ -82,8 +80,8 @@ Verify all components before starting assembly:
 ### PoE Camera System
 - [ ] ANNKE C1200 PoE camera (12MP, built-in IR, factory-sealed IP67)
 - [ ] LINOVISION Industrial PoE Switch (Gigabit, 12V DC input)
-- [ ] Electronics-Salon DIN Rail relay module (USB-powered coil)
-- [ ] DDR-60G-5 DC-DC converter (12V→5V for Witty Pi/Pi power)
+- [ ] Electronics-Salon 4-channel SPDT DIN Rail relay module (GPIO-triggered via G469)
+- [ ] DDR-60G-5 DC-DC converter (12V→5V for Pi 5 via USB-C)
 - [ ] DDR-60G-12 DC-DC converter (12V→12V regulated for PoE switch)
 - [ ] Cat6 outdoor shielded cable (to camera)
 - [ ] CNLINKO weatherproof ethernet bulkhead, IP67 (enclosure feedthrough)
@@ -94,9 +92,9 @@ Verify all components before starting assembly:
 - [ ] DS18B20 waterproof temperature probe (1-Wire, outside enclosure)
 
 ### User Interface
-- [ ] IP67 LEDs: Red, Yellow, Green
-- [ ] IP67 momentary pushbutton
-- [ ] Current-limiting resistors (330Ω)
+- [ ] 12V IP67 panel-mount LEDs: Red, Yellow, Green
+- [ ] IP67 momentary pushbutton (maintenance, 16mm panel mount)
+- [ ] IP67 momentary pushbutton (power, 16mm panel mount — wired to Pi 5 J2 header)
 
 ### Enclosure & Mounting
 - [ ] Outdoor enclosure (~300×200×150mm)
@@ -132,7 +130,7 @@ Verify all components before starting assembly:
    - 1× hole for CNLINKO ethernet bulkhead (PoE camera)
    - 1× hole for SP13 DC power bulkhead (12V input)
    - 3× 10mm holes for status LEDs
-   - 1× 16mm hole for pushbutton
+   - 2× 16mm holes for pushbuttons (maintenance + power)
    - 1× PG9 hole for rain gauge cable
    - 1× PG9 hole for DS18B20 temperature probe
 
@@ -159,20 +157,15 @@ Verify all components before starting assembly:
    ```
    [Raspberry Pi 5]
         ↑
-   [Witty Pi 5 HAT+]
-        ↑
    [Geekworm G469 HAT]
    ```
 
 2. **Assembly:**
    - Install heatsink on Pi 5 CPU (thermal pad contact)
-   - Install ML-2020 RTC battery in Pi 5
-   - Align Witty Pi 5 HAT+ GPIO header with Pi 5 header
+   - Install ML-2020 RTC coin cell in Pi 5 (for built-in RTC scheduling)
+   - Align Geekworm G469 GPIO header with Pi 5 header
    - Press down firmly until fully seated
-   - Secure with standoffs if provided
-   - Align Geekworm G469 on top of Witty Pi 5
-   - Press down firmly
-   - Secure entire stack with long standoffs
+   - Secure stack with standoffs
 
 3. **Verify:**
    - All headers fully seated
@@ -214,8 +207,8 @@ Verify all components before starting assembly:
    │  [Modem]                                │
    │  (velcro)                               │
    │                                         │
-   │  ○ ○ ○  [●]                             │
-   │  LEDs   Button                          │
+   │  ○ ○ ○  [●] [●]                          │
+   │  LEDs   Mnt  Pwr                        │
    └─────────────────────────────────────────┘
    ```
 
@@ -228,27 +221,33 @@ Verify all components before starting assembly:
    - Secure with provided nuts (inside)
    - Order: Red (error) | Yellow (working) | Green (OK)
 
-2. **Install pushbutton:**
+2. **Install maintenance pushbutton:**
    - Insert into 16mm hole
    - Secure with nut from inside
    - Should be slightly recessed to prevent accidental press
 
-3. **Wire LEDs to Geekworm G469:**
-   ```
-   LED Wiring (common cathode):
+3. **Install power pushbutton:**
+   - Insert into second 16mm hole
+   - Secure with nut from inside
+   - Label clearly as "POWER" to distinguish from maintenance button
 
-   GPIO Pin → 330Ω resistor → LED anode (+)
-   LED cathode (-) → GND terminal
+4. **Wire LEDs through relay channels:**
+   ```
+   LED Wiring (12V panel-mount LEDs switched by relay):
 
-   Suggested GPIO assignments:
-   - Green LED: GPIO 17
-   - Yellow LED: GPIO 27
-   - Red LED: GPIO 22
+   Each LED is powered by 12V from TB1, switched through a relay channel:
+   12V (TB1) → Relay COM → Relay NO → LED anode (+)
+   LED cathode (-) → GND (TB1)
+
+   Relay channel assignments (GPIO-triggered via G469):
+   - Green LED:  GPIO 17 → Relay IN2 (COM2→NO2 → Green LED)
+   - Yellow LED: GPIO 27 → Relay IN3 (COM3→NO3 → Yellow LED)
+   - Red LED:    GPIO 22 → Relay IN4 (COM4→NO4 → Red LED)
    ```
 
-4. **Wire pushbutton:**
+5. **Wire maintenance pushbutton:**
    ```
-   Pushbutton Wiring:
+   Maintenance Pushbutton Wiring:
 
    GPIO Pin (with internal pull-up) ← Button terminal 1
    GND terminal ← Button terminal 2
@@ -256,7 +255,25 @@ Verify all components before starting assembly:
    Suggested: GPIO 23 (active low)
    ```
 
-5. **Use Geekworm G469 screw terminals:**
+6. **Wire power pushbutton to Pi 5 J2 header:**
+   ```
+   Power Pushbutton Wiring:
+
+   Pi 5 J2 header pin 1 ← Button terminal 1
+   Pi 5 J2 header pin 2 ← Button terminal 2
+
+   J2 is a dedicated 2-pin power button header on the Pi 5 board,
+   located near the USB-C port. This is NOT a GPIO pin.
+   Use 22 AWG wire. Route through the G469 stack but do NOT use
+   G469 screw terminals — connect directly to the J2 header pins.
+
+   Behavior:
+   - Pi off (halted): Brief press → powers on
+   - Pi running: Brief press → clean shutdown
+   - Pi frozen: Hold ~10 seconds → force power off
+   ```
+
+7. **Use Geekworm G469 screw terminals:**
    - Strip wire ends 5-6mm
    - Insert into terminal
    - Tighten screw firmly
@@ -273,15 +290,16 @@ Verify all components before starting assembly:
 
 2. **Power distribution:**
    ```
-   Solar 12V ──┬── Inline Fuse (5A) ── DDR-60G-5 (12V→5V) ──► Witty Pi 5 ──► Pi 5
+   Solar 12V ──┬── Inline Fuse (5A) ── DDR-60G-5 (12V→5V) ──► USB-C ──► Pi 5
                │
-               └── Inline Fuse (5A) ── DDR-60G-12 (12V→12V reg) ──► Relay ──► PoE Switch
+               └── Inline Fuse (5A) ── DDR-60G-12 (12V→12V reg) ──► Relay CH1 ──► PoE Switch
 
    Note: DDR-60G converters regulate voltage from battery
    (which varies 10-14V depending on charge state).
-   Witty Pi 5 receives clean 5V, passes through to Pi 5.
-   PoE switch receives regulated 12V through relay.
-   Camera boots when Pi wakes (relay closes), powers down when Pi sleeps.
+   DDR-60G-5 provides clean 5V via USB-C directly to Pi 5.
+   Pi 5 uses built-in RTC (ML-2020 coin cell) for wake scheduling.
+   PoE switch receives regulated 12V through relay channel 1 (GPIO 24).
+   Camera boots when Pi wakes and closes relay, powers down when relay opens.
    ```
 
 3. **Terminal block connections:**
@@ -303,20 +321,23 @@ Verify all components before starting assembly:
 2. **Connections:**
    - 12V+ from terminal block → fuse holder input
    - Fuse holder output → DDR-60G-12 input (+)
-   - DDR-60G-12 output (12V regulated) → relay NO input
-   - Relay COM output → PoE switch 12V+ input
+   - DDR-60G-12 output (12V regulated) → relay CH1 COM input
+   - Relay CH1 NO output → PoE switch 12V+ input
    - PoE switch GND → terminal block GND
-   - USB cable from relay coil → Pi 5 USB port
+   - Relay module VCC → G469 Pin 2 (5V)
+   - Relay module GND → G469 Pin 6 (GND)
+   - Relay IN1 → G469 GPIO 24
    - Short Ethernet patch cable: PoE switch uplink port → Pi 5 Ethernet
    - Cat6 outdoor cable: PoE switch PoE port → CNLINKO bulkhead → Camera
 
 3. **Operation:**
-   - When Pi/Witty Pi wakes, USB powers relay coil → relay closes
+   - Pi wakes (via RTC schedule), drives GPIO 24 HIGH → relay CH1 closes
    - 12V regulated flows to PoE switch
    - PoE switch provides 48V PoE to camera over Ethernet
    - Camera boots (~45-60s), built-in IR activates automatically at night
    - Pi captures video via RTSP over Ethernet (camera has DHCP IP)
-   - When Pi sleeps, USB power lost → relay opens → camera powers down
+   - Pi drives GPIO 24 LOW → relay opens → camera powers down
+   - Pi enters sleep via RTC until next scheduled wake
 
 ### Step 7: Connect Peripherals (15 min)
 
@@ -354,7 +375,7 @@ Verify all components before starting assembly:
 7. **DS18B20 probe (outside enclosure):**
    - Route cable through PG9 gland
    - Connect to Geekworm G469:
-     - Data → GPIO 24 (with 4.7kΩ pull-up to 3.3V)
+     - Data → GPIO 4 (Pin 7) (with 4.7kΩ pull-up to 3.3V)
      - VCC → 3.3V
      - GND → GND
 
@@ -473,7 +494,9 @@ The Pi serves as DHCP server for the camera network on eth0 using dnsmasq. This 
    - [ ] All connections secure
    - [ ] Gore vents unobstructed
    - [ ] LEDs visible from outside
-   - [ ] Button accessible
+   - [ ] Maintenance button accessible
+   - [ ] Power button accessible and labeled
+   - [ ] Power button wired to Pi 5 J2 header (not G469 terminals)
    - [ ] No loose items inside
 
 4. **Close enclosure:**
@@ -488,14 +511,15 @@ The Pi serves as DHCP server for the camera network on eth0 using dnsmasq. This 
 
 1. **Verify solar battery voltage:** Should be >12V
 2. **Connect 12V input** to enclosure (SP13 bulkhead)
-3. **Observe:**
-   - Witty Pi LED should light
-   - Pi 5 should boot (activity LED flashing)
+3. **Press the external power button** (brief press) to power on the Pi 5
+4. **Observe:**
+   - Pi 5 power LED should light (red)
+   - Pi 5 should boot (activity LED flashing green)
    - Status LEDs should indicate boot sequence
 
-4. **Wait 2-3 minutes** for full boot
+5. **Wait 2-3 minutes** for full boot
 
-5. **Check status LEDs:**
+6. **Check status LEDs:**
    - Green steady = OK
    - Yellow blinking = working (capture/upload)
    - Red = error (check logs)
@@ -538,8 +562,8 @@ See `TROUBLESHOOTING.md` for detailed diagnostics.
 
 | Symptom | Check |
 |---------|-------|
-| No boot | Battery voltage, fuses, Witty Pi power LED |
-| No camera | PoE switch powered? Relay USB connected? Camera IP reachable? Ethernet cables? |
+| No boot | Battery voltage, fuses, DDR-60G-5 output, USB-C connection to Pi, power button pressed? J2 header wiring secure? |
+| No camera | PoE switch powered? GPIO 24 driving relay? Camera IP reachable? Ethernet cables? |
 | No IR | Cover lens to trigger. Check camera IR settings in web UI. |
 | No LTE | Antenna tight? SIM inserted? IMEI registered? |
 | No rain data | UART connection? GPIO 14/15 wiring? |
@@ -585,8 +609,18 @@ See `TROUBLESHOOTING.md` for detailed diagnostics.
 
 ---
 
-**Document Version:** 3.0
-**Last Updated:** March 9, 2026
+**Document Version:** 3.1
+**Last Updated:** March 12, 2026
+**Changes from v3.0:**
+- Removed Witty Pi 5 HAT+ from stack, parts list, coating list, power path, and troubleshooting
+- Pi 5 built-in RTC (ML-2020 coin cell) handles scheduling directly
+- DDR-60G-5 feeds Pi 5 directly via USB-C (no Witty Pi in power path)
+- Stack reduced from 3-board (Pi 5 + Witty Pi + G469) to 2-board (Pi 5 + G469)
+- Changed relay from USB-powered coil to GPIO-triggered (GPIO 24→IN1, powered by G469 Pin 2/Pin 6)
+- Changed DS18B20 from GPIO 24 to GPIO 4 (Pin 7)
+- Changed LEDs from direct 3.3V GPIO with 330 Ohm resistors to 12V panel-mount LEDs switched through relay channels (GPIO 17→IN2, GPIO 27→IN3, GPIO 22→IN4)
+- Removed current-limiting resistors from parts list
+
 **Changes from v2.0:**
 - Renamed Pi-EzConnect → Geekworm G469
 - Replaced M.2 SSD with SanDisk 256GB USB flash drive

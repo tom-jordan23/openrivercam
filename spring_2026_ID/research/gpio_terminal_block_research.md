@@ -1,5 +1,7 @@
 # GPIO Terminal Block Riser/HAT Research for Raspberry Pi 5 + Witty Pi 4 Stack
 
+> **HISTORICAL DOCUMENT** — This research was conducted when the design included a Witty Pi HAT. The final build uses a Rainbow Sensing image which does not require the Witty Pi. Retained for reference only.
+
 **Research Date:** January 7, 2026
 **Configuration:** Raspberry Pi 5 → Witty Pi 4 → GPIO Terminal Block HAT
 

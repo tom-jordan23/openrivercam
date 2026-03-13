@@ -54,7 +54,16 @@
     │  PoE SWITCH     │  │   DDR-60G-5     │  │  PTC HEATER     │
     │  LINOVISION     │  │   (12V → 5V)   │  │  (Enclosure)    │
     │  + RELAY        │  │   → Pi 5 USB-C  │  │  + FANS         │
-    └────────┬────────┘  └─────────────────┘  └─────────────────┘
+    └────────┬────────┘  └────────┬────────┘  └─────────────────┘
+                                  │
+                           ┌──────┴──────┐
+                           │ Raspberry   │
+                           │ Pi 5        │
+                           │             │    ┌─────────────────┐
+                           │  J2 header ─┼───►│ POWER BUTTON    │
+                           │  (2-pin)    │    │ (IP67 momentary │
+                           │             │    │  panel-mount)   │
+                           └─────────────┘    └─────────────────┘
              │
       ┌──────┴──────┐
       │             │
@@ -239,13 +248,14 @@ FUSE SPECIFICATIONS:
     ▼
 ┌───────────────────────────────────────────────────────────────────────────┐
 │               ELECTRONICS-SALON DIN RAIL RELAY MODULE                     │
-│               (4-SPDT, USB-powered coil)                                  │
+│               (4-SPDT, GPIO-triggered via G469 breakout)                  │
 │                                                                           │
-│  Coil power: USB cable from Pi 5 USB port                                │
-│  Pi ON  = relay energized = NO contact closed = 12V passes               │
-│  Pi OFF = relay de-energized = NO contact open = 12V cut                 │
+│  Coil power: 5V/GND from Pi via Geekworm G469 breakout                  │
+│  Control: GPIO 24 → IN1 (PoE switch)                                    │
+│  GPIO HIGH = relay energized = NO contact closed = 12V passes            │
+│  GPIO LOW  = relay de-energized = NO contact open = 12V cut              │
 │                                                                           │
-│  IN (12V from TB1) ──► NO contact ──► OUT (12V to PoE switch)           │
+│  IN (12V from TB1) ──► CH1 NO contact ──► OUT (12V to PoE switch)       │
 └───────────────────────────────────┬───────────────────────────────────────┘
                                     │
                                     │ 12V (switched)
@@ -332,14 +342,20 @@ NETWORK TOPOLOGY:
 
 Same as Sukabumi site:
 
-STATUS LED WIRING:
+STATUS LED WIRING (12V panel-mount LEDs via relay channels):
 ┌────────────────────────────────────────────────────────────────────────────┐
 │                                                                            │
-│   GPIO 17 ──[330Ω]──► GREEN LED (+) ──┐                                   │
-│                                        │                                   │
-│   GPIO 27 ──[330Ω]──► YELLOW LED (+) ──┼──► GND (common cathode)          │
-│                                        │                                   │
-│   GPIO 22 ──[330Ω]──► RED LED (+) ────┘                                   │
+│   12V (TB1) ──► RELAY CH2 NO ──► GREEN LED (+) ──► GND                   │
+│                 GPIO 17 → IN2                                              │
+│                                                                            │
+│   12V (TB1) ──► RELAY CH3 NO ──► YELLOW LED (+) ──► GND                  │
+│                 GPIO 27 → IN3                                              │
+│                                                                            │
+│   12V (TB1) ──► RELAY CH4 NO ──► RED LED (+) ──► GND                     │
+│                 GPIO 22 → IN4                                              │
+│                                                                            │
+│   LEDs are 12V panel-mount indicators (built-in resistor).               │
+│   Each LED switched by its own relay channel.                             │
 │                                                                            │
 └────────────────────────────────────────────────────────────────────────────┘
 
@@ -350,6 +366,28 @@ MAINTENANCE BUTTON WIRING:
 │   GPIO 23 (internal pull-up) ──► BUTTON ──► GND                           │
 │                                                                            │
 │   Button press: GPIO 23 goes LOW (active low)                             │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+
+
+EXTERNAL POWER BUTTON WIRING (Pi 5 J2 Header):
+┌────────────────────────────────────────────────────────────────────────────┐
+│                                                                            │
+│   Pi 5 J2 Header ──► IP67 MOMENTARY SWITCH ──► (loop back to J2)         │
+│   (2-pin, near USB-C)   (panel-mount, 22 AWG)                            │
+│                                                                            │
+│   This is a DEDICATED HARDWARE power header on the Pi 5 — NOT a GPIO.    │
+│   Two wires (22 AWG) from J2 pin 1 and J2 pin 2 to the switch.          │
+│   Active low — button shorts the two pins together.                       │
+│                                                                            │
+│   Behavior:                                                                │
+│   - Pi is OFF:     Brief press → powers on                                │
+│   - Pi is RUNNING: Brief press → initiates clean shutdown                 │
+│   - Pi is FROZEN:  Hold ~10s  → forces power off                         │
+│                                                                            │
+│   Separate from the maintenance pushbutton (GPIO 23).                     │
+│   Maintenance button = software function (enters maintenance mode).       │
+│   Power button = hardware power control (on/off/force-off).              │
 │                                                                            │
 └────────────────────────────────────────────────────────────────────────────┘
 
@@ -389,7 +427,7 @@ SHT40 TEMPERATURE/HUMIDITY SENSOR (I2C):
 DS18B20 WATERPROOF TEMPERATURE PROBE (1-Wire):
 ┌────────────────────────────────────────────────────────────────────────────┐
 │                                                                            │
-│   3.3V ──[4.7kΩ]──┬── GPIO 24 (1-Wire data)                              │
+│   3.3V ──[4.7kΩ]──┬── GPIO 4 (Pin 7, 1-Wire data)                        │
 │                    │                                                       │
 │                    │   ┌───────────────────────┐                           │
 │                    ├───│  DS18B20 Waterproof    │                           │
@@ -482,15 +520,17 @@ NOTES:
     │  [SP13]     [M16]     [PG9]    [PG9]                                   │
     │  AC in      Ground    Rain     DS18B20                                 │
     │                                                                         │
-    │  ○ ○ ○   [●]                                                            │
-    │  LEDs   Button                                                          │
-    │  R Y G                                                                  │
+    │  ○ ○ ○   [●]    [●]                                                      │
+    │  LEDs   Maint  Power                                                    │
+    │  R Y G  Button Button                                                   │
     │                                                                         │
     └─────────────────────────────────────────────────────────────────────────┘
 
 LEGEND:
 ○ = 10mm LED (panel mount)
-● = 16mm Button (panel mount)
+● = 16mm Button (panel mount, IP67 momentary)
+    Left button  = Maintenance mode (GPIO 23)
+    Right button = Power on/off (Pi 5 J2 header)
 [CNLINKO] = Weatherproof ethernet bulkhead connector (IP67)
 [SP13] = Weatherproof DC power bulkhead connector (IP68)
 [M##] = Cable gland size
@@ -563,6 +603,7 @@ GROUND RESISTANCE: Measure with multimeter
 | **Yellow** | Signal (I2C SCL, GPIO) |
 | **Blue (thin)** | Signal (I2C SDA) |
 | **White** | Signal (alternate) |
+| **White (22 AWG pair)** | Power button (J2 header to panel switch) |
 | **Orange** | Cat6 pair 1 |
 
 ---
@@ -589,8 +630,12 @@ GROUND BAR
 
 **PRINT THIS DOCUMENT - LAMINATE FOR FIELD USE**
 
-**Document Version:** 2.0
-**Last Updated:** March 9, 2026
+**Document Version:** 2.1
+**Last Updated:** March 12, 2026
+**Changes from v2.0:**
+- Added external power button wired to Pi 5 J2 header (dedicated hardware power control)
+- Updated enclosure layout to show both maintenance button (GPIO 23) and power button (J2)
+
 **Changes from v1.0:**
 - Removed Victron BatteryProtect (LiFePO4 BMS has built-in cutoff)
 - Removed Witty Pi 5 (Pi 5 built-in RTC sufficient for 24hr operation)

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 1100" width="1400" height="1100">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 1136" width="1400" height="1136">
   <defs>
     <style>
       .title { font: bold 24px sans-serif; fill: #1a1a1a; }
@@ -49,7 +49,7 @@
   </defs>
 
   <!-- Background -->
-  <rect width="1400" height="1100" fill="#fafafa"/>
+  <rect width="1400" height="1116" fill="#fafafa"/>
 
   <!-- Title -->
   <text x="700" y="35" class="title" text-anchor="middle">Sukabumi River Monitoring Station - System Overview</text>
@@ -58,7 +58,7 @@
   <!-- ==================== -->
   <!-- MAIN ENCLOSURE -->
   <!-- ==================== -->
-  <rect x="30" y="75" width="820" height="580" class="enclosure"/>
+  <rect x="30" y="75" width="820" height="605" class="enclosure"/>
   <text x="50" y="100" class="section-title">VEVOR COMPUTE ENCLOSURE (IP66, 16x12x8in, DIN rail mounting)</text>
 
   <!-- ==================== -->
@@ -174,7 +174,7 @@
   <!-- Relay -->
   <rect x="620" y="300" width="100" height="45" class="box"/>
   <text x="670" y="320" class="component" text-anchor="middle">RELAY-POE</text>
-  <text x="670" y="335" class="component-detail" text-anchor="middle">USB-triggered</text>
+  <text x="670" y="335" class="component-detail" text-anchor="middle">GPIO-triggered (IN1-IN4)</text>
 
   <!-- PoE Switch -->
   <rect x="620" y="355" width="195" height="50" class="box"/>
@@ -197,11 +197,11 @@
   <line x1="670" y1="345" x2="670" y2="355" class="wire-12v"/>
   <text x="678" y="352" class="component-detail" fill="#c00">switched</text>
 
-  <!-- USB to relay coil -->
-  <line x1="560" y1="195" x2="590" y2="195" class="wire-usb"/>
-  <line x1="590" y1="195" x2="590" y2="310" class="wire-usb"/>
-  <line x1="590" y1="310" x2="620" y2="310" class="wire-usb"/>
-  <text x="592" y="255" class="component-detail" fill="#00c">USB</text>
+  <!-- GPIO to relay (via Pi-EzConnect breakout) -->
+  <line x1="560" y1="195" x2="590" y2="195" class="wire-gpio"/>
+  <line x1="590" y1="195" x2="590" y2="310" class="wire-gpio"/>
+  <line x1="590" y1="310" x2="620" y2="310" class="wire-gpio"/>
+  <text x="592" y="255" class="component-detail" fill="#0a0">GPIO</text>
 
   <!-- Ethernet from PoE uplink to Pi -->
   <line x1="620" y1="432" x2="560" y2="432" class="wire-eth"/>
@@ -276,22 +276,26 @@
   <!-- ==================== -->
   <!-- STATUS & UI -->
   <!-- ==================== -->
-  <rect x="50" y="530" width="280" height="115" class="box-ui"/>
+  <rect x="50" y="530" width="280" height="140" class="box-ui"/>
   <text x="190" y="555" class="section-title" text-anchor="middle">STATUS &amp; MAINTENANCE</text>
 
   <!-- LEDs -->
   <circle cx="85" cy="585" r="10" class="led-green"/>
-  <text x="100" y="590" class="component">Green (GPIO 17)</text>
+  <text x="100" y="590" class="component">Green (GPIO 17 → Relay CH2)</text>
   <circle cx="85" cy="610" r="10" class="led-yellow"/>
-  <text x="100" y="615" class="component">Yellow (GPIO 27)</text>
+  <text x="100" y="615" class="component">Yellow (GPIO 27 → Relay CH3)</text>
   <circle cx="85" cy="635" r="10" class="led-red"/>
-  <text x="100" y="640" class="component">Red (GPIO 22)</text>
+  <text x="100" y="640" class="component">Red (GPIO 22 → Relay CH4)</text>
 
-  <!-- Button -->
+  <!-- Maintenance Button -->
   <rect x="220" y="575" width="95" height="55" class="box"/>
   <text x="267" y="600" class="component" text-anchor="middle">IP67 Button</text>
   <text x="267" y="615" class="component-detail" text-anchor="middle">GPIO 23</text>
   <text x="267" y="627" class="component-detail" text-anchor="middle">3s = maint</text>
+
+  <!-- Power Button -->
+  <rect x="115" y="645" width="200" height="20" class="box"/>
+  <text x="215" y="659" class="component-detail" text-anchor="middle">Power Button / Pi 5 J2 / on&#x2F;off&#x2F;force-off</text>
 
   <!-- GPIO to LEDs/button -->
   <line x1="370" y1="245" x2="355" y2="245" class="wire-gpio"/>
@@ -348,44 +352,46 @@
   <!-- ==================== -->
   <!-- ASSEMBLY NOTES -->
   <!-- ==================== -->
-  <rect x="30" y="670" width="1130" height="205" class="box" fill="#fffde7"/>
+  <rect x="30" y="670" width="1130" height="225" class="box" fill="#fffde7"/>
   <text x="50" y="695" class="section-title">ASSEMBLY NOTES</text>
 
   <text x="50" y="718" class="component">1. Stack Order: Pi 5 (bottom) + Pi-EzConnect (top) - on DIN rail clip</text>
   <text x="50" y="738" class="component">2. Apply MG 422C silicone conformal coat to: Pi 5, Pi-EzConnect. Mask connectors/headers</text>
   <text x="50" y="758" class="component">3. DDR-60G-5: Regulated 5V for compute. DDR-60G-12: Regulated 12V for PoE switch (battery voltage varies 10-14V)</text>
-  <text x="50" y="778" class="component">4. Relay-POE: Passive USB trigger from Pi. Pi ON = relay closed = PoE switch powered = camera boots</text>
+  <text x="50" y="778" class="component">4. Relay: GPIO-triggered 4-CH SPDT (Electronics-Salon). GPIO 24=PoE, GPIO 17/27/22=LEDs. Software controls each channel independently</text>
   <text x="50" y="798" class="component">5. Proxicast puck antenna: 12mm hole in enclosure top, rubber gasket seal. Internal SMA pigtails to modem U.FL</text>
   <text x="50" y="818" class="component">6. SHT40 (inside enclosure) monitors climate. DS18B20 probe (outside, PG9 gland) for ambient temp/dew point</text>
   <text x="50" y="838" class="component">7. Pi 5 built-in RTC (ML-2020 coin cell) provides scheduling via Rainbow Sensing image</text>
   <text x="50" y="858" class="component">8. Gore M12 vent for pressure equalization. No heaters (solar power budget). Carrier: Telkomsel</text>
+  <text x="50" y="878" class="component">9. External power button wired to Pi 5 J2 header (not GPIO). Press to power on/off; hold 5s to force-off</text>
 
   <!-- ==================== -->
   <!-- GPIO PIN TABLE -->
   <!-- ==================== -->
-  <rect x="30" y="885" width="570" height="200" class="box" fill="#fff"/>
-  <text x="50" y="910" class="section-title">GPIO PIN ASSIGNMENTS</text>
+  <rect x="30" y="905" width="570" height="216" class="box" fill="#fff"/>
+  <text x="50" y="930" class="section-title">GPIO PIN ASSIGNMENTS</text>
 
-  <text x="50" y="932" class="component" font-family="monospace">GPIO  2  SDA        I2C      SHT40 sensor (0x44)</text>
-  <text x="50" y="948" class="component" font-family="monospace">GPIO  3  SCL        I2C      SHT40 sensor</text>
-  <text x="50" y="964" class="component" font-family="monospace">GPIO 14  UART TX    Serial   To Hydreon RG-15 RX</text>
-  <text x="50" y="980" class="component" font-family="monospace">GPIO 15  UART RX    Serial   From Hydreon RG-15 TX</text>
-  <text x="50" y="996" class="component" font-family="monospace">GPIO 17  Green LED  Output   System OK</text>
-  <text x="50" y="1012" class="component" font-family="monospace">GPIO 22  Red LED    Output   Error</text>
-  <text x="50" y="1028" class="component" font-family="monospace">GPIO 23  Button     Input    Maintenance mode (3s hold)</text>
-  <text x="50" y="1044" class="component" font-family="monospace">GPIO 24  DS18B20    1-Wire   Outside temp (4.7k pull-up)</text>
-  <text x="50" y="1060" class="component" font-family="monospace">GPIO 27  Yellow LED Output   Working/uploading</text>
+  <text x="50" y="952" class="component" font-family="monospace">GPIO  2  SDA        I2C      SHT40 sensor (0x44)</text>
+  <text x="50" y="968" class="component" font-family="monospace">GPIO  3  SCL        I2C      SHT40 sensor</text>
+  <text x="50" y="984" class="component" font-family="monospace">GPIO  4  DS18B20    1-Wire   Outside temp (4.7k pull-up)</text>
+  <text x="50" y="1000" class="component" font-family="monospace">GPIO 14  UART TX    Serial   To Hydreon RG-15 RX</text>
+  <text x="50" y="1016" class="component" font-family="monospace">GPIO 15  UART RX    Serial   From Hydreon RG-15 TX</text>
+  <text x="50" y="1032" class="component" font-family="monospace">GPIO 17  Green LED  Output   System OK</text>
+  <text x="50" y="1048" class="component" font-family="monospace">GPIO 22  Red LED    Output   Error</text>
+  <text x="50" y="1064" class="component" font-family="monospace">GPIO 23  Button     Input    Maintenance mode (3s hold)</text>
+  <text x="50" y="1080" class="component" font-family="monospace">GPIO 24  Relay IN1  Output   PoE switch (12V via relay)</text>
+  <text x="50" y="1096" class="component" font-family="monospace">GPIO 27  Yellow LED Output   Working/uploading</text>
 
   <!-- ==================== -->
   <!-- FUSE SCHEDULE -->
   <!-- ==================== -->
-  <rect x="620" y="885" width="540" height="90" class="box" fill="#fff"/>
-  <text x="640" y="910" class="section-title">FUSE SCHEDULE</text>
+  <rect x="620" y="905" width="540" height="90" class="box" fill="#fff"/>
+  <text x="640" y="930" class="section-title">FUSE SCHEDULE</text>
 
-  <text x="640" y="932" class="component">Compute circuit (DDR-60G-5): 5A inline blade fuse</text>
-  <text x="640" y="952" class="component">Camera circuit (DDR-60G-12): 5A inline blade fuse</text>
-  <text x="640" y="972" class="component">LEDs: 330 Ohm series resistors | All DDR-60G: built-in OCP/OVP</text>
+  <text x="640" y="952" class="component">Compute circuit (DDR-60G-5): 5A inline blade fuse</text>
+  <text x="640" y="972" class="component">Camera circuit (DDR-60G-12): 5A inline blade fuse</text>
+  <text x="640" y="992" class="component">LEDs: 12V via relay CH2/3/4 | All DDR-60G: built-in OCP/OVP</text>
 
   <!-- Footer -->
-  <text x="700" y="1095" class="subtitle" text-anchor="middle">OpenRiverCam - Sukabumi Site | Rev 3.0 | 2026-03-10</text>
+  <text x="700" y="1131" class="subtitle" text-anchor="middle">OpenRiverCam - Sukabumi Site | Rev 3.1 | 2026-03-12</text>
 </svg>

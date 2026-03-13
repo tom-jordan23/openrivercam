@@ -27,17 +27,28 @@
 START: No status LEDs lit
          │
          ▼
-    Check power source
-    ┌─────────────────┐
-    │ Sukabumi: Solar │
-    │ Jakarta: AC     │
-    └────────┬────────┘
-             │
-             ▼
-┌────────────────────────────┐
-│ Measure voltage at input   │
-│ terminals (should be >11V) │
-└────────────┬───────────────┘
+┌────────────────────────────────┐
+│ Press external power button    │
+│ (J2 header, near USB-C port)  │
+│ — brief press to power on     │
+└───────────────┬────────────────┘
+                │
+         ┌──────┴──────┐
+         │             │
+      Boots          No boot
+         │             │
+         ▼             ▼
+     ┌────────┐   Check power source
+     │ Done!  │   ┌─────────────────┐
+     └────────┘   │ Sukabumi: Solar │
+                  │ Jakarta: AC     │
+                  └────────┬────────┘
+                           │
+                           ▼
+              ┌────────────────────────────┐
+              │ Measure voltage at input   │
+              │ terminals (should be >11V) │
+              └────────────┬───────────────┘
              │
       ┌──────┴──────┐
       │             │
@@ -56,10 +67,10 @@ START: No status LEDs lit
                  ▼           ▼
            Replace    ┌──────────────────────┐
            fuse       │ Check power path:    │
-                      │ Sukabumi: Witty Pi   │
-                      │   power LED          │
-                      │ Jakarta: DDR-60G-5   │
-                      │   5V output          │
+                      │ DDR-60G-5 5V output  │
+                      │ (both sites)         │
+                      │                      │
+                      │                      │
                       └───────┬──────────────┘
                               │
                         ┌─────┴─────┐
@@ -73,6 +84,50 @@ START: No status LEDs lit
                   │ power    │  │ (should      │
                   │ cable    │  │ flash)       │
                   └──────────┘  └──────────────┘
+
+NOTE: The external power button is wired to the Pi 5 J2
+header (2-pin, near USB-C port). This is a dedicated hardware
+power control — NOT a GPIO pin. If Pi has power but won't
+boot, try pressing the J2 button before investigating further.
+```
+
+### Pi Frozen / Unresponsive
+
+```
+START: Pi not responding (SSH hangs, no LED activity)
+         │
+         ▼
+┌──────────────────────────────────────┐
+│ Try SSH or ping from maintenance     │
+│ laptop (if connected)                │
+└──────────────┬───────────────────────┘
+               │
+        ┌──────┴──────┐
+        │             │
+    Responds       No response
+        │             │
+        ▼             ▼
+  ┌──────────┐  ┌──────────────────────────────────┐
+  │ Not      │  │ Press external power button (J2)  │
+  │ frozen — │  │ briefly — initiates clean shutdown │
+  │ check    │  └──────────────┬───────────────────┘
+  │ services │                 │
+  └──────────┘          ┌──────┴──────┐
+                        │             │
+                    Shuts down     No response
+                        │             │
+                        ▼             ▼
+                  ┌──────────┐  ┌──────────────────────────┐
+                  │ Press J2 │  │ HOLD power button ~10s   │
+                  │ again to │  │ to force power off       │
+                  │ power on │  │ Then press J2 to boot    │
+                  └──────────┘  └──────────────────────────┘
+
+NOTE: The J2 power button is near the USB-C port on the Pi 5.
+It is separate from the maintenance pushbutton (GPIO 23).
+- Brief press on halted Pi → powers on
+- Brief press on running Pi → clean shutdown
+- Hold ~10s → force power off (use only if Pi is frozen)
 ```
 
 ### Pi eth0 Has Only IPv6 Address (No IPv4)
@@ -133,8 +188,8 @@ START: No video capture
 │ switch:      │  │ ffmpeg -i rtsp://  │
 │ - 12V input? │  │ admin:pass@        │
 │ - LED on?    │  │ 192.168.50.139:554/│
-│ - Relay USB  │  │ stream1 -frames:v 1│
-│   connected? │  │ test.jpg           │
+│ - Relay GPIO │  │ stream1 -frames:v 1│
+│   wiring?    │  │ test.jpg           │
 └──────┬───────┘  └─────────┬──────────┘
        │                    │
   ┌────┴────┐         ┌─────┴─────┐
@@ -376,10 +431,13 @@ Then set your laptop to 192.168.1.50/24 and use `arp -a` to find the camera. Re-
 
 | Problem | Possible Cause | Solution |
 |---------|---------------|----------|
+| System won't boot | Pi halted but has power | Press external power button (J2 header, near USB-C) |
 | System won't boot | Dead battery (Sukabumi) | Charge battery, check solar panel |
 | System won't boot | Blown fuse | Replace fuse, investigate cause |
 | System won't boot | Faulty USB-C cable | Replace power cable to Pi |
 | System won't boot | DDR-60G-5 failure (Jakarta) | Check 5V output with multimeter |
+| Pi frozen/unresponsive | Software hang | Press J2 power button briefly for clean shutdown, then press again to boot |
+| Pi frozen/unresponsive | Hard lock | Hold J2 power button ~10s to force off, then press to boot |
 | Intermittent shutdowns (Sukabumi) | Low battery voltage | Check solar charge controller |
 | Intermittent shutdowns (Jakarta) | BMS low-voltage cutoff | Check charger and battery health |
 | Intermittent shutdowns | Loose connection | Check all terminal connections |
@@ -389,7 +447,7 @@ Then set your laptop to 192.168.1.50/24 and use `arp -a` to find the camera. Re-
 | Problem | Possible Cause | Solution |
 |---------|---------------|----------|
 | PoE camera offline | PoE switch fault | Check switch power/data LEDs |
-| PoE camera offline | Relay not energized | Check relay USB cable to Pi |
+| PoE camera offline | Relay not energized | Check relay GPIO wiring (VCC, GND, IN1-IN4) |
 | PoE camera offline | Cat6 cable fault | Test cable continuity |
 | PoE camera offline | 12V power to switch | Check fuse, terminal connections |
 | PoE camera offline (Sukabumi) | Camera still booting | Wait 60s after Pi wakes |
@@ -536,6 +594,18 @@ ls /sys/bus/w1/devices/
 cat /sys/bus/w1/devices/28-*/temperature
 ```
 
+### External Power Button (Pi 5 J2 Header)
+
+Both sites have an external momentary power button wired to the Pi 5's **J2 power button header** (2-pin, located near the USB-C port). This is a **dedicated hardware power control** — it is NOT a GPIO pin and is completely separate from the maintenance pushbutton (GPIO 23).
+
+| Pi State | Action | Result |
+|----------|--------|--------|
+| Off (halted) | Brief press | Powers on |
+| Running | Brief press | Initiates clean shutdown |
+| Frozen | Hold ~10 seconds | Forces power off |
+
+No software configuration is required — the J2 header is active whenever the Pi has power from the USB-C supply.
+
 ### GPIO (LEDs, button)
 
 ```bash
@@ -552,35 +622,48 @@ echo 1 > /sys/class/gpio/gpio17/value
 echo 0 > /sys/class/gpio/gpio17/value
 ```
 
-### Relay Control (PoE switch power)
+### Relay Control (Electronics-Salon 4-channel SPDT, GPIO-triggered)
 
 ```bash
-# The Electronics-Salon relay is USB-powered (passive trigger).
-# Relay energizes when Pi USB port provides power.
-# To manually cycle the PoE switch:
+# Relay channels driven via G469 breakout:
+#   GPIO 24 → IN1 (PoE switch)
+#   GPIO 17 → IN2 (Green LED)
+#   GPIO 27 → IN3 (Yellow LED)
+#   GPIO 22 → IN4 (Red LED)
 
-# Check relay USB device is connected
-lsusb
+# Check relay GPIO wiring: VCC, GND, IN1-IN4 connections
 
-# Power cycle: briefly unbind/rebind USB (or reboot Pi)
-# The relay de-energizes when Pi shuts down or USB is disconnected.
+# Turn PoE switch relay ON (energize IN1)
+gpioset gpiochip4 24=1
+
+# Turn PoE switch relay OFF (de-energize IN1)
+gpioset gpiochip4 24=0
+
+# Manually cycle PoE switch power
+gpioset gpiochip4 24=0 && sleep 5 && gpioset gpiochip4 24=1
+
+# Alternative using pinctrl (Pi 5):
+pinctrl set 24 op dh   # drive high (relay ON)
+pinctrl set 24 op dl   # drive low (relay OFF)
 ```
 
-### Witty Pi (Sukabumi Only)
+### Rainbow Sensing RTC (Pi 5 Built-in RTC)
 
 ```bash
-# Check Witty Pi status
-cd /home/pi/wittypi
-./wittyPi.sh
+# The Pi 5 has a built-in RTC backed by an ML-2020 coin cell.
+# The Rainbow Sensing image handles scheduling natively — no Witty Pi needed.
 
-# View schedule
-cat schedule.wpi
-
-# Check RTC time
-./utilities.sh get_rtc_time
+# Check hardware clock (RTC) time
+sudo hwclock --show
 
 # Sync system time to RTC
-./utilities.sh system_to_rtc
+sudo hwclock --systohc
+
+# Sync RTC time to system
+sudo hwclock --hctosys
+
+# Check RTC battery status
+cat /sys/devices/platform/soc/soc:rpi_rtc/rtc/rtc0/device/power/wakeup
 ```
 
 ### Logs
@@ -684,15 +767,26 @@ Contact technical support if:
 
 ---
 
-**Document Version:** 2.0
-**Last Updated:** March 9, 2026
-**Changes from v1.0:**
-- Updated power-on diagnostics: Jakarta uses DDR-60G-5 (no Witty Pi), Sukabumi keeps Witty Pi
+**Document Version:** 3.1
+**Last Updated:** March 12, 2026
+**Changes from v3.0:**
+- Added external power button (Pi 5 J2 header) to "System Won't Power On" flowchart as first diagnostic step
+- Added "Pi Frozen / Unresponsive" flowchart with J2 power button recovery steps
+- Added J2 power button rows to Power Issues table (halted Pi, frozen Pi)
+- Added "External Power Button (Pi 5 J2 Header)" reference section in Command Reference
+
+**Changes from v2.0:**
+- Removed Witty Pi references from both sites; scheduling handled by Pi 5 built-in RTC (ML-2020 coin cell) via Rainbow Sensing image
+- Replaced "Witty Pi (Sukabumi Only)" section with "Rainbow Sensing RTC (Pi 5 Built-in RTC)"
+- Updated relay control from USB-powered to GPIO-triggered (Electronics-Salon 4-ch SPDT via G469 breakout: GPIO 24→IN1, GPIO 17→IN2, GPIO 27→IN3, GPIO 22→IN4)
+- Replaced all "Check relay USB cable" references with "Check relay GPIO wiring (VCC, GND, IN1-IN4)"
+- Updated power-on flow diagram: removed Witty Pi box, DDR-60G-5 powers Pi 5 directly at both sites
+- Fixed DS18B20 temperature probe GPIO: was GPIO 24, corrected to GPIO 4
+
+**Changes from v1.0 (historical, some entries no longer accurate):**
 - Removed "Check BatteryProtect setting" references (BMS handles cutoff)
 - Replaced "PoE injector" with "PoE switch" throughout
 - Replaced I2C rain gauge diagnostics with UART diagnostics for Hydreon RG-15
 - Replaced "IR Light Not Working (Sukabumi Only)" with "Camera IR" section for built-in IR (both sites)
-- Updated relay control section (was Numato USB serial → now Electronics-Salon USB-powered)
-- Updated Witty Pi commands section (Jakarta: removed, Sukabumi: kept)
 - Added UART, 1-Wire, and I2C sensor command references
 - Updated bulkhead/gland references throughout

@@ -61,22 +61,26 @@
                  │ 5V                       │ 12V regulated
                  ▼                          ▼
         ┌─────────────────┐        ┌─────────────────────┐
-        │  USB-C Cable    │        │  RELAY-POE          │
-        │  (5V to Pi 5)   │        │  (DIN rail 4-SPDT)  │
-        │                 │        │                     │
-        │  DDR-60G-5 out  │        │  Coil: USB-powered  │
-        │  → USB-C → Pi   │        │  from Pi 5 USB port │
-        └────────┬────────┘        │                     │
-                 │                 │  Pi ON  = relay     │
-                 │ 5V USB-C       │    closed = PoE ON  │
-                 ▼                 │  Pi OFF = relay     │
-        ┌──────────────────────────────────────┐  │    open = PoE OFF   │
-        │                                      │  │                     │
-        │             RASPBERRY PI 5           │  │  NO: 12V regulated  │
-        │             (8GB RAM)                │  │  COM: to PoE switch │
-        │                                      │  └────────┬─────────────┘
-        │  PWR ← USB-C ← DDR-60G-5 (5V)       │           │
-        │                                      │           │ 12V (switched)
+        │  USB-C Cable    │        │  RELAY MODULE                │
+        │  (5V to Pi 5)   │        │  (Electronics-Salon          │
+        │                 │        │   4-ch SPDT, DIN rail)       │
+        │  DDR-60G-5 out  │        │                              │
+        │  → USB-C → Pi   │        │  VCC ← 5V from Pi (G469)    │
+        └────────┬────────┘        │  GND ← GND from Pi (G469)   │
+                 │                 │                              │
+                 │ 5V USB-C       │  IN1 ← GPIO 24 (PoE switch) │
+                 ▼                 │  IN2 ← GPIO 17 (Green LED)  │
+        ┌──────────────────────────────────────┐  │  IN3 ← GPIO 27 (Yellow LED) │
+        │                                      │  │  IN4 ← GPIO 22 (Red LED)    │
+        │             RASPBERRY PI 5           │  │                              │
+        │             (8GB RAM)                │  │  CH1 NO: 12V regulated       │
+        │                                      │  │  CH1 COM: to PoE switch      │
+        │  PWR ← USB-C ← DDR-60G-5 (5V)       │  │  CH2 NO: 12V → Green LED    │
+        │                                      │  │  CH3 NO: 12V → Yellow LED   │
+        │                                      │  │  CH4 NO: 12V → Red LED      │
+        │                                      │  └────────┬───────────────────┘
+        │                                      │           │
+        │                                      │           │ 12V (switched via CH1)
         │                                      │           ▼
         │                                      │  ┌─────────────────────┐
         │                                      │  │  LINOVISION         │
@@ -96,13 +100,14 @@
         │  USB 3.0 ──► Samsung FIT Plus 256GB  │             │  (through M12 gland
         │              (video/data storage)    │             │   + IP68 RJ45 coupler)
         │                                      │             │
-        │  USB 2.0 ──► RELAY-POE coil power   │             │
-        │              (passive trigger)       │             │
-        │                                      │             │
         │  ETH ◄──── LINOVISION uplink port   │             │
         │            (data only, no PoE)      │◄────────────┘
         │                                      │  short patch cable
         │  GPIO ──► See GPIO DETAIL below      │
+        │                                      │
+        │  J2  ──► External Power Button       │
+        │          (IP67 momentary, panel mount)│
+        │          (22 AWG, through M16 gland)  │
         │                                      │
         └──────────────────────────────────────┘
 
@@ -135,14 +140,26 @@
     GPIO DETAIL (Pi 5 via Geekworm G469 screw terminals)
     ──────────────────────────────────────────────────────────────
 
-    3.3V RAIL
+    12V PANEL-MOUNT LEDs (via Electronics-Salon 4-ch SPDT relay)
       │
-      ├──[330 Ohm]──►|── GND    GPIO 17: Green LED  (System OK)
-      │              (green)
-      ├──[330 Ohm]──►|── GND    GPIO 27: Yellow LED (Working/Uploading)
-      │             (yellow)
-      └──[330 Ohm]──►|── GND    GPIO 22: Red LED    (Error)
-                     (red)
+      │  GPIO 17 ──► Relay IN2 ──► CH2 NO ──► 12V ──► Green LED (System OK)
+      │  GPIO 27 ──► Relay IN3 ──► CH3 NO ──► 12V ──► Yellow LED (Working/Uploading)
+      │  GPIO 22 ──► Relay IN4 ──► CH4 NO ──► 12V ──► Red LED (Error)
+      │
+      │  Relay VCC: 5V from Pi (via G469 terminals)
+      │  Relay GND: GND from Pi (via G469 terminals)
+      │  LED common: 12V from DDR-60G-12, switched through relay NO contacts
+
+    J2 POWER BUTTON (Pi 5 dedicated header, near USB-C port)
+    ──────────────────────────────────────────────────────
+    J2 Pin 1 ──┤ ├── J2 Pin 2    External Power Button
+               (NO momentary)     (IP67, panel mount on enclosure)
+               (22 AWG wire)      (through M16 cable gland)
+               (brief press =     (NOT a GPIO pin — dedicated
+                power on or        hardware power control on Pi 5)
+                clean shutdown)
+               (10s hold =
+                force power off)
 
     GPIO 23 ──┤ ├── GND          Maintenance Button
               (NO pushbutton)     (internal pull-up enabled)
@@ -173,10 +190,10 @@
 
 
     ──────────────────────────────────────────────────────────────
-    1-WIRE BUS (GPIO 24)
+    1-WIRE BUS (GPIO 4)
     ──────────────────────────────────────────────────────────────
 
-    3.3V ──[4.7k Ohm]──┬── GPIO 24 (1-Wire data)
+    3.3V ──[4.7k Ohm]──┬── GPIO 4 (1-Wire data)
                         │
                         │   ┌───────────────────────┐
                         ├───│  DS18B20 Waterproof    │
@@ -236,7 +253,7 @@
     DDR-60G-12 out: 12V regulated    DDR-60G-5:        built-in OCP/OVP
     Pi 5 (USB-C):   5V               DDR-60G-12:       built-in OCP/OVP
     PoE switch in:  12V (switched)   Pi USB ports:     built-in OCP
-    Camera (PoE):   48V              LEDs:             330 Ohm series R
+    Camera (PoE):   48V              LEDs:             12V via relay CH2/3/4
     GPIO signals:   3.3V             Button GPIO:      internal pull-up
     LTE modem:      5V (USB bus)     DS18B20:          4.7k Ohm pull-up
     Rain gauge:     12V (7-24V ok)
@@ -259,19 +276,21 @@
     ──────┼──────────────────┼───────────┼───────────────────────
       2   │ SDA              │ I2C       │ SHT40 sensor (0x44)
       3   │ SCL              │ I2C       │ SHT40 sensor
+      4   │ DS18B20          │ 1-Wire    │ Outside temp (4.7k pull-up)
      14   │ UART TX          │ Serial    │ → Hydreon RG-15 RX
      15   │ UART RX          │ Serial    │ ← Hydreon RG-15 TX
-     17   │ Green LED        │ Output    │ System OK
-     22   │ Red LED          │ Output    │ Error
+     17   │ Relay IN2        │ Output    │ Green LED (12V via relay)
+     22   │ Relay IN4        │ Output    │ Red LED (12V via relay)
      23   │ Button           │ Input     │ Maintenance (3s hold)
-     24   │ DS18B20          │ 1-Wire    │ Outside temp probe
-     27   │ Yellow LED       │ Output    │ Working/uploading
+     24   │ Relay IN1        │ Output    │ PoE switch (12V via relay)
+     27   │ Relay IN3        │ Output    │ Yellow LED (12V via relay)
     ──────┴──────────────────┴───────────┴───────────────────────
 
     NOTES:
-    1. PoE switch powered via relay triggered by Pi USB power -
-       camera power-cycles in sync with Pi wake/sleep schedule.
-       Pi ON = relay closed = PoE switch ON = camera ON.
+    1. PoE switch powered via GPIO 24 triggering relay CH1
+       (Electronics-Salon 4-ch SPDT module, DIN rail mount,
+       driven by GPIO pins through G469 breakout).
+       GPIO 24 HIGH = relay closed = PoE switch ON = camera ON.
     2. DDR-60G converters provide regulated voltage from battery
        (which varies 10-14V depending on charge state).
     3. No heaters installed (Sukabumi tropical foothills climate,
