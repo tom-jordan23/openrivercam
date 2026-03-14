@@ -184,27 +184,27 @@ START: No video capture
      │             │
      ▼             ▼
 ┌──────────────┐  ┌────────────────────┐
-│ Check PoE    │  │ Test RTSP:         │
-│ switch:      │  │ ffmpeg -i rtsp://  │
-│ - 12V input? │  │ admin:pass@        │
-│ - LED on?    │  │ 192.168.50.139:554/│
-│ - Relay GPIO │  │ stream1 -frames:v 1│
-│   wiring?    │  │ test.jpg           │
+│ Check PoE    │  │ Test FTP upload:   │
+│ switch:      │  │ Trigger snapshot   │
+│ - 12V input? │  │ from camera, check │
+│ - LED on?    │  │ Pi FTP directory   │
+│ - Relay GPIO │  │ for new files      │
+│   wiring?    │  │                    │
 └──────┬───────┘  └─────────┬──────────┘
        │                    │
   ┌────┴────┐         ┌─────┴─────┐
   │         │         │           │
-No LED    LED on    Fails      Success
+No LED    LED on    No files   Files OK
   │         │         │           │
   ▼         ▼         ▼           ▼
 ┌─────┐  ┌────────┐ ┌───────┐  ┌────────┐
 │Check│  │Check   │ │Check  │  │Camera  │
 │12V  │  │Cat6    │ │camera │  │OK,     │
-│fuse │  │cable & │ │creds &│  │check   │
-│& PoE│  │CNLINKO │ │RTSP   │  │ORC     │
-│sw   │  │connect-│ │config │  │config  │
-│power│  │ions    │ └───────┘  └────────┘
-└─────┘  └────────┘
+│fuse │  │cable & │ │FTP    │  │check   │
+│& PoE│  │CNLINKO │ │config │  │ORC     │
+│sw   │  │connect-│ │& Pi   │  │config  │
+│power│  │ions    │ │FTP svc│  └────────┘
+└─────┘  └────────┘ └───────┘
 
 NOTE: Camera takes ~45-60s to boot after Pi wakes.
 Wait before testing if system just powered on.
@@ -227,26 +227,27 @@ START: Camera offline
      │             │
      ▼             ▼
 ┌──────────────┐  ┌────────────────────┐
-│ Check PoE    │  │ Test RTSP:         │
-│ switch LED   │  │ ffmpeg -i rtsp://  │
-│ and camera   │  │ admin:pass@        │
-│ power LED    │  │ 192.168.50.101:554/│
-└──────┬───────┘  │ stream1 -frames:v 1│
-       │          │ test.jpg           │
+│ Check PoE    │  │ Test FTP upload:   │
+│ switch LED   │  │ Trigger snapshot   │
+│ and camera   │  │ from camera, check │
+│ power LED    │  │ Pi FTP directory   │
+└──────┬───────┘  │ for new files      │
+       │          │                    │
   ┌────┴────┐     └─────────┬──────────┘
   │         │               │
 No LED    LED on      ┌─────┴─────┐
   │         │         │           │
-  ▼         ▼       Fails      Success
+  ▼         ▼       No files   Files OK
 ┌─────┐  ┌────────┐   │           │
 │Check│  │Check   │   ▼           ▼
 │12V  │  │Cat6    │ ┌───────┐  ┌────────┐
 │to   │  │cable   │ │Check  │  │Camera  │
 │PoE  │  │& bulk- │ │camera │  │OK,     │
-│sw & │  │head    │ │creds &│  │check   │
-│relay│  │connect-│ │RTSP   │  │ORC     │
-└─────┘  │ions    │ │config │  │config  │
-         └────────┘ └───────┘  └────────┘
+│sw & │  │head    │ │FTP    │  │check   │
+│relay│  │connect-│ │config │  │ORC     │
+└─────┘  │ions    │ │& Pi   │  │config  │
+         └────────┘ │FTP svc│  └────────┘
+                    └───────┘
 ```
 
 ### No LTE Connectivity
@@ -378,6 +379,20 @@ START: No rain data
                └──────────┘
 ```
 
+**Sukabumi — Rain Data During Power Cycling:**
+
+The RG-15 stays powered from TB1 (always-on 12V bus) while the Pi sleeps.
+It accumulates rainfall internally. The capture script reads the accumulated
+total on each wake cycle and computes interval rainfall by delta.
+
+- If readings show zero when it clearly rained: check that RG-15 VCC is on
+  TB1 (always-on), NOT on the relay-switched 12V circuit
+- If accumulated total keeps resetting: RG-15 is losing power — check TB1
+  12V with multimeter while Pi is sleeping
+- If readings jump unexpectedly: the previous reading file on disk may be
+  corrupt or missing — check `/var/lib/orc/rain_last_acc.txt` (or wherever
+  the capture script stores the last-read value)
+
 ---
 
 ## Camera Network Setup
@@ -391,7 +406,7 @@ Both sites use the Pi as a DHCP server (dnsmasq) on the 192.168.50.0/24 camera n
 
 **Note:** The SADP utility (Hikvision/ANNKE) does not run on ARM Macs — neither natively nor under Parallels. The dnsmasq approach eliminates the need for SADP entirely.
 
-**Note:** The ANNKE web interface requires a Windows-only browser plugin for live view. Use RTSP via VLC or ffmpeg to verify the camera image instead.
+**Note:** The ANNKE web interface requires a Windows-only browser plugin for live view. Use ISAPI snapshot or FTP test upload to verify the camera image instead.
 
 ### Camera not getting expected IP
 
@@ -548,8 +563,11 @@ ping -c 3 192.168.50.139
 ping -c 3 192.168.50.101
 ping -c 3 192.168.50.102
 
-# Test RTSP stream
-ffmpeg -i rtsp://admin:PASSWORD@192.168.50.101:554/stream1 -frames:v 1 /tmp/cam1.jpg
+# Test camera connectivity with ISAPI snapshot
+curl --digest -u admin:PASSWORD http://192.168.50.101/ISAPI/Streaming/channels/101/picture -o /tmp/cam1.jpg
+
+# Check FTP upload directory for incoming files
+ls -la /path/to/ftp/upload/dir/
 
 # Check DHCP leases
 cat /var/lib/misc/dnsmasq.leases

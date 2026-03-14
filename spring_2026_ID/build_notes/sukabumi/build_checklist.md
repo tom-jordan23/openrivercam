@@ -504,7 +504,7 @@ Connect and verify peripherals work (can skip modem data test if no SIM yet).
 |-------|------|
 | Camera boots (LEDs active) | [ ] |
 | Can access camera web UI | [ ] |
-| Can capture test frame via RTSP | [ ] |
+| Can capture test frame via FTP upload or ISAPI snapshot | [ ] |
 
 **Rain Gauge (if wiring to GPIO breakout):**
 
@@ -1138,7 +1138,7 @@ APN used:
 
 ## Phase 7: Camera Configuration
 
-**Goal:** Configure ANNKE C1200 and verify RTSP streaming
+**Goal:** Configure ANNKE C1200 and verify FTP upload to Pi
 **Prerequisite:** Phase 4 complete
 
 ### 7.1 Environmental Conditions
@@ -1181,40 +1181,42 @@ Access from laptop/desktop browser.
 | Video Stream 1 (Main) | H.264, 4K/12MP, 10fps | [ ] |
 | Video Stream 2 (Sub) | H.264, 720p, 10fps | [ ] |
 | Network - Static IP | | [ ] |
-| RTSP | Enabled | [ ] |
-| ONVIF | Enabled | [ ] |
+| FTP Upload | Enabled, target Pi (192.168.50.1) | [ ] |
+| Scheduled Snapshot | Configured per ORC requirements | [ ] |
 | IR LEDs | Auto | [ ] |
 | NTP | Disabled | [ ] |
 
 **Static IP assigned:** _______________
 
-### 7.5 Test RTSP from Pi
+### 7.5 Test FTP Upload from Camera to Pi
 
 ```bash
-# Install ffmpeg
-sudo apt install ffmpeg -y
+# Ensure FTP server is running on Pi (e.g., vsftpd)
+sudo systemctl status vsftpd
 
-# Test single frame capture
-ffmpeg -i "rtsp://admin:PASSWORD@CAMERA_IP:554/Streaming/Channels/101" \
-  -frames:v 1 -y test_frame.jpg
+# Check FTP upload directory
+ls -la /path/to/ftp/upload/dir/
 
-ls -la test_frame.jpg
+# Configure camera FTP via camtool (from Pi or laptop)
+cd /home/pi/openrivercam/spring_2026_ID/camera/
+python3 camtool.py push sukabumi-cam1 ftp
 
-# Test 5-second video
-ffmpeg -i "rtsp://admin:PASSWORD@CAMERA_IP:554/Streaming/Channels/101" \
-  -t 5 -c copy -y test_video.mp4
+# Trigger a test snapshot via ISAPI
+curl --digest -u admin:PASSWORD \
+  http://CAMERA_IP/ISAPI/Streaming/channels/101/picture -o /tmp/test_isapi.jpg
 
-# Check video properties
-ffprobe test_video.mp4
+# Trigger FTP upload from camera web UI or scheduled event
+# Then check FTP directory for incoming file
+ls -la /path/to/ftp/upload/dir/
 ```
 
 | Check | Expected | Actual | Pass |
 |-------|----------|--------|------|
-| RTSP connects | Yes | | [ ] |
-| Frame captured | >0 bytes | bytes | [ ] |
-| Video duration | 5.0 ±0.5 s | s | [ ] |
-| Video codec | H.264 or H.265 | | [ ] |
-| Video resolution | ≥1920x1080 | x | [ ] |
+| FTP server running on Pi | Yes | | [ ] |
+| Camera FTP config pushed | Yes | | [ ] |
+| Test snapshot via ISAPI | >0 bytes | bytes | [ ] |
+| FTP upload received | File in upload dir | | [ ] |
+| Image resolution | ≥1920x1080 | x | [ ] |
 
 ### 7.6 Test IR Mode
 
@@ -1232,7 +1234,7 @@ ffprobe test_video.mp4
 |-----------|-------------|--------|------|
 | Camera boot time | ≤90 s | s | [ ] |
 | Web UI accessible | Yes | | [ ] |
-| RTSP streaming | Yes | | [ ] |
+| FTP upload working | Yes | | [ ] |
 | Video codec | H.264/H.265 | | [ ] |
 | Video resolution | ≥1920x1080 | | [ ] |
 | Video duration | 5.0 ±0.5 s | s | [ ] |
@@ -1249,8 +1251,8 @@ ffprobe test_video.mp4
 | Camera MAC | |
 | Firmware version | |
 | Username | admin |
-| RTSP Main | rtsp://admin:****@IP:554/Streaming/Channels/101 |
-| RTSP Sub | rtsp://admin:****@IP:554/Streaming/Channels/102 |
+| FTP Server | Pi at 192.168.50.1 |
+| FTP Upload Dir | /path/to/ftp/upload/dir/ |
 
 **Notes:**
 ```
@@ -1593,7 +1595,7 @@ Sketch or notes:
 
 ## Phase 11: ORC Software Installation
 
-**Goal:** Install NodeORC software, configure LiveORC connectivity, and set up RTSP video capture
+**Goal:** Install NodeORC software, configure LiveORC connectivity, and set up FTP-based video capture
 **Prerequisite:** Phase 10 complete
 **Note:** Use upstream packages - do not fork. See https://github.com/localdevices/nodeorc
 
@@ -1604,7 +1606,8 @@ Sketch or notes:
 > - **ORC-OS** = newer full dashboard project (alternative to NodeORC - discuss with ORC team)
 >
 > NodeORC does NOT capture video itself. It processes videos placed in its `incoming/` folder.
-> A separate capture script (11.6) handles RTSP recording from the PoE camera.
+> The PoE camera uploads video/snapshots via FTP to the Pi. An FTP server on the Pi
+> receives files into NodeORC's `incoming/` folder (or a staging directory).
 
 ### 11.1 Environmental Conditions
 
@@ -1738,79 +1741,66 @@ To apply configuration changes:
 python nodeorc upload-config /mnt/usb/settings/config_device.json
 ```
 
-### 11.6 Create RTSP Video Capture Script
+### 11.6 Configure FTP-Based Video/Image Capture
 
-**NodeORC does not capture video.** Videos must be placed in `incoming/` by an external script.
-Since Sukabumi uses a PoE camera (ANNKE C1200) with RTSP, we need an ffmpeg-based capture script.
+**NodeORC does not capture video.** Videos/images must be placed in `incoming/` by an
+external mechanism. The PoE camera (ANNKE C1200) uploads files via FTP to the Pi, which
+provides higher image quality than RTSP streaming.
 
-> **CONFIRM WITH ORC TEAM:** Exact RTSP URL format for the ANNKE C1200.
-> Common patterns for ONVIF cameras:
-> - Main stream: `rtsp://admin:PASSWORD@CAMERA_IP:554/Streaming/Channels/101`
-> - Sub stream: `rtsp://admin:PASSWORD@CAMERA_IP:554/Streaming/Channels/102`
+**Architecture:**
+1. Pi runs an FTP server (e.g., vsftpd) with upload directory → NodeORC `incoming/`
+2. Camera is configured to upload snapshots/video via FTP to the Pi's IP (192.168.50.1)
+3. Camera FTP config is managed via `camtool.py push sukabumi-cam1 ftp`
+
+> **CONFIRM WITH ORC TEAM:** Required file format, resolution, and naming convention
+> for NodeORC's `incoming/` folder. Camera may need scheduled snapshot or event-triggered
+> capture configured via ISAPI.
 
 ```bash
-sudo nano /usr/local/bin/orc-capture.sh
+# Install and configure FTP server
+sudo apt install vsftpd -y
+
+# Configure vsftpd for camera uploads
+sudo nano /etc/vsftpd.conf
+```
+
+Key vsftpd settings (adapt to your needs):
+```
+listen=YES
+anonymous_enable=NO
+local_enable=YES
+write_enable=YES
+local_root=/mnt/usb/incoming
+chroot_local_user=YES
 ```
 
 ```bash
-#!/bin/bash
-# ORC RTSP Video Capture Script - Sukabumi
-# Captures video from PoE camera and places in NodeORC incoming folder
-# Called by Witty Pi schedule or systemd timer
+# Create FTP user for camera uploads
+sudo useradd -m -d /mnt/usb/incoming -s /usr/sbin/nologin ftpcamera
+sudo passwd ftpcamera  # Set password (must match camera FTP config)
 
-set -euo pipefail
-
-# Configuration
-CAMERA_URL="rtsp://admin:PASSWORD@CAMERA_IP:554/Streaming/Channels/101"  # CONFIRM
-DURATION=5         # seconds
-INCOMING="/mnt/usb/incoming"
-LOGFILE="/mnt/usb/log/capture.log"
-
-# Generate filename with NodeORC naming convention (YYYYMMDD_HHMMSS)
-DT=$(date '+%Y%m%d_%H%M%S')
-FILENAME="${INCOMING}/${DT}.mp4"
-
-# Ensure incoming directory exists
-mkdir -p "${INCOMING}"
-
-# Wait for camera to be ready (PoE camera boots with Pi, needs ~60s)
-# Only wait if camera is not yet responding
-if ! ffprobe -v quiet -i "${CAMERA_URL}" -show_entries format=duration 2>/dev/null; then
-    echo "$(date): Waiting for camera..." >> "${LOGFILE}"
-    sleep 60
-fi
-
-# Capture video
-echo "$(date): Capturing ${DURATION}s to ${FILENAME}" >> "${LOGFILE}"
-ffmpeg -y -rtsp_transport tcp \
-    -i "${CAMERA_URL}" \
-    -t "${DURATION}" \
-    -c copy \
-    -f mp4 \
-    "${FILENAME}" 2>> "${LOGFILE}"
-
-if [ $? -eq 0 ]; then
-    echo "$(date): Capture complete: ${FILENAME}" >> "${LOGFILE}"
-else
-    echo "$(date): ERROR: Capture failed" >> "${LOGFILE}"
-    exit 1
-fi
+# Restart FTP server
+sudo systemctl restart vsftpd
+sudo systemctl enable vsftpd
 ```
 
+> **IMPORTANT:** The FTP user password must match the camera's FTP config. Use
+> `camtool.py` to push the FTP config with credentials from `.env`. Discuss secure
+> credential management approach with ORC team.
+
+**Push camera FTP config:**
 ```bash
-sudo chmod +x /usr/local/bin/orc-capture.sh
+cd /home/pi/openrivercam/spring_2026_ID/camera/
+python3 camtool.py push sukabumi-cam1 ftp
 ```
-
-> **IMPORTANT:** Replace `CAMERA_URL` with actual RTSP URL after camera is configured.
-> The camera password should NOT be hardcoded in production - discuss secure credential
-> management approach with ORC team.
 
 | Step | Completed |
 |------|-----------|
-| Capture script created | [ ] |
-| Script is executable | [ ] |
-| RTSP URL confirmed with ORC team | [ ] |
-| Camera credentials configured | [ ] |
+| vsftpd installed and configured | [ ] |
+| FTP user created | [ ] |
+| Camera FTP config pushed via camtool | [ ] |
+| FTP upload directory = NodeORC incoming/ | [ ] |
+| File naming/format confirmed with ORC team | [ ] |
 
 ### 11.7 Test Manual Capture
 
@@ -1916,7 +1906,7 @@ Water level cannot be read optically by NodeORC.
 | NodeORC installed and service running | [ ] |
 | Directory structure correct | [ ] |
 | config_device.json reviewed | [ ] |
-| RTSP capture script created and tested | [ ] |
+| FTP capture configured and tested | [ ] |
 | Manual capture produces valid video | [ ] |
 | NodeORC detects videos in incoming/ | [ ] |
 | LiveORC connectivity confirmed | [ ] |
@@ -1927,7 +1917,7 @@ Water level cannot be read optically by NodeORC.
 NodeORC version:
 Config file path: /mnt/usb/settings/config_device.json
 LiveORC server URL:
-Camera RTSP URL:
+Camera FTP upload config:
 Water level approach:
 ORC team contact for task configuration:
 
@@ -1942,10 +1932,10 @@ These items require input from the ORC team before Phase 12:
 |------|--------|---------------|
 | LiveORC server URL and credentials | [ ] Obtained | |
 | LiveORC task template configured | [ ] Confirmed | |
-| Camera RTSP URL format verified | [ ] Tested | |
+| Camera FTP upload config verified | [ ] Tested | |
 | Water level data approach agreed | [ ] Documented | |
 | ORC-OS vs NodeORC decision | [ ] Discussed | See note below |
-| Credential management approach | [ ] Agreed | For RTSP password |
+| Credential management approach | [ ] Agreed | For FTP + camera password |
 
 > **ORC-OS Note:** The ORC team has a newer project called ORC-OS
 > (https://github.com/localdevices/ORC-OS) that provides a full web dashboard with
@@ -1978,11 +1968,15 @@ These items require input from the ORC team before Phase 12:
 
 ### 12.3 Full Capture Cycle
 
-Run the RTSP capture script and verify NodeORC processes the result:
+Trigger a camera FTP upload and verify NodeORC processes the result:
 
 ```bash
-# Run capture
-/usr/local/bin/orc-capture.sh
+# Trigger camera snapshot (via ISAPI or wait for scheduled capture)
+curl --digest -u admin:PASSWORD \
+  http://192.168.50.139/ISAPI/Streaming/channels/101/picture -o /dev/null
+
+# Monitor FTP upload directory for incoming files
+ls -la /mnt/usb/incoming/
 
 # Monitor NodeORC processing
 sudo journalctl -u nodeorc.service -f
@@ -1991,8 +1985,8 @@ sudo journalctl -u nodeorc.service -f
 | Step | Expected | Actual | Pass |
 |------|----------|--------|------|
 | System boot | ≤60s | s | [ ] |
-| Camera RTSP ready | ≤90s from boot | s | [ ] |
-| orc-capture.sh completes | Video in incoming/ | | [ ] |
+| Camera FTP ready | ≤90s from boot | s | [ ] |
+| FTP file received | File in incoming/ | | [ ] |
 | NodeORC detects video | Log shows pickup | | [ ] |
 | NodeORC processes video | Log shows processing | | [ ] |
 | Results or callback | success/ or failed/ | | [ ] |
@@ -2474,8 +2468,8 @@ cd ~/wittypi && ./wittyPi.sh
 # Modem status
 mmcli -m 0
 
-# Camera test
-ffmpeg -i "rtsp://..." -t 5 -c copy test.mp4
+# Camera test (ISAPI snapshot)
+curl --digest -u admin:PASSWORD http://CAMERA_IP/ISAPI/Streaming/channels/101/picture -o /tmp/test.jpg
 
 # Rain gauge
 minicom -b 9600 -D /dev/serial0

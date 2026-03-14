@@ -43,19 +43,19 @@ Apply MG 422C silicone conformal coating to all PCBs:
 - [ ] Flash OS image to MicroSD card
 - [ ] Boot Pi 5 and verify ORC software runs
 - [ ] Configure Pi 5 RTC wake schedule (15-minute wake cycle via ML-2020 coin cell)
-- [ ] Test PoE camera RTSP capture (ffmpeg)
+- [ ] Test PoE camera FTP upload to Pi
 - [ ] Configure WiFi hotspot for maintenance mode
 - [ ] Set up LED relay control script (GPIO 17/27/22 → relay channels → 12V LEDs)
 - [ ] Pre-configure Telkomsel APN (if known)
 - [ ] Configure Pi eth0 static IP (192.168.50.1/24) and dnsmasq DHCP for camera network
-- [ ] Configure camera RTSP settings via web interface
+- [ ] Configure camera FTP upload settings via web interface or camtool.py
 
 ### 3. Hardware Testing
 
 - [ ] Test Pi 5 + Geekworm G469 stack boots correctly (2-board stack)
 - [ ] Verify USB flash drive is recognized
 - [ ] Test LTE modem connects (with test SIM)
-- [ ] Test PoE camera RTSP stream works
+- [ ] Test PoE camera FTP upload works
 - [ ] Test PoE switch powers camera when relay energized
 - [ ] Verify LEDs light up via relay channels (GPIO 17/27/22)
 
@@ -335,7 +335,7 @@ Verify all components before starting assembly:
    - 12V regulated flows to PoE switch
    - PoE switch provides 48V PoE to camera over Ethernet
    - Camera boots (~45-60s), built-in IR activates automatically at night
-   - Pi captures video via RTSP over Ethernet (camera has DHCP IP)
+   - Camera uploads video/snapshot via FTP to Pi over Ethernet (camera has DHCP IP)
    - Pi drives GPIO 24 LOW → relay opens → camera powers down
    - Pi enters sleep via RTC until next scheduled wake
 
@@ -435,28 +435,28 @@ The Pi serves as DHCP server for the camera network on eth0 using dnsmasq. This 
    - From the Pi or a laptop on the same network: `http://192.168.50.139`
    - Default credentials: admin / admin (change password immediately)
    - Set camera to DHCP (if not already) so it picks up the dnsmasq-assigned address on every boot
-   - Enable RTSP stream
+   - Configure FTP upload: point camera at Pi's FTP server (192.168.50.1)
    - Set video resolution/framerate per ORC requirements
+   - Configure scheduled snapshot/video capture interval
    - Configure IR to auto-enable in low light
 
-   **Note:** The ANNKE web interface requires a Windows-only browser plugin for live view. Skip the live view — use RTSP via VLC or ffmpeg to verify the camera image instead.
+   **Note:** The ANNKE web interface requires a Windows-only browser plugin for live view. Skip the live view — use FTP test upload or ISAPI snapshot to verify the camera image instead.
 
-2. **Test RTSP stream with VLC:**
-   ```
-   Open VLC → Media → Open Network Stream →
-   rtsp://admin:password@192.168.50.139:554/stream1
-   ```
-   This works on macOS and Linux without any plugins. You should see a live camera feed.
-
-3. **Test RTSP capture with ffmpeg:**
+2. **Configure FTP upload via camtool.py:**
    ```bash
-   ffmpeg -i rtsp://admin:password@192.168.50.139:554/stream1 -frames:v 1 test.jpg
+   # Push FTP config to camera (server = Pi IP, credentials from .env)
+   python3 camtool.py push sukabumi-cam1 ftp
    ```
+
+3. **Test FTP upload:**
+   - Trigger a test snapshot from camera web interface or via ISAPI
+   - Verify file appears in Pi's FTP upload directory
+   - Check image quality meets ORC requirements
 
 4. **Verify IR function:**
    - Cover camera lens (simulate darkness)
    - IR LEDs should illuminate (visible glow)
-   - Capture test image via ffmpeg, verify IR-lit scene
+   - Trigger snapshot, verify IR-lit image in FTP directory
 
 ### Step 10: Mount External Components (30 min)
 
@@ -530,8 +530,9 @@ The Pi serves as DHCP server for the camera network on eth0 using dnsmasq. This 
 2. Connect to WiFi hotspot
 3. SSH into Pi
 4. Check camera is reachable: `ping 192.168.50.139`
-5. Test RTSP capture: `ffmpeg -i rtsp://admin:password@192.168.50.139:554/stream1 -frames:v 1 test.jpg`
-6. Verify image captured
+5. Check FTP upload directory for images from camera
+6. If no files, trigger a test snapshot via ISAPI: `curl --digest -u admin:PASSWORD http://192.168.50.139/ISAPI/Streaming/channels/101/picture -o test.jpg`
+7. Verify image captured and quality is acceptable
 
 ### Verify IR Light
 
@@ -551,6 +552,10 @@ The Pi serves as DHCP server for the camera network on eth0 using dnsmasq. This 
 1. Check UART device: `ls /dev/ttyAMA0` or `ls /dev/serial0`
 2. Test serial communication: `cat /dev/ttyAMA0` (tip bucket, check for data)
 3. Manually tip bucket, verify data received
+4. **Verify always-on power:** put Pi to sleep (via Witty Pi schedule or `sudo halt`),
+   then measure 12V at TB1 with multimeter — it should still be present. The RG-15
+   must stay powered during sleep to accumulate rainfall. If it loses power, rainfall
+   between cycles is lost.
 
 ---
 
@@ -602,7 +607,7 @@ See `TROUBLESHOOTING.md` for detailed diagnostics.
 | LTE SIM number | |
 | Modem IMEI | |
 | Camera IP address | 192.168.50.139 |
-| Camera RTSP URL | rtsp://admin:PASSWORD@192.168.50.139:554/stream1 |
+| Camera FTP target | Pi FTP server at 192.168.50.1 |
 | GPS coordinates | |
 | Installation date | |
 | Installer name | |

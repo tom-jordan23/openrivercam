@@ -316,7 +316,7 @@ Indonesian regulations require IMEI registration for cellular devices.
 
 - [ ] Confirm all components received and tested
 - [ ] Apply conformal coating to all PCBs (24hr cure)
-- [ ] Pre-configure cameras (static IP, RTSP enabled)
+- [ ] Pre-configure cameras (static IP, FTP upload to Pi configured)
 - [ ] Load OS images on all SD cards
 - [ ] Record all serial numbers and IMEI numbers
 - [ ] Request humanitarian letter from organization

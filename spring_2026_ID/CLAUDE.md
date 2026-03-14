@@ -580,7 +580,7 @@ Lower priority. Can be deferred if needed.
 **ORC Software:**
 - PoE cameras with built-in IR handle day/night automatically - no software changes needed
 - Both sites now use identical PoE camera approach (ANNKE C1200)
-- RTSP capture via ffmpeg already supported in ORC
+- Video/image capture via FTP upload from camera to Pi (higher quality than RTSP streaming)
 
 **Research documents:**
 - `research/indonesian_cellular_research.md`
@@ -670,7 +670,7 @@ After all decisions are made.
 4. Check power consumption against budget
 
 ### Compatibility Verification
-1. PoE cameras (ANNKE C1200) support RTSP and work with ffmpeg
+1. PoE cameras (ANNKE C1200) support FTP upload to Pi (used instead of RTSP for higher quality)
 2. Planet IPOE-260-12V works with native 12V input (both sites)
 3. Modem works with Indonesian carriers
 4. Witty Pi 5 HAT+ compatible with Pi 5
@@ -693,6 +693,7 @@ Based on research review, the following items may need attention:
 | **PoE camera boot time** | Low | Camera needs ~45-60s to boot each cycle. Active phase extended to 150s. ✅ Resolved |
 | **Higher power consumption** | Low | PoE camera uses ~94 Wh/day vs ~47 Wh/day for USB. Solar capacity (720 Wh/day) is adequate. ✅ Resolved |
 | **Cat6 cable routing** | Low | Need UV-resistant outdoor Cat6 from enclosure to camera. ✅ In BOM |
+| **Rain gauge data during sleep** | Low | RG-15 must collect rainfall while Pi sleeps. ✅ Resolved: RG-15 powered from always-on TB1 bus, accumulates internally; software reads delta on each wake cycle. See BOM_Sukabumi.md Section 6 notes and circuit_diagram.txt. |
 
 **Note:** Switching to factory-sealed PoE camera (ANNKE C1200) eliminates previous USB camera risks: IR sensitivity, Gore vent housing, humidity management, custom housing assembly.
 
@@ -705,7 +706,7 @@ Based on research review, the following items may need attention:
 | **12V PoE switch vs injector** | Medium | SITES.md says "12v PoE switch" but most PoE switches need 48V. Planet IPOE-260-12V is an injector, not a switch. Clarify network topology |
 | **AC input voltage** | Low | Indonesia uses 220V/50Hz. Verify power supply accepts 220V |
 | **Mounting pole** | Low | No specs for pole. Standard camera pole or custom? Height? Material? |
-| **Camera RTSP configuration** | Low | Cameras ship with RTSP disabled. Pre-configure before deployment. See `camera/` for ISAPI config tool |
+| **Camera FTP configuration** | Low | Configure cameras to FTP upload video/snapshots to Pi. Pre-configure before deployment. See `camera/` for ISAPI config tool |
 
 ### Both Sites
 
@@ -714,7 +715,7 @@ Based on research review, the following items may need attention:
 | **GPIO terminal block riser** | Medium | Need to source HAT/riser that exposes GPIO as screw terminals while Witty Pi 5 HAT+ is installed. Enables future expansion without resoldering |
 | **Modbus sensor details** | Medium | What device will connect via Modbus? Rain gauge? Water level sensor? External data logger? Need to specify interface requirements |
 | **SIM card strategy** | Medium | Pre-paid or postpaid? Which carrier? Data plan size? |
-| **ORC software compatibility** | Low | Both sites use PoE cameras with built-in IR - standard RTSP capture, no special day/night handling needed |
+| **ORC software compatibility** | Low | Both sites use PoE cameras with built-in IR and FTP upload - no special day/night handling needed |
 | **Shipping strategy** | Low | Batteries/panels may need local sourcing per DESIGN_SPECS.md shipping section |
 | **Customs documentation** | Low | Prepare commercial invoices, HS codes, IMEI list for modems |
 

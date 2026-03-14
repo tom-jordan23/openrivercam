@@ -225,6 +225,15 @@
     Self-cleaning lens, no moving parts.
     Mounted outside on pole arm, built-in mounting holes.
 
+    POWER CYCLING NOTE: The RG-15 is powered from TB1 (always-on battery
+    bus), NOT from the relay-switched circuit. This is intentional:
+    - RG-15 stays powered 24/7 even while Pi sleeps (~150µA idle)
+    - RG-15 accumulates rainfall internally while Pi is off
+    - On each wake cycle, Pi reads accumulated total via UART
+    - Software must read "Acc" register on startup, compute delta
+      from previous reading, then log the interval rainfall
+    - Do NOT move RG-15 power to a switched circuit
+
 
     ──────────────────────────────────────────────────────────────
     LTE ANTENNA DETAIL

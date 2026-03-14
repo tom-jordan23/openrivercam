@@ -43,7 +43,7 @@ Configure ANNKE C1200 cameras BEFORE deployment. The Pi acts as DHCP server on t
 
 **Note:** The SADP utility (Hikvision's camera discovery tool) does not run on ARM Macs — neither natively nor under Parallels. The dnsmasq approach below eliminates the need for SADP entirely.
 
-**Note:** The ANNKE web interface requires a Windows-only browser plugin for live view. Use RTSP via VLC or ffmpeg to verify the camera image instead.
+**Note:** The ANNKE web interface requires a Windows-only browser plugin for live view. Use ISAPI snapshot or FTP test upload to verify the camera image instead.
 
 **Set up Pi camera network (one-time):**
 
@@ -80,24 +80,22 @@ Configure ANNKE C1200 cameras BEFORE deployment. The Pi acts as DHCP server on t
 2. Wait 60-90 seconds for camera to boot and receive DHCP lease
 3. Verify: `ping 192.168.50.101` (or .102)
 4. Access web interface at `http://192.168.50.101` (default credentials: admin / admin)
-5. Test live view via VLC (works on macOS/Linux without plugins):
-   ```
-   Open VLC → Media → Open Network Stream →
-   rtsp://admin:password@192.168.50.101:554/stream1
+5. Test ISAPI snapshot (works on macOS/Linux without plugins):
+   ```bash
+   curl --digest -u admin:password http://192.168.50.101/ISAPI/Streaming/channels/101/picture -o cam1_test.jpg
    ```
 
 - [ ] Change admin password (record in secure location)
 - [ ] Set camera to DHCP so it picks up the dnsmasq-assigned address on every boot
-- [ ] Enable RTSP streaming
-- [ ] Note RTSP URLs:
-  - `rtsp://admin:password@192.168.50.101:554/stream1`
-  - `rtsp://admin:password@192.168.50.102:554/stream1`
-- [ ] Test RTSP with VLC on laptop (see above)
-- [ ] Test RTSP capture with ffmpeg:
+- [ ] Configure FTP upload to Pi (192.168.50.1) via web interface or camtool.py:
   ```bash
-  ffmpeg -i rtsp://admin:password@192.168.50.101:554/stream1 -frames:v 1 cam1.jpg
-  ffmpeg -i rtsp://admin:password@192.168.50.102:554/stream1 -frames:v 1 cam2.jpg
+  python3 camtool.py push jakarta-cam1 ftp
+  python3 camtool.py push jakarta-cam2 ftp
   ```
+- [ ] Test FTP upload: trigger snapshot, verify files arrive in Pi FTP directory
+- [ ] Verify both cameras upload correctly:
+  - Camera 1 (192.168.50.101) → check FTP directory
+  - Camera 2 (192.168.50.102) → check FTP directory
 - [ ] Adjust image settings (exposure, focus) if needed
 
 ### 3. Software Configuration
@@ -105,7 +103,7 @@ Configure ANNKE C1200 cameras BEFORE deployment. The Pi acts as DHCP server on t
 - [ ] Flash OS image to MicroSD card
 - [ ] Boot Pi 5 and verify ORC software runs
 - [ ] Install ML-2020 RTC battery in Pi 5
-- [ ] Configure for 2-camera RTSP capture
+- [ ] Configure for 2-camera FTP capture (Pi FTP server + camera FTP upload config)
 - [ ] Configure WiFi hotspot for maintenance mode
 - [ ] Set up LED GPIO control script
 - [ ] Pre-configure Telkomsel APN (if known)
@@ -519,11 +517,10 @@ Configure ANNKE C1200 cameras BEFORE deployment. The Pi acts as DHCP server on t
    ping 192.168.50.101
    ping 192.168.50.102
    ```
-5. Test RTSP capture:
-   ```
-   ffmpeg -i rtsp://admin:pass@192.168.50.101:554/stream1 -frames:v 1 cam1.jpg
-   ffmpeg -i rtsp://admin:pass@192.168.50.102:554/stream1 -frames:v 1 cam2.jpg
-   ```
+5. Test FTP upload from both cameras:
+   - Trigger snapshot from camera web interface or ISAPI
+   - Check Pi FTP upload directory for files from each camera
+   - Verify image quality is acceptable
 
 ### Verify LTE Connection
 

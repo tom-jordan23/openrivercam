@@ -104,7 +104,7 @@
 - **Day/night config:** ORC software will handle switching between day and night capture configurations.
 - **1 camera installed** at Sukabumi (single viewpoint). Second camera from 2-pack kept as spare at PMI office.
 - Same camera model as Jakarta site for parts commonality.
-- Pre-configure camera before deployment: set static IP, enable RTSP, set credentials.
+- Pre-configure camera before deployment: set static IP, configure FTP upload to Pi, set credentials. See `camera/` for ISAPI config tool.
 
 ---
 
@@ -221,6 +221,26 @@
 - Mount in open area away from structures (>2m from walls/trees)
 - Order direct from Hydreon (US-based); Amazon third-party sellers charge 2x+ markup
 
+**Data Collection During Power Cycling (Sukabumi-specific):**
+
+The Pi power-cycles every 15 minutes (awake ~150s, asleep ~14 min). The RG-15 must
+collect rainfall continuously, including while the Pi sleeps.
+
+- **Hardware solution:** RG-15 is powered from TB1 (always-on 12V battery bus), not from
+  a relay-switched circuit. It draws ~150µA idle — negligible impact on solar budget
+  (~0.04 Wh/day). The RG-15 stays powered 24/7 and accumulates rainfall internally.
+- **Software requirement:** On each wake cycle, the capture script must:
+  1. Open UART (`/dev/ttyAMA0`, 9600 baud)
+  2. Send `R` command to read the RG-15 accumulated rainfall (`Acc` field)
+  3. Compare to the previous reading (stored on disk) to compute interval rainfall
+  4. Log the interval rainfall with timestamp
+  5. Optionally send `O` command to reset the accumulator (or just track deltas)
+- **Why not reset each cycle?** Tracking deltas (rather than resetting) is safer — if a
+  read fails or the Pi crashes mid-cycle, no rainfall data is lost. The accumulator
+  persists as long as the RG-15 has power.
+- **Jakarta:** This is not an issue at Jakarta since the Pi runs continuously on AC power
+  and can poll the RG-15 at any interval.
+
 ---
 
 ## 7. Cables & Connectors
@@ -314,28 +334,33 @@ Note: Active phase is ~150s per cycle to accommodate PoE camera boot time (~45-6
 | Witty Pi 5 (active) | 0.5W | 150s | 0.021 Wh | 2.0 Wh |
 | **Active subtotal** | | | | **90.4 Wh/day** |
 
-**Sleep Phase:**
+**Sleep Phase (always-on loads):**
 | Component | Power | Duration | Daily Energy |
 |-----------|-------|----------|--------------|
 | Witty Pi 5 (sleep) | 0.025W | 22.5 hr | 0.56 Wh |
 | LTE Modem (standby) | 0.1W | 24 hr | 2.4 Wh |
-| **Sleep subtotal** | | | **2.96 Wh/day** |
+| DDR-60G-5 (quiescent) | 0.5W | 24 hr | 12.0 Wh |
+| DDR-60G-12 (quiescent) | 0.5W | 24 hr | 12.0 Wh |
+| Hydreon RG-15 (idle) | 0.002W | 24 hr | 0.04 Wh |
+| **Sleep subtotal** | | | **27.0 Wh/day** |
+
+**Note:** The DDR-60G buck converters are always powered from TB1 (they have no enable/shutdown pin). Their quiescent draw (~0.5W each) is the largest always-on load. The RG-15's 150µA idle draw is negligible. If sleep-phase power becomes a concern, adding a relay or load switch to disconnect the DDR-60G-12 (camera circuit) during sleep would save ~12 Wh/day.
 
 **LED Status Indicators:**
 | Component | Power | Duration | Daily Energy |
 |-----------|-------|----------|--------------|
 | 1× LED (average) | 0.02W | 24 hr | 0.48 Wh |
 
-**TOTAL DAILY CONSUMPTION:** ~93.8 Wh/day
+**TOTAL DAILY CONSUMPTION:** ~118 Wh/day (90.4 active + 27.0 sleep + 0.48 LEDs)
 
 **Solar Generation (Sukabumi - foothills, decent sun):**
 - 200W panel × 4.5 peak sun hours × 0.8 efficiency = ~720 Wh/day
-- **Margin:** 720 Wh generation - 94 Wh consumption = **626 Wh surplus**
+- **Margin:** 720 Wh generation - 118 Wh consumption = **602 Wh surplus**
 
 **Battery Runtime (no sun):**
-- 300 Wh usable ÷ 94 Wh/day = **3.2 days autonomy**
+- 300 Wh usable ÷ 118 Wh/day = **2.5 days autonomy**
 
-**Status:** ✅ Good power budget margin. Higher than USB camera approach (~47 Wh/day) but still well within solar capacity. Power-cycling the PoE camera with Pi keeps consumption manageable.
+**Status:** ✅ Good power budget margin. The always-on buck converter quiescent draw (~24 Wh/day) is notable but well within solar capacity. If autonomy needs to be extended, the DDR-60G-12 (camera circuit) could be disconnected during sleep via a relay to save ~12 Wh/day.
 
 ---
 
@@ -408,7 +433,7 @@ Equipment travels with installer under humanitarian exemption. No shipping or cu
 
 2. **Test compute stack** before coating
    - Verify Pi 5 boots, SSD recognized, modem connects
-   - Test ORC software with PoE camera (verify RTSP capture)
+   - Test ORC software with PoE camera (verify FTP upload from camera to Pi)
    - Verify Witty Pi 5 scheduling works
    - Test GPIO control of LEDs
 
@@ -420,8 +445,8 @@ Equipment travels with installer under humanitarian exemption. No shipping or cu
    - Pre-load Indonesian SIM config (if known)
 
 4. **Pre-configure PoE camera**
-   - Set static IP address, enable RTSP, set credentials
-   - Test ONVIF discovery
+   - Set static IP address, configure FTP upload to Pi, set credentials
+   - Use `camtool.py` to push FTP and image config
    - Verify built-in IR LEDs activate in darkness
 
 ### Field Assembly (Indonesia)
@@ -460,7 +485,7 @@ Equipment travels with installer under humanitarian exemption. No shipping or cu
 
 5. **System test**
    - Verify Pi boots and LEDs indicate status
-   - Test PoE camera capture via RTSP
+   - Test PoE camera FTP upload to Pi
    - Verify camera IR LEDs activate in darkness (cover lens to test)
    - Verify LTE connectivity (may need IMEI registration first)
    - Test rain gauge serial communication (RS232 TTL over Pi UART)
@@ -520,7 +545,7 @@ See CLAUDE.md "Tools & Spares Inventory" section for comprehensive list. Key spa
 1. Verify Cat6 cable connection at camera and PoE injector
 2. Check PoE injector status LEDs (verify 12V power to injector)
 3. Verify camera has IP address (check DHCP or static config)
-4. SSH into Pi, test RTSP stream: `ffmpeg -i rtsp://<camera-ip>/stream -frames 1 test.jpg`
+4. SSH into Pi, check FTP upload directory for incoming files from camera
 5. Check ORC logs: `/var/log/orc/`
 6. Verify camera boots within the active cycle window (~60s boot time)
 
