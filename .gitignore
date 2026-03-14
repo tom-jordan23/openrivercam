@@ -7,6 +7,9 @@ qgis/*
 rs-docs
 rs-docs/
 rs-docs/*
+rainbow-sensing
+rainbow-sensing/
+rainbow-sensing/*
 
 # Pi config files with real credentials (use placeholders in tracked files)
 spring_2026_ID/pi/**/*.local

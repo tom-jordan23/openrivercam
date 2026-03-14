@@ -1,8 +1,10 @@
 # Pi Configuration Files
 
 Source of truth for all Raspberry Pi customizations applied on top of the
-Rainbow Sensing ORC-OS base image. Files here are manually
-copied to each Pi during setup — there is no automated deployment.
+Rainbow Sensing ORC-OS base image. For base image flashing and initial setup,
+follow the [ORC-OS README](https://github.com/localdevices/ORC-OS/blob/main/README.md).
+Files here are manually copied to each Pi **after** the base image setup is
+complete — there is no automated deployment.
 
 ## Layout Convention
 

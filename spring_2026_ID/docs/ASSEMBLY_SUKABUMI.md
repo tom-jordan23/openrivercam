@@ -40,8 +40,17 @@ Apply MG 422C silicone conformal coating to all PCBs:
 
 ### 2. Software Configuration
 
-- [ ] Flash OS image to MicroSD card
-- [ ] Boot Pi 5 and verify ORC software runs
+- [ ] Flash ORC-OS image to MicroSD card using Raspberry Pi Imager
+  - Follow the [ORC-OS README](https://github.com/localdevices/ORC-OS/blob/main/README.md) — section **"Getting the image on the SD card"**
+  - Use the `.img.gz` file provided by Rainbow Sensing (do NOT unpack it)
+  - In Pi Imager: choose Pi 5 as device, "Use custom" for OS, select the `.img.gz` file
+  - When prompted for OS customisation: set hostname (e.g. `orc-sukabumi`), keep username as `pi`, enable SSH, skip WiFi (we use Ethernet/LTE)
+  - **WARNING:** Do NOT change the username from `pi` — this will break ORC-OS
+- [ ] Boot Pi 5 and verify ORC-OS runs
+  - Follow the [ORC-OS README](https://github.com/localdevices/ORC-OS/blob/main/README.md) — section **"Test your installation"**
+  - First boot takes 2-3 minutes (services compile, filesystem expands, then auto-reboots)
+  - After reboot, navigate to `http://<hostname>.local` to verify the ORC-OS web dashboard loads
+  - Set the ORC-OS web dashboard password when prompted
 - [ ] Configure Pi 5 RTC wake schedule (15-minute wake cycle via ML-2020 coin cell)
 - [ ] Test PoE camera FTP upload to Pi
 - [ ] Configure WiFi hotspot for maintenance mode
