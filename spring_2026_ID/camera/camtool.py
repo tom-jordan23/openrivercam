@@ -33,7 +33,10 @@ except ImportError:
 # Constants
 # ---------------------------------------------------------------------------
 
-SCRIPT_DIR = Path(__file__).resolve().parent
+DEFAULT_PROFILE_DIR = Path.home() / "camera_profiles"
+
+# Resolved at runtime via --profile-dir flag or CAMTOOL_PROFILE_DIR env var
+PROFILE_DIR = None
 
 HIK_NS = "http://www.hikvision.com/ver20/XMLSchema"
 ET.register_namespace("", HIK_NS)
@@ -86,17 +89,17 @@ def get_password(args) -> str:
         return args.password
     if os.environ.get("CAMERA_PASSWORD"):
         return os.environ["CAMERA_PASSWORD"]
-    env = load_env(SCRIPT_DIR / ".env")
+    env = load_env(PROFILE_DIR / ".env")
     if env.get("CAMERA_PASSWORD"):
         return env["CAMERA_PASSWORD"]
     print("Error: No password provided.", file=sys.stderr)
-    print("  Use --password, CAMERA_PASSWORD env var, or camera/.env file", file=sys.stderr)
+    print(f"  Use --password, CAMERA_PASSWORD env var, or {PROFILE_DIR}/.env file", file=sys.stderr)
     sys.exit(1)
 
 
 def load_cameras() -> dict:
     """Load cameras.json manifest."""
-    path = SCRIPT_DIR / "cameras.json"
+    path = PROFILE_DIR / "cameras.json"
     if not path.is_file():
         sys.exit(f"Error: {path} not found")
     with open(path) as f:
@@ -120,12 +123,12 @@ def resolve_config_path(camera: dict, endpoint: str) -> Path | None:
     filename = f"{endpoint}.xml"
 
     # Camera-specific path
-    specific = SCRIPT_DIR / site / cam / filename
+    specific = PROFILE_DIR / site / cam / filename
     if specific.is_file():
         return specific
 
     # Common baseline
-    common = SCRIPT_DIR / "common" / filename
+    common = PROFILE_DIR / "common" / filename
     if common.is_file():
         return common
 
@@ -134,7 +137,7 @@ def resolve_config_path(camera: dict, endpoint: str) -> Path | None:
 
 def camera_specific_dir(camera: dict) -> Path:
     """Return the camera-specific config directory."""
-    return SCRIPT_DIR / camera["site"] / camera["camera"]
+    return PROFILE_DIR / camera["site"] / camera["camera"]
 
 
 def make_session(camera: dict, password: str, timeout: int) -> tuple:
@@ -186,7 +189,7 @@ def scrub_sensitive(root: ET.Element) -> ET.Element:
 
 def inject_sensitive(root: ET.Element) -> ET.Element:
     """Replace placeholder tokens with real values from env."""
-    env = load_env(SCRIPT_DIR / ".env")
+    env = load_env(PROFILE_DIR / ".env")
     env.update(os.environ)
     for elem in root.iter():
         tag = elem.tag.split("}")[-1] if "}" in elem.tag else elem.tag
@@ -261,7 +264,7 @@ def backup_live_config(
     XML file per endpoint.  Returns the backup directory path.
     """
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    backup_dir = SCRIPT_DIR / "backups" / camera_name / stamp
+    backup_dir = PROFILE_DIR / "backups" / camera_name / stamp
     backup_dir.mkdir(parents=True, exist_ok=True)
 
     for ep in endpoints:
@@ -326,7 +329,7 @@ def cmd_pull(args):
     out_dir = camera_specific_dir(camera)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    print(f"Pulling from {args.camera_name} ({camera['host']}) -> {out_dir.relative_to(SCRIPT_DIR)}/")
+    print(f"Pulling from {args.camera_name} ({camera['host']}) -> {out_dir.relative_to(PROFILE_DIR)}/")
 
     errors = 0
     for ep in endpoints:
@@ -381,7 +384,7 @@ def cmd_push(args):
                 session, base_url, args.camera_name, camera,
                 pushable, args.timeout, args.verbose,
             )
-            print(f"  Backed up live config to {backup_dir.relative_to(SCRIPT_DIR)}/")
+            print(f"  Backed up live config to {backup_dir.relative_to(PROFILE_DIR)}/")
 
     errors = 0
     skipped = 0
@@ -394,7 +397,7 @@ def cmd_push(args):
             continue
 
         isapi_path = ENDPOINTS[ep]
-        source = config_path.relative_to(SCRIPT_DIR)
+        source = config_path.relative_to(PROFILE_DIR)
 
         try:
             root = parse_xml(config_path.read_text())
@@ -471,7 +474,7 @@ def cmd_diff(args):
 
             diffs = diff_xml(local_root, live_root)
             if diffs:
-                source = config_path.relative_to(SCRIPT_DIR)
+                source = config_path.relative_to(PROFILE_DIR)
                 print(f"\n[{ep}] ({source})")
                 for line in diffs:
                     print(line)
@@ -542,7 +545,7 @@ def cmd_verify(args):
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="camtool.py",
+        prog="camtool",
         description="Camera configuration management via Hikvision ISAPI",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=textwrap.dedent("""\
@@ -557,6 +560,10 @@ def build_parser() -> argparse.ArgumentParser:
             endpoints:
               """ + ", ".join(sorted(ENDPOINTS.keys()))
         ),
+    )
+    parser.add_argument(
+        "--profile-dir", metavar="DIR",
+        help=f"Camera profiles directory (default: {DEFAULT_PROFILE_DIR}, or set CAMTOOL_PROFILE_DIR)",
     )
     parser.add_argument(
         "--password", metavar="PWD",
@@ -607,8 +614,24 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main():
+    global PROFILE_DIR
+
     parser = build_parser()
     args = parser.parse_args()
+
+    # Resolve profile directory: CLI flag > env var > default
+    if args.profile_dir:
+        PROFILE_DIR = Path(args.profile_dir).expanduser().resolve()
+    elif os.environ.get("CAMTOOL_PROFILE_DIR"):
+        PROFILE_DIR = Path(os.environ["CAMTOOL_PROFILE_DIR"]).expanduser().resolve()
+    else:
+        PROFILE_DIR = DEFAULT_PROFILE_DIR
+
+    if not PROFILE_DIR.is_dir():
+        sys.exit(
+            f"Error: Profile directory does not exist: {PROFILE_DIR}\n"
+            f"Create it with: mkdir -p {PROFILE_DIR}"
+        )
 
     commands = {
         "info": cmd_info,
