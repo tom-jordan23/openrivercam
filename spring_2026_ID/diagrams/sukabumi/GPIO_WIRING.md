@@ -57,9 +57,11 @@ Use consistent colors to reduce mistakes. Suggested scheme:
 |-------|---------|
 | **Red** | 12V positive power |
 | **Black** | Ground (GND) |
-| **Yellow** or **Orange** | 5V (Pi power to relay module) |
-| **Blue** or **White** | GPIO signal wires |
-| **Green** | UART / serial data |
+| **Yellow** | 5V (Pi power to relay module) |
+| **Blue** | GPIO signal — relay IN1 (PoE switch) |
+| **Green** | GPIO signal — relay IN2 (Green LED) |
+| **Blue stripe** | GPIO signal — relay IN3 (Yellow LED) |
+| **Green stripe** | GPIO signal — relay IN4 (Red LED) |
 
 If you don't have colored wire, **label both ends** of every wire with tape
 and a marker before connecting.
@@ -237,12 +239,12 @@ ferrules.
 
 | Wire # | From (G469 Terminal) | To (Relay Terminal) | Label | Color |
 |--------|---------------------|---------------------|-------|-------|
-| 1 | Pin 2 — 5V | VCC | "5V" | Yellow/Orange |
+| 1 | Pin 2 — 5V | VCC | "5V" | Yellow |
 | 2 | Pin 6 — GND | GND | "GND" | Black |
-| 3 | Pin 18 — GPIO 24 | IN1 | "PoE relay" | Blue/White |
-| 4 | Pin 11 — GPIO 17 | IN2 | "Green LED" | Blue/White |
-| 5 | Pin 13 — GPIO 27 | IN3 | "Yellow LED" | Blue/White |
-| 6 | Pin 15 — GPIO 22 | IN4 | "Red LED" | Blue/White |
+| 3 | Pin 18 — GPIO 24 | IN1 | "PoE relay" | Blue |
+| 4 | Pin 11 — GPIO 17 | IN2 | "Green LED" | Green |
+| 5 | Pin 13 — GPIO 27 | IN3 | "Yellow LED" | Blue stripe |
+| 6 | Pin 15 — GPIO 22 | IN4 | "Red LED" | Green stripe |
 
 **Wiring procedure for each wire:**
 

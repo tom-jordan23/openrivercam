@@ -446,11 +446,11 @@ LEGEND:
 |------------|---------|
 | **Red** | 12V positive (+) |
 | **Black** | Ground / 12V negative (-) |
-| **Green** | Ground (earth) |
-| **Yellow** | Signal (GPIO, I2C SCL) |
-| **Blue** | Signal (I2C SDA) |
-| **White** | Signal (alternate) |
-| **Orange** | 5V positive (if used) |
+| **Yellow** | 5V (Pi power to relay module VCC) |
+| **Blue** | GPIO signal — relay IN1 (PoE switch) |
+| **Green** | GPIO signal — relay IN2 (Green LED) |
+| **Blue stripe** | GPIO signal — relay IN3 (Yellow LED) |
+| **Green stripe** | GPIO signal — relay IN4 (Red LED) |
 
 ---
 
