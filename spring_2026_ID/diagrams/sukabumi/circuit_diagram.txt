@@ -61,21 +61,21 @@
                  │ 5V                       │ 12V regulated
                  ▼                          ▼
         ┌─────────────────┐        ┌─────────────────────┐
-        │  USB-C Cable    │        │  RELAY MODULE                │
+        │  5V Power Wire  │        │  RELAY MODULE                │
         │  (5V to Pi 5)   │        │  (Electronics-Salon          │
         │                 │        │   4-ch SPDT, DIN rail)       │
         │  DDR-60G-5 out  │        │                              │
-        │  → USB-C → Pi   │        │  VCC ← 5V from Pi (G469)    │
+        │  → 5V/GND GPIO  │        │  VCC ← 5V from Pi (G469)    │
         └────────┬────────┘        │  GND ← GND from Pi (G469)   │
                  │                 │                              │
-                 │ 5V USB-C       │  IN1 ← GPIO 24 (PoE switch) │
+                 │ 5V GPIO        │  IN1 ← GPIO 24 (PoE switch) │
                  ▼                 │  IN2 ← GPIO 17 (Green LED)  │
         ┌──────────────────────────────────────┐  │  IN3 ← GPIO 27 (Yellow LED) │
         │                                      │  │  IN4 ← GPIO 22 (Red LED)    │
         │             RASPBERRY PI 5           │  │                              │
         │             (8GB RAM)                │  │  CH1 NO: 12V regulated       │
         │                                      │  │  CH1 COM: to PoE switch      │
-        │  PWR ← USB-C ← DDR-60G-5 (5V)       │  │  CH2 NO: 12V → Green LED    │
+        │  PWR ← 5V/GND GPIO ← DDR-60G-5       │  │  CH2 NO: 12V → Green LED    │
         │                                      │  │  CH3 NO: 12V → Yellow LED   │
         │                                      │  │  CH4 NO: 12V → Red LED      │
         │                                      │  └────────┬───────────────────┘
@@ -260,7 +260,7 @@
     Solar system:   12V nom (10-14V) Compute circuit:  5A inline fuse
     DDR-60G-5 out:  5V regulated     Camera circuit:   5A inline fuse
     DDR-60G-12 out: 12V regulated    DDR-60G-5:        built-in OCP/OVP
-    Pi 5 (USB-C):   5V               DDR-60G-12:       built-in OCP/OVP
+    Pi 5 (GPIO):    5V               DDR-60G-12:       built-in OCP/OVP
     PoE switch in:  12V (switched)   Pi USB ports:     built-in OCP
     Camera (PoE):   48V              LEDs:             12V via relay CH2/3/4
     GPIO signals:   3.3V             Button GPIO:      internal pull-up

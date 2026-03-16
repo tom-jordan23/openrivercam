@@ -90,7 +90,7 @@ Verify all components before starting assembly:
 - [ ] ANNKE C1200 PoE camera (12MP, built-in IR, factory-sealed IP67)
 - [ ] LINOVISION Industrial PoE Switch (Gigabit, 12V DC input)
 - [ ] Electronics-Salon 4-channel SPDT DIN Rail relay module (GPIO-triggered via G469)
-- [ ] DDR-60G-5 DC-DC converter (12V→5V for Pi 5 via USB-C)
+- [ ] DDR-60G-5 DC-DC converter (12V→5V for Pi 5 via hardwired 5V/GND GPIO)
 - [ ] DDR-60G-12 DC-DC converter (12V→12V regulated for PoE switch)
 - [ ] Cat6 outdoor shielded cable (to camera)
 - [ ] CNLINKO weatherproof ethernet bulkhead, IP67 (enclosure feedthrough)
@@ -299,13 +299,13 @@ Verify all components before starting assembly:
 
 2. **Power distribution:**
    ```
-   Solar 12V ──┬── Inline Fuse (5A) ── DDR-60G-5 (12V→5V) ──► USB-C ──► Pi 5
+   Solar 12V ──┬── Inline Fuse (5A) ── DDR-60G-5 (12V→5V) ──► hardwired 5V/GND ──► Pi 5 GPIO
                │
                └── Inline Fuse (5A) ── DDR-60G-12 (12V→12V reg) ──► Relay CH1 ──► PoE Switch
 
    Note: DDR-60G converters regulate voltage from battery
    (which varies 10-14V depending on charge state).
-   DDR-60G-5 provides clean 5V via USB-C directly to Pi 5.
+   DDR-60G-5 provides clean 5V hardwired to Pi 5 GPIO pins.
    Pi 5 uses built-in RTC (ML-2020 coin cell) for wake scheduling.
    PoE switch receives regulated 12V through relay channel 1 (GPIO 24).
    Camera boots when Pi wakes and closes relay, powers down when relay opens.
@@ -576,7 +576,7 @@ See `TROUBLESHOOTING.md` for detailed diagnostics.
 
 | Symptom | Check |
 |---------|-------|
-| No boot | Battery voltage, fuses, DDR-60G-5 output, USB-C connection to Pi, power button pressed? J2 header wiring secure? |
+| No boot | Battery voltage, fuses, DDR-60G-5 output, 5V/GND wiring to Pi GPIO, power button pressed? J2 header wiring secure? |
 | No camera | PoE switch powered? GPIO 24 driving relay? Camera IP reachable? Ethernet cables? |
 | No IR | Cover lens to trigger. Check camera IR settings in web UI. |
 | No LTE | Antenna tight? SIM inserted? IMEI registered? |
@@ -628,7 +628,7 @@ See `TROUBLESHOOTING.md` for detailed diagnostics.
 **Changes from v3.0:**
 - Removed Witty Pi 5 HAT+ from stack, parts list, coating list, power path, and troubleshooting
 - Pi 5 built-in RTC (ML-2020 coin cell) handles scheduling directly
-- DDR-60G-5 feeds Pi 5 directly via USB-C (no Witty Pi in power path)
+- DDR-60G-5 feeds Pi 5 directly via hardwired 5V/GND GPIO pins (no Witty Pi in power path)
 - Stack reduced from 3-board (Pi 5 + Witty Pi + G469) to 2-board (Pi 5 + G469)
 - Changed relay from USB-powered coil to GPIO-triggered (GPIO 24→IN1, powered by G469 Pin 2/Pin 6)
 - Changed DS18B20 from GPIO 24 to GPIO 4 (Pin 7)

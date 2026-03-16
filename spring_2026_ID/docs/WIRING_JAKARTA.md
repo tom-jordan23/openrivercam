@@ -53,7 +53,7 @@
     ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐
     │  PoE SWITCH     │  │   DDR-60G-5     │  │  PTC HEATER     │
     │  LINOVISION     │  │   (12V → 5V)   │  │  (Enclosure)    │
-    │  + RELAY        │  │   → Pi 5 USB-C  │  │  + FANS         │
+    │  + RELAY        │  │   → Pi 5 GPIO   │  │  + FANS         │
     └────────┬────────┘  └────────┬────────┘  └─────────────────┘
                                   │
                            ┌──────┴──────┐
@@ -216,7 +216,7 @@ POWER PATH LOGIC:
             │    │    │
             │    │    └──[FUSE 10A]──► RELAY → LINOVISION PoE SWITCH (12V)
             │    │
-            │    └──[FUSE 5A]──► DDR-60G-5 (12V→5V) → USB-C → PI 5
+            │    └──[FUSE 5A]──► DDR-60G-5 (12V→5V) → hardwired 5V/GND → PI 5 GPIO
             │
             └──[FUSE 5A]──► PTC HEATER (via hygrostat) + FANS
 

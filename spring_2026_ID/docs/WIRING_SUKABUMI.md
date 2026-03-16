@@ -30,7 +30,7 @@
 ┌────────────────────────────────────────────────────────────────────────────┐
 │                          COMPUTE ENCLOSURE                                  │
 │                                                                            │
-│   12V IN ──┬──► DDR-60G-5 (12V→5V) ──► USB-C ──► PI 5                  │
+│   12V IN ──┬──► DDR-60G-5 (12V→5V) ──► hardwired 5V ──► PI 5           │
 │            │                                                               │
 │            └──► DDR-60G-12 (12V→12V reg) ──► RELAY ──► PoE SWITCH       │
 │                                                         │                 │
@@ -114,7 +114,7 @@ SOLAR CONTROLLER 12V OUTPUT
            │     │     │
            │     │     └──[FUSE 5A]──► DDR-60G-12 ──► RELAY ──► PoE Switch
            │     │
-           │     └──[FUSE 5A]──► DDR-60G-5 (12V→5V) ──► USB-C ──► Pi 5
+           │     └──[FUSE 5A]──► DDR-60G-5 (12V→5V) ──► hardwired 5V ──► Pi 5
            │
            └──► From solar controller 12V+
 
@@ -123,8 +123,8 @@ SOLAR CONTROLLER 12V OUTPUT
 ┌────────────────┐      ┌─────────────┐      ┌─────────────┐
 │ 12V Terminal   │──►   │ DDR-60G-5   │──►   │ Raspberry   │
 │ Block (TB1)    │      │ DC-DC Conv  │      │ Pi 5        │
-│                │      │ 12V → 5V    │      │ (USB-C      │
-└────────────────┘      └─────────────┘      │  power in)  │
+│                │      │ 12V → 5V    │      │ (hardwired  │
+└────────────────┘      └─────────────┘      │  5V/GND)    │
                                              └─────────────┘
 
 Pi 5 built-in RTC (ML-2020 coin cell) handles scheduling.
@@ -478,7 +478,7 @@ TB1 - MAIN POWER
 
 **Changes from v2.0:**
 - Replaced Planet IPOE-260-12V PoE injector with LINOVISION PoE Switch + Electronics-Salon relay
-- Added DDR-60G-5 (12V→5V for Pi 5 via USB-C) and DDR-60G-12 (12V→12V regulated for PoE switch)
+- Added DDR-60G-5 (12V→5V for Pi 5, hardwired) and DDR-60G-12 (12V→12V regulated for PoE switch)
 - Renamed Pi-EzConnect → Geekworm G469
 - Replaced M.2 SSD with SanDisk 256GB USB flash drive
 - Replaced DFRobot SEN0575 I2C rain gauge with Hydreon RG-15 UART (GPIO 14/15)

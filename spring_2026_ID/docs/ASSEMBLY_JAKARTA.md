@@ -305,7 +305,7 @@ Configure ANNKE C1200 cameras BEFORE deployment. The Pi acts as DHCP server on t
    ```
    TB1 12V+ ──[FUSE 5A]──► DDR-60G-5 input (+)
    TB1 GND ──► DDR-60G-5 input (-)
-   DDR-60G-5 output (5V) ──► USB-C cable ──► Pi 5 power
+   DDR-60G-5 output (5V) ──► hardwired 5V/GND ──► Pi 5 GPIO pins
    ```
 
 6. **Install fuses:**
@@ -581,7 +581,7 @@ See `TROUBLESHOOTING.md` for detailed diagnostics.
 | Symptom | Check |
 |---------|-------|
 | No power | AC voltage? Surge protector? PSU LED? |
-| No Pi boot | Fuse? 12V at terminals? DDR-60G-5 output? USB-C power? Power button pressed? J2 wiring? |
+| No Pi boot | Fuse? 12V at terminals? DDR-60G-5 output? 5V at GPIO pins? Power button pressed? J2 wiring? |
 | Cameras offline | PoE switch powered? Relay GPIO wiring correct? Cable continuity? Ping test? |
 | No LTE | Antenna? SIM? IMEI registered? |
 | Battery not charging | Charger LED? Battery terminals? |
