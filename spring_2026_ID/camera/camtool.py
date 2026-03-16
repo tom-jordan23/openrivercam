@@ -46,7 +46,6 @@ ENDPOINTS = {
     "streaming_102":    "/ISAPI/Streaming/channels/102",
     "image":            "/ISAPI/Image/channels/1",
     "ircutfilter":      "/ISAPI/Image/channels/1/ircutFilter",
-    "ispmode":          "/ISAPI/Image/channels/1/ISPMode",
     "time":             "/ISAPI/System/time",
     "ntp":              "/ISAPI/System/time/NtpServers/1",
     "overlays":         "/ISAPI/System/Video/inputs/channels/1/overlays",
