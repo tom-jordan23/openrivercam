@@ -81,7 +81,7 @@ settings we need to manage.
 | Sub stream | `/ISAPI/Streaming/channels/102` | Lower-res stream for preview |
 | Image | `/ISAPI/Image/channels/1` | Brightness, contrast, saturation, WDR |
 | IR cut filter | `/ISAPI/Image/channels/1/ircutFilter` | Day/night switching mode |
-| ISP/IR LEDs | `/ISAPI/Image/channels/1/ISPMode` | IR LED behavior (auto/on/off) |
+| ~~ISP/IR LEDs~~ | ~~`/ISAPI/Image/channels/1/ISPMode`~~ | ~~IR LED behavior (auto/on/off)~~ — **Not available on ANNKE C1200 firmware (HTTP 403).** Removed from camtool.py. IR LEDs follow the day/night state set by `ircutFilter` automatically; no practical impact. |
 | System time | `/ISAPI/System/time` | Timezone, time mode (NTP/manual) |
 | NTP | `/ISAPI/System/time/NtpServers/1` | NTP server address and interval |
 | OSD overlays | `/ISAPI/System/Video/inputs/channels/1/overlays` | Text/date overlays on video |

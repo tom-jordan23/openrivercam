@@ -44,17 +44,22 @@ in the Pi's dnsmasq (`pi/shared/etc/dnsmasq.d/maintenance.conf`).
 
 ## Quick Start
 
-```bash
-cd spring_2026_ID/camera/
+The tool reads camera configs and credentials from a **profile directory**.
+The default is `~/camera_profiles/`, which is where configs should live on
+deployed Pis. (The repo's `camera/` directory is the source of truth for
+git-tracked configs; `~/camera_profiles/` is the runtime copy.)
 
-# 1. Create .env from the example and fill in the password
-cp .env.example .env
-nano .env   # replace placeholder with real password (gitignored)
+```bash
+# 1. Set up the profile directory (if not already done)
+#    Copy cameras.json, common/, and site dirs to ~/camera_profiles/
+#    Create .env with the camera password:
+cp ~/camera_profiles/.env.example ~/camera_profiles/.env
+nano ~/camera_profiles/.env   # replace placeholder with real password
 
 # 2. Verify connectivity
 python3 camtool.py info sukabumi-cam1
 
-# 3. Pull live config into git
+# 3. Pull live config
 python3 camtool.py pull sukabumi-cam1
 
 # 4. Review pulled XML, edit as needed, commit
@@ -62,6 +67,9 @@ python3 camtool.py pull sukabumi-cam1
 # 5. Check for drift later
 python3 camtool.py diff sukabumi-cam1
 ```
+
+To use a different profile directory, pass `--profile-dir <path>` or set
+`CAMTOOL_PROFILE_DIR`.
 
 ### Dependencies
 
@@ -90,7 +98,6 @@ camera/
 │   ├── streaming_102.xml   # Sub stream: lower-res preview
 │   ├── image.xml           # Brightness, contrast, saturation, WDR
 │   ├── ircutfilter.xml     # Day/night IR cut filter mode (auto)
-│   ├── ispmode.xml         # IR LED mode (auto/on/off)
 │   ├── time.xml            # Timezone (WIB, UTC+7)
 │   ├── ntp.xml             # NTP server config
 │   └── motion_detection.xml # Motion detection (disabled)
@@ -163,9 +170,8 @@ python3 camtool.py pull jakarta-cam1 streaming_101 image
 python3 camtool.py push jakarta-cam2 overlays --dry-run
 ```
 
-Available endpoints: `ftp`, `image`, `ircutfilter`, `ispmode`,
-`motion_detection`, `ntp`, `overlays`, `streaming_101`, `streaming_102`,
-`time`.
+Available endpoints: `ftp`, `image`, `ircutfilter`, `motion_detection`,
+`ntp`, `overlays`, `streaming_101`, `streaming_102`, `time`.
 
 ---
 
@@ -270,7 +276,7 @@ Camera passwords are **never committed** to git.
 
 1. `--password` CLI flag (one-off use)
 2. `CAMERA_PASSWORD` environment variable
-3. `camera/.env` file (copy from `.env.example`, gitignored)
+3. `.env` file in the profile directory (`~/camera_profiles/.env` by default)
 
 ### Sensitive XML fields
 
@@ -293,12 +299,19 @@ The tool manages these ISAPI endpoints. Add or remove entries in the
 | `streaming_102` | `/ISAPI/Streaming/channels/102` | Sub stream encoding |
 | `image` | `/ISAPI/Image/channels/1` | Image quality settings |
 | `ircutfilter` | `/ISAPI/Image/channels/1/ircutFilter` | Day/night IR switching |
-| `ispmode` | `/ISAPI/Image/channels/1/ISPMode` | IR LED behavior |
 | `time` | `/ISAPI/System/time` | Timezone and time mode |
 | `ntp` | `/ISAPI/System/time/NtpServers/1` | NTP server config |
 | `overlays` | `/ISAPI/System/Video/inputs/channels/1/overlays` | OSD text/date overlays |
 | `ftp` | `/ISAPI/System/Network/ftp` | FTP upload config |
 | `motion_detection` | `/ISAPI/System/Video/inputs/channels/1/motionDetection` | Motion detection |
+
+### ISPMode (IR LED control) — not available
+
+The ANNKE C1200 firmware returns HTTP 403 for `/ISAPI/Image/channels/1/ISPMode`,
+which would control IR LED behavior (auto/on/off). This endpoint has been
+removed from the tool. This is not a problem in practice: the `ircutfilter`
+endpoint (which does work) controls day/night mode switching, and the IR LEDs
+follow the day/night state automatically.
 
 ### Adding new endpoints
 
