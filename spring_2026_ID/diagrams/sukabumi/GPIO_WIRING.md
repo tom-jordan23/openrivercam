@@ -785,15 +785,16 @@ Each GPIO function will have a corresponding systemd service:
    as "Pi-EzConnect (Adafruit 2711)" but the actual procured part is the **Geekworm
    G469**. Functionally equivalent — both are passive 40-pin terminal block breakouts.
 
-2. **Wire gauge:** 22 AWG stranded for all signal and LED wires. 18 AWG stranded for
-   the PoE switch 12V power path (up to 5A).
+2. **Wire gauge:** 18-22 AWG for all internal DIN rail wiring. 18 AWG solid is
+   preferred for short runs between DIN rail components — it's easier to work with
+   in screw terminals and doesn't require ferrules. 18-22 AWG stranded is also
+   acceptable; use wire ferrules on stranded wire to prevent splaying.
 
-3. **Ferrules:** Use wire ferrules on all stranded wire inserted into screw terminals.
-   Bare stranded wire can splay under the screw, causing intermittent contact or
-   shorts to adjacent terminals.
+3. **Ferrules:** Required on stranded wire inserted into screw terminals. Not needed
+   for solid wire.
 
-4. **Wire routing:** Keep 12V power wires (red, 18 AWG) physically separated from
-   GPIO signal wires (blue/white, 22 AWG) to minimize electrical noise.
+4. **Wire routing:** Keep 12V power wires physically separated from GPIO signal
+   wires to minimize electrical noise.
 
 5. **Pi 5 GPIO voltage:** All GPIO pins are **3.3V logic**. Connecting 5V or 12V
    directly to any GPIO pin will permanently destroy the Pi's processor.
