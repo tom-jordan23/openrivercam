@@ -5,6 +5,27 @@
 
 ---
 
+## Parts Referenced in This Guide
+
+This guide uses specific part numbers from the Sukabumi build. If you are
+building with equivalent parts, use this table to map the references to your
+components.
+
+| Reference | What It Is | Our Part | Equivalent |
+|-----------|-----------|----------|------------|
+| **G469** | GPIO terminal block breakout — a passive board that sits on top of the Pi's 40-pin header and exposes every pin as a labeled screw terminal | Geekworm G469 | Adafruit Pi-EzConnect (ID 2711), or any 40-pin GPIO screw terminal breakout for Raspberry Pi |
+| **TB1** | 12V distribution terminal block — a DIN rail mounted terminal block that receives 12V input and distributes it to multiple outputs | Generic DIN rail terminal block | Any DIN rail screw terminal block rated for your current/voltage |
+| **DDR-60G-5** | 5V buck converter — a DIN rail DC-DC converter that steps 12V down to 5V to power the Pi | Mean Well DDR-60G-5 | Any isolated DC-DC converter with 9-36V input and adjustable 5V output, DIN rail mount preferred |
+| **DDR-60G-12** | 12V regulator — a DIN rail DC-DC converter that provides clean regulated 12V for the PoE switch | Mean Well DDR-60G-12 | Any isolated DC-DC converter with 9-36V input and 12V output |
+| **Relay module** | 4-channel SPDT relay module with DIN rail mount, Darlington transistor drivers, and screw terminals on both input and output sides | Electronics-Salon 4-SPDT 10A | Any 4-channel relay module that accepts 3.3V trigger signals and has 5V coils with built-in drivers. Verify your module's terminal layout matches the diagrams before wiring |
+| **J2 header** | Pi 5 power button header — a 2-pin header on the Raspberry Pi 5 board (near the USB-C port) used for external power button | Built into Raspberry Pi 5 | Pi 5 only — earlier Pi models do not have this header |
+
+Pin numbers (Pin 2, Pin 6, etc.) refer to the **Raspberry Pi 40-pin GPIO header
+physical pin numbering**, which is the same across all Pi models and all GPIO
+breakout boards.
+
+---
+
 ## Safety Rules
 
 Read this section completely before touching any wire.
@@ -33,6 +54,12 @@ is destroyed immediately and cannot be repaired.
 | Pi power input | 5V DC | DDR-60G-5 output → G469 Pin 2/Pin 6 | 18 AWG |
 | Logic (low voltage) | 3.3V / 5V | G469 breakout → relay module inputs | 22 AWG |
 | Power (high voltage) | 12V DC | TB1 → relay module outputs → loads | 18-22 AWG |
+
+**TB1** is the 12V distribution terminal block on the DIN rail. It receives 12V
+from the solar battery (via the fused input) and distributes it to the DDR-60G-5
+buck converter, the DDR-60G-12 regulator, and the relay module output side. All
+references to "TB1 12V" and "TB1 GND" in this document mean the 12V and GND
+terminals on this block.
 
 **These two domains connect ONLY inside the relay module.** The relay module keeps
 them electrically isolated. You must never bridge them yourself.
