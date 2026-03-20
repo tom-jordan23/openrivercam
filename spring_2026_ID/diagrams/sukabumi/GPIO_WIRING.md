@@ -397,18 +397,14 @@ so 22 AWG is fine.
 
 **12V feed to LED relay channels:**
 
-The three COM terminals (CH2, CH3, CH4) all need 12V. Run a single wire from TB1 12V
-to CH2 COM, then daisy-chain short jumpers between COM terminals:
+Each COM terminal gets its own home run from TB1. This avoids doubling up wires
+in screw terminals.
 
 | Wire # | From | To | Label | Color | Gauge |
 |--------|------|----|-------|-------|-------|
-| 10 | TB1 12V output | Relay CH2 **COM** | "12V → LEDs" | Red | 22 AWG |
-| 11 | Relay CH2 **COM** | Relay CH3 **COM** | (jumper) | Red | 22 AWG |
-| 12 | Relay CH3 **COM** | Relay CH4 **COM** | (jumper) | Red | 22 AWG |
-
-**How to daisy-chain COM terminals:** Insert two wires into the same screw terminal
-(most industrial screw terminals accept two wires). If the terminal only fits one wire,
-use a short DIN terminal block to split the connection.
+| 10 | TB1 12V output | Relay CH2 **COM** | "12V → Green" | Red | 22 AWG |
+| 11 | TB1 12V output | Relay CH3 **COM** | "12V → Yellow" | Red | 22 AWG |
+| 12 | TB1 12V output | Relay CH4 **COM** | "12V → Red" | Red | 22 AWG |
 
 **LED connections from relay NO terminals:**
 
@@ -432,27 +428,29 @@ position rather than running three separate wires to TB1.
 ```
                     Relay Module CH2/3/4
                    ┌────────────────────┐
-  TB1 12V ── RED ──┤ COM2 ─┬─ COM3 ─┬─ COM4    (daisy-chained)
-     (22 AWG)      │       │        │          │
-                   │  NO2  │   NO3  │   NO4    │
-                   └───┬───┘───┬────┘───┬──────┘
-                       │       │        │
+  TB1 12V ── RED ──┤ COM2              │         (home run from TB1)
+  TB1 12V ── RED ──┤ COM3              │         (home run from TB1)
+  TB1 12V ── RED ──┤ COM4              │         (home run from TB1)
+                   │                   │
+                   │  NO2  NO3  NO4    │
+                   └───┬────┬────┬─────┘
+                       │    │    │
                    Green(+) Yellow(+) Red(+)     LED (+) red wires
-                       │       │        │
-                     [LED]   [LED]    [LED]      (panel mount, 12V)
-                       │       │        │
+                       │    │    │
+                     [LED] [LED] [LED]           (panel mount, 12V)
+                       │    │    │
                    Green(-) Yellow(-) Red(-)     LED (-) black wires
-                       │       │        │
-                       └───────┴────────┘
-                               │
-                           GND bus ── BLACK ── TB1 GND
+                       │    │    │
+                       └────┴────┘
+                            │
+                        GND bus ── BLACK ── TB1 GND
 ```
 
 ### Step 4 Verification
 
 - [ ] Continuity: TB1 12V ↔ Relay CH2 COM — beep
-- [ ] Continuity: Relay CH2 COM ↔ Relay CH3 COM — beep (daisy-chain)
-- [ ] Continuity: Relay CH3 COM ↔ Relay CH4 COM — beep (daisy-chain)
+- [ ] Continuity: TB1 12V ↔ Relay CH3 COM — beep
+- [ ] Continuity: TB1 12V ↔ Relay CH4 COM — beep
 - [ ] Continuity: Relay CH2 NO ↔ Green LED (+) — beep
 - [ ] Continuity: Relay CH3 NO ↔ Yellow LED (+) — beep
 - [ ] Continuity: Relay CH4 NO ↔ Red LED (+) — beep
