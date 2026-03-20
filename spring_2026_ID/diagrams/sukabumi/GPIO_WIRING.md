@@ -1,6 +1,6 @@
 # GPIO Wiring Guide — Sukabumi ORC Station
 
-**Rev B — 2026-03-12**
+**Rev C — 2026-03-20**
 **Hardware:** Raspberry Pi 5 → Stacking Headers → Geekworm G469 Breakout
 
 ---
@@ -30,6 +30,7 @@ is destroyed immediately and cannot be repaired.
 
 | Domain | Voltage | Where It Goes | Wire Gauge |
 |--------|---------|---------------|------------|
+| Pi power input | 5V DC | DDR-60G-5 output → G469 Pin 2/Pin 6 | 18 AWG |
 | Logic (low voltage) | 3.3V / 5V | G469 breakout → relay module inputs | 22 AWG |
 | Power (high voltage) | 12V DC | TB1 → relay module outputs → loads | 18-22 AWG |
 
@@ -57,7 +58,8 @@ Use consistent colors to reduce mistakes. Suggested scheme:
 |-------|---------|
 | **Red** | 12V positive power |
 | **Black** | Ground (GND) |
-| **Yellow** | 5V (Pi power to relay module) |
+| **Yellow** | 5V power (DDR-60G-5 → Pi, and Pi → relay VCC) |
+| | *(same color for both — shared 5V rail)* |
 | **Blue** | GPIO signal — relay IN1 (PoE switch) |
 | **Green** | GPIO signal — relay IN2 (Green LED) |
 | **Blue stripe** | GPIO signal — relay IN3 (Yellow LED) |
@@ -143,7 +145,7 @@ goes LOW (or Pi is off), the path opens and the load loses power.
 
 | Terminal | What It Does | Connects To |
 |----------|-------------|-------------|
-| **VCC** | Powers the relay module's logic circuit | Pi 5V (from G469 Pin 2) |
+| **VCC** | Powers the relay module's logic circuit | Pi 5V (from G469 Pin 4) |
 | **GND** | Ground reference for the module | Pi GND (from G469 Pin 6) |
 | **IN1** | Control signal for relay channel 1 | GPIO 24 (Pin 18) — PoE switch |
 | **IN2** | Control signal for relay channel 2 | GPIO 17 (Pin 11) — Green LED |
@@ -165,8 +167,8 @@ Orientation: GPIO header at top-right corner of the Pi board.
          ┌──────────────────────────────────────────────────┐
          │                  40-PIN HEADER                    │
          │                                                   │
-  Pin 1  │  [3V3 Power]    ●  ●  [5V Power]      ★ VCC    │  Pin 2
-  Pin 3  │  [GPIO 2  SDA ] ●  ●  [5V Power]               │  Pin 4
+  Pin 1  │  [3V3 Power]    ●  ●  [5V Power]  ★ PWR IN     │  Pin 2
+  Pin 3  │  [GPIO 2  SDA ] ●  ●  [5V Power]  ★ Relay VCC │  Pin 4
          │   ★ SHT40 I2C                                    │
   Pin 5  │  [GPIO 3  SCL ] ●  ●  [GND]           ★ GND    │  Pin 6
          │   ★ SHT40 I2C                                    │
@@ -228,7 +230,56 @@ Additional I2C devices can be added at different addresses without conflict.
 
 ---
 
-### Step 1: Wire the Relay Module Input Side (Low Voltage)
+### Step 1: Wire 5V Power Input to Pi (DDR-60G-5 Buck Converter)
+
+These 2 wires deliver 5V power from the DDR-60G-5 DC-DC converter to the Pi
+through the G469 breakout board's GPIO header. **This bypasses the Pi's USB-C
+power input and its built-in overcurrent/undervoltage protection.** The upstream
+DIN rail fuse and the DDR-60G-5's stable output provide protection instead.
+
+**Set the DDR-60G-5 output to 5.1V** (use the trim pot) before connecting to
+the Pi. Verify with a multimeter on the converter's output terminals.
+
+**Cut 2 wires** to appropriate length (measure from DDR-60G-5 output terminals to
+the G469 breakout, add 3cm slack on each end). Use **18 AWG** — this carries all
+power for the Pi and relay module logic. Strip 7-8mm on each end. Crimp ferrules.
+
+| Wire # | From | To (G469 Terminal) | Label | Color | Gauge |
+|--------|------|--------------------|-------|-------|-------|
+| P1 | DDR-60G-5 V+ output | Pin 2 — 5V Power | "5V IN" | Yellow | 18 AWG |
+| P2 | DDR-60G-5 V- output | Pin 6 — GND | "GND IN" | Black | 18 AWG |
+
+```
+  DDR-60G-5 DC-DC Converter              G469 Breakout
+  ┌──────────────────────┐               ┌───────────────────┐
+  │  IN:  9-36V DC       │               │                   │
+  │  OUT: 5.1V (adjusted)│               │  Pin 2 (5V)  ◄────┤── YELLOW ── V+ out
+  │                      │               │  Pin 6 (GND) ◄────┤── BLACK ─── V- out
+  │  (DIN rail mount)    │               │                   │
+  └──────────────────────┘               └───────────────────┘
+```
+
+**Pin 2 and Pin 4 are both on the same 5V rail.** The DDR-60G-5 power input
+connects to Pin 2, and the relay VCC wire connects to Pin 4. This avoids
+doubling up 18 AWG wires in a single screw terminal.
+
+### Step 1 Verification (DO THIS BEFORE CONTINUING)
+
+**Before connecting to the Pi**, power on the DDR-60G-5 with 12V input and verify
+the output voltage:
+
+- [ ] Multimeter across DDR-60G-5 V+ and V-: reads **5.05V–5.15V** (adjust trim pot if needed)
+- [ ] Power off the 12V supply
+
+**After wiring to G469 (with 12V still disconnected):**
+
+- [ ] Continuity: DDR-60G-5 V+ ↔ G469 Pin 2 (5V) — beep
+- [ ] Continuity: DDR-60G-5 V- ↔ G469 Pin 6 (GND) — beep
+- [ ] NO short: G469 Pin 2 (5V) ↔ G469 Pin 6 (GND) — **NO beep**
+
+---
+
+### Step 2: Wire the Relay Module Input Side (Low Voltage)
 
 These 6 wires go from the G469 terminal block to the relay module input terminals.
 All are 22 AWG signal wire.
@@ -239,7 +290,7 @@ ferrules.
 
 | Wire # | From (G469 Terminal) | To (Relay Terminal) | Label | Color |
 |--------|---------------------|---------------------|-------|-------|
-| 1 | Pin 2 — 5V | VCC | "5V" | Yellow |
+| 1 | Pin 4 — 5V | VCC | "5V" | Yellow |
 | 2 | Pin 6 — GND | GND | "GND" | Black |
 | 3 | Pin 18 — GPIO 24 | IN1 | "PoE relay" | Blue |
 | 4 | Pin 11 — GPIO 17 | IN2 | "Green LED" | Green |
@@ -254,12 +305,12 @@ ferrules.
 4. Insert the other ferrule end into the correct **relay input** screw terminal
 5. Tighten the screw — tug to confirm grip
 
-### Step 1 Verification (DO THIS BEFORE CONTINUING)
+### Step 2 Verification (DO THIS BEFORE CONTINUING)
 
 Use your multimeter in **continuity mode** (beep mode). Touch one probe to each
 end of every connection and confirm you get a beep:
 
-- [ ] G469 Pin 2 (5V) ↔ Relay VCC — beep
+- [ ] G469 Pin 4 (5V) ↔ Relay VCC — beep
 - [ ] G469 Pin 6 (GND) ↔ Relay GND — beep
 - [ ] G469 Pin 18 (GPIO 24) ↔ Relay IN1 — beep
 - [ ] G469 Pin 11 (GPIO 17) ↔ Relay IN2 — beep
@@ -275,7 +326,7 @@ Now check for shorts — **none of these should beep:**
 
 ---
 
-### Step 2: Wire the Relay Module Output Side — CH1 (PoE Switch)
+### Step 3: Wire the Relay Module Output Side — CH1 (PoE Switch)
 
 Channel 1 switches 12V power to the LINOVISION PoE switch. This is the highest-current
 connection (~3-5A), so use **18 AWG** wire.
@@ -304,7 +355,7 @@ connection (~3-5A), so use **18 AWG** wire.
 |--------|------|----|-------|-------|-------|
 | 9 | TB1 GND | PoE switch GND (-) input | "GND → PoE" | Black | 18 AWG |
 
-### Step 2 Verification
+### Step 3 Verification
 
 - [ ] Continuity: TB1 12V terminal ↔ Relay CH1 COM — beep
 - [ ] Continuity: Relay CH1 NO ↔ PoE switch 12V input — beep
@@ -314,7 +365,7 @@ connection (~3-5A), so use **18 AWG** wire.
 
 ---
 
-### Step 3: Wire the Relay Module Output Side — CH2/3/4 (Status LEDs)
+### Step 4: Wire the Relay Module Output Side — CH2/3/4 (Status LEDs)
 
 Each LED channel switches 12V to a panel-mount LED. These are low current (~20mA),
 so 22 AWG is fine.
@@ -372,7 +423,7 @@ position rather than running three separate wires to TB1.
                            GND bus ── BLACK ── TB1 GND
 ```
 
-### Step 3 Verification
+### Step 4 Verification
 
 - [ ] Continuity: TB1 12V ↔ Relay CH2 COM — beep
 - [ ] Continuity: Relay CH2 COM ↔ Relay CH3 COM — beep (daisy-chain)
@@ -388,7 +439,7 @@ position rather than running three separate wires to TB1.
 
 ---
 
-### Step 4: Wire the Maintenance Pushbutton
+### Step 5: Wire the Maintenance Pushbutton
 
 The pushbutton is a simple switch between GPIO 23 and GND. The Pi's internal
 pull-up resistor (enabled in software) holds GPIO 23 at 3.3V when the button is
@@ -421,7 +472,7 @@ The pushbutton has two terminals. It does not matter which terminal gets which w
 **Cable routing:** The button wires pass through the enclosure wall via a M16
 cable gland. Apply dielectric grease to the cable gland threads.
 
-### Step 4 Verification
+### Step 5 Verification
 
 - [ ] Continuity: G469 Pin 16 ↔ button terminal 1 — beep
 - [ ] Continuity: G469 Pin 14 ↔ button terminal 2 — beep
@@ -430,7 +481,7 @@ cable gland. Apply dielectric grease to the cable gland threads.
 
 ---
 
-### Step 5: Wire the External Power Button (Pi 5 J2 Header)
+### Step 6: Wire the External Power Button (Pi 5 J2 Header)
 
 The Raspberry Pi 5 has a dedicated **J2 power button header** — a 2-pin header
 located near the USB-C port on the Pi board. Shorting these two pins briefly
@@ -473,7 +524,7 @@ cable gland (can share the M16 gland with the maintenance button if both fit).
 - **Pi is running:** Brief press initiates clean shutdown
 - **Pi is frozen:** Hold for ~10 seconds to force power off
 
-### Step 5 Verification
+### Step 6 Verification
 
 - [ ] Continuity: J2 pin 1 ↔ power button terminal 1 — beep
 - [ ] Continuity: J2 pin 2 ↔ power button terminal 2 — beep
@@ -482,7 +533,7 @@ cable gland (can share the M16 gland with the maintenance button if both fit).
 
 ---
 
-### Step 6: Wire the Hydreon RG-15 Rain Gauge (UART)
+### Step 7: Wire the Hydreon RG-15 Rain Gauge (UART)
 
 The rain gauge uses 3.3V serial communication (UART) plus 12V power.
 
@@ -529,7 +580,7 @@ dtoverlay=uart0
 dtoverlay=disable-bt
 ```
 
-### Step 6 Verification
+### Step 7 Verification
 
 - [ ] Continuity: RG-15 red wire ↔ TB1 12V terminal — beep
 - [ ] Continuity: RG-15 black wire ↔ G469 Pin 9 (GND) — beep
@@ -548,7 +599,7 @@ destroy the Pi. Trace the wires and fix it before proceeding.**
 
 ---
 
-### Step 7: Wire the DS18B20 Temperature Probe (1-Wire)
+### Step 8: Wire the DS18B20 Temperature Probe (1-Wire)
 
 The DS18B20 is a waterproof stainless steel temperature probe mounted **outside**
 the enclosure. It measures ambient air temperature for dew point calculations.
@@ -587,7 +638,7 @@ Apply dielectric grease to the gland threads.
 dtoverlay=w1-gpio,gpiopin=4
 ```
 
-### Step 7 Verification
+### Step 8 Verification
 
 - [ ] Continuity: G469 Pin 1 (3V3) ↔ DS18B20 red wire — beep
 - [ ] Continuity: G469 Pin 7 (GPIO 4) ↔ DS18B20 yellow wire — beep
@@ -597,7 +648,7 @@ dtoverlay=w1-gpio,gpiopin=4
 
 ---
 
-### Step 8: Wire the SHT40 Temperature/Humidity Sensor (I2C)
+### Step 9: Wire the SHT40 Temperature/Humidity Sensor (I2C)
 
 The SHT40 is mounted **inside** the enclosure to monitor internal climate
 (humidity, temperature). It connects via I2C using a STEMMA QT cable.
@@ -628,7 +679,7 @@ the cable's documentation before connecting.
 adhesive standoff or cable tie mount. Position away from heat sources (Pi, DC-DC
 converters) for accurate readings.
 
-### Step 8 Verification
+### Step 9 Verification
 
 - [ ] Continuity: G469 Pin 1 (3V3) ↔ SHT40 VIN — beep
 - [ ] Continuity: G469 Pin 3 (GPIO 2) ↔ SHT40 SDA — beep
@@ -651,7 +702,11 @@ Complete this entire checklist before reconnecting the battery or USB-C cable.
 
 ### Continuity Checks (multimeter, beep mode)
 
-**Power connections — should beep:**
+**5V power input — should beep:**
+- [ ] DDR-60G-5 V+ ↔ G469 Pin 2 (5V)
+- [ ] DDR-60G-5 V- ↔ G469 Pin 6 (GND)
+
+**12V power connections — should beep:**
 - [ ] TB1 12V ↔ Relay CH1 COM
 - [ ] TB1 12V ↔ Relay CH2 COM
 - [ ] TB1 12V ↔ Relay CH3 COM
@@ -676,6 +731,7 @@ Complete this entire checklist before reconnecting the battery or USB-C cable.
 
 These verify that 12V cannot reach the Pi GPIO:
 
+- [ ] TB1 12V ↔ DDR-60G-5 V+ output — **NO beep**
 - [ ] TB1 12V ↔ G469 Pin 2 (5V) — **NO beep**
 - [ ] TB1 12V ↔ G469 Pin 3 (GPIO 2) — **NO beep**
 - [ ] TB1 12V ↔ G469 Pin 5 (GPIO 3) — **NO beep**
@@ -696,17 +752,18 @@ These verify that 12V cannot reach the Pi GPIO:
 
 ## First Power-On Procedure
 
-1. **Reconnect the 12V battery** to TB1
-2. Observe: nothing should happen yet (Pi is off, USB-C power available but Pi is halted)
-3. **Press the external power button** (connected to Pi 5 J2 header) briefly
-4. Pi begins booting — observe:
+1. **Reconnect the 12V supply** to TB1
+2. Verify DDR-60G-5 output with multimeter: **5.05V–5.15V** at G469 Pin 2
+3. Observe: nothing should happen yet (Pi is halted, waiting for power button)
+4. **Press the external power button** (connected to Pi 5 J2 header) briefly
+5. Pi begins booting — observe:
    - Pi red LED turns on (power)
    - Pi green LED flashes (SD card activity)
    - Relay module LEDs should be OFF (GPIO pins default to LOW at boot)
-5. Once booted and systemd services are running, relay module LEDs will light
+6. Once booted and systemd services are running, relay module LEDs will light
    as services assert their GPIO pins
-6. If anything unexpected happens (relay module LEDs all on at boot, smoke,
-   clicking sounds without software running) — **disconnect battery immediately**
+7. If anything unexpected happens (relay module LEDs all on at boot, smoke,
+   clicking sounds without software running) — **disconnect 12V supply immediately**
 
 ---
 
