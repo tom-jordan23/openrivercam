@@ -44,9 +44,9 @@ reconnecting power. Use the verification checklists at the end of each section.
 
 ### Rule 4: Screw Terminals — Get a Good Grip
 
+- Use **solid core wire** (not stranded) — it seats cleanly in screw terminals
+  without ferrules and won't splay
 - Strip wire to **7-8mm** (about 5/16 inch) of exposed conductor
-- Use **wire ferrules** on stranded wire — bare strands can splay and short to
-  adjacent terminals
 - After inserting the wire, tug gently to confirm it's held securely
 - Tighten firmly but don't overtorque — you'll strip the screw
 
@@ -79,10 +79,9 @@ problem. A burning smell means a component is being destroyed right now.
 
 - Small Phillips screwdriver (for G469 and relay screw terminals)
 - Wire strippers (for 18-22 AWG)
-- Wire ferrule crimper + ferrules (strongly recommended)
 - Multimeter set to DC voltage and continuity modes
 - Masking tape + marker (for labeling wires)
-- Needle-nose pliers (helpful for inserting wires)
+- Needle-nose pliers (helpful for bending wire ends)
 
 ---
 
@@ -146,7 +145,7 @@ goes LOW (or Pi is off), the path opens and the load loses power.
 | Terminal | What It Does | Connects To |
 |----------|-------------|-------------|
 | **VCC** | Powers the relay module's logic circuit | Pi 5V (from G469 Pin 4) |
-| **GND** | Ground reference for the module | Pi GND (from G469 Pin 6) |
+| **GND** | Ground reference for the module | Pi GND (from G469 Pin 20) |
 | **IN1** | Control signal for relay channel 1 | GPIO 24 (Pin 18) — PoE switch |
 | **IN2** | Control signal for relay channel 2 | GPIO 17 (Pin 11) — Green LED |
 | **IN3** | Control signal for relay channel 3 | GPIO 27 (Pin 13) — Yellow LED |
@@ -182,7 +181,7 @@ Orientation: GPIO header at top-right corner of the Pi board.
   Pin 15 │  [GPIO 22     ] ●  ●  [GPIO 23]       ★ Button  │  Pin 16
          │   ★ Red LED                                       │
   Pin 17 │  [3V3 Power]    ●  ●  [GPIO 24]       ★ Relay   │  Pin 18
-  Pin 19 │  [GPIO 10  MOSI] ●  ●  [GND]                    │  Pin 20
+  Pin 19 │  [GPIO 10  MOSI] ●  ●  [GND]      ★ Relay GND  │  Pin 20
   Pin 21 │  [GPIO 9   MISO] ●  ●  [GPIO 25]               │  Pin 22
   Pin 23 │  [GPIO 11  SCLK] ●  ●  [GPIO 8   CE0]         │  Pin 24
   Pin 25 │  [GND]          ●  ●  [GPIO 7   CE1]           │  Pin 26
@@ -241,8 +240,8 @@ DIN rail fuse and the DDR-60G-5's stable output provide protection instead.
 the Pi. Verify with a multimeter on the converter's output terminals.
 
 **Cut 2 wires** to appropriate length (measure from DDR-60G-5 output terminals to
-the G469 breakout, add 3cm slack on each end). Use **18 AWG** — this carries all
-power for the Pi and relay module logic. Strip 7-8mm on each end. Crimp ferrules.
+the G469 breakout, add 3cm slack on each end). Use **18 AWG solid** — this carries
+all power for the Pi and relay module logic. Strip 7-8mm on each end.
 
 | Wire # | From | To (G469 Terminal) | Label | Color | Gauge |
 |--------|------|--------------------|-------|-------|-------|
@@ -285,13 +284,12 @@ These 6 wires go from the G469 terminal block to the relay module input terminal
 All are 22 AWG signal wire.
 
 **Cut 6 wires** to appropriate length (measure the distance between the G469 and relay
-module on your DIN rail, add 3cm slack on each end). Strip 7-8mm on each end. Crimp
-ferrules.
+module on your DIN rail, add 3cm slack on each end). Strip 7-8mm on each end.
 
 | Wire # | From (G469 Terminal) | To (Relay Terminal) | Label | Color |
 |--------|---------------------|---------------------|-------|-------|
 | 1 | Pin 4 — 5V | VCC | "5V" | Yellow |
-| 2 | Pin 6 — GND | GND | "GND" | Black |
+| 2 | Pin 20 — GND | GND | "GND" | Black |
 | 3 | Pin 18 — GPIO 24 | IN1 | "PoE relay" | Blue |
 | 4 | Pin 11 — GPIO 17 | IN2 | "Green LED" | Green |
 | 5 | Pin 13 — GPIO 27 | IN3 | "Yellow LED" | Blue stripe |
@@ -299,10 +297,10 @@ ferrules.
 
 **Wiring procedure for each wire:**
 
-1. Insert the ferrule end into the **G469** screw terminal for the correct pin
+1. Insert the stripped end into the **G469** screw terminal for the correct pin
 2. Tighten the screw — tug to confirm grip
 3. Route the wire neatly to the relay module (avoid crossing over other wires)
-4. Insert the other ferrule end into the correct **relay input** screw terminal
+4. Insert the other stripped end into the correct **relay input** screw terminal
 5. Tighten the screw — tug to confirm grip
 
 ### Step 2 Verification (DO THIS BEFORE CONTINUING)
@@ -311,7 +309,7 @@ Use your multimeter in **continuity mode** (beep mode). Touch one probe to each
 end of every connection and confirm you get a beep:
 
 - [ ] G469 Pin 4 (5V) ↔ Relay VCC — beep
-- [ ] G469 Pin 6 (GND) ↔ Relay GND — beep
+- [ ] G469 Pin 20 (GND) ↔ Relay GND — beep
 - [ ] G469 Pin 18 (GPIO 24) ↔ Relay IN1 — beep
 - [ ] G469 Pin 11 (GPIO 17) ↔ Relay IN2 — beep
 - [ ] G469 Pin 13 (GPIO 27) ↔ Relay IN3 — beep
@@ -842,27 +840,22 @@ Each GPIO function will have a corresponding systemd service:
    as "Pi-EzConnect (Adafruit 2711)" but the actual procured part is the **Geekworm
    G469**. Functionally equivalent — both are passive 40-pin terminal block breakouts.
 
-2. **Wire gauge:** 18-22 AWG for all internal DIN rail wiring. 18 AWG solid is
-   preferred for short runs between DIN rail components — it's easier to work with
-   in screw terminals and doesn't require ferrules. 18-22 AWG stranded is also
-   acceptable; use wire ferrules on stranded wire to prevent splaying.
+2. **Wire gauge and type:** 18-22 AWG **solid core** for all internal DIN rail
+   wiring. Solid wire seats cleanly in screw terminals without ferrules.
 
-3. **Ferrules:** Required on stranded wire inserted into screw terminals. Not needed
-   for solid wire.
-
-4. **Wire routing:** Keep 12V power wires physically separated from GPIO signal
+3. **Wire routing:** Keep 12V power wires physically separated from GPIO signal
    wires to minimize electrical noise.
 
-5. **Pi 5 GPIO voltage:** All GPIO pins are **3.3V logic**. Connecting 5V or 12V
+4. **Pi 5 GPIO voltage:** All GPIO pins are **3.3V logic**. Connecting 5V or 12V
    directly to any GPIO pin will permanently destroy the Pi's processor.
 
-6. **Pi 5 power button (J2 header):** The external power button connects to the
+5. **Pi 5 power button (J2 header):** The external power button connects to the
    Pi 5's dedicated J2 power button header (2-pin, near USB-C port). This is NOT
    a GPIO pin — it's a hardware power control. Brief press = power on or clean
    shutdown. 10-second hold = force power off. The J2 wires route through the
    G469 stack but do not use the G469 screw terminals.
 
-7. **Relay click noise:** You will hear an audible click each time a relay channel
+6. **Relay click noise:** You will hear an audible click each time a relay channel
    turns on or off. This is normal — it's the mechanical contact inside the relay
    moving. If you hear rapid clicking (more than once per second), something is wrong
    with the control signal.
