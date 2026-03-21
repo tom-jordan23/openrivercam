@@ -51,7 +51,7 @@ is destroyed immediately and cannot be repaired.
 
 | Domain | Voltage | Where It Goes | Wire Gauge |
 |--------|---------|---------------|------------|
-| Pi power input | 5V DC | DDR-60G-5 output → G469 Pin 2/Pin 6 | 18 AWG |
+| Pi power input | 5V DC | DDR-60G-5 output → G469 Pin 2/Pin 25 | 18 AWG |
 | Logic (low voltage) | 3.3V / 5V | G469 breakout → relay module inputs | 22 AWG |
 | Power (high voltage) | 12V DC | TB1 → relay module outputs → loads | 18-22 AWG |
 
@@ -167,6 +167,22 @@ goes LOW (or Pi is off), the path opens and the load loses power.
 
 **NC terminals are not used.** Leave them empty.
 
+### Why NO and Not NC (Fail-Safe Design)
+
+Using **NC** would allow the PoE switch and camera to start booting the instant
+12V power is applied, in parallel with the Pi — saving ~15-20 seconds per wake
+cycle. However, **NO is chosen deliberately as a fail-safe:**
+
+- If the Pi crashes, hangs, or fails to shut down cleanly, GPIO pins float LOW
+  and the relay falls open. The PoE switch and camera **lose power automatically**,
+  preventing the system's largest power consumer from draining the solar battery.
+- With NC, a Pi crash would leave the camera powered indefinitely. On a
+  solar-powered station with limited battery capacity, this could drain the
+  battery completely and leave the station non-functional until someone
+  physically visits the site.
+- The ~15-20 second delay (Pi boots → systemd service drives GPIO HIGH → relay
+  closes → camera begins booting) is an acceptable tradeoff for this protection.
+
 ### Input Side Explained
 
 | Terminal | What It Does | Connects To |
@@ -211,7 +227,7 @@ Orientation: GPIO header at top-right corner of the Pi board.
   Pin 19 │  [GPIO 10  MOSI] ●  ●  [GND]      ★ Relay GND  │  Pin 20
   Pin 21 │  [GPIO 9   MISO] ●  ●  [GPIO 25]               │  Pin 22
   Pin 23 │  [GPIO 11  SCLK] ●  ●  [GPIO 8   CE0]         │  Pin 24
-  Pin 25 │  [GND]          ●  ●  [GPIO 7   CE1]           │  Pin 26
+  Pin 25 │  [GND]  ★ PWR GND ●  ●  [GPIO 7   CE1]         │  Pin 26
   Pin 27 │  [GPIO 0  ID_SD] ●  ●  [GPIO 1   ID_SC]       │  Pin 28
          │   ⛔ EEPROM           ⛔ EEPROM                   │
   Pin 29 │  [GPIO 5      ] ●  ●  [GND]                    │  Pin 30
@@ -273,14 +289,14 @@ all power for the Pi and relay module logic. Strip 7-8mm on each end.
 | Wire # | From | To (G469 Terminal) | Label | Color | Gauge |
 |--------|------|--------------------|-------|-------|-------|
 | P1 | DDR-60G-5 V+ output | Pin 2 — 5V Power | "5V IN" | Yellow | 18 AWG |
-| P2 | DDR-60G-5 V- output | Pin 6 — GND | "GND IN" | Black | 18 AWG |
+| P2 | DDR-60G-5 V- output | Pin 25 — GND | "GND IN" | Black | 18 AWG |
 
 ```
   DDR-60G-5 DC-DC Converter              G469 Breakout
   ┌──────────────────────┐               ┌───────────────────┐
   │  IN:  9-36V DC       │               │                   │
   │  OUT: 5.1V (adjusted)│               │  Pin 2 (5V)  ◄────┤── YELLOW ── V+ out
-  │                      │               │  Pin 6 (GND) ◄────┤── BLACK ─── V- out
+  │                      │               │  Pin 25 (GND) ◄───┤── BLACK ─── V- out
   │  (DIN rail mount)    │               │                   │
   └──────────────────────┘               └───────────────────┘
 ```
@@ -300,8 +316,8 @@ the output voltage:
 **After wiring to G469 (with 12V still disconnected):**
 
 - [ ] Continuity: DDR-60G-5 V+ ↔ G469 Pin 2 (5V) — beep
-- [ ] Continuity: DDR-60G-5 V- ↔ G469 Pin 6 (GND) — beep
-- [ ] NO short: G469 Pin 2 (5V) ↔ G469 Pin 6 (GND) — **NO beep**
+- [ ] Continuity: DDR-60G-5 V- ↔ G469 Pin 25 (GND) — beep
+- [ ] NO short: G469 Pin 2 (5V) ↔ G469 Pin 25 (GND) — **NO beep**
 
 ---
 
@@ -360,16 +376,17 @@ connection (~3-5A), so use **18 AWG** wire.
 
 | Wire # | From | To | Label | Color | Gauge |
 |--------|------|----|-------|-------|-------|
-| 7 | TB1 12V output | Relay CH1 **COM** | "12V → relay" | Red | 18 AWG |
+| 7 | TB1 12V output | Fuse holder input (5A) | "12V → fuse" | Red | 18 AWG |
+| 7b | Fuse holder output | Relay CH1 **COM** | "fuse → relay" | Red | 18 AWG |
 | 8 | Relay CH1 **NO** | PoE switch 12V (+) input | "relay → PoE" | Red | 18 AWG |
 
 ```
-                    Relay Module CH1
-                   ┌────────────────┐
-  TB1 12V ── RED ──┤ COM1           │
-     (18 AWG)      │      NO1 ──────┤── RED ── PoE Switch 12V (+)
-                   │      NC1       │            (18 AWG)
-                   └───(empty)──────┘
+                                       Relay Module CH1
+                    Fuse Holder       ┌────────────────┐
+  TB1 12V ── RED ──┤ IN   OUT ├─ RED ─┤ COM1           │
+     (18 AWG)      │   [5A]   │       │      NO1 ──────┤── RED ── PoE Switch 12V (+)
+                   └──────────┘       │      NC1       │            (18 AWG)
+                                      └───(empty)──────┘
 ```
 
 **CRITICAL:** Connect to **COM** and **NO** only. Leave **NC** empty.
@@ -382,7 +399,9 @@ connection (~3-5A), so use **18 AWG** wire.
 
 ### Step 3 Verification
 
-- [ ] Continuity: TB1 12V terminal ↔ Relay CH1 COM — beep
+- [ ] Continuity: TB1 12V terminal ↔ Fuse holder input — beep
+- [ ] Continuity: Fuse holder output ↔ Relay CH1 COM — beep
+- [ ] Continuity: TB1 12V ↔ Relay CH1 COM — beep (with fuse installed; **NO beep** if fuse is not yet installed)
 - [ ] Continuity: Relay CH1 NO ↔ PoE switch 12V input — beep
 - [ ] Continuity: TB1 GND ↔ PoE switch GND — beep
 - [ ] NO short: Relay CH1 COM ↔ Relay CH1 NO — **NO beep** (relay is off, path is open)
@@ -727,7 +746,7 @@ Complete this entire checklist before reconnecting the battery or USB-C cable.
 
 **5V power input — should beep:**
 - [ ] DDR-60G-5 V+ ↔ G469 Pin 2 (5V)
-- [ ] DDR-60G-5 V- ↔ G469 Pin 6 (GND)
+- [ ] DDR-60G-5 V- ↔ G469 Pin 25 (GND)
 
 **12V power connections — should beep:**
 - [ ] TB1 12V ↔ Relay CH1 COM
