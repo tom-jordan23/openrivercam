@@ -730,6 +730,115 @@ converters) for accurate readings.
 
 ---
 
+### Step 10: Install RTC Battery (ML-2020)
+
+The Raspberry Pi 5 has a built-in real-time clock (RTC) that keeps time when the
+Pi loses power. It needs a rechargeable coin cell battery to function.
+
+**Battery:** Any rechargeable coin cell with a 2-pin JST-SH connector wired for
+the Pi 5. The official battery is a Panasonic ML-2020, but other rechargeable
+chemistries work — you **must** set the correct charge voltage for your battery.
+
+**⚠ CRITICAL: Do NOT use non-rechargeable batteries (CR2020, CR2032, etc.).**
+The Pi 5 has a built-in trickle charger. If charging is enabled with a
+non-rechargeable cell installed, the cell can leak, vent, or rupture.
+
+### Compatible Rechargeable Battery Types
+
+| Battery | Chemistry | Nominal Voltage | Charge Voltage | `config.txt` Setting | Capacity |
+|---------|-----------|-----------------|----------------|----------------------|----------|
+| **ML-2020** | Manganese lithium | 3.0V | 3.0V | `dtparam=rtc_bbat_vchg=3000000` | ~45 mAh |
+| **ML-2032** | Manganese lithium | 3.0V | 3.0V | `dtparam=rtc_bbat_vchg=3000000` | ~65 mAh |
+| **LIR2032** | Lithium-ion | 3.6V | 4.2V | `dtparam=rtc_bbat_vchg=4200000` | ~40 mAh |
+| **LIR2020** | Lithium-ion | 3.6V | 4.2V | `dtparam=rtc_bbat_vchg=4200000` | ~20 mAh |
+
+**Setting the wrong charge voltage can damage the battery:**
+- ML cells charged above 3.2V can be damaged
+- LIR cells charged to only 3.0V will work but won't fully charge
+
+The `dtparam=rtc_bbat_vchg` value is in **microvolts**. The Pi 5's charger
+accepts values from 1,300,000 (1.3V) to 4,400,000 (4.4V). If you remove the
+line entirely, charging is disabled and the battery will slowly drain.
+
+The 20 vs 32 in the battery name refers to thickness (2.0mm vs 3.2mm). Either
+size works — the battery connects via a JST-SH wired cable, not a socket on
+the board, so physical cell dimensions don't matter as long as the battery
+fits in your enclosure.
+
+**This build uses: ML-2020** with `dtparam=rtc_bbat_vchg=3000000`
+
+**Connector:** The battery plugs into the **J5 (BAT) connector** on the Pi 5
+board — a small white 2-pin JST-SH socket located between the USB-C power port
+and the micro-HDMI ports. This is NOT on the G469 breakout — it's on the Pi
+board itself.
+
+```
+  Raspberry Pi 5 (top view, partial)
+
+  ┌──────────────────────────────────────────┐
+  │  [USB-C]   [J5 BAT]   [HDMI 0] [HDMI 1] │
+  │             ▲                              │
+  │             │                              │
+  │         Small white                        │
+  │         2-pin JST-SH                       │
+  │         socket                             │
+  └──────────────────────────────────────────┘
+```
+
+**Installation:**
+
+1. Locate J5 on the Pi 5 board (between USB-C and HDMI)
+2. Orient the ML-2020 JST connector — it only fits one way
+3. Press the connector gently into J5 until it clicks
+4. Tuck the battery and wire so they don't interfere with the G469 HAT above
+
+**Charging configuration (required — charging is disabled by default):**
+
+Add the correct line to `/boot/firmware/config.txt` on the Pi's SD card based
+on your battery chemistry (see table above):
+
+```
+# For ML-2020 or ML-2032 (manganese lithium, 3.0V):
+dtparam=rtc_bbat_vchg=3000000
+
+# For LIR2032 or LIR2020 (lithium-ion, 4.2V):
+# dtparam=rtc_bbat_vchg=4200000
+```
+
+**Use only ONE of these lines (uncommented).** This enables the Pi 5's built-in
+constant-current (3mA) trickle charger at the specified voltage. Without this
+line, the battery will drain over time and the RTC will lose time during power
+outages.
+
+**Verification (after first boot):**
+
+Check that the battery is detected and charging:
+
+```bash
+# Read current battery voltage (should be > 0)
+cat /sys/devices/platform/soc/soc:rpi_rtc/power_supply/rpi-bat/voltage_now
+
+# Verify RTC has correct time
+timedatectl
+```
+
+To test RTC backup:
+1. Set the correct time (via NTP or manually)
+2. Shut down the Pi and disconnect all power (12V and USB-C)
+3. Wait 5 minutes
+4. Reconnect power and boot
+5. Check `timedatectl` — the time should be correct (within a few seconds)
+
+### Step 10 Notes
+
+- The ML-2020 charges slowly (3mA). Allow several hours of powered-on time for
+  a full charge on a new battery.
+- A fully charged ML-2020 maintains the RTC for months without external power.
+- If the RTC time is wrong after a power outage, check that the `dtparam` line
+  is in config.txt and that you're using an ML-2020 (not a CR cell).
+
+---
+
 ## Final Pre-Power Verification
 
 Complete this entire checklist before reconnecting the battery or USB-C cable.

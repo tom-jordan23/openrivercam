@@ -51,6 +51,7 @@ Apply MG 422C silicone conformal coating to all PCBs:
   - First boot takes 2-3 minutes (services compile, filesystem expands, then auto-reboots)
   - After reboot, navigate to `http://<hostname>.local` to verify the ORC-OS web dashboard loads
   - Set the ORC-OS web dashboard password when prompted
+- [ ] Enable RTC battery charging: add `dtparam=rtc_bbat_vchg=3000000` to `/boot/firmware/config.txt`
 - [ ] Configure Pi 5 RTC wake schedule (15-minute wake cycle via ML-2020 coin cell)
 - [ ] Test PoE camera FTP upload to Pi
 - [ ] Configure WiFi hotspot for maintenance mode
@@ -171,7 +172,10 @@ Verify all components before starting assembly:
 
 2. **Assembly:**
    - Install heatsink on Pi 5 CPU (thermal pad contact)
-   - Install ML-2020 RTC coin cell in Pi 5 (for built-in RTC scheduling)
+   - Install ML-2020 RTC coin cell in Pi 5 J5 (BAT) connector — small white
+     2-pin JST-SH socket between USB-C and HDMI ports. Clicks in one way only.
+     **Must be ML-2020 (rechargeable) — NOT CR2020/CR2032 (non-rechargeable).**
+     See GPIO_WIRING.md Step 10 for details.
    - Align Geekworm G469 GPIO header with Pi 5 header
    - Press down firmly until fully seated
    - Secure stack with standoffs
@@ -312,7 +316,7 @@ Verify all components before starting assembly:
    ```
 
 3. **Terminal block connections:**
-   - Use ferrules on all stranded wire ends
+   - Use solid core wire (18-22 AWG) for all internal DIN rail wiring
    - Label all terminals (12V+, 12V-, GND, etc.)
 
 ### Step 6: Wire PoE Camera Circuit (15 min)
