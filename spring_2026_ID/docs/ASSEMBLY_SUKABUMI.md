@@ -10,35 +10,7 @@
 
 Complete these steps BEFORE traveling to Indonesia:
 
-### 1. Conformal Coating (Low Humidity Environment Required)
-
-Apply MG 422C silicone conformal coating to all PCBs:
-
-**Boards to Coat:**
-- [ ] Raspberry Pi 5
-- [ ] Geekworm G469 terminal block HAT
-
-**Note:** No relay module needed - PoE camera has built-in IR.
-
-**Masking (Use Kapton tape):**
-- GPIO header pins (all 40 pins)
-- USB-A and USB-C ports
-- HDMI ports
-- Ethernet port
-- MicroSD card slot
-- Heat sink mounting holes/thermal pad area
-- Any connector that will be plugged in
-
-**Procedure:**
-1. Clean boards with IPA wipe, let dry completely
-2. Apply Kapton tape to all masked areas
-3. Brush thin, even coat of MG 422C on exposed PCB areas
-4. Allow 24 hours cure time at room temperature
-5. Remove Kapton tape after cure
-6. Inspect for complete coverage, recoat bare spots if needed
-7. Label each board "COATED" with date
-
-### 2. Software Configuration
+### 1. Software Configuration
 
 - [ ] Flash ORC-OS image to MicroSD card using Raspberry Pi Imager
   - Follow the [ORC-OS README](https://github.com/localdevices/ORC-OS/blob/main/README.md) — section **"Getting the image on the SD card"**
@@ -60,7 +32,11 @@ Apply MG 422C silicone conformal coating to all PCBs:
 - [ ] Configure Pi eth0 static IP (192.168.50.1/24) and dnsmasq DHCP for camera network
 - [ ] Configure camera FTP upload settings via web interface or camtool.py
 
-### 3. Hardware Testing
+### 2. Hardware Testing (Dry-Fit)
+
+Assemble, wire, and test the complete system **before** conformal coating.
+You need to verify all connections work and identify every contact point
+that must be masked during coating.
 
 - [ ] Test Pi 5 + Geekworm G469 stack boots correctly (2-board stack)
 - [ ] Verify USB flash drive is recognized
@@ -68,6 +44,41 @@ Apply MG 422C silicone conformal coating to all PCBs:
 - [ ] Test PoE camera FTP upload works
 - [ ] Test PoE switch powers camera when relay energized
 - [ ] Verify LEDs light up via relay channels (GPIO 17/27/22)
+
+### 3. Conformal Coating (After Testing, Before Travel)
+
+Apply conformal coating only after the full system has been assembled, tested,
+and verified working. This ensures you know exactly which contact points
+need to be masked — coating over a connection you missed will cause failures
+that are difficult to diagnose in the field.
+
+**Do this in a low-humidity environment. Allow 24 hours cure time.**
+
+**Boards to Coat:**
+- [ ] Raspberry Pi 5
+- [ ] Geekworm G469 terminal block HAT
+
+**Masking (Use Kapton tape on all contact points):**
+- GPIO header pins (all 40 pins)
+- USB-A and USB-C ports
+- HDMI ports
+- Ethernet port
+- MicroSD card slot
+- J5 (BAT) RTC battery connector
+- J2 power button through-holes (or pogo pins if installed)
+- Heat sink mounting holes / thermal pad contact area
+- Any other connector or contact point used during testing
+
+**Procedure:**
+1. Disassemble the tested stack (remove G469 from Pi)
+2. Clean boards with IPA wipe, let dry completely
+3. Apply Kapton tape to all masked areas listed above
+4. Brush thin, even coat of MG 422C silicone on exposed PCB areas
+5. Allow 24 hours cure time at room temperature
+6. Remove Kapton tape after cure
+7. Inspect for complete coverage, recoat bare spots if needed
+8. Label each board "COATED" with date
+9. Reassemble the stack and verify it still boots
 
 ---
 
