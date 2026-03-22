@@ -1,6 +1,18 @@
 # OpenRiverCam - Indonesia Spring 2026 Deployment
 
-River monitoring for flood early warning using camera-based surface velocity measurement. This repository tracks planning and documentation for the Spring 2026 deployment to Indonesia.
+**This is a field deployment repository, not the OpenRiverCam software itself.**
+
+This repo contains hardware build documentation, wiring guides, bills of
+materials, and deployment planning for two river monitoring stations in
+Indonesia. The actual river monitoring software is
+[OpenRivercam (ORC)](https://github.com/localdevices/ORC) and its Raspberry
+Pi operating system [ORC-OS](https://github.com/localdevices/ORC-OS),
+developed and maintained by [LocalDevices](https://github.com/localdevices).
+
+We are grateful to the ORC authors — particularly Hessel Winsemius — for
+creating an excellent open-source platform for camera-based river surface
+velocity measurement, and for their generous support and guidance throughout
+our deployments.
 
 ## Current Focus
 
@@ -89,3 +101,11 @@ survey/
 2. Conformal coat electronics before travel
 3. Assemble and test Jakarta device
 4. Request humanitarian letter from sponsoring organization
+
+## Related Projects
+
+| Project | Description | Link |
+|---------|-------------|------|
+| **ORC** | OpenRivercam — open-source camera-based river discharge measurement | [github.com/localdevices/ORC](https://github.com/localdevices/ORC) |
+| **ORC-OS** | Raspberry Pi operating system for ORC field stations | [github.com/localdevices/ORC-OS](https://github.com/localdevices/ORC-OS) |
+| **LocalDevices** | Organization behind ORC and ORC-OS | [github.com/localdevices](https://github.com/localdevices) |
