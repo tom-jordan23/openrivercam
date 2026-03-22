@@ -852,7 +852,13 @@ board itself.
 3. Press the connector gently into J5 until it clicks
 4. Tuck the battery and wire so they don't interfere with the G469 HAT above
 
-**Charging configuration (required — charging is disabled by default):**
+**Charging configuration (required — you MUST do this manually):**
+
+**The Pi 5 ships with RTC battery charging DISABLED.** The Pi has no way to
+detect whether the battery connected to J5 is rechargeable or not, so it
+defaults to not charging. If you skip this step, the battery will slowly
+drain and the RTC will eventually lose time during power outages. There is
+no warning — it just silently stops keeping time.
 
 Add the correct line to `/boot/firmware/config.txt` on the Pi's SD card based
 on your battery chemistry (see table above):
@@ -866,9 +872,7 @@ dtparam=rtc_bbat_vchg=3000000
 ```
 
 **Use only ONE of these lines (uncommented).** This enables the Pi 5's built-in
-constant-current (3mA) trickle charger at the specified voltage. Without this
-line, the battery will drain over time and the RTC will lose time during power
-outages.
+constant-current (3mA) trickle charger at the specified voltage.
 
 **Verification (after first boot):**
 

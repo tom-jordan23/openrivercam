@@ -51,7 +51,7 @@ Complete these steps BEFORE traveling to Indonesia:
   - First boot takes 2-3 minutes (services compile, filesystem expands, then auto-reboots)
   - After reboot, navigate to `http://<hostname>.local` to verify the ORC-OS web dashboard loads
   - Set the ORC-OS web dashboard password when prompted
-- [ ] Enable RTC battery charging in `/boot/firmware/config.txt` — voltage depends on battery chemistry: `dtparam=rtc_bbat_vchg=3000000` for ML cells, `dtparam=rtc_bbat_vchg=4200000` for LIR cells. See GPIO_WIRING.md Step 10.
+- [ ] **Enable RTC battery charging** in `/boot/firmware/config.txt` — this is OFF by default because the Pi cannot detect whether the battery is rechargeable. Without this line, the RTC battery will silently drain and the clock will lose time. Set `dtparam=rtc_bbat_vchg=3000000` for ML cells or `dtparam=rtc_bbat_vchg=4200000` for LIR cells. See GPIO_WIRING.md Step 9.
 - [ ] Configure Pi 5 RTC wake schedule (15-minute wake cycle via ML-2020 coin cell)
 - [ ] Test PoE camera FTP upload to Pi
 - [ ] Configure WiFi hotspot for maintenance mode
