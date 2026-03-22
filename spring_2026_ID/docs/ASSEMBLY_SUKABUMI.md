@@ -378,13 +378,13 @@ coating (Pre-Assembly Checklist Step 3), then enclosure preparation.**
    - 3× 10mm holes for status LEDs
    - 2× holes for pushbuttons (maintenance + power) — hole size depends on
      the buttons you purchased (12mm, 16mm, 19mm, or 22mm are common)
-   - 1× PG9 hole for rain gauge cable
+   - 1× 16mm hole for rain gauge SD16 bulkhead connector
 
 2. **Install bulkheads and glands:**
    - Gore M12 vents (hand-tight plus 1/4 turn)
    - SP13 DC power bulkhead
    - CNLINKO ethernet bulkhead
-   - PG9 cable gland for rain gauge
+   - SD16 4-pin bulkhead connector for rain gauge
 
 3. **Install user interface components:**
    - Insert LEDs into 10mm panel holes, secure with nuts
@@ -408,12 +408,13 @@ coating (Pre-Assembly Checklist Step 3), then enclosure preparation.**
    - Wire from SP13 DC power bulkhead to TB1 terminal block
 
 4. **Connect rain gauge:**
-   - Route UART cable through PG9 gland
-   - Connect to G469 terminals / TB1:
-     - VCC → 12V (TB1, 7-24V input range)
-     - GND → GND (TB1)
-     - TX → GPIO 15 (Pi RX)
-     - RX → GPIO 14 (Pi TX)
+   - Rain gauge connects through a 4-pin SD16 bulkhead connector (16mm hole)
+   - Outside: 18/4 stranded jacketed cable from RG-15 pigtail to bulkhead plug
+   - Inside: solid core 22 AWG from bulkhead socket to G469/TB1
+   - Pin 1: 12V (TB1), Pin 2: GND (G469 Pin 9), Pin 3: TX→RX (GPIO 14),
+     Pin 4: RX→TX (GPIO 15)
+   - See GPIO_WIRING.md Step 7 for full pin map, connector details, and
+     verification checklists
 
 5. **Connect Cat6 outdoor cable:**
    - PoE switch PoE port → CNLINKO bulkhead → Camera

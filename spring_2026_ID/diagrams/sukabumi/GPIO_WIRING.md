@@ -682,20 +682,40 @@ have this header and cannot support an external hardware power button this way.
 
 ### Step 7: Wire the Hydreon RG-15 Rain Gauge (UART)
 
-The rain gauge uses 3.3V serial communication (UART) plus 12V power.
+The RG-15 is an **optical** rain gauge — it has no funnel, no tipping bucket,
+and no moving parts. It works by bouncing infrared light off the inside
+surface of its dome lens. When rain drops land on the dome, they change the
+IR reflection pattern. The onboard processor measures those changes to
+calculate rainfall intensity and accumulation in millimeters.
+
+The dome is self-cleaning — water sheets off the curved surface naturally.
+There is no place for water to "go" because the sensor doesn't collect
+water. It just detects it optically.
+
+The RG-15 reports accumulated rainfall over a UART serial connection. When
+the Pi wakes and reads the serial port, it gets the accumulated total since
+the last reset.
+
+**The RG-15 must stay powered while the Pi sleeps.** It continuously monitors
+IR reflections and accumulates rainfall totals internally. If it loses power
+between Pi wake cycles, the rainfall count for that period is lost. The
+RG-15 is powered from TB1 (always-on 12V), NOT through the relay.
+
+The rain gauge mounts **outside** the enclosure and connects through a
+**4-pin weatherproof bulkhead connector** (SD16 or similar) in the enclosure
+wall. This allows the rain gauge to be swapped without opening the enclosure.
 
 **CRITICAL: The data wires (TX/RX) are 3.3V logic. The power wire is 12V.
 Do not mix them up. If 12V reaches a GPIO pin, the Pi is destroyed.**
 
-The RG-15 has a 4-wire pigtail cable. Confirm your wire colors match the
-Hydreon documentation before connecting:
+### Rain Gauge Signal Map
 
-| RG-15 Wire Color | Function | Voltage | Connects To |
-|-------------------|----------|---------|-------------|
-| **Red** | VIN (power) | **12V** | TB1 12V output |
-| **Black** | GND | 0V | G469 Pin 9 (GND) |
-| **Green** | RX (data in) | 3.3V logic | G469 Pin 8 (GPIO 14 / TXD) |
-| **Yellow** | TX (data out) | 3.3V logic | G469 Pin 10 (GPIO 15 / RXD) |
+| Function | Voltage | RG-15 Pigtail Color | Connects To (inside enclosure) |
+|----------|---------|---------------------|-------------------------------|
+| VIN (power) | **12V** | **Red** | TB1 12V output |
+| GND | 0V | **Black** | G469 Pin 9 (GND) |
+| RX (data in) | 3.3V logic | **Green** | G469 Pin 8 (GPIO 14 / TXD) |
+| TX (data out) | 3.3V logic | **Yellow** | G469 Pin 10 (GPIO 15 / RXD) |
 
 **⚠ STOP — Read this before wiring:**
 - The **red wire (12V power)** goes to **TB1**, NOT to the G469 breakout
@@ -704,21 +724,70 @@ Hydreon documentation before connecting:
 - The green and yellow wires are **crossed**: Pi TX connects to rain gauge RX, and
   Pi RX connects to rain gauge TX (this is normal for serial communication)
 
-| Wire # | From | To | Label | Color | Gauge |
-|--------|------|----|-------|-------|-------|
-| 21 | RG-15 red wire (VIN) | TB1 12V output | "RG15 12V" | — | 22 AWG |
-| 22 | RG-15 black wire (GND) | G469 Pin 9 (GND) | "RG15 GND" | — | 22 AWG |
-| 23 | RG-15 green wire (RX) | G469 Pin 8 (GPIO 14 / TXD) | "RG15 data" | — | 22 AWG |
-| 24 | RG-15 yellow wire (TX) | G469 Pin 10 (GPIO 15 / RXD) | "RG15 data" | — | 22 AWG |
+### Bulkhead Connector and Cable
+
+The RG-15 connects through a **4-pin weatherproof bulkhead connector** mounted
+in the enclosure wall. This keeps the enclosure sealed and allows the rain
+gauge to be disconnected from outside without opening the box.
+
+**Connector:** SD16 4-pin IP68 aviation connector (or equivalent). The panel
+socket mounts in a 16mm hole in the enclosure wall. The cable plug attaches
+to the rain gauge cable outside. Solder termination is required for the
+connector contacts.
+
+**No-solder alternative:** If you want to avoid soldering entirely, use a PG9
+or PG11 cable gland instead. The rain gauge pigtail passes through the gland
+directly into the enclosure. This is simpler but requires opening the
+enclosure to disconnect the rain gauge.
+
+**Cable:** 18/4 stranded jacketed wire (4-conductor, 18 AWG, common outer
+jacket). Sold by the foot at most hardware stores as thermostat wire or
+irrigation wire. The outer jacket provides a good seal in the cable gland
+or bulkhead connector. Cut to length — measure from the rain gauge mounting
+location to the enclosure, add 30cm slack on each end.
+
+**Pin mapping through the bulkhead connector:**
+
+Assign a consistent pin order and document it on both the connector and the
+wiring label. For example:
+
+| Connector Pin | Function | Outside (to RG-15) | Inside (to G469/TB1) |
+|---------------|----------|--------------------|-----------------------|
+| 1 | 12V | RG-15 red (VIN) | TB1 12V output |
+| 2 | GND | RG-15 black (GND) | G469 Pin 9 (GND) |
+| 3 | TX→RX | RG-15 green (RX) | G469 Pin 8 (GPIO 14 / TXD) |
+| 4 | RX→TX | RG-15 yellow (TX) | G469 Pin 10 (GPIO 15 / RXD) |
+
+### Internal Wiring (mounting plate side)
+
+These wires run from the bulkhead connector's inside terminals to the G469
+and TB1 on the mounting plate. Use solid core 22 AWG wire for these short
+internal runs.
+
+| Wire # | From | To | Label | Gauge |
+|--------|------|----|-------|-------|
+| 21 | Bulkhead pin 1 (12V) | TB1 12V output | "RG15 12V" | 22 AWG |
+| 22 | Bulkhead pin 2 (GND) | G469 Pin 9 (GND) | "RG15 GND" | 22 AWG |
+| 23 | Bulkhead pin 3 (TX→RX) | G469 Pin 8 (GPIO 14 / TXD) | "RG15 data" | 22 AWG |
+| 24 | Bulkhead pin 4 (RX→TX) | G469 Pin 10 (GPIO 15 / RXD) | "RG15 data" | 22 AWG |
 
 ```
-  G469 Pin 8  (GPIO 14 TXD) ────── RG-15 green  (RX)  ← Pi talks, gauge listens
-  G469 Pin 10 (GPIO 15 RXD) ────── RG-15 yellow (TX)  ← gauge talks, Pi listens
-  G469 Pin 9  (GND)         ────── RG-15 black  (GND) ← shared ground
-  TB1 12V                   ────── RG-15 red    (VIN) ← 12V POWER (NOT GPIO!)
+  Inside enclosure (bulkhead → G469/TB1):
+
+  Bulkhead Pin 1 (12V)   ────── TB1 12V          ← 12V POWER (NOT GPIO!)
+  Bulkhead Pin 2 (GND)   ────── G469 Pin 9  (GND)
+  Bulkhead Pin 3 (TX→RX) ────── G469 Pin 8  (GPIO 14 TXD) ← Pi talks, gauge listens
+  Bulkhead Pin 4 (RX→TX) ────── G469 Pin 10 (GPIO 15 RXD) ← gauge talks, Pi listens
 ```
 
-**Cable routing:** RG-15 cable enters enclosure through PG9 cable gland.
+```
+  Outside enclosure (bulkhead → RG-15 via 18/4 cable):
+
+  Bulkhead Pin 1 (12V)   ────── 18/4 cable ────── RG-15 red    (VIN)
+  Bulkhead Pin 2 (GND)   ────── 18/4 cable ────── RG-15 black  (GND)
+  Bulkhead Pin 3 (TX→RX) ────── 18/4 cable ────── RG-15 green  (RX)
+  Bulkhead Pin 4 (RX→TX) ────── 18/4 cable ────── RG-15 yellow (TX)
+```
 
 **UART config required on the Pi (do this during software setup):**
 ```
@@ -728,6 +797,15 @@ dtoverlay=disable-bt
 ```
 
 ### Step 7 Verification
+
+**Internal wiring (bulkhead to G469/TB1):**
+
+- [ ] Continuity: Bulkhead pin 1 ↔ TB1 12V terminal — beep
+- [ ] Continuity: Bulkhead pin 2 ↔ G469 Pin 9 (GND) — beep
+- [ ] Continuity: Bulkhead pin 3 ↔ G469 Pin 8 (GPIO 14) — beep
+- [ ] Continuity: Bulkhead pin 4 ↔ G469 Pin 10 (GPIO 15) — beep
+
+**End-to-end (with external cable and RG-15 connected):**
 
 - [ ] Continuity: RG-15 red wire ↔ TB1 12V terminal — beep
 - [ ] Continuity: RG-15 black wire ↔ G469 Pin 9 (GND) — beep
