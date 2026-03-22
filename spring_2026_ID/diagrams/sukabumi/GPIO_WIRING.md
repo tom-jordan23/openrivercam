@@ -570,16 +570,27 @@ momentary switch.
 **Button:** Same type as the maintenance button — any momentary, normally open
 switch works. See the button requirements table in Step 5 for options.
 
-**J2 connector:** J2 is a 2-pin 2.54mm pitch header (standard breadboard
-spacing). You can connect to it with:
-- **Dupont/jumper wires** — female ends push onto the header pins. Easiest
-  option, no soldering. Use hot glue or heat shrink to keep them from
-  vibrating loose.
-- **JST-XH or bare wire** — solder or crimp a 2-pin connector. More secure
-  but requires soldering (the only exception to the no-solder rule in this
-  build, because J2 is a bare header with no screw terminal option).
-- **2-pin jumper cap with pigtail** — available pre-made on Amazon. Search
-  for "2-pin 2.54mm header to wire pigtail."
+**J2 connector:** J2 is **unpopulated** — it's two bare through-holes at
+2.54mm pitch, not header pins. You need to add pins before you can connect
+wires.
+
+**No-solder method (recommended):** Use **through-hole pogo pins** (Adafruit
+product 5381, or equivalent). These are spring-loaded pins with thin stems
+that press-fit into through-holes without soldering.
+
+1. Snap 2 pogo pins off the strip (they break apart like a Kit-Kat bar)
+2. Press the thin stems into the J2 through-holes from the top of the board
+3. The stems friction-fit into the holes; the spring tips protrude above
+4. Push **Dupont female jumper wires** onto the spring tips
+5. Cut the other ends of the Dupont wires, strip them, and connect to the
+   button's screw terminals
+
+**Vibration resistance:** Apply a small dab of **hot glue** over the pogo
+pins and Dupont connections after verifying everything works. Hot glue holds
+firmly but can be peeled off for service — do not use superglue or epoxy.
+
+**Alternative:** Solder a standard 2-pin 2.54mm header into J2. This is the
+only solder point in the entire build if you choose this option.
 
 The J2 wires must route through or around the G469 HAT stack to reach the
 external button. Leave enough slack to separate the stack for service.

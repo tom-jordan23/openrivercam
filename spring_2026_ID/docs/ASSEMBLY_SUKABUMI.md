@@ -51,7 +51,7 @@ Apply MG 422C silicone conformal coating to all PCBs:
   - First boot takes 2-3 minutes (services compile, filesystem expands, then auto-reboots)
   - After reboot, navigate to `http://<hostname>.local` to verify the ORC-OS web dashboard loads
   - Set the ORC-OS web dashboard password when prompted
-- [ ] Enable RTC battery charging: add `dtparam=rtc_bbat_vchg=3000000` to `/boot/firmware/config.txt`
+- [ ] Enable RTC battery charging in `/boot/firmware/config.txt` — voltage depends on battery chemistry: `dtparam=rtc_bbat_vchg=3000000` for ML cells, `dtparam=rtc_bbat_vchg=4200000` for LIR cells. See GPIO_WIRING.md Step 10.
 - [ ] Configure Pi 5 RTC wake schedule (15-minute wake cycle via ML-2020 coin cell)
 - [ ] Test PoE camera FTP upload to Pi
 - [ ] Configure WiFi hotspot for maintenance mode
@@ -81,7 +81,7 @@ Verify all components before starting assembly:
 - [ ] SanDisk 256GB USB flash drive
 - [ ] MicroSD card 64GB (with OS)
 - [ ] Heatsink/cooler for Pi 5
-- [ ] ML-2020 RTC battery for Pi 5
+- [ ] Rechargeable RTC battery for Pi 5 with 2-pin JST-SH connector (ML-2020, ML-2032, LIR2032, or LIR2020 — see GPIO_WIRING.md Step 10 for chemistry options and charge voltage settings)
 
 ### Connectivity
 - [ ] Quectel EG25-G modem + EXVIST Mini PCIe-USB adapter
@@ -103,8 +103,7 @@ Verify all components before starting assembly:
 
 ### User Interface
 - [ ] 12V IP67 panel-mount LEDs: Red, Yellow, Green
-- [ ] IP67 momentary pushbutton (maintenance, 16mm panel mount)
-- [ ] IP67 momentary pushbutton (power, 16mm panel mount — wired to Pi 5 J2 header)
+- [ ] 2× momentary pushbuttons, normally open (maintenance + power). Any panel-mount momentary NO switch works — see GPIO_WIRING.md Step 5 for requirements and options. Match hole size to the button you purchase.
 
 ### Enclosure & Mounting
 - [ ] Outdoor enclosure (~300×200×150mm)
@@ -140,7 +139,8 @@ Verify all components before starting assembly:
    - 1× hole for CNLINKO ethernet bulkhead (PoE camera)
    - 1× hole for SP13 DC power bulkhead (12V input)
    - 3× 10mm holes for status LEDs
-   - 2× 16mm holes for pushbuttons (maintenance + power)
+   - 2× holes for pushbuttons (maintenance + power) — hole size depends on
+     the buttons you purchased (12mm, 16mm, 19mm, or 22mm are common)
    - 1× PG9 hole for rain gauge cable
    - 1× PG9 hole for DS18B20 temperature probe
 
@@ -172,10 +172,12 @@ Verify all components before starting assembly:
 
 2. **Assembly:**
    - Install heatsink on Pi 5 CPU (thermal pad contact)
-   - Install ML-2020 RTC coin cell in Pi 5 J5 (BAT) connector — small white
-     2-pin JST-SH socket between USB-C and HDMI ports. Clicks in one way only.
-     **Must be ML-2020 (rechargeable) — NOT CR2020/CR2032 (non-rechargeable).**
-     See GPIO_WIRING.md Step 10 for details.
+   - Install rechargeable RTC coin cell in Pi 5 J5 (BAT) connector — small
+     white 2-pin JST-SH socket between USB-C and HDMI ports. Clicks in one way
+     only. **Must be a rechargeable cell (ML-2020, ML-2032, LIR2032, or
+     LIR2020) — NEVER a non-rechargeable CR cell.** The charge voltage in
+     config.txt must match your battery chemistry. See GPIO_WIRING.md Step 10
+     for the full compatibility table and config.txt settings.
    - Align Geekworm G469 GPIO header with Pi 5 header
    - Press down firmly until fully seated
    - Secure stack with standoffs
@@ -234,63 +236,20 @@ Verify all components before starting assembly:
    - Secure with provided nuts (inside)
    - Order: Red (error) | Yellow (working) | Green (OK)
 
-2. **Install maintenance pushbutton:**
-   - Insert into 16mm hole
-   - Secure with nut from inside
-   - Should be slightly recessed to prevent accidental press
+2. **Install pushbuttons:**
+   - Insert each button into its panel hole and secure with nut from inside
+   - Maintenance button should be slightly recessed to prevent accidental press
+   - Label power button clearly as "POWER" to distinguish from maintenance
 
-3. **Install power pushbutton:**
-   - Insert into second 16mm hole
-   - Secure with nut from inside
-   - Label clearly as "POWER" to distinguish from maintenance button
+3. **Wire LEDs, pushbuttons, and power button:**
 
-4. **Wire LEDs through relay channels:**
-   ```
-   LED Wiring (12V panel-mount LEDs switched by relay):
+   See **GPIO_WIRING.md** for detailed step-by-step wiring instructions:
+   - **Steps 4** — LED wiring (12V, relay-switched)
+   - **Step 5** — Maintenance pushbutton (GPIO 23 to GND)
+   - **Step 6** — Power button (Pi 5 J2 header)
 
-   Each LED is powered by 12V from TB1, switched through a relay channel:
-   12V (TB1) → Relay COM → Relay NO → LED anode (+)
-   LED cathode (-) → GND (TB1)
-
-   Relay channel assignments (GPIO-triggered via G469):
-   - Green LED:  GPIO 17 → Relay IN2 (COM2→NO2 → Green LED)
-   - Yellow LED: GPIO 27 → Relay IN3 (COM3→NO3 → Yellow LED)
-   - Red LED:    GPIO 22 → Relay IN4 (COM4→NO4 → Red LED)
-   ```
-
-5. **Wire maintenance pushbutton:**
-   ```
-   Maintenance Pushbutton Wiring:
-
-   GPIO Pin (with internal pull-up) ← Button terminal 1
-   GND terminal ← Button terminal 2
-
-   Suggested: GPIO 23 (active low)
-   ```
-
-6. **Wire power pushbutton to Pi 5 J2 header:**
-   ```
-   Power Pushbutton Wiring:
-
-   Pi 5 J2 header pin 1 ← Button terminal 1
-   Pi 5 J2 header pin 2 ← Button terminal 2
-
-   J2 is a dedicated 2-pin power button header on the Pi 5 board,
-   located near the USB-C port. This is NOT a GPIO pin.
-   Use 22 AWG wire. Route through the G469 stack but do NOT use
-   G469 screw terminals — connect directly to the J2 header pins.
-
-   Behavior:
-   - Pi off (halted): Brief press → powers on
-   - Pi running: Brief press → clean shutdown
-   - Pi frozen: Hold ~10 seconds → force power off
-   ```
-
-7. **Use Geekworm G469 screw terminals:**
-   - Strip wire ends 5-6mm
-   - Insert into terminal
-   - Tighten screw firmly
-   - Tug to verify secure
+   The GPIO wiring guide includes wire tables, diagrams, continuity
+   verification checklists, button requirements, and equivalent part options.
 
 ### Step 5: Wire Power Distribution (20 min)
 
@@ -337,8 +296,8 @@ Verify all components before starting assembly:
    - DDR-60G-12 output (12V regulated) → relay CH1 COM input
    - Relay CH1 NO output → PoE switch 12V+ input
    - PoE switch GND → terminal block GND
-   - Relay module VCC → G469 Pin 2 (5V)
-   - Relay module GND → G469 Pin 6 (GND)
+   - Relay module VCC → G469 Pin 4 (5V)
+   - Relay module GND → G469 Pin 20 (GND)
    - Relay IN1 → G469 GPIO 24
    - Short Ethernet patch cable: PoE switch uplink port → Pi 5 Ethernet
    - Cat6 outdoor cable: PoE switch PoE port → CNLINKO bulkhead → Camera
@@ -565,9 +524,9 @@ The Pi serves as DHCP server for the camera network on eth0 using dnsmasq. This 
 1. Check UART device: `ls /dev/ttyAMA0` or `ls /dev/serial0`
 2. Test serial communication: `cat /dev/ttyAMA0` (tip bucket, check for data)
 3. Manually tip bucket, verify data received
-4. **Verify always-on power:** put Pi to sleep (via Witty Pi schedule or `sudo halt`),
-   then measure 12V at TB1 with multimeter — it should still be present. The RG-15
-   must stay powered during sleep to accumulate rainfall. If it loses power, rainfall
+4. **Verify always-on power:** put Pi to sleep (`sudo halt`), then measure 12V
+   at TB1 with multimeter — it should still be present. The RG-15 must stay
+   powered during sleep to accumulate rainfall. If it loses power, rainfall
    between cycles is lost.
 
 ---
@@ -627,8 +586,16 @@ See `TROUBLESHOOTING.md` for detailed diagnostics.
 
 ---
 
-**Document Version:** 3.1
-**Last Updated:** March 12, 2026
+**Document Version:** 3.2
+**Last Updated:** March 21, 2026
+**Changes from v3.1:**
+- Pushbutton wiring moved to GPIO_WIRING.md (Steps 5-6) with detailed button requirements and equivalent options
+- RTC battery section expanded: supports ML-2020, ML-2032, LIR2032, LIR2020 with chemistry-specific charge voltages
+- Relay module pin assignments updated: VCC → Pin 4, GND → Pin 20 (avoids doubling up with buck converter on Pin 2/Pin 6)
+- Removed Witty Pi reference from rain gauge verification
+- Hole sizes for pushbuttons no longer hardcoded (depends on button purchased)
+- Solid core wire specified throughout (no ferrules)
+
 **Changes from v3.0:**
 - Removed Witty Pi 5 HAT+ from stack, parts list, coating list, power path, and troubleshooting
 - Pi 5 built-in RTC (ML-2020 coin cell) handles scheduling directly
