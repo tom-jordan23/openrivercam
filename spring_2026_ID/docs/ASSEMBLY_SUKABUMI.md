@@ -140,7 +140,6 @@ Verify all components before starting assembly:
 
 ### Climate Monitoring
 - [ ] SHT40 temperature/humidity sensor (I2C, inside enclosure)
-- [ ] DS18B20 waterproof temperature probe (1-Wire, outside enclosure)
 
 ### User Interface
 - [ ] 12V IP67 panel-mount LEDs: Red, Yellow, Green
@@ -249,8 +248,11 @@ bulkheads, LEDs, and buttons once you know the layout works.
    - Terminal blocks (snap onto rail)
    - Fuse holder (snap onto rail or screw mount)
 
-3. **Mount items without DIN holes:**
-   - Quectel modem: Use Velcro/Dual-Lock
+3. **Mount items without DIN rail clips:**
+   - Quectel modem: sits inside the EXVIST WWAN USB carrier, which is
+     Velcro/Dual-Lock attached to a DIN rail clip
+   - Small breakout boards (SHT40, etc.): double-sided tape to a nearby
+     DIN-mounted component's carrier tray or flat surface
 
 4. **Layout:**
 
@@ -377,13 +379,12 @@ coating (Pre-Assembly Checklist Step 3), then enclosure preparation.**
    - 2× holes for pushbuttons (maintenance + power) — hole size depends on
      the buttons you purchased (12mm, 16mm, 19mm, or 22mm are common)
    - 1× PG9 hole for rain gauge cable
-   - 1× PG9 hole for DS18B20 temperature probe
 
 2. **Install bulkheads and glands:**
    - Gore M12 vents (hand-tight plus 1/4 turn)
    - SP13 DC power bulkhead
    - CNLINKO ethernet bulkhead
-   - PG9 cable glands for rain gauge and DS18B20
+   - PG9 cable gland for rain gauge
 
 3. **Install user interface components:**
    - Insert LEDs into 10mm panel holes, secure with nuts
@@ -414,14 +415,7 @@ coating (Pre-Assembly Checklist Step 3), then enclosure preparation.**
      - TX → GPIO 15 (Pi RX)
      - RX → GPIO 14 (Pi TX)
 
-5. **Connect DS18B20 temperature probe:**
-   - Route cable through PG9 gland
-   - Connect to G469:
-     - Data → GPIO 4 (Pin 7) (with 4.7kΩ pull-up to 3.3V)
-     - VCC → 3.3V
-     - GND → GND
-
-6. **Connect Cat6 outdoor cable:**
+5. **Connect Cat6 outdoor cable:**
    - PoE switch PoE port → CNLINKO bulkhead → Camera
 
 ### Step 10: Configure Pi Camera Network (15 min)

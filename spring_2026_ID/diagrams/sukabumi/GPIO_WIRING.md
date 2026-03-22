@@ -21,9 +21,8 @@
   - [Step 5: Wire the Maintenance Pushbutton](#step-5-wire-the-maintenance-pushbutton)
   - [Step 6: Wire the External Power Button](#step-6-wire-the-external-power-button-pi-5-j2-header)
   - [Step 7: Wire the Hydreon RG-15 Rain Gauge](#step-7-wire-the-hydreon-rg-15-rain-gauge-uart)
-  - [Step 8: Wire the DS18B20 Temperature Probe](#step-8-wire-the-ds18b20-temperature-probe-1-wire)
-  - [Step 9: Wire the SHT40 Sensor](#step-9-wire-the-sht40-temperaturehumidity-sensor-i2c)
-  - [Step 10: Install RTC Battery](#step-10-install-rtc-battery-ml-2020)
+  - [Step 8: Wire the SHT40 Sensor](#step-8-wire-the-sht40-temperaturehumidity-sensor-i2c)
+  - [Step 9: Install RTC Battery](#step-9-install-rtc-battery-ml-2020)
 - [Final Pre-Power Verification](#final-pre-power-verification)
 - [First Power-On Procedure](#first-power-on-procedure)
 - [Channel Summary](#channel-summary)
@@ -246,7 +245,7 @@ Orientation: GPIO header at top-right corner of the Pi board.
   Pin 5  │  [GPIO 3  SCL ] ●  ●  [GND]           ★ GND    │  Pin 6
          │   ★ SHT40 I2C                                    │
   Pin 7  │  [GPIO 4      ] ●  ●  [GPIO 14  TXD]  ★ UART   │  Pin 8
-         │   ★ DS18B20                                      │
+         │                                                   │
   Pin 9  │  [GND]          ●  ●  [GPIO 15  RXD]  ★ UART   │  Pin 10
   Pin 11 │  [GPIO 17     ] ●  ●  [GPIO 18]                 │  Pin 12
          │   ★ Green LED                                     │
@@ -747,56 +746,7 @@ destroy the Pi. Trace the wires and fix it before proceeding.**
 
 ---
 
-### Step 8: Wire the DS18B20 Temperature Probe (1-Wire)
-
-The DS18B20 is a waterproof stainless steel temperature probe mounted **outside**
-the enclosure. It measures ambient air temperature for dew point calculations.
-
-**This is a 3.3V logic circuit — no 12V involved.**
-
-The DS18B20 requires a **4.7k Ohm pull-up resistor** between the data line and 3.3V.
-
-| Wire # | From (G469 Terminal) | To | Label | Color | Gauge |
-|--------|---------------------|-----|-------|-------|-------|
-| 25 | Pin 1 — 3V3 | DS18B20 red wire (VDD) | "DS18 3V3" | Red | 22 AWG |
-| 26 | Pin 7 — GPIO 4 | DS18B20 yellow/white wire (DATA) | "DS18 data" | Blue/White | 22 AWG |
-| 27 | Pin 9 — GND | DS18B20 black wire (GND) | "DS18 GND" | Black | 22 AWG |
-
-**Pull-up resistor:** Solder or crimp a **4.7k Ohm resistor** between Pin 1 (3V3)
-and Pin 7 (GPIO 4) on the G469 terminal block. Both legs insert into the same
-screw terminals as wires 25 and 26.
-
-```
-  G469 Pin 1  (3V3)  ──┬── DS18B20 red   (VDD)
-                        │
-                    [4.7k Ohm]  ← pull-up resistor
-                        │
-  G469 Pin 7  (GPIO 4) ─┼── DS18B20 yellow (DATA)
-                        │
-                        └── read by 1-Wire driver
-  G469 Pin 9  (GND)  ──── DS18B20 black  (GND)
-```
-
-**Cable routing:** DS18B20 cable enters enclosure through PG9 cable gland.
-Apply dielectric grease to the gland threads.
-
-**1-Wire config required on the Pi (do this during software setup):**
-```
-# Add to /boot/firmware/config.txt
-dtoverlay=w1-gpio,gpiopin=4
-```
-
-### Step 8 Verification
-
-- [ ] Continuity: G469 Pin 1 (3V3) ↔ DS18B20 red wire — beep
-- [ ] Continuity: G469 Pin 7 (GPIO 4) ↔ DS18B20 yellow wire — beep
-- [ ] Continuity: G469 Pin 9 (GND) ↔ DS18B20 black wire — beep
-- [ ] Pull-up: G469 Pin 1 (3V3) ↔ G469 Pin 7 (GPIO 4) — multimeter reads ~4.7k Ohm
-- [ ] NO short: DS18B20 red wire ↔ DS18B20 black wire — **NO beep**
-
----
-
-### Step 9: Wire the SHT40 Temperature/Humidity Sensor (I2C)
+### Step 8: Wire the SHT40 Temperature/Humidity Sensor (I2C)
 
 The SHT40 is mounted **inside** the enclosure to monitor internal climate
 (humidity, temperature). It connects via I2C using a STEMMA QT cable.
@@ -823,11 +773,13 @@ the cable's documentation before connecting.
   G469 Pin 9  (GND)    ──── SHT40 GND  (black)
 ```
 
-**Mounting:** Secure the SHT40 breakout board inside the enclosure with a small
-adhesive standoff or cable tie mount. Position away from heat sources (Pi, DC-DC
-converters) for accurate readings.
+**Mounting:** Small breakout boards like the SHT40 don't fit on a DIN rail
+carrier. Use double-sided tape to attach them directly to a nearby DIN-mounted
+component — for example, the Pi's carrier tray has a flat surface that works
+well. This keeps the sensor secure without adding another rail mount. Position
+away from heat sources (Pi CPU, DC-DC converters) for accurate readings.
 
-### Step 9 Verification
+### Step 8 Verification
 
 - [ ] Continuity: G469 Pin 1 (3V3) ↔ SHT40 VIN — beep
 - [ ] Continuity: G469 Pin 3 (GPIO 2) ↔ SHT40 SDA — beep
@@ -836,7 +788,7 @@ converters) for accurate readings.
 
 ---
 
-### Step 10: Install RTC Battery (ML-2020)
+### Step 9: Install RTC Battery (ML-2020)
 
 The Raspberry Pi 5 has a built-in real-time clock (RTC) that keeps time when the
 Pi loses power. It needs a rechargeable coin cell battery to function.
@@ -937,7 +889,7 @@ To test RTC backup:
 4. Reconnect power and boot
 5. Check `timedatectl` — the time should be correct (within a few seconds)
 
-### Step 10 Notes
+### Step 9 Notes
 
 - The ML-2020 charges slowly (3mA). Allow several hours of powered-on time for
   a full charge on a new battery.
@@ -984,7 +936,6 @@ Complete this entire checklist before reconnecting the battery or USB-C cable.
 - [ ] G469 Pin 14 (GND) ↔ Button terminal (other side)
 - [ ] G469 Pin 8 (GPIO 14) ↔ RG-15 green wire
 - [ ] G469 Pin 10 (GPIO 15) ↔ RG-15 yellow wire
-- [ ] G469 Pin 7 (GPIO 4) ↔ DS18B20 data wire
 - [ ] G469 Pin 3 (GPIO 2) ↔ SHT40 SDA
 - [ ] G469 Pin 5 (GPIO 3) ↔ SHT40 SCL
 
@@ -997,7 +948,6 @@ These verify that 12V cannot reach the Pi GPIO:
 - [ ] TB1 12V ↔ G469 Pin 3 (GPIO 2) — **NO beep**
 - [ ] TB1 12V ↔ G469 Pin 5 (GPIO 3) — **NO beep**
 - [ ] TB1 12V ↔ G469 Pin 6 (GND) — **NO beep**
-- [ ] TB1 12V ↔ G469 Pin 7 (GPIO 4) — **NO beep**
 - [ ] TB1 12V ↔ G469 Pin 8 (GPIO 14) — **NO beep**
 - [ ] TB1 12V ↔ G469 Pin 10 (GPIO 15) — **NO beep**
 - [ ] TB1 12V ↔ G469 Pin 11 (GPIO 17) — **NO beep**
@@ -1043,9 +993,9 @@ These verify that 12V cannot reach the Pi GPIO:
 
 ## Pin Assignment Summary
 
-**Total GPIO pins used:** 10 (of 28 total)
+**Total GPIO pins used:** 9 (of 28 total)
 **Total GPIO pins reserved (EEPROM):** 2
-**Total GPIO pins free:** 16
+**Total GPIO pins free:** 17
 
 ### All Used Pins
 
@@ -1053,7 +1003,6 @@ These verify that 12V cannot reach the Pi GPIO:
 |------|-------------|----------|-------------|
 | GPIO 2 | 3 | I2C SDA | SHT40 sensor (0x44) |
 | GPIO 3 | 5 | I2C SCL | SHT40 sensor |
-| GPIO 4 | 7 | 1-Wire data | DS18B20 temperature probe |
 | GPIO 14 | 8 | UART TX | RG-15 rain gauge RX |
 | GPIO 15 | 10 | UART RX | RG-15 rain gauge TX |
 | GPIO 17 | 11 | Relay IN2 | Green LED (via relay) |
@@ -1066,6 +1015,7 @@ These verify that 12V cannot reach the Pi GPIO:
 
 | GPIO | Pin | Notes |
 |------|-----|-------|
+| GPIO 4 | 7 | General purpose (1-Wire capable) |
 | GPIO 5 | 29 | General purpose |
 | GPIO 6 | 31 | General purpose |
 | GPIO 7 | 26 | SPI CE1 |
@@ -1095,7 +1045,7 @@ Each GPIO function will have a corresponding systemd service:
 | `led-status.service` | GPIO 17, 27, 22 | simple (long-running) | Manage LED state based on system status |
 | `maintenance-button.service` | GPIO 23 | simple (long-running) | Monitor button, trigger maintenance mode |
 | `rain-gauge.service` | GPIO 14, 15 | simple (long-running) | Read UART data from Hydreon RG-15 |
-| `climate-monitor.service` | GPIO 2, 3, 4 | simple (long-running) | Read SHT40 (I2C) and DS18B20 (1-Wire) |
+| `climate-monitor.service` | GPIO 2, 3 | simple (long-running) | Read SHT40 (I2C) temperature and humidity |
 
 ---
 
