@@ -106,6 +106,5 @@ survey/
 
 | Project | Description | Link |
 |---------|-------------|------|
-| **ORC** | OpenRivercam — open-source camera-based river discharge measurement | [github.com/localdevices/ORC](https://github.com/localdevices/ORC) |
 | **ORC-OS** | Raspberry Pi operating system for ORC field stations | [github.com/localdevices/ORC-OS](https://github.com/localdevices/ORC-OS) |
 | **LocalDevices** | Organization behind ORC and ORC-OS | [github.com/localdevices](https://github.com/localdevices) |
