@@ -5,6 +5,33 @@
 
 ---
 
+## Table of Contents
+
+- [Parts Referenced in This Guide](#parts-referenced-in-this-guide)
+- [Safety Rules](#safety-rules)
+- [Tools Needed](#tools-needed)
+- [Understanding the Relay Module](#understanding-the-relay-module)
+  - [Why NO and Not NC (Fail-Safe Design)](#why-no-and-not-nc-fail-safe-design)
+- [Pi 5 40-Pin Header — Pin Map](#pi-5-40-pin-header--pin-map)
+- [Step-by-Step Wiring Instructions](#step-by-step-wiring-instructions)
+  - [Step 1: Wire 5V Power Input to Pi](#step-1-wire-5v-power-input-to-pi-ddr-60g-5-buck-converter)
+  - [Step 2: Wire the Relay Module Input Side](#step-2-wire-the-relay-module-input-side-low-voltage)
+  - [Step 3: Wire the Relay Module Output Side — CH1 (PoE Switch)](#step-3-wire-the-relay-module-output-side--ch1-poe-switch)
+  - [Step 4: Wire the Relay Module Output Side — CH2/3/4 (LEDs)](#step-4-wire-the-relay-module-output-side--ch234-status-leds)
+  - [Step 5: Wire the Maintenance Pushbutton](#step-5-wire-the-maintenance-pushbutton)
+  - [Step 6: Wire the External Power Button](#step-6-wire-the-external-power-button-pi-5-j2-header)
+  - [Step 7: Wire the Hydreon RG-15 Rain Gauge](#step-7-wire-the-hydreon-rg-15-rain-gauge-uart)
+  - [Step 8: Wire the DS18B20 Temperature Probe](#step-8-wire-the-ds18b20-temperature-probe-1-wire)
+  - [Step 9: Wire the SHT40 Sensor](#step-9-wire-the-sht40-temperaturehumidity-sensor-i2c)
+  - [Step 10: Install RTC Battery](#step-10-install-rtc-battery-ml-2020)
+- [Final Pre-Power Verification](#final-pre-power-verification)
+- [First Power-On Procedure](#first-power-on-procedure)
+- [Channel Summary](#channel-summary)
+- [Pin Assignment Summary](#pin-assignment-summary)
+- [Notes](#notes)
+
+---
+
 ## Parts Referenced in This Guide
 
 This guide uses specific part numbers from the Sukabumi build. If you are

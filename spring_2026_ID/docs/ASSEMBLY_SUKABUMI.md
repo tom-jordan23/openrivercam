@@ -6,6 +6,34 @@
 
 ---
 
+## Table of Contents
+
+- [Pre-Assembly Checklist](#pre-assembly-checklist)
+  - [1. Software Configuration](#1-software-configuration)
+  - [2. Hardware Testing (Dry-Fit)](#2-hardware-testing-dry-fit)
+  - [3. Conformal Coating](#3-conformal-coating-after-testing-before-travel)
+- [Component Inventory](#component-inventory)
+- [Assembly Steps](#assembly-steps)
+  - [Step 1: Prepare Mounting Plate and DIN Rails](#step-1-prepare-mounting-plate-and-din-rails)
+  - [Step 2: Assemble Compute Stack](#step-2-assemble-compute-stack-15-min)
+  - [Step 3: Mount Components on DIN Rail](#step-3-mount-components-on-din-rail-20-min)
+  - [Step 4: Wire Power Distribution](#step-4-wire-power-distribution-20-min)
+  - [Step 5: Wire PoE Camera Circuit](#step-5-wire-poe-camera-circuit-on-mounting-plate-15-min)
+  - [Step 6: Connect Peripherals](#step-6-connect-peripherals-on-mounting-plate-15-min)
+  - [Step 7: Test Mounting Plate Assembly](#step-7-test-mounting-plate-assembly)
+  - [Step 8: Prepare Enclosure and Install Bulkheads](#step-8-prepare-enclosure-and-install-bulkheads)
+  - [Step 9: Install Mounting Plate and Connect External Peripherals](#step-9-install-mounting-plate-and-connect-external-peripherals)
+  - [Step 10: Configure Pi Camera Network](#step-10-configure-pi-camera-network-15-min)
+  - [Step 11: Configure PoE Camera Settings](#step-11-configure-poe-camera-settings-15-min)
+  - [Step 12: Mount External Components](#step-12-mount-external-components-30-min)
+  - [Step 13: Final Assembly and Sealing](#step-13-final-assembly--sealing-15-min)
+- [Power-On Procedure](#power-on-procedure)
+- [Troubleshooting](#troubleshooting)
+- [Maintenance Notes](#maintenance-notes)
+- [Site-Specific Configuration](#site-specific-configuration)
+
+---
+
 ## Pre-Assembly Checklist
 
 Complete these steps BEFORE traveling to Indonesia:
@@ -142,42 +170,29 @@ Verify all components before starting assembly:
 
 ## Assembly Steps
 
-### Step 1: Prepare Enclosure (30 min)
+### Step 1: Prepare Mounting Plate and DIN Rails
 
-<a href="images/sukabumi/enclosure-opened.png"><img src="images/sukabumi/enclosure-opened.png" alt="NEMA 4X enclosure opened showing interior with removable mounting plate, gasket seal on door, and latch" width="400"></a>
+**Complete all mounting plate work before drilling the enclosure box.** The
+mounting plate is where all DIN rail components live. Get everything mounted,
+wired, and tested on the plate first — then drill the enclosure for
+bulkheads, LEDs, and buttons once you know the layout works.
 
-**Tools needed:** Drill, step bit or hole saw, marker
+**Tools needed:** Drill, marker, saw (for cutting DIN rail), screwdriver
 
-1. **Mark hole positions:**
-   - 2× M12 holes for Gore vents (opposite sides for airflow)
-   - 1× 12mm hole for Proxicast puck antenna (enclosure top)
-   - 1× hole for CNLINKO ethernet bulkhead (PoE camera)
-   - 1× hole for SP13 DC power bulkhead (12V input)
-   - 3× 10mm holes for status LEDs
-   - 2× holes for pushbuttons (maintenance + power) — hole size depends on
-     the buttons you purchased (12mm, 16mm, 19mm, or 22mm are common)
-   - 1× PG9 hole for rain gauge cable
-   - 1× PG9 hole for DS18B20 temperature probe
-
-2. **Drill holes:**
+1. **Mark and drill DIN rail mounting holes on the plate:**
 
    <a href="images/sukabumi/drilling-mounting-plate.png"><img src="images/sukabumi/drilling-mounting-plate.png" alt="Drilling DIN rail mounting holes in enclosure plate with DeWalt drill" width="300"></a>
 
-   - Use step bit for clean cuts in plastic/metal
-   - Deburr all holes
-   - Test-fit bulkheads, glands, and LEDs
+   - Remove the mounting plate from the enclosure
+   - Mark positions for two horizontal DIN rails
+   - Drill screw holes for rail mounting
 
-3. **Install Gore vents:**
-   - Thread M12 vents into holes
-   - Hand-tight plus 1/4 turn (do not overtighten)
-   - Vents should be on opposite sides for air circulation
-
-4. **Install DIN rail:**
+2. **Cut and install DIN rails:**
 
    <a href="images/sukabumi/din-rails-marked-for-cutting.png"><img src="images/sukabumi/din-rails-marked-for-cutting.png" alt="Two 35mm DIN rails on workbench with pink marker lines showing where to cut to fit enclosure width" width="300"></a>  <a href="images/sukabumi/din-rails-clamped-to-plate.png"><img src="images/sukabumi/din-rails-clamped-to-plate.png" alt="Two cut DIN rails clamped to mounting plate with bar clamps for alignment before screwing down" width="300"></a>
 
-   - Cut to fit enclosure width
-   - Mount horizontally using provided screws
+   - Cut rails to fit plate width
+   - Mount horizontally using screws
    - Leave clearance for cable routing below
 
 ### Step 2: Assemble Compute Stack (15 min)
@@ -260,40 +275,14 @@ Verify all components before starting assembly:
    └─────────────────────────────────────────┘
    ```
 
-### Step 4: Install User Interface (15 min)
-
-**Tools needed:** Screwdriver, wire strippers
-
-1. **Install LEDs:**
-   - Insert LEDs into 10mm panel holes
-   - Secure with provided nuts (inside)
-   - Order: Red (error) | Yellow (working) | Green (OK)
-
-2. **Install pushbuttons:**
-   - Insert each button into its panel hole and secure with nut from inside
-   - Maintenance button should be slightly recessed to prevent accidental press
-   - Label power button clearly as "POWER" to distinguish from maintenance
-
-3. **Wire LEDs, pushbuttons, and power button:**
-
-   See **GPIO_WIRING.md** for detailed step-by-step wiring instructions:
-   - **Steps 4** — LED wiring (12V, relay-switched)
-   - **Step 5** — Maintenance pushbutton (GPIO 23 to GND)
-   - **Step 6** — Power button (Pi 5 J2 header)
-
-   The GPIO wiring guide includes wire tables, diagrams, continuity
-   verification checklists, button requirements, and equivalent part options.
-
-### Step 5: Wire Power Distribution (20 min)
+### Step 4: Wire Power Distribution (20 min)
 
 **Tools needed:** Wire strippers, screwdriver
 
-1. **12V Input from solar controller:**
-   - Run 18AWG wire from solar controller 12V output
-   - Through SP13 DC power bulkhead into enclosure
-   - To input terminal block
+See **GPIO_WIRING.md** for detailed step-by-step wiring instructions,
+pin assignments, continuity verification checklists, and build photos.
 
-2. **Power distribution:**
+1. **Power distribution:**
    ```
    Solar 12V ──┬── Inline Fuse (5A) ── DDR-60G-5 (12V→5V) ──► hardwired 5V/GND ──► Pi 5 GPIO
                │
@@ -307,86 +296,135 @@ Verify all components before starting assembly:
    Camera boots when Pi wakes and closes relay, powers down when relay opens.
    ```
 
-3. **Terminal block connections:**
+2. **Terminal block connections:**
    - Use solid core wire (18-22 AWG) for all internal DIN rail wiring
    - Label all terminals (12V+, 12V-, GND, etc.)
 
-### Step 6: Wire PoE Camera Circuit (15 min)
+### Step 5: Wire PoE Camera Circuit on Mounting Plate (15 min)
 
 **Tools needed:** Screwdriver, Ethernet cable
 
-1. **Circuit overview:**
-   ```
-   Solar 12V ── Fuse ── DDR-60G-12 ──► Relay ──► LINOVISION PoE Switch
-                                                       │
-                                          Uplink port ──► Pi 5 Ethernet port
-                                          PoE port ──► CNLINKO bulkhead ──► Camera
-   ```
-
-2. **Connections:**
+1. **Connections (all on the mounting plate):**
    - 12V+ from terminal block → fuse holder input
-   - Fuse holder output → DDR-60G-12 input (+)
-   - DDR-60G-12 output (12V regulated) → relay CH1 COM input
+   - Fuse holder output → relay CH1 COM input
    - Relay CH1 NO output → PoE switch 12V+ input
    - PoE switch GND → terminal block GND
    - Relay module VCC → G469 Pin 4 (5V)
    - Relay module GND → G469 Pin 20 (GND)
    - Relay IN1 → G469 GPIO 24
    - Short Ethernet patch cable: PoE switch uplink port → Pi 5 Ethernet
-   - Cat6 outdoor cable: PoE switch PoE port → CNLINKO bulkhead → Camera
 
-3. **Operation:**
+2. **Operation:**
    - Pi wakes (via RTC schedule), drives GPIO 24 HIGH → relay CH1 closes
-   - 12V regulated flows to PoE switch
+   - 12V flows to PoE switch
    - PoE switch provides 48V PoE to camera over Ethernet
    - Camera boots (~45-60s), built-in IR activates automatically at night
-   - Camera uploads video/snapshot via FTP to Pi over Ethernet (camera has DHCP IP)
+   - Camera uploads video/snapshot via FTP to Pi over Ethernet
    - Pi drives GPIO 24 LOW → relay opens → camera powers down
    - Pi enters sleep via RTC until next scheduled wake
 
-### Step 7: Connect Peripherals (15 min)
+### Step 6: Connect Peripherals on Mounting Plate (15 min)
 
 1. **USB flash drive:**
    - SanDisk 256GB directly into Pi 5 USB-A 3.0 port (blue)
 
 2. **LTE Modem:**
    - USB cable from EXVIST adapter → Pi 5 USB 2.0 port
-   - SMA pigtails from modem → puck antenna (via 12mm hole mount)
+   - SMA pigtails from modem (antenna connects later during enclosure step)
 
-3. **Puck antenna:**
-   - Mount Proxicast ANT-122-S02 in 12mm hole on enclosure top
-   - Internal SMA cables route to modem U.FL connectors
-
-4. **PoE Camera:**
-   - Already connected via Step 6
-   - Verify Ethernet from PoE switch uplink to Pi 5 port
-   - Verify Cat6 cable routed to CNLINKO bulkhead
-
-5. **Rain Gauge:**
-   - UART cable through PG9 gland
-   - Connect to Geekworm G469 terminals / TB1:
-     - VCC → 12V (TB1, 7-24V input range)
-     - GND → GND (TB1)
-     - TX → GPIO 15 (Pi RX)
-     - RX → GPIO 14 (Pi TX)
-
-6. **SHT40 sensor (inside enclosure):**
+3. **SHT40 sensor (inside enclosure):**
    - STEMMA QT to bare wire cable to Geekworm G469:
      - VCC → 3.3V
      - GND → GND
      - SDA → GPIO 2
      - SCL → GPIO 3
 
-7. **DS18B20 probe (outside enclosure):**
+4. **Verify all connections before powering on.**
+
+### Step 7: Test Mounting Plate Assembly
+
+Power on and verify the complete mounting plate assembly works before
+proceeding to enclosure work. This is your last chance to fix wiring issues
+before conformal coating and final assembly.
+
+- [ ] 12V supply → DDR-60G-5 → Pi boots
+- [ ] GPIO 24 → relay CH1 → PoE switch powers on
+- [ ] Camera boots and is reachable via Pi
+- [ ] FTP upload from camera to Pi works
+- [ ] LTE modem detected
+- [ ] SHT40 sensor readable via I2C
+- [ ] All continuity and isolation checks pass (see GPIO_WIRING.md)
+
+**Once the mounting plate assembly is fully tested, proceed to conformal
+coating (Pre-Assembly Checklist Step 3), then enclosure preparation.**
+
+---
+
+### Step 8: Prepare Enclosure and Install Bulkheads
+
+**Do not drill the enclosure until the mounting plate assembly is tested.**
+
+<a href="images/sukabumi/enclosure-opened.png"><img src="images/sukabumi/enclosure-opened.png" alt="NEMA 4X enclosure opened showing interior with removable mounting plate, gasket seal on door, and latch" width="400"></a>
+
+**Tools needed:** Drill, step bit or hole saw, marker
+
+1. **Mark and drill enclosure holes:**
+   - 2× M12 holes for Gore vents (opposite sides for airflow)
+   - 1× 12mm hole for Proxicast puck antenna (enclosure top)
+   - 1× hole for CNLINKO ethernet bulkhead (PoE camera)
+   - 1× hole for SP13 DC power bulkhead (12V input)
+   - 3× 10mm holes for status LEDs
+   - 2× holes for pushbuttons (maintenance + power) — hole size depends on
+     the buttons you purchased (12mm, 16mm, 19mm, or 22mm are common)
+   - 1× PG9 hole for rain gauge cable
+   - 1× PG9 hole for DS18B20 temperature probe
+
+2. **Install bulkheads and glands:**
+   - Gore M12 vents (hand-tight plus 1/4 turn)
+   - SP13 DC power bulkhead
+   - CNLINKO ethernet bulkhead
+   - PG9 cable glands for rain gauge and DS18B20
+
+3. **Install user interface components:**
+   - Insert LEDs into 10mm panel holes, secure with nuts
+   - Install pushbuttons, secure with nuts
+   - Label power button clearly as "POWER"
+
+   See **GPIO_WIRING.md** for detailed wiring instructions:
+   - **Step 4** — LED wiring (12V, relay-switched)
+   - **Step 5** — Maintenance pushbutton (GPIO 23 to GND)
+   - **Step 6** — Power button (Pi 5 J2 header)
+
+### Step 9: Install Mounting Plate and Connect External Peripherals
+
+1. **Install mounting plate** into enclosure with provided screws
+
+2. **Connect antenna:**
+   - Mount Proxicast ANT-122-S02 puck antenna in 12mm hole
+   - Route internal SMA cables to modem U.FL connectors
+
+3. **Connect 12V input:**
+   - Wire from SP13 DC power bulkhead to TB1 terminal block
+
+4. **Connect rain gauge:**
+   - Route UART cable through PG9 gland
+   - Connect to G469 terminals / TB1:
+     - VCC → 12V (TB1, 7-24V input range)
+     - GND → GND (TB1)
+     - TX → GPIO 15 (Pi RX)
+     - RX → GPIO 14 (Pi TX)
+
+5. **Connect DS18B20 temperature probe:**
    - Route cable through PG9 gland
-   - Connect to Geekworm G469:
+   - Connect to G469:
      - Data → GPIO 4 (Pin 7) (with 4.7kΩ pull-up to 3.3V)
      - VCC → 3.3V
      - GND → GND
 
-8. **Verify all connections before powering on.**
+6. **Connect Cat6 outdoor cable:**
+   - PoE switch PoE port → CNLINKO bulkhead → Camera
 
-### Step 8: Configure Pi Camera Network (15 min)
+### Step 10: Configure Pi Camera Network (15 min)
 
 The Pi serves as DHCP server for the camera network on eth0 using dnsmasq. This avoids the ANNKE's default 192.168.1.x subnet, which conflicts with most WiFi routers.
 
@@ -432,7 +470,7 @@ The Pi serves as DHCP server for the camera network on eth0 using dnsmasq. This 
      cat /var/lib/misc/dnsmasq.leases
      ```
 
-### Step 9: Configure PoE Camera Settings (15 min)
+### Step 11: Configure PoE Camera Settings (15 min)
 
 **Note:** ANNKE C1200 is factory-sealed IP67. No housing assembly required.
 
@@ -463,7 +501,7 @@ The Pi serves as DHCP server for the camera network on eth0 using dnsmasq. This 
    - IR LEDs should illuminate (visible glow)
    - Trigger snapshot, verify IR-lit image in FTP directory
 
-### Step 10: Mount External Components (30 min)
+### Step 12: Mount External Components (30 min)
 
 **Tools needed:** Adjustable wrench, stainless U-bolts
 
@@ -484,7 +522,7 @@ The Pi serves as DHCP server for the camera network on eth0 using dnsmasq. This 
    - Puck antenna already mounted on enclosure top (Step 1)
    - Verify secure and weatherproof seal
 
-### Step 11: Final Assembly & Sealing (15 min)
+### Step 13: Final Assembly & Sealing (15 min)
 
 1. **Cable management:**
    - Route all internal cables neatly
