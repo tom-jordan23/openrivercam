@@ -17,3 +17,6 @@ spring_2026_ID/pi/**/*.local
 # Camera config credentials and local overrides
 spring_2026_ID/camera/.env
 spring_2026_ID/camera/**/*.local
+
+# Build photos (large, not version controlled)
+spring_2026_ID/build_photos/

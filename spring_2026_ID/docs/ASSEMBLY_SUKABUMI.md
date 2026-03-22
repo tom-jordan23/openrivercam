@@ -73,6 +73,8 @@ Apply MG 422C silicone conformal coating to all PCBs:
 
 ## Component Inventory
 
+<a href="images/sukabumi/parts-inventory-layout.png"><img src="images/sukabumi/parts-inventory-layout.png" alt="All Sukabumi build components laid out on desk: enclosure mounting plate, DIN rails, fuse holders, ANNKE camera, Pi stack, relay module, DDR-60G-5 buck converter, Proxicast puck antenna, and Quectel modem" width="400"></a>
+
 Verify all components before starting assembly:
 
 ### Compute Stack
@@ -131,6 +133,8 @@ Verify all components before starting assembly:
 
 ### Step 1: Prepare Enclosure (30 min)
 
+<a href="images/sukabumi/enclosure-opened.png"><img src="images/sukabumi/enclosure-opened.png" alt="NEMA 4X enclosure opened showing interior with removable mounting plate, gasket seal on door, and latch" width="400"></a>
+
 **Tools needed:** Drill, step bit or hole saw, marker
 
 1. **Mark hole positions:**
@@ -145,6 +149,9 @@ Verify all components before starting assembly:
    - 1× PG9 hole for DS18B20 temperature probe
 
 2. **Drill holes:**
+
+   <a href="images/sukabumi/drilling-mounting-plate.png"><img src="images/sukabumi/drilling-mounting-plate.png" alt="Drilling DIN rail mounting holes in enclosure plate with DeWalt drill" width="300"></a>
+
    - Use step bit for clean cuts in plastic/metal
    - Deburr all holes
    - Test-fit bulkheads, glands, and LEDs
@@ -155,6 +162,9 @@ Verify all components before starting assembly:
    - Vents should be on opposite sides for air circulation
 
 4. **Install DIN rail:**
+
+   <a href="images/sukabumi/din-rails-marked-for-cutting.png"><img src="images/sukabumi/din-rails-marked-for-cutting.png" alt="Two 35mm DIN rails on workbench with pink marker lines showing where to cut to fit enclosure width" width="300"></a>  <a href="images/sukabumi/din-rails-clamped-to-plate.png"><img src="images/sukabumi/din-rails-clamped-to-plate.png" alt="Two cut DIN rails clamped to mounting plate with bar clamps for alignment before screwing down" width="300"></a>
+
    - Cut to fit enclosure width
    - Mount horizontally using provided screws
    - Leave clearance for cable routing below
@@ -164,6 +174,9 @@ Verify all components before starting assembly:
 **Tools needed:** Phillips screwdriver
 
 1. **Stack order (bottom to top):**
+
+   <a href="images/sukabumi/pi5-and-g469-before-assembly.png"><img src="images/sukabumi/pi5-and-g469-before-assembly.png" alt="Raspberry Pi 5 and Geekworm G469 breakout board side by side on cutting mat before assembly, showing relative sizes" width="400"></a>
+
    ```
    [Raspberry Pi 5]
         ↑
@@ -183,6 +196,9 @@ Verify all components before starting assembly:
    - Secure stack with standoffs
 
 3. **Verify:**
+
+   <a href="images/sukabumi/pi5-active-cooler-installed.png"><img src="images/sukabumi/pi5-active-cooler-installed.png" alt="Raspberry Pi 5 with official active cooler (heatsink and fan) installed, top view" width="300"></a>  <a href="images/sukabumi/pi5-g469-stack-assembled.png"><img src="images/sukabumi/pi5-g469-stack-assembled.png" alt="Completed Pi 5 and G469 stack assembled, top-down view showing G469 screw terminals accessible from above" width="300"></a>
+
    - All headers fully seated
    - No bent pins
    - Heatsink secure
@@ -192,6 +208,9 @@ Verify all components before starting assembly:
 **Tools needed:** Screwdriver, DIN rail clips
 
 1. **Mount Pi stack:**
+
+   <a href="images/sukabumi/pi5-stack-in-din-bracket.png"><img src="images/sukabumi/pi5-stack-in-din-bracket.png" alt="Pi 5 with G469 HAT mounted in C4Labs DIN rail bracket, angled view showing full assembly ready to snap onto rail" width="400"></a>
+
    - Attach DIN rail clip to Pi mounting holes
    - Snap onto DIN rail
    - Verify secure fit
@@ -208,6 +227,9 @@ Verify all components before starting assembly:
    - Quectel modem: Use Velcro/Dual-Lock
 
 4. **Layout:**
+
+   <a href="images/sukabumi/din-rail-full-layout.png"><img src="images/sukabumi/din-rail-full-layout.png" alt="All components mounted on DIN rails: PoE switch and Pi stack on top rail, relay module, DDR-60G-5 buck converter, and distribution block on bottom rail" width="400"></a>
+
    ```
    ┌─────────────────────────────────────────┐
    │  [Gore Vent]              [Gore Vent]   │
@@ -497,6 +519,8 @@ The Pi serves as DHCP server for the camera network on eth0 using dnsmasq. This 
    - Red = error (check logs)
 
 ### Verify Camera
+
+<a href="images/sukabumi/camera-live-view-working.png"><img src="images/sukabumi/camera-live-view-working.png" alt="ANNKE camera live view displayed on monitor via PoE switch and Pi, showing successful end-to-end bench test of camera system" width="400"></a>
 
 1. Enter maintenance mode (long press button)
 2. Connect to WiFi hotspot

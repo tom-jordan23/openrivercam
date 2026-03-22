@@ -104,6 +104,8 @@ problem. A burning smell means a component is being destroyed right now.
 
 ## Tools Needed
 
+<a href="../../docs/images/sukabumi/tools-and-wire-spools.png"><img src="../../docs/images/sukabumi/tools-and-wire-spools.png" alt="Tools and materials: Pi 5 with G469 breakout assembled, spools of solid core wire in red, black, blue, and yellow, wire strippers, and flush cutters" width="400"></a>
+
 - Small Phillips screwdriver (for G469 and relay screw terminals)
 - Wire strippers (for 18-22 AWG)
 - Multimeter set to DC voltage and continuity modes
@@ -184,6 +186,8 @@ cycle. However, **NO is chosen deliberately as a fail-safe:**
   closes → camera begins booting) is an acceptable tradeoff for this protection.
 
 ### Input Side Explained
+
+<a href="../../docs/images/sukabumi/g469-pin-labels-closeup.png"><img src="../../docs/images/sukabumi/g469-pin-labels-closeup.png" alt="Close-up of Geekworm G469 breakout board showing labeled screw terminals for each GPIO pin" width="400"></a>
 
 | Terminal | What It Does | Connects To |
 |----------|-------------|-------------|
@@ -310,8 +314,12 @@ doubling up 18 AWG wires in a single screw terminal.
 **Before connecting to the Pi**, power on the DDR-60G-5 with 12V input and verify
 the output voltage:
 
+<a href="../../docs/images/sukabumi/multimeter-5v-verification.png"><img src="../../docs/images/sukabumi/multimeter-5v-verification.png" alt="Klein Tools multimeter reading 5.10V at DDR-60G-5 output, with bench power supply showing 12.08V input" width="400"></a>
+
 - [ ] Multimeter across DDR-60G-5 V+ and V-: reads **5.05V–5.15V** (adjust trim pot if needed)
 - [ ] Power off the 12V supply
+
+<a href="../../docs/images/sukabumi/g469-power-wires-connected.png"><img src="../../docs/images/sukabumi/g469-power-wires-connected.png" alt="G469 breakout board with yellow 5V wire and black GND wire connected to screw terminals, screwdriver nearby" width="400"></a>
 
 **After wiring to G469 (with 12V still disconnected):**
 
@@ -346,6 +354,8 @@ module on your DIN rail, add 3cm slack on each end). Strip 7-8mm on each end.
 4. Insert the other stripped end into the correct **relay input** screw terminal
 5. Tighten the screw — tug to confirm grip
 
+<a href="../../docs/images/sukabumi/g469-relay-signal-wires.png"><img src="../../docs/images/sukabumi/g469-relay-signal-wires.png" alt="G469 breakout with all relay input wires connected: yellow 5V, black GND, and colored signal wires for GPIO 24, 17, 27, and 22" width="400"></a>
+
 ### Step 2 Verification (DO THIS BEFORE CONTINUING)
 
 Use your multimeter in **continuity mode** (beep mode). Touch one probe to each
@@ -369,6 +379,8 @@ Now check for shorts — **none of these should beep:**
 
 ### Step 3: Wire the Relay Module Output Side — CH1 (PoE Switch)
 
+<a href="../../docs/images/sukabumi/poe-switch-dc-input-terminals.png"><img src="../../docs/images/sukabumi/poe-switch-dc-input-terminals.png" alt="LINOVISION PoE switch rear panel showing V-/V+/V-/V+ screw terminals with removable green terminal block, labeled 9-54V DC" width="400"></a>
+
 Channel 1 switches 12V power to the LINOVISION PoE switch. This is the highest-current
 connection (~3-5A), so use **18 AWG** wire.
 
@@ -379,6 +391,11 @@ connection (~3-5A), so use **18 AWG** wire.
 | 7 | TB1 12V output | Fuse holder input (5A) | "12V → fuse" | Red | 18 AWG |
 | 7b | Fuse holder output | Relay CH1 **COM** | "fuse → relay" | Red | 18 AWG |
 | 8 | Relay CH1 **NO** | PoE switch 12V (+) input | "relay → PoE" | Red | 18 AWG |
+
+**Note:** The fuse holder uses **5x20mm glass tube fuses** (not US automotive blade
+fuses). If your fuses don't fit, check the size — see photo below.
+
+<a href="../../docs/images/sukabumi/fuse-holder-wrong-size-fuses.png"><img src="../../docs/images/sukabumi/fuse-holder-wrong-size-fuses.png" alt="DIN rail fuse holder opened showing incorrect oversized automotive glass fuses that do not fit the 5x20mm fuse slot" width="400"></a>
 
 ```
                                        Relay Module CH1
@@ -829,6 +846,8 @@ fits in your enclosure.
 
 **This build uses: ML-2020** with `dtparam=rtc_bbat_vchg=3000000`
 
+<a href="../../docs/images/sukabumi/pi5-j5-bat-connector-location.png"><img src="../../docs/images/sukabumi/pi5-j5-bat-connector-location.png" alt="Close-up of Raspberry Pi 5 board showing HDMI ports and J5 BAT connector area between USB-C and HDMI" width="400"></a>
+
 **Connector:** The battery plugs into the **J5 (BAT) connector** on the Pi 5
 board — a small white 2-pin JST-SH socket located between the USB-C power port
 and the micro-HDMI ports. This is NOT on the G469 breakout — it's on the Pi
@@ -903,6 +922,8 @@ To test RTC backup:
 
 ## Final Pre-Power Verification
 
+<a href="../../docs/images/sukabumi/complete-system-before-power.png"><img src="../../docs/images/sukabumi/complete-system-before-power.png" alt="Complete Sukabumi system on DIN rails with all wiring done, bench power supply showing 12.08V, ready for pre-power verification" width="400"></a>
+
 Complete this entire checklist before reconnecting the battery or USB-C cable.
 
 ### Visual Inspection
@@ -964,6 +985,8 @@ These verify that 12V cannot reach the Pi GPIO:
 ---
 
 ## First Power-On Procedure
+
+<a href="../../docs/images/sukabumi/system-wired-on-rail.png"><img src="../../docs/images/sukabumi/system-wired-on-rail.png" alt="Fully wired system on DIN rails: Pi stack and PoE switch on top rail, relay module and DDR-60G-5 on bottom rail, all signal and power wires connected" width="400"></a>
 
 1. **Reconnect the 12V supply** to TB1
 2. Verify DDR-60G-5 output with multimeter: **5.05V–5.15V** at G469 Pin 2
