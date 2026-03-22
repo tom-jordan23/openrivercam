@@ -490,6 +490,38 @@ reads as a button press.
 
 **This is a 3.3V logic circuit — no 12V involved.**
 
+### Pushbutton Requirements (Steps 5 and 6)
+
+Both the maintenance button (Step 5) and the power button (Step 6) use the same
+type of switch. Any switch that meets these requirements will work:
+
+- **Type:** Momentary (normally open) — the circuit is open until you press it,
+  and opens again when you release it. Do NOT use a latching/toggle switch.
+- **Rating:** Any voltage/current rating is fine — these carry only 3.3V signal
+  current (microamps). Even the cheapest momentary switch is electrically adequate.
+- **Weatherproofing:** IP67 or higher if the button is exposed to weather.
+  If the button is inside the enclosure or under a cover, any rating works.
+- **Mounting:** Panel-mount with a standard hole size (12mm, 16mm, 19mm, or
+  22mm are common). Match the hole you drill to the button you buy.
+- **Terminals:** Screw terminals, solder lugs, or wire leads all work. Screw
+  terminals are preferred (no soldering per design principles).
+
+**Common options:**
+
+| Button | Hole Size | Terminals | IP Rating | Price |
+|--------|-----------|-----------|-----------|-------|
+| Gebildet 16mm stainless (Amazon) | 16mm | Screw | IP67 | ~$9 |
+| C&K AP Series | 16mm | Solder/screw | IP67 | ~$12 |
+| E-Switch PVA6 Series | 16mm | Solder | IP67 | ~$15 |
+| Generic 12mm metal momentary | 12mm | Solder/wire | IP65-67 | ~$3-5 |
+| Any arcade-style momentary | 24-30mm | Quick-connect | None | ~$2 |
+
+The key requirement is **momentary, normally open**. Everything else is
+preference. Both buttons in this build use the same type of switch — they
+are not interchangeable in function, but they are interchangeable in hardware.
+
+---
+
 | Wire # | From (G469 Terminal) | To | Label | Color | Gauge |
 |--------|---------------------|-----|-------|-------|-------|
 | 19 | Pin 16 — GPIO 23 | Button terminal 1 | "BTN signal" | Blue/White | 22 AWG |
@@ -505,7 +537,6 @@ The pushbutton has two terminals. It does not matter which terminal gets which w
           │
      ┌────┴────┐
      │  Button │  IP67 momentary (normally open)
-     │  (E380) │  16mm stainless panel mount
      └────┬────┘
           │
          GND (Pin 14)
@@ -536,13 +567,31 @@ momentary switch.
 
 **This is a 3.3V logic circuit — no 12V involved.**
 
+**Button:** Same type as the maintenance button — any momentary, normally open
+switch works. See the button requirements table in Step 5 for options.
+
+**J2 connector:** J2 is a 2-pin 2.54mm pitch header (standard breadboard
+spacing). You can connect to it with:
+- **Dupont/jumper wires** — female ends push onto the header pins. Easiest
+  option, no soldering. Use hot glue or heat shrink to keep them from
+  vibrating loose.
+- **JST-XH or bare wire** — solder or crimp a 2-pin connector. More secure
+  but requires soldering (the only exception to the no-solder rule in this
+  build, because J2 is a bare header with no screw terminal option).
+- **2-pin jumper cap with pigtail** — available pre-made on Amazon. Search
+  for "2-pin 2.54mm header to wire pigtail."
+
+The J2 wires must route through or around the G469 HAT stack to reach the
+external button. Leave enough slack to separate the stack for service.
+
 | Wire # | From | To | Label | Color | Gauge |
 |--------|------|----|-------|-------|-------|
 | 32 | Pi 5 J2 pin 1 | Power button terminal 1 | "PWR BTN" | Blue/White | 22 AWG |
 | 33 | Pi 5 J2 pin 2 | Power button terminal 2 | "PWR BTN" | Blue/White | 22 AWG |
 
 The power button is a simple momentary switch (normally open). It does not
-matter which terminal gets which wire (not polarized).
+matter which terminal gets which wire (not polarized). It also does not matter
+which J2 pin goes to which button terminal — either orientation works.
 
 ```
      Pi 5 J2 Header
@@ -552,7 +601,6 @@ matter which terminal gets which wire (not polarized).
         │
    ┌────┴────┐
    │  Button │  IP67 momentary (normally open)
-   │         │  16mm stainless panel mount
    └────┬────┘
         │
        (other pin)
@@ -565,6 +613,9 @@ cable gland (can share the M16 gland with the maintenance button if both fit).
 - **Pi is off (halted):** Brief press powers on the Pi
 - **Pi is running:** Brief press initiates clean shutdown
 - **Pi is frozen:** Hold for ~10 seconds to force power off
+
+**Note:** J2 is a Pi 5 feature. Earlier Pi models (Pi 4, Pi 3, etc.) do not
+have this header and cannot support an external hardware power button this way.
 
 ### Step 6 Verification
 
