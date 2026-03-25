@@ -1,0 +1,73 @@
+SUKABUMI STATION — PRE-POWER CONTINUITY CHECKLIST
+==================================================
+Date: ____________    Technician: ____________
+
+Instructions: Use multimeter in continuity (beep) mode.
+Mark PASS or FAIL for each test. ALL must pass before powering on.
+
+
+SECTION 1: 5V POWER INPUT (should beep)
+----------------------------------------
+[ ] DDR-60G-5 V+  <-->  G469 Pin 2 (5V)         ___PASS ___FAIL
+[ ] DDR-60G-5 V-  <-->  G469 Pin 25 (GND)       ___PASS ___FAIL
+
+
+SECTION 2: RELAY LOGIC (should beep)
+-------------------------------------
+[ ] G469 Pin 4 (5V)       <-->  Relay VCC        ___PASS ___FAIL
+[ ] G469 Pin 20 (GND)     <-->  Relay GND        ___PASS ___FAIL
+[ ] G469 Pin 18 (GPIO 24) <-->  Relay IN1        ___PASS ___FAIL
+[ ] G469 Pin 11 (GPIO 17) <-->  Relay IN2        ___PASS ___FAIL
+[ ] G469 Pin 13 (GPIO 27) <-->  Relay IN3        ___PASS ___FAIL
+[ ] G469 Pin 15 (GPIO 22) <-->  Relay IN4        ___PASS ___FAIL
+
+
+SECTION 3: 12V POWER / POE (should beep)
+-----------------------------------------
+[ ] TB1 12V       <-->  Fuse holder input        ___PASS ___FAIL
+[ ] Fuse output   <-->  Relay CH1 COM            ___PASS ___FAIL
+[ ] TB1 12V       <-->  Relay CH1 COM (w/fuse)   ___PASS ___FAIL
+[ ] Relay CH1 NO  <-->  PoE switch 12V (+)       ___PASS ___FAIL
+[ ] TB1 GND       <-->  PoE switch GND (-)       ___PASS ___FAIL
+
+
+SECTION 4: SHT40 SENSOR (should beep)
+--------------------------------------
+[ ] G469 Pin 1 (3V3)     <-->  SHT40 VIN        ___PASS ___FAIL
+[ ] G469 Pin 3 (GPIO 2)  <-->  SHT40 SDA        ___PASS ___FAIL
+[ ] G469 Pin 5 (GPIO 3)  <-->  SHT40 SCL        ___PASS ___FAIL
+[ ] G469 Pin 9 (GND)     <-->  SHT40 GND        ___PASS ___FAIL
+
+
+SECTION 5: SHORT CHECKS (should NOT beep)
+------------------------------------------
+[ ] G469 Pin 2 (5V)   <-->  G469 Pin 25 (GND)   ___PASS(silent) ___FAIL(beep)
+[ ] Relay VCC          <-->  Relay GND            ___PASS(silent) ___FAIL(beep)
+[ ] Relay CH1 COM      <-->  Relay CH1 NO         ___PASS(silent) ___FAIL(beep)
+
+
+SECTION 6: 12V ISOLATION FROM PI (should NOT beep)
+---------------------------------------------------
+*** IF ANY OF THESE BEEP, STOP. DO NOT POWER ON. ***
+*** 12V on a GPIO pin will destroy the Pi instantly. ***
+
+[ ] TB1 12V  <-->  DDR-60G-5 V+ output          ___PASS(silent) ___FAIL(beep)
+[ ] TB1 12V  <-->  G469 Pin 2 (5V)              ___PASS(silent) ___FAIL(beep)
+[ ] TB1 12V  <-->  G469 Pin 3 (GPIO 2)          ___PASS(silent) ___FAIL(beep)
+[ ] TB1 12V  <-->  G469 Pin 5 (GPIO 3)          ___PASS(silent) ___FAIL(beep)
+[ ] TB1 12V  <-->  G469 Pin 8 (GPIO 14)         ___PASS(silent) ___FAIL(beep)
+[ ] TB1 12V  <-->  G469 Pin 10 (GPIO 15)        ___PASS(silent) ___FAIL(beep)
+[ ] TB1 12V  <-->  G469 Pin 11 (GPIO 17)        ___PASS(silent) ___FAIL(beep)
+[ ] TB1 12V  <-->  G469 Pin 13 (GPIO 27)        ___PASS(silent) ___FAIL(beep)
+[ ] TB1 12V  <-->  G469 Pin 15 (GPIO 22)        ___PASS(silent) ___FAIL(beep)
+[ ] TB1 12V  <-->  G469 Pin 18 (GPIO 24)        ___PASS(silent) ___FAIL(beep)
+
+
+SIGN-OFF
+--------
+All Section 1-4 tests: BEEP     [ ] YES  [ ] NO
+All Section 5-6 tests: SILENT   [ ] YES  [ ] NO
+
+SAFE TO POWER ON:  [ ] YES  [ ] NO — DO NOT PROCEED
+
+Signature: ________________________  Date: ____________

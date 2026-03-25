@@ -78,6 +78,12 @@
 
 ## AC Power Input Detail
 
+The surge suppressor is a PARALLEL device — it does not pass power through.
+It sits across the AC line and clamps voltage spikes. The PSU and surge
+suppressor both tap off the same AC bus via DIN rail terminal blocks.
+
+DC ground (TB1) is a separate floating ground — do NOT connect DC ground to AC PE.
+
 ```
 +-----------------------------------------------------------------------------+
 |                         AC POWER INPUT                                      |
@@ -85,51 +91,76 @@
 
                     BUILDING 220V AC
                           |
-                          | (through SP13 AC mains input bulkhead)
-                          v
+                          | L (Brown), N (Blue), PE (Green/Yellow)
+                          |
                 +---------------------+
                 |  SP13 AC MAINS      |
                 |  INPUT BULKHEAD     |
                 |  (IP68)             |
                 +---------+----------+
                           |
-     +--------------------+--------------------+
-     | L (Line/Hot)       | N (Neutral)        | PE (Earth/Ground)
-     | Brown              | Blue               | Green/Yellow
-     v                    v                    v
-+-------------------------------------------------------------------------+
-|                   HESCHEN HS-40-N 2P SURGE PROTECTOR                    |
-|                       (40kA, 275V)                                      |
-|  +-----+  +-----+  +-----+                                             |
-|  |  L  |  |  N  |  | PE  |                                             |
-|  | IN  |  | IN  |  | IN  |                                             |
-|  +--+--+  +--+--+  +--+--+                                             |
-|     |        |        |                                                 |
-|  +--+--+  +--+--+  +--+--+                                             |
-|  |  L  |  |  N  |  | PE  |                                             |
-|  | OUT |  | OUT |  | OUT |                                             |
-|  +--+--+  +--+--+  +--+--+                                             |
-+-----+-------+-------+--------------------------------------------------+
-      |       |       |
-      |       |       +---> GROUND BAR ---> GROUND ROD (1.5m copper)
-      |       |
-      v       v
-+-------------------------------------------------------------------------+
-|                     MEAN WELL SDR-120-12                                |
-|                     (DIN Rail Mount)                                    |
-|                                                                         |
-|  AC INPUT:                    DC OUTPUT:                                |
-|  +-----+  +-----+            +-----+  +-----+                          |
-|  |  L  |  |  N  |            | +V  |  | -V  |                          |
-|  |     |  |     |            | 12V |  | GND |                          |
-|  +-----+  +-----+            +--+--+  +--+--+                          |
-|                                 |        |                              |
-|    88-264V AC input             |        |    12V DC output            |
-|    (auto-ranging)               |        |    10A max (120W)           |
-+---------------------------------+--------+------------------------------+
-                                  |        |
-                                  v        v
-                           TO TERMINAL BLOCK TB1
+         +----------------+----------------+
+         |                |                |
+         | L (Brown)      | N (Blue)       | PE (Green/Yellow)
+         v                v                |
+  +------------+   +------------+          |
+  | DIN TERM   |   | DIN TERM   |          |
+  | BLOCK (L)  |   | BLOCK (N)  |          |
+  | 2x bridged |   | 2x bridged |          |
+  +--+--+--+---+   +--+--+--+---+          |
+     |  |  |          |  |  |              |
+     |  |  +-------+  |  |  +-------+     |
+     |  |          |  |  |          |     |
+     |  v          v  |  v          v     v
+     | PSU L    SURGE  | PSU N    SURGE  SURGE
+     | input    L term | input    N term PE term
+     |                 |                    |
+     v                 v                    v
+  +---------------------------+      BUILDING GROUND
+  |   MEAN WELL SDR-120-12   |      (through SP13 bulkhead)
+  |   (DIN Rail Mount)       |
+  |                          |
+  |   AC INPUT:  L, N        |
+  |   (88-264V auto-ranging) |
+  |                          |
+  |   DC OUTPUT:             |
+  |   +-----+  +-----+      |
+  |   | +V  |  | -V  |      |
+  |   | 12V |  | GND |      |
+  |   +--+--+  +--+--+      |
+  +------+--------+----------+
+         |        |
+         v        v
+  TO TERMINAL BLOCK TB1
+  (12V DC floating ground — NOT connected to AC PE)
+```
+
+```
+DIN RAIL TERMINAL BLOCK DETAIL:
+
+Each L and N bus uses 2 DIN rail terminal blocks bridged together.
+Bridge bar connects all 4 lugs electrically.
+
+  +--------+--------+
+  | BLOCK 1| BLOCK 2|          Each block has 2 lugs
+  |        |        |          (left and right screw terminals)
+  | L1  L2 | L3  L4 |
+  +---++---+---++---+          Bridge bar
+      ||           ||          connects all 4 lugs
+      ++=====+====++
+             |
+         BRIDGE BAR
+    (U-shaped metal strip,
+     break to 2-segment length,
+     drop into slot on top of blocks,
+     tighten screw)
+
+  L1 = AC input line (from SP13 bulkhead)
+  L2 = Mean Well PSU L terminal
+  L3 = Surge suppressor L terminal
+  L4 = spare
+
+  Same layout for N bus (use blue blocks).
 ```
 
 ---

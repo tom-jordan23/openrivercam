@@ -372,16 +372,85 @@ bulkheads, LEDs, and buttons once you know the layout works.
 
 **IMPORTANT: Do NOT connect AC power until all wiring is complete.**
 
-1. **Wire surge protector:**
-   - AC input through SP13 AC mains input bulkhead
-   - L (line) -> Surge protector input
-   - N (neutral) -> Surge protector input
-   - PE (earth) -> Ground terminal -> Ground cable
+**Understanding the AC layout:** The surge suppressor is a **parallel** device —
+it does not pass power through. It sits across the AC line and clamps voltage
+spikes. The PSU and surge suppressor both connect to the same AC bus via DIN
+rail terminal blocks.
 
-2. **Wire Mean Well SDR-120-12:**
-   - AC input from surge protector output
-   - 12V output to terminal block
-   - Verify input voltage selector (if any) set for 220V
+1. **Set up AC distribution terminal blocks on the bottom DIN rail:**
+
+   Use DIN rail feed-through terminal blocks (rated 600V+ / 20A+) to create
+   an AC distribution point. You need 4 blocks total:
+   - **2 blocks for L (line)** — use brown blocks if available
+   - **2 blocks for N (neutral)** — use blue blocks if available
+
+   **How to assemble the terminal block pairs:**
+   1. Snap 2 blocks side by side onto the DIN rail
+   2. Add end stops on each side to prevent sliding
+   3. Insert a bridge bar to connect the pair — look for a narrow slot or
+      removable plastic cover on top of each block between the two screws.
+      Break off a 2-segment piece of bridge bar, drop it into the slots so
+      each U-segment sits in its block, and tighten the bridge screw. This
+      electrically connects all 4 lugs (2 per block) together.
+   4. Repeat for the second pair
+
+   ```
+   Bottom DIN Rail:
+   [end stop] [BROWN][BROWN] [BLUE][BLUE] [end stop] ... [SURGE] [MEAN WELL PSU]
+                 L1     L2     N1    N2
+                bridged        bridged
+   ```
+
+2. **Wire L (line) terminal blocks — 3 connections:**
+   - Lug 1: AC input line wire (from SP13 bulkhead, brown)
+   - Lug 2: Mean Well PSU L terminal
+   - Lug 3: Surge suppressor L terminal
+   - Lug 4: spare (leave empty)
+
+3. **Wire N (neutral) terminal blocks — 3 connections:**
+   - Lug 1: AC input neutral wire (from SP13 bulkhead, blue)
+   - Lug 2: Mean Well PSU N terminal
+   - Lug 3: Surge suppressor N terminal
+   - Lug 4: spare (leave empty)
+
+4. **Wire PE (ground) — direct, no terminal block needed:**
+   - AC input PE wire (from SP13 bulkhead, green/yellow) →
+     surge suppressor PE terminal → building ground wire back
+     out through the SP13 bulkhead
+   - DC ground (TB1) is a separate floating ground — do NOT
+     connect DC ground to AC PE
+
+5. **Verify Mean Well SDR-120-12:**
+   - No input voltage selector needed — it is auto-ranging (88-264V AC)
+   - 12V DC output goes to terminal block TB1 (wired in a later step)
+
+6. **Pre-power AC wiring verification (DO THIS BEFORE PLUGGING IN):**
+
+   With the AC cord **unplugged from the wall**, use your multimeter to verify
+   the wiring is correct and safe.
+
+   **Continuity checks (should beep):**
+   - [ ] AC cord L wire ↔ L terminal block — beep
+   - [ ] L terminal block ↔ PSU L terminal — beep
+   - [ ] L terminal block ↔ Surge suppressor L — beep
+   - [ ] AC cord N wire ↔ N terminal block — beep
+   - [ ] N terminal block ↔ PSU N terminal — beep
+   - [ ] N terminal block ↔ Surge suppressor N — beep
+   - [ ] AC cord PE wire ↔ Surge suppressor PE — beep
+
+   **Short checks (should NOT beep):**
+   - [ ] L terminal block ↔ N terminal block — **NO beep**
+   - [ ] L terminal block ↔ PE wire — **NO beep**
+   - [ ] N terminal block ↔ PE wire — **NO beep**
+   - [ ] PSU L ↔ PSU N — **NO beep**
+
+   **Cord end verification (with cord unplugged, test at the plug end):**
+   - [ ] Narrow blade (hot) ↔ L terminal block — beep
+   - [ ] Wide blade (neutral) ↔ N terminal block — beep
+   - [ ] Round prong (ground) ↔ Surge suppressor PE — beep
+
+   **If ALL continuity checks pass and ALL short checks are silent, the AC
+   wiring is safe to energize.**
 
 3. **Wire battery system:**
    ```
