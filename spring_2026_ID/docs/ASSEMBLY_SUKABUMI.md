@@ -316,13 +316,13 @@ pin assignments, continuity verification checklists, and build photos.
    - Relay IN1 → G469 GPIO 24
    - Short Ethernet patch cable: PoE switch uplink port → Pi 5 Ethernet
 
-2. **Operation:**
-   - Pi wakes (via RTC schedule), drives GPIO 24 HIGH → relay CH1 closes
+2. **Operation (active-low relay logic — matches ORC software):**
+   - Pi wakes (via RTC schedule), drives GPIO 24 LOW → relay CH1 energizes → NO closes
    - 12V flows to PoE switch
    - PoE switch provides 48V PoE to camera over Ethernet
    - Camera boots (~45-60s), built-in IR activates automatically at night
    - Camera uploads video/snapshot via FTP to Pi over Ethernet
-   - Pi drives GPIO 24 LOW → relay opens → camera powers down
+   - Pi drives GPIO 24 HIGH → relay de-energizes → NO opens → camera powers down
    - Pi enters sleep via RTC until next scheduled wake
 
 ### Step 6: Connect Peripherals on Mounting Plate (15 min)

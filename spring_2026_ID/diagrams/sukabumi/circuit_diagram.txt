@@ -299,7 +299,9 @@
     1. PoE switch powered via GPIO 24 triggering relay CH1
        (Electronics-Salon 4-ch SPDT module, DIN rail mount,
        driven by GPIO pins through G469 breakout).
-       GPIO 24 HIGH = relay closed = PoE switch ON = camera ON.
+       Active-low: GPIO 24 LOW = relay energized = NO closes = PoE ON.
+       GPIO 24 HIGH (or unconfigured) = relay de-energized = PoE OFF.
+       Matches ORC orc-gpio-relays.py convention.
     2. DDR-60G converters provide regulated voltage from battery
        (which varies 10-14V depending on charge state).
     3. No heaters installed (Sukabumi tropical foothills climate,

@@ -6,11 +6,21 @@ GPIO_PIN=24
 echo ""
 echo "=== OpenRiverCam Camera Network ==="
 
-# Relay status (GPIO 24: HIGH = ON, LOW = OFF)
+# Relay status — active-low logic (matches ORC orc-gpio-relays.py)
+#   GPIO LOW  = relay energized = PoE switch ON
+#   GPIO HIGH = relay de-energized = PoE switch OFF
+# After reboot, pin may be unconfigured (level "--"). If so, briefly set
+# it as input to read the actual electrical level without affecting the
+# relay — the relay board's optocoupler holds its state independently.
 gpio_line=$(pinctrl get "$GPIO_PIN" 2>/dev/null)
-if echo "$gpio_line" | grep -q "| hi"; then
+if echo "$gpio_line" | grep -q "| --"; then
+    # Pin not yet configured — read as input to get actual level
+    pinctrl set "$GPIO_PIN" ip 2>/dev/null
+    gpio_line=$(pinctrl get "$GPIO_PIN" 2>/dev/null)
+fi
+if echo "$gpio_line" | grep -q "| lo"; then
     echo "  Relay CH1:  ON (PoE switch powered)"
-elif echo "$gpio_line" | grep -q "| lo"; then
+elif echo "$gpio_line" | grep -q "| hi"; then
     echo "  Relay CH1:  OFF (PoE switch unpowered)"
 else
     echo "  Relay CH1:  unknown (GPIO $GPIO_PIN not readable)"

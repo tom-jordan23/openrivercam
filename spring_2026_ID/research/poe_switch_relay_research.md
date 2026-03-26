@@ -20,7 +20,9 @@
 
 The Witty Pi 5 HAT+ performs a full hard power cut when the Pi sleeps — the 5V rail, all GPIO outputs, and all USB ports go completely dead. This means:
 
-- **GPIO approach:** Pin goes to 0V when Pi sleeps, relay opens automatically
+- **GPIO approach:** Pin goes to 0V when Pi sleeps. The relay module uses active-low
+  logic (IN pulled LOW = relay energized), but 0V with no VCC also de-energizes the
+  coil, so the relay opens automatically.
 - **USB approach:** USB power disappears when Pi sleeps, relay opens automatically
 
 Both trigger methods work cleanly. No software timing or shutdown hooks needed — the Witty Pi handles it at the hardware level.
@@ -62,10 +64,21 @@ Wire from Geekworm G469 GPIO breakout screw terminals to relay module screw term
 Manual control via the `poe-relay` utility (see `pi/shared/usr/local/bin/poe-relay`):
 
 ```
-poe-relay on      # GPIO 24 HIGH → relay closed → PoE switch ON
-poe-relay off     # GPIO 24 LOW  → relay open   → PoE switch OFF
+poe-relay on      # GPIO 24 LOW  → relay energized → NO closes → PoE switch ON
+poe-relay off     # GPIO 24 HIGH → relay de-energized → NO opens → PoE switch OFF
 poe-relay status  # show current state + eth0 IP
 ```
+
+**Active-low logic:** The Electronics-Salon relay module uses a Darlington transistor
+driver with active-low inputs — pulling IN LOW energizes the relay coil. This matches
+how ORC's `orc-gpio-relays.py` drives relays (`GPIO.output(pin, GPIO.LOW)` = ON).
+The `poe-relay` script aligns with this convention.
+
+**NO (normally open) wiring:** The PoE switch 12V is wired through the NO contact.
+When the relay is de-energized (GPIO HIGH or pin unconfigured at boot), the NO contact
+is open and the PoE switch has no power. This is fail-safe: if the Pi crashes, hangs,
+or hasn't booted yet, the relay de-energizes and cameras power off automatically,
+preventing battery drain.
 
 **Note:** The relay will be open for ~30-60s during Pi boot before the service runs. The camera needs this time to boot anyway (~45-60s), so this aligns naturally with the existing 150s active cycle.
 
@@ -73,7 +86,9 @@ poe-relay status  # show current state + eth0 IP
 
 Power the relay module's VCC from a Pi USB-A port and bridge IN1 to GND on the screw terminal block. The relay energizes the instant USB power appears (Pi wakes) and drops out when USB power disappears (Pi sleeps). No GPIO pin used, no software needed.
 
-This works because the module uses active-low logic — the relay energizes when IN is pulled LOW. Bridging IN1 to GND means the relay is always on when powered.
+This works because the module uses active-low logic — the relay energizes when IN is
+pulled LOW. Bridging IN1 to GND means the relay is always on when powered. This is the
+same active-low behavior used by the GPIO approach (see note above).
 
 ### Relay Output Wiring
 

@@ -670,27 +670,32 @@ echo 0 > /sys/class/gpio/gpio17/value
 
 ### Relay Control (Electronics-Salon 4-channel SPDT, GPIO-triggered)
 
+The relay module uses **active-low logic**: pulling an IN pin LOW energizes the
+relay coil (closing the NO contact). This matches ORC's `orc-gpio-relays.py`.
+The PoE switch is wired through the NO (normally open) contact, so the relay
+must be energized for cameras to have power. At boot (GPIO unconfigured), the
+relay defaults to de-energized = cameras off (fail-safe).
+
 ```bash
 # Relay channels driven via G469 breakout:
-#   GPIO 24 → IN1 (PoE switch)
+#   GPIO 24 → IN1 (PoE switch)   — active-low (LOW = relay ON)
 #   GPIO 17 → IN2 (Green LED)
 #   GPIO 27 → IN3 (Yellow LED)
 #   GPIO 22 → IN4 (Red LED)
 
 # Check relay GPIO wiring: VCC, GND, IN1-IN4 connections
 
-# Turn PoE switch relay ON (energize IN1)
-gpioset gpiochip4 24=1
-
-# Turn PoE switch relay OFF (de-energize IN1)
-gpioset gpiochip4 24=0
-
-# Manually cycle PoE switch power
-gpioset gpiochip4 24=0 && sleep 5 && gpioset gpiochip4 24=1
+# Preferred: use poe-relay utility
+poe-relay on       # GPIO 24 LOW → relay energized → PoE switch ON
+poe-relay off      # GPIO 24 HIGH → relay de-energized → PoE switch OFF
+poe-relay status   # show current state + eth0 IP
 
 # Alternative using pinctrl (Pi 5):
-pinctrl set 24 op dh   # drive high (relay ON)
-pinctrl set 24 op dl   # drive low (relay OFF)
+pinctrl set 24 op dl   # drive LOW (relay ON — energized)
+pinctrl set 24 op dh   # drive HIGH (relay OFF — de-energized)
+
+# Manually cycle PoE switch power
+pinctrl set 24 op dh && sleep 5 && pinctrl set 24 op dl
 ```
 
 ### Rainbow Sensing RTC (Pi 5 Built-in RTC)

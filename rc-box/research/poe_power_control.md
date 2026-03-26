@@ -243,17 +243,17 @@ CAMERA_BOOT_TIME = 60  # seconds
 def setup_relay():
     GPIO.setmode(GPIO.BCM)
     GPIO.setup(RELAY_PIN, GPIO.OUT)
-    GPIO.output(RELAY_PIN, GPIO.LOW)  # Cameras OFF initially
+    GPIO.output(RELAY_PIN, GPIO.HIGH)  # Cameras OFF initially (active-low: HIGH = de-energized)
 
 def power_on_cameras():
     print("Powering ON cameras...")
-    GPIO.output(RELAY_PIN, GPIO.HIGH)  # Relay ON
+    GPIO.output(RELAY_PIN, GPIO.LOW)  # Relay ON (active-low: LOW = energized)
     print(f"Waiting {CAMERA_BOOT_TIME}s for camera boot...")
     time.sleep(CAMERA_BOOT_TIME)
 
 def power_off_cameras():
     print("Powering OFF cameras...")
-    GPIO.output(RELAY_PIN, GPIO.LOW)  # Relay OFF
+    GPIO.output(RELAY_PIN, GPIO.HIGH)  # Relay OFF (active-low: HIGH = de-energized)
 
 def cleanup():
     GPIO.cleanup()
