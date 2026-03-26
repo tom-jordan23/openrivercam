@@ -1,0 +1,328 @@
+#!/bin/bash
+# orc-capture — capture video from PoE camera and deliver to ORC-OS
+#
+# Called once per wake cycle (via orc-capture.service). Controls the PoE
+# relay directly using poe-relay (active-high, matching our Electronics-Salon
+# relay module). The ORC-OS orc-gpio-relays service is NOT used because it
+# assumes active-low logic.
+#
+# Workflow:
+#   1. Power on PoE relay via poe-relay
+#   2. Wait for camera to boot and become reachable
+#   3. Capture 5s video via RTSP (TCP transport, codec copy — no re-encoding)
+#   4. Validate captured file against quality gate
+#   5. On pass: deliver to ORC-OS incoming directory
+#   6. On fail: retry up to MAX_RETRIES
+#   7. Power off PoE relay
+#
+# Quality gate checks:
+#   - File exists and is non-empty
+#   - ffprobe can parse the container (not corrupt)
+#   - Resolution matches expected (1920x1080)
+#   - Duration is within tolerance of target (5s ± 1s)
+#   - Bitrate meets minimum threshold (12 Mbps)
+#   - Frame count is reasonable for duration × framerate
+#
+# Usage:
+#   orc-capture                    # normal operation
+#   orc-capture --dry-run          # capture and validate, don't deliver
+#   orc-capture --skip-relay       # don't toggle PoE (camera already on)
+#
+# Environment / config:
+#   Reads camera credentials from ~/.orc_deploy_<site> or env vars.
+#   CAMERA_IP, CAMERA_USER, CAMERA_PASS, ORC_INCOMING_DIRECTORY
+
+set -o pipefail
+
+# ─── Defaults ────────────────────────────────────────────────────────
+
+CAMERA_IP="${CAMERA_IP:-192.168.50.139}"
+CAMERA_USER="${CAMERA_USER:-admin}"
+CAMERA_PASS="${CAMERA_PASS:-}"
+INCOMING_DIR="${ORC_INCOMING_DIRECTORY:-/home/pi/Videos}"
+
+CAPTURE_DURATION=5          # seconds of video to capture
+CAMERA_BOOT_TIMEOUT=90      # max seconds to wait for camera
+CAMERA_SETTLE_TIME=15       # seconds after ping before capture (RTSP takes longer than ping)
+MAX_RETRIES=3               # retry attempts on quality gate failure
+RETRY_DELAY=5               # seconds between retries
+
+# Quality gate thresholds
+MIN_BITRATE_KBPS=12000      # 12 Mbps minimum
+EXPECTED_WIDTH=1920
+EXPECTED_HEIGHT=1080
+MIN_DURATION=4.0            # seconds
+MAX_DURATION=7.0            # seconds
+MIN_FRAMES=40               # ~12.5fps × 4s minimum
+
+DRY_RUN=0
+SKIP_RELAY=0
+
+# ─── Parse args ──────────────────────────────────────────────────────
+
+for arg in "$@"; do
+    case "$arg" in
+        --dry-run)    DRY_RUN=1 ;;
+        --skip-relay) SKIP_RELAY=1 ;;
+        --help|-h)
+            sed -n '2,/^$/p' "$0" | sed 's/^# \?//'
+            exit 0
+            ;;
+    esac
+done
+
+# ─── Logging ─────────────────────────────────────────────────────────
+
+log()  { echo "$(date '+%Y-%m-%d %H:%M:%S') [orc-capture] $1"; }
+err()  { echo "$(date '+%Y-%m-%d %H:%M:%S') [orc-capture] ERROR: $1" >&2; }
+warn() { echo "$(date '+%Y-%m-%d %H:%M:%S') [orc-capture] WARN: $1" >&2; }
+
+# ─── Load credentials ───────────────────────────────────────────────
+
+load_credentials() {
+    for f in ~/.orc_deploy_*; do
+        if [ -f "$f" ]; then
+            # shellcheck disable=SC1090
+            source "$f"
+            if [ -n "$BASE_PASSWD" ] && [ -z "$CAMERA_PASS" ]; then
+                CAMERA_PASS="$BASE_PASSWD"
+            fi
+            break
+        fi
+    done
+
+    if [ -z "$CAMERA_PASS" ]; then
+        err "No camera password. Set CAMERA_PASS env var or create ~/.orc_deploy_<site>"
+        exit 1
+    fi
+}
+
+# ─── Relay control (via poe-relay script) ────────────────────────────
+
+relay_on() {
+    if [ "$SKIP_RELAY" -eq 1 ]; then
+        log "Relay: skip (--skip-relay)"
+        return
+    fi
+    log "Relay: powering on PoE"
+    poe-relay on >/dev/null
+}
+
+relay_off() {
+    if [ "$SKIP_RELAY" -eq 1 ]; then
+        return
+    fi
+    log "Relay: powering off PoE"
+    poe-relay off >/dev/null
+}
+
+cleanup() {
+    relay_off
+}
+trap cleanup EXIT
+
+# ─── Wait for camera ────────────────────────────────────────────────
+
+wait_for_camera() {
+    # If camera is already reachable, skip the boot wait
+    if ping -c 1 -W 1 "$CAMERA_IP" >/dev/null 2>&1; then
+        log "Camera already reachable at $CAMERA_IP"
+        return 0
+    fi
+
+    log "Waiting for camera at $CAMERA_IP (timeout: ${CAMERA_BOOT_TIMEOUT}s)..."
+    local elapsed=0
+    while [ "$elapsed" -lt "$CAMERA_BOOT_TIMEOUT" ]; do
+        if ping -c 1 -W 1 "$CAMERA_IP" >/dev/null 2>&1; then
+            log "Camera reachable after ${elapsed}s — settling ${CAMERA_SETTLE_TIME}s..."
+            sleep "$CAMERA_SETTLE_TIME"
+            return 0
+        fi
+        sleep 2
+        elapsed=$((elapsed + 2))
+    done
+    err "Camera did not respond within ${CAMERA_BOOT_TIMEOUT}s"
+    return 1
+}
+
+# ─── Capture ─────────────────────────────────────────────────────────
+
+capture_video() {
+    local outfile="$1"
+
+    log "Capturing ${CAPTURE_DURATION}s via RTSP (TCP, codec copy)..."
+
+    ffmpeg -y -hide_banner -loglevel warning \
+        -rtsp_transport tcp \
+        -i "rtsp://${CAMERA_USER}:${CAMERA_PASS}@${CAMERA_IP}:554/Streaming/Channels/101" \
+        -t "$CAPTURE_DURATION" \
+        -c:v copy -an \
+        "$outfile" 2>&1
+
+    return $?
+}
+
+# ─── Quality gate ────────────────────────────────────────────────────
+
+quality_gate() {
+    local file="$1"
+    local failures=0
+
+    log "Quality gate: validating $file"
+
+    if [ ! -s "$file" ]; then
+        err "  FAIL: file is empty or missing"
+        return 1
+    fi
+
+    local probe
+    probe=$(ffprobe -v quiet -print_format json \
+        -show_format -show_streams "$file" 2>&1)
+
+    if [ $? -ne 0 ]; then
+        err "  FAIL: ffprobe cannot parse file (corrupt container)"
+        return 1
+    fi
+
+    # Extract all values in a single python3 call
+    local results
+    results=$(echo "$probe" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+fmt = d.get('format', {})
+vs = next((s for s in d.get('streams', []) if s.get('codec_type') == 'video'), {})
+br = fmt.get('bit_rate', 0)
+print(vs.get('width', 0))
+print(vs.get('height', 0))
+print(fmt.get('duration', 0))
+print(int(int(br) / 1000) if br else 0)
+print(vs.get('nb_frames', vs.get('nb_read_frames', 0)))
+print(vs.get('codec_name', 'unknown'))
+" 2>/dev/null)
+
+    local width height duration bitrate nb_frames codec
+    read -r width <<< "$(sed -n '1p' <<< "$results")"
+    read -r height <<< "$(sed -n '2p' <<< "$results")"
+    read -r duration <<< "$(sed -n '3p' <<< "$results")"
+    read -r bitrate <<< "$(sed -n '4p' <<< "$results")"
+    read -r nb_frames <<< "$(sed -n '5p' <<< "$results")"
+    read -r codec <<< "$(sed -n '6p' <<< "$results")"
+
+    # Resolution
+    if [ "${width:-0}" -ne "$EXPECTED_WIDTH" ] || [ "${height:-0}" -ne "$EXPECTED_HEIGHT" ]; then
+        err "  FAIL: resolution ${width}x${height} (expected ${EXPECTED_WIDTH}x${EXPECTED_HEIGHT})"
+        failures=$((failures + 1))
+    else
+        log "  PASS: resolution ${width}x${height}"
+    fi
+
+    # Duration
+    local dur_ok
+    dur_ok=$(python3 -c "d=float('${duration:-0}'); print('ok' if $MIN_DURATION<=d<=$MAX_DURATION else 'fail')" 2>/dev/null)
+    if [ "$dur_ok" != "ok" ]; then
+        err "  FAIL: duration ${duration}s (expected ${MIN_DURATION}-${MAX_DURATION}s)"
+        failures=$((failures + 1))
+    else
+        log "  PASS: duration ${duration}s"
+    fi
+
+    # Bitrate
+    if [ "${bitrate:-0}" -lt "$MIN_BITRATE_KBPS" ]; then
+        err "  FAIL: bitrate ${bitrate} kbps (minimum ${MIN_BITRATE_KBPS} kbps)"
+        failures=$((failures + 1))
+    else
+        log "  PASS: bitrate ${bitrate} kbps"
+    fi
+
+    # Frame count (warn only — some containers don't report reliably)
+    if [ "${nb_frames:-0}" -lt "$MIN_FRAMES" ]; then
+        warn "  WARN: frame count ${nb_frames} (expected >=${MIN_FRAMES})"
+    else
+        log "  PASS: frame count ${nb_frames}"
+    fi
+
+    # Summary
+    local filesize
+    filesize=$(du -h "$file" | cut -f1)
+    log "  Summary: ${codec} ${width}x${height} ${duration}s ${bitrate}kbps ${filesize}"
+
+    if [ "$failures" -gt 0 ]; then
+        err "  Quality gate FAILED ($failures check(s))"
+        return 1
+    fi
+
+    log "  Quality gate PASSED"
+    return 0
+}
+
+# ─── Main ────────────────────────────────────────────────────────────
+
+main() {
+    log "Starting capture cycle"
+
+    load_credentials
+
+    mkdir -p "$INCOMING_DIR"
+
+    # Step 1: Power on PoE
+    relay_on
+
+    # Step 2: Wait for camera
+    if ! wait_for_camera; then
+        err "Camera unreachable — aborting"
+        exit 1
+    fi
+
+    # Step 3: Capture with retries
+    local attempt=0
+    local success=0
+    local timestamp filename tmpfile
+
+    while [ "$attempt" -lt "$MAX_RETRIES" ] && [ "$success" -eq 0 ]; do
+        attempt=$((attempt + 1))
+
+        timestamp=$(date +%Y%m%d_%H%M%S)
+        filename="video_${timestamp}.mp4"
+        tmpfile="/tmp/orc_capture_${timestamp}.mp4"
+
+        log "Attempt $attempt/$MAX_RETRIES: capturing as $filename"
+
+        if capture_video "$tmpfile"; then
+            if quality_gate "$tmpfile"; then
+                success=1
+            else
+                rm -f "$tmpfile"
+                if [ "$attempt" -lt "$MAX_RETRIES" ]; then
+                    log "Retrying in ${RETRY_DELAY}s..."
+                    sleep "$RETRY_DELAY"
+                fi
+            fi
+        else
+            err "ffmpeg failed (exit $?)"
+            rm -f "$tmpfile"
+            if [ "$attempt" -lt "$MAX_RETRIES" ]; then
+                log "Retrying in ${RETRY_DELAY}s..."
+                sleep "$RETRY_DELAY"
+            fi
+        fi
+    done
+
+    # Step 4: Deliver or fail
+    if [ "$success" -eq 1 ]; then
+        if [ "$DRY_RUN" -eq 1 ]; then
+            log "Dry run — not delivering. File at: $tmpfile"
+            rm -f "$tmpfile"
+        else
+            mv "$tmpfile" "${INCOMING_DIR}/${filename}"
+            log "Delivered: ${INCOMING_DIR}/${filename}"
+        fi
+    else
+        err "All $MAX_RETRIES attempts failed — no video delivered"
+        exit 1
+    fi
+
+    # Step 5: Power off PoE (via trap on exit)
+    log "Capture cycle complete"
+}
+
+main "$@"

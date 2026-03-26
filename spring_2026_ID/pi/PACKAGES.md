@@ -16,6 +16,7 @@ that the base image does not provide.
 | `gpiod` | GPIO tools (`gpioset`, `gpioget`) for relay/LED control | Relay control, LED testing | Also installs `python3-libgpiod` |
 | `minicom` | Serial terminal for modem/rain gauge diagnostics | Debugging only | Optional — only needed for manual AT commands or UART testing |
 | `chrony` | NTP server for camera time sync | Camera network | Pi serves NTP to cameras on isolated 192.168.50.0/24 network |
+| `ffmpeg` | Video capture and transcoding | orc-capture | RTSP capture from camera, quality validation via ffprobe |
 | `vsftpd` | FTP server for camera file uploads | Camera capture | Camera FTPs video/snapshots to Pi each capture cycle |
 
 ## Python Packages (pip)

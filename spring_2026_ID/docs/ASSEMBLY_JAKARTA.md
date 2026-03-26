@@ -177,6 +177,14 @@ The USB flash drive stores camera uploads and ORC data. Format as ext4 and mount
    sudo mount /mnt/usb
    df -h /mnt/usb
    ```
+6. Create incoming directory and symlink `/home/pi/Videos` to USB:
+   ```bash
+   sudo mkdir -p /mnt/usb/incoming
+   rmdir /home/pi/Videos
+   ln -s /mnt/usb/incoming /home/pi/Videos
+   ```
+   ORC-OS watches `/home/pi/Videos` for incoming files. The symlink ensures
+   video data is stored on the USB drive, not the OS SD card.
 
 **Configure NTP server for camera time sync:**
 
@@ -318,6 +326,25 @@ mounted first (above) since camera uploads land on it.
   ```
 - [ ] Verify both cameras record and download correctly
 - [ ] Verify IR function: cover lens, IR LEDs should illuminate, download clip shows grayscale
+
+**Enable capture service:**
+
+Deploy and enable `orc-capture`, which handles PoE relay control and video
+capture on each boot cycle. The ORC-OS `orc-gpio-relays` service must stay
+disabled (active-low/active-high incompatibility with our relay module).
+
+```bash
+sudo cp pi/shared/usr/local/bin/orc-capture /usr/local/bin/orc-capture
+sudo chmod +x /usr/local/bin/orc-capture
+sudo cp pi/shared/etc/systemd/system/orc-capture.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable orc-capture
+sudo systemctl disable orc-gpio-relays
+```
+
+- [ ] `orc-capture` service enabled
+- [ ] `orc-gpio-relays` service disabled
+- [ ] Test: `poe-relay off && orc-capture --dry-run` completes with quality gate PASS
 
 ---
 

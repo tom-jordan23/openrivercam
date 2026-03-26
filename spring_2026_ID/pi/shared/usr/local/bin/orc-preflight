@@ -151,6 +151,25 @@ else
     fi
 fi
 
+# ~/Videos symlink → USB (keeps video data off OS SD card)
+if [ -L /home/pi/Videos ]; then
+    LINK_TARGET=$(readlink /home/pi/Videos)
+    if [ "$LINK_TARGET" = "/mnt/usb/incoming" ]; then
+        pass "~/Videos symlinked to /mnt/usb/incoming"
+    else
+        warn "~/Videos is a symlink but points to $LINK_TARGET (expected /mnt/usb/incoming)"
+    fi
+elif [ -d /home/pi/Videos ]; then
+    warn "~/Videos is a directory (should be symlink to /mnt/usb/incoming)"
+    echo "         Video data will be stored on OS SD card instead of USB drive"
+    if [ "$FIX" -eq 1 ]; then
+        echo "  ... converting to symlink"
+        rmdir /home/pi/Videos 2>/dev/null && ln -s /mnt/usb/incoming /home/pi/Videos && pass "  fixed"
+    fi
+else
+    warn "~/Videos does not exist"
+fi
+
 # ─── FTP Server ──────────────────────────────────────────────────────
 
 echo ""
@@ -290,6 +309,28 @@ fi
 
 echo ""
 echo "=== Services ==="
+
+# orc-capture service (our relay + capture workflow)
+if systemctl is-enabled orc-capture >/dev/null 2>&1; then
+    pass "orc-capture service enabled"
+else
+    warn "orc-capture service not enabled (run: sudo systemctl enable orc-capture)"
+fi
+
+# orc-gpio-relays must be DISABLED — it uses active-low logic incompatible
+# with our Electronics-Salon relay module (active-high). orc-capture handles
+# relay control directly via poe-relay.
+if systemctl is-enabled orc-gpio-relays >/dev/null 2>&1; then
+    fail "orc-gpio-relays is ENABLED — conflicts with orc-capture (active-low vs active-high)"
+    echo "         Disable with: sudo systemctl disable orc-gpio-relays"
+    if [ "$FIX" -eq 1 ]; then
+        echo "  ... disabling orc-gpio-relays"
+        sudo systemctl disable orc-gpio-relays 2>/dev/null
+        sudo systemctl stop orc-gpio-relays 2>/dev/null
+    fi
+else
+    pass "orc-gpio-relays disabled (correct — orc-capture owns relay)"
+fi
 
 for svc in dnsmasq NetworkManager ModemManager vsftpd chrony; do
     if systemctl is-enabled "$svc" >/dev/null 2>&1; then

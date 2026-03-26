@@ -52,7 +52,9 @@ contains a real file.
 |-----------|---------|-------------|---------------|:------------:|:-------------------:|
 | `shared/etc/dnsmasq.d/maintenance.conf` | `/etc/dnsmasq.d/maintenance.conf` | DHCP server for camera PoE network on eth0 | Shared | No | No |
 | `shared/usr/local/bin/poe-relay` | `/usr/local/bin/poe-relay` | Control PoE switch relay (on/off/status) via GPIO 24 | Shared | No | No |
+| `shared/usr/local/bin/orc-capture` | `/usr/local/bin/orc-capture` | Capture 5s video from PoE camera via RTSP with quality gate | Shared | No | Yes |
 | `shared/usr/local/bin/orc-preflight` | `/usr/local/bin/orc-preflight` | Pre-deployment checks for packages, configs, services, hardware | Shared | No | Yes |
+| `shared/etc/systemd/system/orc-capture.service` | `/etc/systemd/system/orc-capture.service` | Oneshot service: runs orc-capture on each boot (conflicts with orc-gpio-relays) | Shared | No | No |
 | `shared/update-motd.d/30-camera-status` | `/etc/update-motd.d/30-camera-status` | Dynamic MOTD: relay status, RTC battery, eth0 IP, camera reachability | Shared | No | No |
 | `shared/etc/chrony/conf.d/camera-net.conf` | `/etc/chrony/conf.d/camera-net.conf` | NTP server for camera network (Pi serves time to cameras) | Shared | No | Yes |
 | `shared/etc/vsftpd.conf` | `/etc/vsftpd.conf` | FTP server config for camera uploads (chroot, userlist, passive mode) | Shared | No | Yes |

@@ -1,0 +1,19 @@
+[Unit]
+Description=Capture video from PoE camera on each wake cycle
+After=network-online.target time-sync.target
+Wants=network-online.target time-sync.target
+
+# Do not use orc-gpio-relays — it assumes active-low relay logic.
+# orc-capture controls the relay directly via poe-relay (active-high).
+Conflicts=orc-gpio-relays.service
+
+[Service]
+Type=oneshot
+User=pi
+Environment="PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/home/pi/.local/bin"
+ExecStart=/usr/local/bin/orc-capture
+RemainAfterExit=yes
+TimeoutStartSec=300
+
+[Install]
+WantedBy=multi-user.target

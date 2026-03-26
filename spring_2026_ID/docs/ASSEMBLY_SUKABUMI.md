@@ -28,6 +28,7 @@
   - [Step 10c: Configure NTP Server for Camera Time Sync](#step-10c-configure-ntp-server-for-camera-time-sync-5-min)
   - [Step 10d: Configure FTP Server for Camera Uploads](#step-10d-configure-ftp-server-for-camera-uploads-10-min)
   - [Step 11: Configure PoE Camera Settings](#step-11-configure-poe-camera-settings-30-min)
+  - [Step 11b: Enable Capture Service](#step-11b-enable-capture-service-5-min)
   - [Step 12: Mount External Components](#step-12-mount-external-components-30-min)
   - [Step 13: Final Assembly and Sealing](#step-13-final-assembly--sealing-15-min)
 - [Power-On Procedure](#power-on-procedure)
@@ -518,6 +519,21 @@ as ext4 (for Linux file permissions) and mounted persistently at `/mnt/usb`.
    df -h /mnt/usb
    ```
 
+8. **Create incoming directory for ORC-OS:**
+   ```bash
+   sudo mkdir -p /mnt/usb/incoming
+   ```
+
+9. **Symlink `/home/pi/Videos` to the USB drive:**
+
+   ORC-OS watches `/home/pi/Videos` for incoming video files. Symlink it to
+   the USB drive so video data stays off the OS SD card:
+   ```bash
+   rmdir /home/pi/Videos       # remove empty default directory
+   ln -s /mnt/usb/incoming /home/pi/Videos
+   ls -la /home/pi/Videos      # verify: Videos -> /mnt/usb/incoming
+   ```
+
 ### Step 10c: Configure NTP Server for Camera Time Sync (5 min)
 
 The camera is on an isolated network with no internet — it cannot reach public
@@ -721,6 +737,46 @@ pushed to the camera as a batch. No web UI needed.
    - Cover camera lens (simulate darkness)
    - IR LEDs should illuminate (visible glow from IR array)
    - Download a clip — verify IR-lit image (grayscale)
+
+### Step 11b: Enable Capture Service (5 min)
+
+The `orc-capture` service runs once per boot cycle: powers on the PoE relay,
+waits for the camera, captures 5 seconds of video via RTSP, validates the file
+against a quality gate, delivers it to the ORC-OS incoming directory, then
+powers off the PoE relay.
+
+> **Important:** The ORC-OS `orc-gpio-relays` service must stay **disabled**.
+> It uses active-low relay logic, which is inverted from our Electronics-Salon
+> relay module (active-high). `orc-capture` controls the relay directly via
+> `poe-relay`.
+
+1. **Deploy the service files** from the overlay:
+   ```bash
+   sudo cp pi/shared/usr/local/bin/orc-capture /usr/local/bin/orc-capture
+   sudo chmod +x /usr/local/bin/orc-capture
+   sudo cp pi/shared/etc/systemd/system/orc-capture.service /etc/systemd/system/
+   sudo systemctl daemon-reload
+   ```
+
+2. **Enable orc-capture and disable orc-gpio-relays:**
+   ```bash
+   sudo systemctl enable orc-capture
+   sudo systemctl disable orc-gpio-relays
+   ```
+
+3. **Test the full capture cycle:**
+   ```bash
+   poe-relay off                   # start with camera off
+   orc-capture --dry-run           # relay on → wait → capture → validate → relay off
+   ```
+
+4. **Verify with preflight:**
+   ```bash
+   orc-preflight
+   ```
+   Should show:
+   - `[PASS] orc-capture service enabled`
+   - `[PASS] orc-gpio-relays disabled (correct — orc-capture owns relay)`
 
 ### Step 12: Mount External Components (30 min)
 
