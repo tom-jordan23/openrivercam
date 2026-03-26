@@ -368,7 +368,22 @@ bulkheads, LEDs, and buttons once you know the layout works.
 
 **Tools needed:** Screwdriver, wire strippers
 
-**Wire spec:** Use solid core wire (18-22 AWG) for all internal DIN rail wiring.
+**AC wire spec:** Use **2.5 mm² (14 AWG) stranded** wire for all AC mains wiring
+inside the enclosure (L, N, and PE runs between terminal blocks, PSU, and surge
+suppressor). This meets IEC 60364 and Indonesian SNI 04-0225 standards for
+circuits up to 20A at 220V. Do not use wire thinner than 1.5 mm² (16 AWG) for
+any AC connection.
+
+**AC wire colors:** Use the IEC standard colors — **brown** for L (line),
+**blue** for N (neutral), **green/yellow** for PE (ground). Do not use tape
+to re-color wire — tape peels in tropical humidity and someone servicing the
+box will see the base color and make wrong assumptions. If you don't have
+the correct color, use bare copper for PE (acceptable inside an enclosure)
+and get proper colored wire before final assembly. Never use red or black
+for AC wiring — those are reserved for DC 12V and DC ground.
+
+**DC wire spec:** Use solid core wire (18-22 AWG) for all 12V DC internal DIN
+rail wiring (same as Sukabumi).
 
 **IMPORTANT: Do NOT connect AC power until all wiring is complete.**
 

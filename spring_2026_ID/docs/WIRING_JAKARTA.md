@@ -657,6 +657,18 @@ GROUND RESISTANCE: Measure with multimeter
 
 ---
 
+## Wire Gauge Spec
+
+| Domain | Gauge | Type | Standard |
+|--------|-------|------|----------|
+| AC mains (L, N, PE) | 2.5 mm² / 14 AWG minimum | Stranded | IEC 60364, Indonesian SNI 04-0225 |
+| DC 12V internal | 18-22 AWG | Solid core | — |
+| DC 5V / GPIO signal | 22 AWG | Solid core | — |
+
+Do not use wire thinner than 1.5 mm² (16 AWG) for any AC connection.
+
+---
+
 ## Wire Color Code
 
 | Wire Color | Purpose |
