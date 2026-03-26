@@ -131,7 +131,9 @@ DC ground (TB1) is a separate floating ground — do NOT connect DC ground to AC
   +------+--------+----------+
          |        |
          v        v
-  TO TERMINAL BLOCK TB1
+  TO TERMINAL BLOCK TB1 (top rail)
+  Red 18 AWG solid: PSU V+ --> TB1 12V+
+  Black 18 AWG solid: PSU V- --> TB1 GND
   (12V DC floating ground — NOT connected to AC PE)
 ```
 

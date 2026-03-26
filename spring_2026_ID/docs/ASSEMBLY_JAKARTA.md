@@ -472,9 +472,9 @@ bulkheads, LEDs, and buttons once you know the layout works.
 2. **Cut and install DIN rails:**
    - Cut rails to fit plate width
    - Mount horizontally using screws
-   - Upper rail: PSU, surge protector, terminal block, fuse holders
-   - Lower rail: Pi stack, PoE switch, relay module, DDR-60G-5
-   - Leave clearance for cable routing below
+   - Bottom rail: AC power — surge suppressor, AC terminal blocks (L/N/PE), Mean Well PSU
+   - Top rail: 12V DC — TB1 distribution block, fuse holders, DDR-60G-5, relay, PoE switch, Pi stack
+   - Leave clearance for cable routing between rails
 
 ### Step 4: Assemble Compute Stack (15 min)
 
@@ -523,17 +523,18 @@ bulkheads, LEDs, and buttons once you know the layout works.
 
 **Tools needed:** Screwdriver, DIN rail clips
 
-1. **Mount on upper DIN rail:**
-   - Heschen HS-40-N surge protector
+1. **Bottom DIN rail (AC power — already mounted in Step 6):**
+   - AC terminal blocks (L/N/PE, bridged pairs)
+   - Heschen HS-40-N surge suppressor
    - Mean Well SDR-120-12 PSU
-   - Terminal block TB1
-   - Fuse holders (F1-F4)
 
-2. **Mount on lower DIN rail:**
-   - Pi stack (from Step 4)
-   - LINOVISION PoE switch
-   - Electronics-Salon relay module
+2. **Top DIN rail (12V DC distribution):**
+   - Terminal block TB1 (12V distribution)
+   - Fuse holders (F1-F4)
    - DDR-60G-5 buck converter
+   - Electronics-Salon relay module
+   - LINOVISION PoE switch
+   - Pi stack (from Step 4)
 
 3. **Mount items without DIN rail clips:**
    - Quectel modem: sits inside the EXVIST WWAN USB carrier, which is
@@ -645,26 +646,67 @@ rail terminal blocks.
    **If ALL continuity checks pass and ALL short checks are silent, the AC
    wiring is safe to energize.**
 
-3. **Wire battery system:**
-   ```
-   Mean Well 12V+ --+---> Charger input (+)
-                     |
-                     +---> Terminal block TB1 (system 12V+)
+7. **First AC power-on test:**
+   - Plug in AC cord
+   - Mean Well PSU green LED should light
+   - No sparks, smoke, or buzzing
+   - Measure DC output: V+ to V- should read ~12V (expect 12.0-12.2V)
+   - Unplug AC cord before proceeding
 
-   Charger output ---> Battery (+)
-   Battery (+) ---> Terminal block TB1 (backup 12V+)
-   Battery (-) ---> Terminal block TB1 (system GND)
-   ```
-   Battery BMS handles low-voltage cutoff automatically.
+8. **Wire 12V distribution (PSU to TB1):**
 
-4. **Install DDR-60G-5 buck converter:**
+   Run two wires from the Mean Well PSU DC output (bottom rail) up to TB1
+   (top rail):
+
+   | Wire | From | To | Color | Gauge |
+   |------|------|----|-------|-------|
+   | 1 | PSU V+ (12V) | TB1 12V+ | Red | 18 AWG solid |
+   | 2 | PSU V- (GND) | TB1 GND | Black | 18 AWG solid |
+
+9. **12V distribution continuity checks:**
+
+   With AC cord **unplugged**:
+
+   **Should beep:**
+   - [ ] PSU V+ ↔ TB1 12V+ — beep
+   - [ ] PSU V- ↔ TB1 GND — beep
+
+   **Should NOT beep:**
+   - [ ] TB1 12V+ ↔ TB1 GND — **NO beep**
+   - [ ] TB1 12V+ ↔ L terminal block — **NO beep** (AC/DC isolation)
+   - [ ] TB1 12V+ ↔ N terminal block — **NO beep** (AC/DC isolation)
+   - [ ] TB1 12V+ ↔ PE terminal block — **NO beep** (DC ground is floating)
+   - [ ] TB1 GND ↔ PE terminal block — **NO beep** (DC ground is NOT connected to AC earth)
+
+   **The last two checks are critical — they verify that DC ground and AC
+   earth are separate. If TB1 GND beeps to PE, you have a ground fault
+   that must be fixed before proceeding.**
+
+10. **Second power-on test (verify 12V at TB1):**
+    - Plug in AC cord
+    - Measure DC at TB1: 12V+ to GND should read ~12V
+    - Unplug AC cord before proceeding to downstream wiring
+
+11. **Wire battery system (deferred — battery sourced in-country):**
+    ```
+    Mean Well 12V+ --+---> Charger input (+)
+                      |
+                      +---> Terminal block TB1 (system 12V+)
+
+    Charger output ---> Battery (+)
+    Battery (+) ---> Terminal block TB1 (backup 12V+)
+    Battery (-) ---> Terminal block TB1 (system GND)
+    ```
+    Battery BMS handles low-voltage cutoff automatically.
+
+12. **Install DDR-60G-5 buck converter:**
    ```
    TB1 12V+ --[FUSE 5A]--> DDR-60G-5 input (+)
    TB1 GND --> DDR-60G-5 input (-)
    DDR-60G-5 output (5V) --> hardwired 5V/GND --> Pi 5 GPIO pins
    ```
 
-5. **Install fuses:**
+13. **Install fuses:**
    - Main 12V feed: 15A fuse
    - PoE relay/switch feed: 10A fuse (includes inline fuse between TB1 and relay)
    - Pi/DDR-60G-5 feed: 5A fuse
