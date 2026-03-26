@@ -564,6 +564,27 @@ The Pi serves as DHCP server for the camera network on eth0 using dnsmasq. This 
    - Yellow blinking = working (capture/upload)
    - Red = error (check logs)
 
+### Run Preflight Checks
+
+After SSH'ing into the Pi, run the preflight script to verify all packages,
+configs, services, and hardware are correct:
+
+```bash
+orc-preflight
+```
+
+Review the output — all items should be PASS (WARN is informational). If there
+are FAILs, run with `--fix` to attempt automatic fixes:
+
+```bash
+orc-preflight --fix
+```
+
+Key checks include: required packages, dnsmasq/NetworkManager config, RTC
+battery charging enabled, PoE relay script in PATH, and hardware detection
+(modem, sensors, USB drive). Fix any remaining FAILs manually before
+proceeding.
+
 ### Verify Camera
 
 <a href="images/sukabumi/camera-live-view-working.png"><img src="images/sukabumi/camera-live-view-working.png" alt="ANNKE camera live view displayed on monitor via PoE switch and Pi, showing successful end-to-end bench test of camera system" width="400"></a>

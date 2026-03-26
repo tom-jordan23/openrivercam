@@ -524,6 +524,12 @@ Then set your laptop to 192.168.1.50/24 and use `arp -a` to find the camera. Re-
 ### System Status
 
 ```bash
+# Run preflight checks (packages, configs, services, hardware, RTC charging)
+orc-preflight
+
+# Run preflight checks and auto-fix failures
+orc-preflight --fix
+
 # Check system uptime
 uptime
 
@@ -702,8 +708,14 @@ sudo hwclock --systohc
 # Sync RTC time to system
 sudo hwclock --hctosys
 
-# Check RTC battery status
-cat /sys/devices/platform/soc/soc:rpi_rtc/rtc/rtc0/device/power/wakeup
+# Check RTC battery voltage (microvolts — divide by 1,000,000 for volts)
+cat /sys/devices/platform/soc@107c000000/soc@107c000000:rpi_rtc/rtc/rtc0/battery_voltage
+
+# Check charging target voltage (microvolts — 0 or missing = charging disabled)
+cat /sys/devices/platform/soc@107c000000/soc@107c000000:rpi_rtc/rtc/rtc0/charging_voltage_max
+
+# Verify charging is enabled in config.txt (should show dtparam=rtc_bbat_vchg=3000000 for ML-2020)
+grep rtc_bbat_vchg /boot/firmware/config.txt
 ```
 
 ### Logs

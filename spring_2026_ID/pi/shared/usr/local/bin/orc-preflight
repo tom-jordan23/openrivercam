@@ -146,6 +146,31 @@ else
     fail "poe-relay not found in PATH"
 fi
 
+# RTC battery charging (Pi 5 ships with charging disabled — must enable for ML-2020)
+CONFIG_TXT="/boot/firmware/config.txt"
+RTC_PARAM="dtparam=rtc_bbat_vchg=3000000"
+if [ -f "$CONFIG_TXT" ]; then
+    if grep -q "^${RTC_PARAM}$" "$CONFIG_TXT"; then
+        pass "RTC battery charging enabled (ML-2020, 3.0V)"
+    elif grep -q "^dtparam=rtc_bbat_vchg=" "$CONFIG_TXT"; then
+        CURRENT=$(grep "^dtparam=rtc_bbat_vchg=" "$CONFIG_TXT")
+        warn "RTC battery charging set but not to ML-2020 value: $CURRENT"
+    else
+        fail "RTC battery charging NOT enabled in $CONFIG_TXT"
+        echo "         RTC will lose time during power outages without this."
+        echo "         Add: $RTC_PARAM"
+        if [ "$FIX" -eq 1 ]; then
+            echo "  ... appending $RTC_PARAM to $CONFIG_TXT"
+            echo "" | sudo tee -a "$CONFIG_TXT" >/dev/null
+            echo "# RTC battery charging for ML-2020 (3.0V manganese lithium)" | sudo tee -a "$CONFIG_TXT" >/dev/null
+            echo "$RTC_PARAM" | sudo tee -a "$CONFIG_TXT" >/dev/null
+            echo "  ... done (reboot required to take effect)"
+        fi
+    fi
+else
+    fail "$CONFIG_TXT not found"
+fi
+
 # hosts file camera entry
 if grep -q "192.168.50.139.*camera\|camera.*192.168.50.139" /etc/hosts 2>/dev/null; then
     pass "/etc/hosts has camera entry"

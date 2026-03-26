@@ -762,6 +762,27 @@ preparation.**
    - Yellow blink = working
    - Red = error
 
+### Run Preflight Checks
+
+After SSH'ing into the Pi, run the preflight script to verify all packages,
+configs, services, and hardware are correct:
+
+```bash
+orc-preflight
+```
+
+Review the output — all items should be PASS (WARN is informational). If there
+are FAILs, run with `--fix` to attempt automatic fixes:
+
+```bash
+orc-preflight --fix
+```
+
+Key checks include: required packages, dnsmasq/NetworkManager config, RTC
+battery charging enabled, PoE relay script in PATH, and hardware detection
+(modem, sensors, USB drive). Fix any remaining FAILs manually before
+proceeding.
+
 ### Verify Cameras
 
 1. Enter maintenance mode (long press button)
