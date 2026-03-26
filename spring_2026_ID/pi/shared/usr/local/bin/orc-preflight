@@ -104,6 +104,112 @@ else
     fi
 fi
 
+# ─── USB Storage ─────────────────────────────────────────────────────
+
+echo ""
+echo "=== USB Storage ==="
+
+# USB drive mounted at /mnt/usb
+if mountpoint -q /mnt/usb 2>/dev/null; then
+    USB_FS=$(findmnt -n -o FSTYPE /mnt/usb 2>/dev/null)
+    USB_SIZE=$(df -h /mnt/usb 2>/dev/null | awk 'NR==2{print $2}')
+    if [ "$USB_FS" = "ext4" ]; then
+        pass "/mnt/usb mounted (ext4, $USB_SIZE)"
+    else
+        warn "/mnt/usb mounted but filesystem is $USB_FS (expected ext4)"
+    fi
+else
+    fail "/mnt/usb not mounted"
+    if grep -q "/mnt/usb" /etc/fstab 2>/dev/null; then
+        warn "  fstab entry exists — drive may be disconnected"
+        if [ "$FIX" -eq 1 ]; then
+            echo "  ... attempting mount"
+            sudo mount /mnt/usb 2>/dev/null && pass "  mounted successfully" || fail "  mount failed"
+        fi
+    else
+        fail "  no fstab entry for /mnt/usb"
+    fi
+fi
+
+# Incoming directory
+if [ -d /mnt/usb/incoming ]; then
+    OWNER=$(stat -c '%U' /mnt/usb/incoming 2>/dev/null)
+    if [ "$OWNER" = "ftpcam" ]; then
+        pass "/mnt/usb/incoming exists (owner: ftpcam)"
+    else
+        fail "/mnt/usb/incoming exists but owner is $OWNER (expected ftpcam)"
+        if [ "$FIX" -eq 1 ]; then
+            echo "  ... fixing ownership"
+            sudo chown ftpcam:ftpcam /mnt/usb/incoming
+        fi
+    fi
+else
+    fail "/mnt/usb/incoming directory missing"
+    if [ "$FIX" -eq 1 ]; then
+        echo "  ... creating /mnt/usb/incoming"
+        sudo mkdir -p /mnt/usb/incoming && sudo chown ftpcam:ftpcam /mnt/usb/incoming
+    fi
+fi
+
+# ─── FTP Server ──────────────────────────────────────────────────────
+
+echo ""
+echo "=== FTP Server ==="
+
+# ftpcam user
+if id ftpcam >/dev/null 2>&1; then
+    FTPCAM_HOME=$(getent passwd ftpcam | cut -d: -f6)
+    if [ "$FTPCAM_HOME" = "/mnt/usb/incoming" ]; then
+        pass "ftpcam user exists (home: /mnt/usb/incoming)"
+    else
+        warn "ftpcam user exists but home is $FTPCAM_HOME (expected /mnt/usb/incoming)"
+    fi
+else
+    fail "ftpcam user does not exist"
+    if [ "$FIX" -eq 1 ]; then
+        echo "  ... creating ftpcam user"
+        sudo useradd -m -d /mnt/usb/incoming -s /usr/sbin/nologin ftpcam
+        echo "  ... NOTE: set password with: sudo passwd ftpcam"
+    fi
+fi
+
+# nologin in /etc/shells (required by PAM pam_shells.so)
+if grep -q "/usr/sbin/nologin" /etc/shells 2>/dev/null; then
+    pass "/usr/sbin/nologin in /etc/shells"
+else
+    fail "/usr/sbin/nologin not in /etc/shells (FTP login will fail)"
+    if [ "$FIX" -eq 1 ]; then
+        echo "  ... adding /usr/sbin/nologin to /etc/shells"
+        echo "/usr/sbin/nologin" | sudo tee -a /etc/shells >/dev/null
+    fi
+fi
+
+# vsftpd config has write_enable
+if grep -q "^write_enable=YES" /etc/vsftpd.conf 2>/dev/null; then
+    pass "vsftpd write_enable=YES"
+else
+    fail "vsftpd write_enable not set (camera uploads will fail)"
+fi
+
+# vsftpd userlist
+if [ -f /etc/vsftpd.userlist ]; then
+    if grep -q "ftpcam" /etc/vsftpd.userlist; then
+        pass "ftpcam in /etc/vsftpd.userlist"
+    else
+        fail "ftpcam not in /etc/vsftpd.userlist"
+        if [ "$FIX" -eq 1 ]; then
+            echo "  ... adding ftpcam to userlist"
+            echo "ftpcam" | sudo tee -a /etc/vsftpd.userlist >/dev/null
+        fi
+    fi
+else
+    fail "/etc/vsftpd.userlist not found"
+    if [ "$FIX" -eq 1 ]; then
+        echo "  ... creating /etc/vsftpd.userlist"
+        echo "ftpcam" | sudo tee /etc/vsftpd.userlist >/dev/null
+    fi
+fi
+
 # ─── Overlay Files ────────────────────────────────────────────────────
 
 echo ""

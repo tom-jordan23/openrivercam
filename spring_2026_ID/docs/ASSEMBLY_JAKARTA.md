@@ -146,6 +146,105 @@ Configure ANNKE C1200 cameras BEFORE deployment. The Pi acts as DHCP server on t
    sudo systemctl enable dnsmasq
    ```
 
+**Prepare USB storage:**
+
+The USB flash drive stores camera uploads and ORC data. Format as ext4 and mount persistently.
+
+1. Insert the USB flash drive into Pi 5 USB-A 3.0 port (blue).
+2. Identify and unmount if auto-mounted:
+   ```bash
+   lsblk                    # find device (e.g. /dev/sda1)
+   sudo umount /dev/sda1    # if auto-mounted
+   ```
+3. Format as ext4:
+   ```bash
+   sudo mkfs.ext4 -L orc-data /dev/sda1
+   ```
+4. Get the UUID and add to fstab:
+   ```bash
+   sudo blkid /dev/sda1     # copy UUID value
+   sudo mkdir -p /mnt/usb
+   echo 'UUID=<paste-uuid-here>  /mnt/usb  ext4  defaults,noatime,nofail  0  2' | sudo tee -a /etc/fstab
+   ```
+5. Mount and verify:
+   ```bash
+   sudo mount /mnt/usb
+   df -h /mnt/usb
+   ```
+
+**Set up FTP server for camera uploads:**
+
+The camera pushes video and snapshots to the Pi via FTP. The USB drive must be
+mounted first (above) since camera uploads land on it.
+
+1. Install vsftpd (if not already installed):
+   ```bash
+   sudo apt install vsftpd -y
+   ```
+
+2. Create the FTP upload user:
+   ```bash
+   sudo useradd -m -d /mnt/usb/incoming -s /usr/sbin/nologin ftpcam
+   sudo passwd ftpcam  # Set password — must match camera FTP config
+   ```
+
+3. Add nologin to allowed shells (required by PAM):
+   ```bash
+   echo "/usr/sbin/nologin" | sudo tee -a /etc/shells
+   ```
+
+4. Deploy vsftpd config from the overlay:
+   ```bash
+   sudo cp pi/shared/etc/vsftpd.conf /etc/vsftpd.conf
+   sudo cp pi/shared/etc/vsftpd.userlist /etc/vsftpd.userlist
+   ```
+   Or replace `/etc/vsftpd.conf` manually with:
+   ```
+   listen=NO
+   listen_ipv6=YES
+   anonymous_enable=NO
+   local_enable=YES
+   write_enable=YES
+   chroot_local_user=YES
+   allow_writeable_chroot=YES
+   userlist_enable=YES
+   userlist_file=/etc/vsftpd.userlist
+   userlist_deny=NO
+   local_umask=022
+   xferlog_enable=YES
+   xferlog_file=/var/log/vsftpd.log
+   connect_from_port_20=YES
+   use_localtime=YES
+   dirmessage_enable=YES
+   pasv_enable=YES
+   pasv_min_port=40000
+   pasv_max_port=40100
+   secure_chroot_dir=/var/run/vsftpd/empty
+   pam_service_name=vsftpd
+   ssl_enable=NO
+   ```
+
+5. Create the upload directory and set ownership:
+   ```bash
+   sudo mkdir -p /mnt/usb/incoming
+   sudo chown ftpcam:ftpcam /mnt/usb/incoming
+   ```
+
+6. Restart and enable vsftpd:
+   ```bash
+   sudo systemctl restart vsftpd
+   sudo systemctl enable vsftpd
+   ```
+
+7. Verify FTP server works (from the Pi itself):
+   ```bash
+   curl -T /etc/hostname ftp://ftpcam:<password>@192.168.50.1/test_upload.txt
+   ls /mnt/usb/incoming/test_upload.txt  # should exist
+   sudo rm /mnt/usb/incoming/test_upload.txt  # clean up
+   ```
+
+> **Note:** The `ftpcam` password must match what is configured on each camera's FTP upload settings below. Record this password securely.
+
 **Configure each camera:**
 
 1. Connect camera to PoE switch, connect switch uplink port to Pi Ethernet

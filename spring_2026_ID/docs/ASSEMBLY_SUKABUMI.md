@@ -24,6 +24,8 @@
   - [Step 8: Prepare Enclosure and Install Bulkheads](#step-8-prepare-enclosure-and-install-bulkheads)
   - [Step 9: Install Mounting Plate and Connect External Peripherals](#step-9-install-mounting-plate-and-connect-external-peripherals)
   - [Step 10: Configure Pi Camera Network](#step-10-configure-pi-camera-network-15-min)
+  - [Step 10b: Prepare USB Storage](#step-10b-prepare-usb-storage-10-min)
+  - [Step 10c: Configure FTP Server for Camera Uploads](#step-10c-configure-ftp-server-for-camera-uploads-10-min)
   - [Step 11: Configure PoE Camera Settings](#step-11-configure-poe-camera-settings-15-min)
   - [Step 12: Mount External Components](#step-12-mount-external-components-30-min)
   - [Step 13: Final Assembly and Sealing](#step-13-final-assembly--sealing-15-min)
@@ -466,6 +468,129 @@ The Pi serves as DHCP server for the camera network on eth0 using dnsmasq. This 
      ```bash
      cat /var/lib/misc/dnsmasq.leases
      ```
+
+### Step 10b: Prepare USB Storage (10 min)
+
+The USB flash drive stores camera uploads and ORC data. It must be formatted
+as ext4 (for Linux file permissions) and mounted persistently at `/mnt/usb`.
+
+1. **Insert the USB flash drive** into Pi 5 USB-A 3.0 port (blue).
+
+2. **Identify the device:**
+   ```bash
+   lsblk
+   ```
+   The USB drive will appear as `/dev/sda` (or similar). Note the partition
+   name (e.g. `/dev/sda1`).
+
+3. **Unmount if auto-mounted:**
+   ```bash
+   sudo umount /dev/sda1   # adjust if different device
+   ```
+
+4. **Format as ext4:**
+   ```bash
+   sudo mkfs.ext4 -L orc-data /dev/sda1
+   ```
+
+5. **Get the UUID** (needed for persistent fstab mount):
+   ```bash
+   sudo blkid /dev/sda1
+   ```
+   Copy the `UUID="..."` value.
+
+6. **Create mount point and add to fstab:**
+   ```bash
+   sudo mkdir -p /mnt/usb
+   echo 'UUID=<paste-uuid-here>  /mnt/usb  ext4  defaults,noatime,nofail  0  2' | sudo tee -a /etc/fstab
+   ```
+   The `nofail` option ensures the Pi still boots if the USB drive is missing.
+
+7. **Mount and verify:**
+   ```bash
+   sudo mount /mnt/usb
+   df -h /mnt/usb
+   ```
+
+### Step 10c: Configure FTP Server for Camera Uploads (10 min)
+
+The camera pushes video and snapshots to the Pi via FTP. This requires vsftpd
+configured with a dedicated upload user. The USB drive (Step 10b) must be
+mounted first since camera uploads land on it.
+
+1. **Install vsftpd** (if not already installed):
+   ```bash
+   sudo apt install vsftpd -y
+   ```
+
+2. **Create the FTP upload user:**
+   ```bash
+   sudo useradd -m -d /mnt/usb/incoming -s /usr/sbin/nologin ftpcam
+   sudo passwd ftpcam  # Set password — must match camera FTP config
+   ```
+
+3. **Add nologin to allowed shells** (required by PAM):
+   ```bash
+   echo "/usr/sbin/nologin" | sudo tee -a /etc/shells
+   ```
+
+4. **Create the userlist** (restricts FTP login to this user only):
+   ```bash
+   echo "ftpcam" | sudo tee /etc/vsftpd.userlist
+   ```
+
+5. **Deploy vsftpd config** from the overlay:
+   ```bash
+   sudo cp pi/shared/etc/vsftpd.conf /etc/vsftpd.conf
+   sudo cp pi/shared/etc/vsftpd.userlist /etc/vsftpd.userlist
+   ```
+   Or replace `/etc/vsftpd.conf` manually with:
+   ```
+   listen=NO
+   listen_ipv6=YES
+   anonymous_enable=NO
+   local_enable=YES
+   write_enable=YES
+   chroot_local_user=YES
+   allow_writeable_chroot=YES
+   userlist_enable=YES
+   userlist_file=/etc/vsftpd.userlist
+   userlist_deny=NO
+   local_umask=022
+   xferlog_enable=YES
+   xferlog_file=/var/log/vsftpd.log
+   connect_from_port_20=YES
+   use_localtime=YES
+   dirmessage_enable=YES
+   pasv_enable=YES
+   pasv_min_port=40000
+   pasv_max_port=40100
+   secure_chroot_dir=/var/run/vsftpd/empty
+   pam_service_name=vsftpd
+   ssl_enable=NO
+   ```
+
+6. **Create the upload directory and set ownership:**
+   ```bash
+   sudo mkdir -p /mnt/usb/incoming
+   sudo chown ftpcam:ftpcam /mnt/usb/incoming
+   ```
+
+7. **Restart and enable vsftpd:**
+   ```bash
+   sudo systemctl restart vsftpd
+   sudo systemctl enable vsftpd
+   ```
+
+8. **Verify FTP server works** (from the Pi itself):
+   ```bash
+   curl -T /etc/hostname ftp://ftpcam:<password>@192.168.50.1/test_upload.txt
+   ls /mnt/usb/incoming/test_upload.txt  # should exist
+   sudo rm /mnt/usb/incoming/test_upload.txt  # clean up
+   ```
+
+> **Note:** The `ftpcam` password must match what is configured on the camera's
+> FTP upload settings (Step 11). Record this password securely.
 
 ### Step 11: Configure PoE Camera Settings (15 min)
 
