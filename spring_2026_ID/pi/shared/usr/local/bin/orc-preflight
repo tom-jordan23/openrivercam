@@ -281,10 +281,10 @@ if echo "$POE_STATE" | grep -q "| --"; then
     pinctrl set 24 ip 2>/dev/null
     POE_STATE=$(pinctrl get 24 2>/dev/null)
 fi
-if echo "$POE_STATE" | grep -q "| lo"; then
-    pass "PoE relay: ON (GPIO 24 LOW — relay energized)"
-elif echo "$POE_STATE" | grep -q "| hi"; then
-    warn "PoE relay: OFF (GPIO 24 HIGH — relay de-energized) — camera/eth0 unpowered"
+if echo "$POE_STATE" | grep -q "| hi"; then
+    pass "PoE relay: ON (GPIO 24 HIGH — relay energized)"
+elif echo "$POE_STATE" | grep -q "| lo"; then
+    warn "PoE relay: OFF (GPIO 24 LOW — relay de-energized) — camera/eth0 unpowered"
 else
     warn "PoE relay: unknown state (GPIO 24 not readable)"
 fi

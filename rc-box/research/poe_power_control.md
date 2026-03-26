@@ -230,7 +230,13 @@ GND → Transistor emitter → Shutdown- terminal
 Raspberry Pi GPIO 17 → Relay IN1 (triggers relay)
 ```
 
-**Control Method:**
+**Control Method (uses ORC active-low convention):**
+
+> **Note (2026-03-26):** This sample uses ORC's active-low convention
+> (`GPIO.LOW` = relay ON). Our Sukabumi deployment's Electronics-Salon board
+> is empirically active-HIGH. Relay polarity should be configurable — a PR
+> will be submitted to ORC to support both conventions.
+
 ```python
 #!/usr/bin/env python3
 import RPi.GPIO as GPIO

@@ -183,19 +183,25 @@ Each relay channel has three output terminals. Think of it as a switch:
                          └── NC  (Normally Closed)   ← connected when relay is OFF
 ```
 
-| Terminal | Name | When Relay is De-energized (GPIO HIGH) | When Relay is Energized (GPIO LOW) |
+| Terminal | Name | When Relay is De-energized (GPIO LOW) | When Relay is Energized (GPIO HIGH) |
 |----------|------|----------------------------------------|------------------------------------|
 | **COM** | Common | Connected to NC | Connected to NO |
 | **NO** | Normally Open | Disconnected from COM | **Connected to COM** |
 | **NC** | Normally Closed | Connected to COM | Disconnected from COM |
 
-**Active-low logic:** The Electronics-Salon relay module uses a Darlington transistor
-driver — pulling an IN pin **LOW** energizes the relay coil. This matches ORC's
-`orc-gpio-relays.py`, which uses `GPIO.output(pin, GPIO.LOW)` to turn relays ON.
+**Active-high logic:** On our wiring, driving GPIO **HIGH** energizes the relay coil.
+This was verified empirically on 2026-03-26 — the prior assumption of active-low
+(based on the Electronics-Salon Darlington driver datasheet) was incorrect for our
+specific board/wiring.
 
-**We use only COM and NO.** When the GPIO pin goes LOW, the relay energizes, closing
+> **ORC convention mismatch:** ORC's `orc-gpio-relays.py` uses active-low logic
+> (`GPIO.output(pin, GPIO.LOW)` = relay ON). Our hardware is active-high. A PR will
+> be submitted to make ORC's relay polarity configurable. Until then, our `poe-relay`
+> script handles the correct polarity independently.
+
+**We use only COM and NO.** When the GPIO pin goes HIGH, the relay energizes, closing
 the COM→NO path, and 12V flows to the load (PoE switch or LED). When the GPIO pin
-goes HIGH (or Pi is off/unconfigured), the relay de-energizes, the path opens, and
+goes LOW (or Pi is off/unconfigured), the relay de-energizes, the path opens, and
 the load loses power.
 
 **NC terminals are not used.** Leave them empty.
@@ -1129,7 +1135,7 @@ Each GPIO function will have a corresponding systemd service:
 
 | Service | GPIO | Type | Description |
 |---------|------|------|-------------|
-| `relay-poe.service` | GPIO 24 | oneshot, RemainAfterExit | Assert LOW at boot to energize PoE relay (active-low) |
+| `relay-poe.service` | GPIO 24 | oneshot, RemainAfterExit | Assert HIGH at boot to energize PoE relay (active-high) |
 | `led-status.service` | GPIO 17, 27, 22 | simple (long-running) | Manage LED state based on system status |
 | `maintenance-button.service` | GPIO 23 | simple (long-running) | Monitor button, trigger maintenance mode |
 | `rain-gauge.service` | GPIO 14, 15 | simple (long-running) | Read UART data from Hydreon RG-15 |

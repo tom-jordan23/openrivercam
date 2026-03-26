@@ -286,18 +286,17 @@ FUSE SPECIFICATIONS:
 |    Relay VCC <- G469 Pin 4 (5V)                                        |
 |    Relay GND <- G469 Pin 20 (GND)                                      |
 |  Control: GPIO 24 (Pin 18) -> IN1 (PoE switch)                        |
-|  ACTIVE-LOW LOGIC (matches ORC orc-gpio-relays.py):                   |
-|  GPIO LOW  = relay energized = NO contact closed = 12V passes          |
-|  GPIO HIGH = relay de-energized = NO contact open = 12V cut            |
+|  ACTIVE-HIGH LOGIC (verified empirically 2026-03-26):                 |
+|  GPIO HIGH = relay energized = NO contact closed = 12V passes          |
+|  GPIO LOW  = relay de-energized = NO contact open = 12V cut            |
 |                                                                         |
-|  WHY ACTIVE-LOW: The Electronics-Salon module uses a Darlington        |
-|  transistor driver — pulling IN LOW energizes the coil. ORC's          |
-|  orc-gpio-relays.py uses GPIO.output(pin, GPIO.LOW) to turn relays    |
-|  ON, so all our scripts align to the same convention.                  |
+|  NOTE: ORC's orc-gpio-relays.py uses active-LOW convention             |
+|  (GPIO.LOW = relay ON). Our hardware is active-HIGH. A PR will be      |
+|  submitted to make ORC's relay polarity configurable.                  |
 |                                                                         |
 |  WHY NO (NORMALLY OPEN):                                               |
 |  Fail-safe design. If Pi crashes, hangs, or hasn't booted yet,        |
-|  GPIO floats HIGH (or unconfigured), relay de-energizes, NO opens,    |
+|  GPIO floats LOW (or unconfigured), relay de-energizes, NO opens,     |
 |  cameras lose power automatically. Prevents battery drain.            |
 |  NC would leave cameras powered indefinitely on Pi failure.            |
 |                                                                         |

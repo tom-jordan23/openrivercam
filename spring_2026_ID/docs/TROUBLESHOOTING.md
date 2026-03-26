@@ -670,15 +670,18 @@ echo 0 > /sys/class/gpio/gpio17/value
 
 ### Relay Control (Electronics-Salon 4-channel SPDT, GPIO-triggered)
 
-The relay module uses **active-low logic**: pulling an IN pin LOW energizes the
-relay coil (closing the NO contact). This matches ORC's `orc-gpio-relays.py`.
+The relay module uses **active-high logic** (verified empirically 2026-03-26):
+driving GPIO HIGH energizes the relay coil (closing the NO contact).
 The PoE switch is wired through the NO (normally open) contact, so the relay
 must be energized for cameras to have power. At boot (GPIO unconfigured), the
 relay defaults to de-energized = cameras off (fail-safe).
 
+> **Note:** ORC's `orc-gpio-relays.py` uses active-low convention. A PR will be
+> submitted to make ORC's relay polarity configurable.
+
 ```bash
 # Relay channels driven via G469 breakout:
-#   GPIO 24 → IN1 (PoE switch)   — active-low (LOW = relay ON)
+#   GPIO 24 → IN1 (PoE switch)   — active-high (HIGH = relay ON)
 #   GPIO 17 → IN2 (Green LED)
 #   GPIO 27 → IN3 (Yellow LED)
 #   GPIO 22 → IN4 (Red LED)
@@ -686,16 +689,16 @@ relay defaults to de-energized = cameras off (fail-safe).
 # Check relay GPIO wiring: VCC, GND, IN1-IN4 connections
 
 # Preferred: use poe-relay utility
-poe-relay on       # GPIO 24 LOW → relay energized → PoE switch ON
-poe-relay off      # GPIO 24 HIGH → relay de-energized → PoE switch OFF
+poe-relay on       # GPIO 24 HIGH → relay energized → PoE switch ON
+poe-relay off      # GPIO 24 LOW → relay de-energized → PoE switch OFF
 poe-relay status   # show current state + eth0 IP
 
 # Alternative using pinctrl (Pi 5):
-pinctrl set 24 op dl   # drive LOW (relay ON — energized)
-pinctrl set 24 op dh   # drive HIGH (relay OFF — de-energized)
+pinctrl set 24 op dh   # drive HIGH (relay ON — energized)
+pinctrl set 24 op dl   # drive LOW (relay OFF — de-energized)
 
 # Manually cycle PoE switch power
-pinctrl set 24 op dh && sleep 5 && pinctrl set 24 op dl
+pinctrl set 24 op dl && sleep 5 && pinctrl set 24 op dh
 ```
 
 ### Rainbow Sensing RTC (Pi 5 Built-in RTC)

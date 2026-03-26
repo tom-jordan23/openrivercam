@@ -3,9 +3,9 @@
 #
 # Relay: Electronics-Salon 4-ch SPDT, CH1
 # GPIO:  24 (via Geekworm G469 screw terminals)
-# Logic: Active-low (matches ORC orc-gpio-relays.py)
-#        GPIO 24 LOW  = relay energized = PoE switch ON = camera ON
-#        GPIO 24 HIGH = relay de-energized = PoE switch OFF = camera OFF
+# Logic: Active-high (this relay board energizes when input is HIGH)
+#        GPIO 24 HIGH = relay energized = PoE switch ON = camera ON
+#        GPIO 24 LOW  = relay de-energized = PoE switch OFF = camera OFF
 #
 # Note: eth0 will not have an IP address unless the PoE relay is ON.
 
@@ -48,14 +48,14 @@ get_state() {
 
 case "${1}" in
     on)
-        echo "GPIO ${GPIO_PIN}: setting LOW (output) — relay energized"
-        pinctrl set "$GPIO_PIN" op dl
+        echo "GPIO ${GPIO_PIN}: setting HIGH (output) — relay energized"
+        pinctrl set "$GPIO_PIN" op dh
         echo "PoE relay CH1: ON — PoE switch and camera powered"
         echo "eth0 should get an IP once the switch and camera boot (~45-60s)"
         ;;
     off)
-        echo "GPIO ${GPIO_PIN}: setting HIGH (output) — relay de-energized"
-        pinctrl set "$GPIO_PIN" op dh
+        echo "GPIO ${GPIO_PIN}: setting LOW (output) — relay de-energized"
+        pinctrl set "$GPIO_PIN" op dl
         echo "PoE relay CH1: OFF — PoE switch and camera unpowered"
         echo "eth0 will lose its IP address"
         ;;
@@ -66,10 +66,10 @@ case "${1}" in
         echo "  pinctrl: ${raw}"
         case "$state" in
             high)
-                echo "  State: HIGH — relay OFF — PoE switch unpowered"
+                echo "  State: HIGH — relay ON — PoE switch powered"
                 ;;
             low)
-                echo "  State: LOW — relay ON — PoE switch powered"
+                echo "  State: LOW — relay OFF — PoE switch unpowered"
                 ;;
             *)
                 echo "  State: UNKNOWN (pin may not be configured as output)"
