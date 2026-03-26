@@ -1,12 +1,91 @@
-<?xml version='1.0' encoding='UTF-8'?>
-<!-- STUB: Pull from live camera to populate. Image settings (ch 1). -->
-<ImageChannel xmlns="http://www.hikvision.com/ver20/XMLSchema" version="2.0">
-  <id>1</id>
-  <brightnessLevel>50</brightnessLevel>
-  <contrastLevel>50</contrastLevel>
-  <saturationLevel>50</saturationLevel>
-  <sharpnessLevel>50</sharpnessLevel>
-  <WDR>
-    <mode>close</mode>
-  </WDR>
-</ImageChannel>
+<?xml version='1.0' encoding='utf-8'?>
+<ns0:ImageChannel xmlns:ns0="http://www.std-cgi.com/ver20/XMLSchema" version="2.0">
+  <ns0:id>1</ns0:id>
+  <ns0:enabled>true</ns0:enabled>
+  <ns0:videoInputID>1</ns0:videoInputID>
+  <ns0:ImageFlip version="2.0">
+    <ns0:enabled>false</ns0:enabled>
+  </ns0:ImageFlip>
+  <ns0:IrcutFilter version="2.0">
+    <ns0:IrcutFilterType>auto</ns0:IrcutFilterType>
+    <ns0:nightToDayFilterLevel>4</ns0:nightToDayFilterLevel>
+    <ns0:nightToDayFilterTime>5</ns0:nightToDayFilterTime>
+  </ns0:IrcutFilter>
+  <ns0:Exposure version="2.0">
+    <ns0:ExposureType>manual</ns0:ExposureType>
+    <ns0:OverexposeSuppress>
+      <ns0:enabled>false</ns0:enabled>
+    </ns0:OverexposeSuppress>
+  </ns0:Exposure>
+  <ns0:powerLineFrequency version="2.0">
+    <ns0:powerLineFrequencyMode>50hz</ns0:powerLineFrequencyMode>
+  </ns0:powerLineFrequency>
+  <ns0:PTZ version="2.0">
+    <ns0:enabled>false</ns0:enabled>
+  </ns0:PTZ>
+  <ns0:corridor version="2.0">
+    <ns0:enabled>false</ns0:enabled>
+  </ns0:corridor>
+  <ns0:CaptureMode version="2.0">
+    <ns0:mode>close</ns0:mode>
+  </ns0:CaptureMode>
+  <ns0:LaserLight version="2.0">
+    <ns0:mode>manual</ns0:mode>
+    <ns0:brightnessLevel>0</ns0:brightnessLevel>
+    <ns0:laserangle>0</ns0:laserangle>
+  </ns0:LaserLight>
+  <ns0:WDR version="2.0">
+    <ns0:mode>close</ns0:mode>
+    <ns0:WDRLevel>50</ns0:WDRLevel>
+  </ns0:WDR>
+  <ns0:BLC version="2.0">
+    <ns0:enabled>false</ns0:enabled>
+  </ns0:BLC>
+  <ns0:NoiseReduce version="2.0">
+    <ns0:mode>general</ns0:mode>
+    <ns0:GeneralMode>
+      <ns0:generalLevel>50</ns0:generalLevel>
+    </ns0:GeneralMode>
+  </ns0:NoiseReduce>
+  <ns0:WhiteBalance version="2.0">
+    <ns0:WhiteBalanceStyle>auto1</ns0:WhiteBalanceStyle>
+  </ns0:WhiteBalance>
+  <ns0:Sharpness version="2.0">
+    <ns0:SharpnessLevel>50</ns0:SharpnessLevel>
+  </ns0:Sharpness>
+  <ns0:Gain version="2.0">
+    <ns0:GainLevel>100</ns0:GainLevel>
+  </ns0:Gain>
+  <ns0:Shutter version="2.0">
+    <ns0:ShutterLevel>1/25</ns0:ShutterLevel>
+  </ns0:Shutter>
+  <ns0:Color version="2.0">
+    <ns0:brightnessLevel>50</ns0:brightnessLevel>
+    <ns0:contrastLevel>50</ns0:contrastLevel>
+    <ns0:saturationLevel>50</ns0:saturationLevel>
+  </ns0:Color>
+  <ns0:Dehaze version="2.0">
+    <ns0:DehazeMode>close</ns0:DehazeMode>
+  </ns0:Dehaze>
+  <ns0:HLC version="2.0">
+    <ns0:enabled>false</ns0:enabled>
+    <ns0:HLCLevel>50</ns0:HLCLevel>
+  </ns0:HLC>
+  <ns0:DigitalZoom>
+    <ns0:ZoomRatio>1x</ns0:ZoomRatio>
+  </ns0:DigitalZoom>
+  <ns0:Palettes>
+    <ns0:mode>WhiteHot</ns0:mode>
+  </ns0:Palettes>
+  <ns0:SupplementLight version="2.0">
+    <ns0:supplementLightMode>eventIntelligence</ns0:supplementLightMode>
+    <ns0:mixedLightBrightnessRegulatMode>auto</ns0:mixedLightBrightnessRegulatMode>
+    <ns0:whiteLightBrightness>100</ns0:whiteLightBrightness>
+    <ns0:irLightBrightness>100</ns0:irLightBrightness>
+    <ns0:EventIntelligenceModeCfg>
+      <ns0:brightnessRegulatMode>auto</ns0:brightnessRegulatMode>
+      <ns0:whiteLightBrightness>100</ns0:whiteLightBrightness>
+      <ns0:irLightBrightness>100</ns0:irLightBrightness>
+    </ns0:EventIntelligenceModeCfg>
+  </ns0:SupplementLight>
+</ns0:ImageChannel>

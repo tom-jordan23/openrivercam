@@ -1,5 +1,6 @@
-<?xml version='1.0' encoding='UTF-8'?>
-<!-- STUB: Pull from live camera to populate. IR cut filter mode. -->
-<IrcutFilter xmlns="http://www.hikvision.com/ver20/XMLSchema" version="2.0">
-  <IrcutFilterType>auto</IrcutFilterType>
-</IrcutFilter>
+<?xml version='1.0' encoding='utf-8'?>
+<ns0:IrcutFilter xmlns:ns0="http://www.std-cgi.com/ver20/XMLSchema" version="2.0">
+  <ns0:IrcutFilterType>auto</ns0:IrcutFilterType>
+  <ns0:nightToDayFilterLevel>4</ns0:nightToDayFilterLevel>
+  <ns0:nightToDayFilterTime>5</ns0:nightToDayFilterTime>
+</ns0:IrcutFilter>

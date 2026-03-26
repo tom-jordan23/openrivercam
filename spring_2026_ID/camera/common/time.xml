@@ -1,6 +1,6 @@
-<?xml version='1.0' encoding='UTF-8'?>
-<!-- STUB: Pull from live camera to populate. System time / timezone. -->
-<Time xmlns="http://www.hikvision.com/ver20/XMLSchema" version="2.0">
-  <timeMode>NTP</timeMode>
-  <timeZone>CST-7:00:00</timeZone>
-</Time>
+<?xml version='1.0' encoding='utf-8'?>
+<ns0:Time xmlns:ns0="http://www.std-cgi.com/ver20/XMLSchema" version="2.0">
+  <ns0:timeMode>NTP</ns0:timeMode>
+  <ns0:localTime>2026-03-27T00:52:58+07:00</ns0:localTime>
+  <ns0:timeZone>CST-7:00:00</ns0:timeZone>
+</ns0:Time>

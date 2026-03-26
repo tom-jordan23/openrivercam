@@ -54,7 +54,13 @@ Complete these steps BEFORE traveling to Indonesia:
   - After reboot, navigate to `http://<hostname>.local` to verify the ORC-OS web dashboard loads
   - Set the ORC-OS web dashboard password when prompted
 - [ ] **Enable RTC battery charging** in `/boot/firmware/config.txt` — this is OFF by default because the Pi cannot detect whether the battery is rechargeable. Without this line, the RTC battery will silently drain and the clock will lose time. Set `dtparam=rtc_bbat_vchg=3000000` for ML cells or `dtparam=rtc_bbat_vchg=4200000` for LIR cells. See the RTC battery section in Step 4 for chemistry options and charge voltage settings.
-- [ ] Configure for 2-camera FTP capture (Pi FTP server + camera FTP upload config)
+- [ ] Set Pi timezone to Asia/Jakarta (WIB, UTC+7)
+- [ ] Install and configure chrony as NTP server for camera network
+- [ ] Format USB drive as ext4, mount at /mnt/usb, add to fstab
+- [ ] Configure vsftpd with ftpcam user for camera FTP uploads
+- [ ] Configure both cameras via camtool.py (1080p, 16Mbps CBR, IR-only, NTP from Pi)
+- [ ] Insert and format MicroSD in each camera, set recording to continuous (CMR)
+- [ ] Test video capture pipeline (download 5s clip from each camera SD via RTSP)
 - [ ] Configure WiFi hotspot for maintenance mode
 - [ ] Set up LED GPIO control script
 - [ ] Pre-configure Telkomsel APN (if known)
@@ -172,6 +178,26 @@ The USB flash drive stores camera uploads and ORC data. Format as ext4 and mount
    df -h /mnt/usb
    ```
 
+**Configure NTP server for camera time sync:**
+
+The cameras are on an isolated network with no internet. The Pi must serve NTP.
+
+1. Install chrony:
+   ```bash
+   sudo apt install chrony -y
+   ```
+2. Deploy the camera-net NTP config:
+   ```bash
+   sudo mkdir -p /etc/chrony/conf.d
+   sudo cp pi/shared/etc/chrony/conf.d/camera-net.conf /etc/chrony/conf.d/
+   sudo systemctl restart chrony
+   sudo systemctl enable chrony
+   ```
+3. Set Pi timezone to Jakarta (WIB, UTC+7):
+   ```bash
+   sudo timedatectl set-timezone Asia/Jakarta
+   ```
+
 **Set up FTP server for camera uploads:**
 
 The camera pushes video and snapshots to the Pi via FTP. The USB drive must be
@@ -256,18 +282,42 @@ mounted first (above) since camera uploads land on it.
    curl --digest -u admin:password http://192.168.50.101/ISAPI/Streaming/channels/101/picture -o cam1_test.jpg
    ```
 
-- [ ] Change admin password (record in secure location)
+- [ ] Change admin password (record in secure location — must match `CAMERA_PASSWORD` in `.env`)
 - [ ] Set camera to DHCP so it picks up the dnsmasq-assigned address on every boot
-- [ ] Configure FTP upload to Pi (192.168.50.1) via web interface or camtool.py:
+- [ ] Insert MicroSD card into each camera (required for local recording)
+- [ ] Format MicroSD via ISAPI:
   ```bash
-  python3 camtool.py push jakarta-cam1 ftp
-  python3 camtool.py push jakarta-cam2 ftp
+  curl --digest -u admin:<password> -X PUT \
+    http://192.168.50.101/ISAPI/ContentMgmt/Storage/hdd/1/format
   ```
-- [ ] Test FTP upload: trigger snapshot, verify files arrive in Pi FTP directory
-- [ ] Verify both cameras upload correctly:
-  - Camera 1 (192.168.50.101) -> check FTP directory
-  - Camera 2 (192.168.50.102) -> check FTP directory
-- [ ] Adjust image settings (exposure, focus) if needed
+- [ ] Push all camera configs via camtool.py:
+  ```bash
+  python3 camtool.py push jakarta-cam1
+  python3 camtool.py push jakarta-cam2
+  ```
+  This sets: 1920x1080 H.264 at 16 Mbps CBR, 12.5fps, audio off, IR-only
+  illumination, motion detection off, NTP from Pi, WIB timezone, FTP to Pi.
+- [ ] Set recording schedule to continuous (CMR) on each camera:
+  ```bash
+  # For each camera IP (192.168.50.101, .102):
+  curl --digest -u admin:<password> \
+    http://192.168.50.101/ISAPI/ContentMgmt/record/tracks/101 > /tmp/track.xml
+  sed -i 's/ActionRecordingMode>MOTION/ActionRecordingMode>CMR/g' /tmp/track.xml
+  curl --digest -u admin:<password> -X PUT \
+    -H "Content-Type: application/xml" -d @/tmp/track.xml \
+    http://192.168.50.101/ISAPI/ContentMgmt/record/tracks/101
+  ```
+- [ ] Verify configs: `python3 camtool.py diff jakarta-cam1`
+- [ ] Test video capture pipeline (download 5s clip from SD via RTSP playback):
+  ```bash
+  START=$(date -d '15 seconds ago' +%Y%m%dT%H%M%S)
+  ffmpeg -y -rtsp_transport tcp \
+    -i "rtsp://admin:<password>@192.168.50.101:554/Streaming/tracks/101?starttime=${START}" \
+    -t 5 -c:v copy -an /mnt/usb/incoming/test_cam1.mp4
+  ffprobe /mnt/usb/incoming/test_cam1.mp4  # verify 1080p, ~16 Mbps
+  ```
+- [ ] Verify both cameras record and download correctly
+- [ ] Verify IR function: cover lens, IR LEDs should illuminate, download clip shows grayscale
 
 ---
 
@@ -653,7 +703,7 @@ before final assembly.
 - [ ] 12V supply -> DDR-60G-5 -> Pi boots
 - [ ] GPIO 24 -> relay CH1 -> PoE switch powers on
 - [ ] Both cameras boot and are reachable via Pi
-- [ ] FTP upload from both cameras to Pi works
+- [ ] Video capture from both camera SDs to /mnt/usb/incoming works
 - [ ] LTE modem detected
 - [ ] SHT40 sensor readable via I2C
 - [ ] DS18B20 temperature probe readable
@@ -907,10 +957,15 @@ proceeding.
    ping 192.168.50.101
    ping 192.168.50.102
    ```
-5. Test FTP upload from both cameras:
-   - Trigger snapshot from camera web interface or ISAPI
-   - Check Pi FTP upload directory for files from each camera
-   - Verify image quality is acceptable
+5. Test video capture from both cameras:
+   ```bash
+   START=$(date -d '15 seconds ago' +%Y%m%dT%H%M%S)
+   ffmpeg -y -rtsp_transport tcp \
+     -i "rtsp://admin:PASSWORD@192.168.50.101:554/Streaming/tracks/101?starttime=${START}" \
+     -t 5 -c:v copy -an /mnt/usb/incoming/test_cam1.mp4
+   ffprobe /mnt/usb/incoming/test_cam1.mp4  # verify 1080p, ~16 Mbps
+   ```
+   Repeat for camera 2 (192.168.50.102).
 
 ### Verify LTE Connection
 

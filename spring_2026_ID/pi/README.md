@@ -54,6 +54,7 @@ contains a real file.
 | `shared/usr/local/bin/poe-relay` | `/usr/local/bin/poe-relay` | Control PoE switch relay (on/off/status) via GPIO 24 | Shared | No | No |
 | `shared/usr/local/bin/orc-preflight` | `/usr/local/bin/orc-preflight` | Pre-deployment checks for packages, configs, services, hardware | Shared | No | Yes |
 | `shared/update-motd.d/30-camera-status` | `/etc/update-motd.d/30-camera-status` | Dynamic MOTD: relay status, RTC battery, eth0 IP, camera reachability | Shared | No | No |
+| `shared/etc/chrony/conf.d/camera-net.conf` | `/etc/chrony/conf.d/camera-net.conf` | NTP server for camera network (Pi serves time to cameras) | Shared | No | Yes |
 | `shared/etc/vsftpd.conf` | `/etc/vsftpd.conf` | FTP server config for camera uploads (chroot, userlist, passive mode) | Shared | No | Yes |
 | `shared/etc/vsftpd.userlist` | `/etc/vsftpd.userlist` | Allowed FTP users (ftpcam only) | Shared | No | Yes |
 | `sukabumi/etc/cloud/templates/hosts.debian.tmpl` | `/etc/cloud/templates/hosts.debian.tmpl` | Hosts file template with camera hostname | Sukabumi | No | No |

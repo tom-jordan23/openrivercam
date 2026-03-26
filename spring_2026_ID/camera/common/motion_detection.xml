@@ -1,5 +1,20 @@
-<?xml version='1.0' encoding='UTF-8'?>
-<!-- STUB: Pull from live camera to populate. Motion detection (disabled). -->
-<MotionDetection xmlns="http://www.hikvision.com/ver20/XMLSchema" version="2.0">
-  <enabled>false</enabled>
-</MotionDetection>
+<?xml version='1.0' encoding='utf-8'?>
+<ns0:MotionDetection xmlns:ns0="http://www.std-cgi.com/ver20/XMLSchema" version="2.0">
+  <ns0:enabled>true</ns0:enabled>
+  <ns0:enableHighlight>false</ns0:enableHighlight>
+  <ns0:samplingInterval>2</ns0:samplingInterval>
+  <ns0:startTriggerTime>500</ns0:startTriggerTime>
+  <ns0:endTriggerTime>500</ns0:endTriggerTime>
+  <ns0:regionType>grid</ns0:regionType>
+  <ns0:Grid>
+    <ns0:rowGranularity>18</ns0:rowGranularity>
+    <ns0:columnGranularity>22</ns0:columnGranularity>
+  </ns0:Grid>
+  <ns0:MotionDetectionLayout version="2.0">
+    <ns0:sensitivityLevel>60</ns0:sensitivityLevel>
+    <ns0:layout>
+      <ns0:gridMap>fffffcfffffcfffffcfffffcfffffcfffffcfffffcfffffcfffffcfffffcfffffcfffffcfffffcfffffcfffffcfffffcfffffcfffffc</ns0:gridMap>
+    </ns0:layout>
+    <ns0:targetType>human,vehicle</ns0:targetType>
+  </ns0:MotionDetectionLayout>
+</ns0:MotionDetection>

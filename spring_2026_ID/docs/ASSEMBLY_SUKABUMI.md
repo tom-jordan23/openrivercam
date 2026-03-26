@@ -25,8 +25,9 @@
   - [Step 9: Install Mounting Plate and Connect External Peripherals](#step-9-install-mounting-plate-and-connect-external-peripherals)
   - [Step 10: Configure Pi Camera Network](#step-10-configure-pi-camera-network-15-min)
   - [Step 10b: Prepare USB Storage](#step-10b-prepare-usb-storage-10-min)
-  - [Step 10c: Configure FTP Server for Camera Uploads](#step-10c-configure-ftp-server-for-camera-uploads-10-min)
-  - [Step 11: Configure PoE Camera Settings](#step-11-configure-poe-camera-settings-15-min)
+  - [Step 10c: Configure NTP Server for Camera Time Sync](#step-10c-configure-ntp-server-for-camera-time-sync-5-min)
+  - [Step 10d: Configure FTP Server for Camera Uploads](#step-10d-configure-ftp-server-for-camera-uploads-10-min)
+  - [Step 11: Configure PoE Camera Settings](#step-11-configure-poe-camera-settings-30-min)
   - [Step 12: Mount External Components](#step-12-mount-external-components-30-min)
   - [Step 13: Final Assembly and Sealing](#step-13-final-assembly--sealing-15-min)
 - [Power-On Procedure](#power-on-procedure)
@@ -55,12 +56,17 @@ Complete these steps BEFORE traveling to Indonesia:
   - Set the ORC-OS web dashboard password when prompted
 - [ ] **Enable RTC battery charging** in `/boot/firmware/config.txt` — this is OFF by default because the Pi cannot detect whether the battery is rechargeable. Without this line, the RTC battery will silently drain and the clock will lose time. Set `dtparam=rtc_bbat_vchg=3000000` for ML cells or `dtparam=rtc_bbat_vchg=4200000` for LIR cells. See GPIO_WIRING.md Step 9.
 - [ ] Configure Pi 5 RTC wake schedule (15-minute wake cycle via ML-2020 coin cell)
-- [ ] Test PoE camera FTP upload to Pi
+- [ ] Configure Pi eth0 static IP (192.168.50.1/24) and dnsmasq DHCP for camera network
+- [ ] Set Pi timezone to Asia/Jakarta (WIB, UTC+7)
+- [ ] Install and configure chrony as NTP server for camera network
+- [ ] Format USB drive as ext4, mount at /mnt/usb, add to fstab
+- [ ] Configure vsftpd with ftpcam user for camera FTP uploads
+- [ ] Configure camera via camtool.py (1080p, 16Mbps CBR, IR-only, NTP from Pi)
+- [ ] Insert and format MicroSD in camera, set recording to continuous (CMR)
+- [ ] Test video capture pipeline (download 5s clip from camera SD via RTSP)
 - [ ] Configure WiFi hotspot for maintenance mode
 - [ ] Set up LED relay control script (GPIO 17/27/22 → relay channels → 12V LEDs)
 - [ ] Pre-configure Telkomsel APN (if known)
-- [ ] Configure Pi eth0 static IP (192.168.50.1/24) and dnsmasq DHCP for camera network
-- [ ] Configure camera FTP upload settings via web interface or camtool.py
 
 ### 2. Hardware Testing (Dry-Fit)
 
@@ -69,9 +75,9 @@ You need to verify all connections work and identify every contact point
 that must be masked during coating.
 
 - [ ] Test Pi 5 + Geekworm G469 stack boots correctly (2-board stack)
-- [ ] Verify USB flash drive is recognized
+- [ ] Verify USB flash drive is recognized and mounted at /mnt/usb
 - [ ] Test LTE modem connects (with test SIM)
-- [ ] Test PoE camera FTP upload works
+- [ ] Test video capture pipeline (5s clip from camera SD → /mnt/usb/incoming)
 - [ ] Test PoE switch powers camera when relay energized
 - [ ] Verify LEDs light up via relay channels (GPIO 17/27/22)
 
@@ -354,7 +360,7 @@ before conformal coating and final assembly.
 - [ ] 12V supply → DDR-60G-5 → Pi boots
 - [ ] GPIO 24 → relay CH1 → PoE switch powers on
 - [ ] Camera boots and is reachable via Pi
-- [ ] FTP upload from camera to Pi works
+- [ ] Video capture from camera SD to /mnt/usb/incoming works
 - [ ] LTE modem detected
 - [ ] SHT40 sensor readable via I2C
 - [ ] All continuity and isolation checks pass (see GPIO_WIRING.md)
@@ -512,7 +518,36 @@ as ext4 (for Linux file permissions) and mounted persistently at `/mnt/usb`.
    df -h /mnt/usb
    ```
 
-### Step 10c: Configure FTP Server for Camera Uploads (10 min)
+### Step 10c: Configure NTP Server for Camera Time Sync (5 min)
+
+The camera is on an isolated network with no internet — it cannot reach public
+NTP servers. The Pi must serve NTP so the camera's clock stays in sync.
+
+1. **Install chrony:**
+   ```bash
+   sudo apt install chrony -y
+   ```
+
+2. **Deploy the camera-net NTP config** from the overlay:
+   ```bash
+   sudo mkdir -p /etc/chrony/conf.d
+   sudo cp pi/shared/etc/chrony/conf.d/camera-net.conf /etc/chrony/conf.d/
+   ```
+   This allows NTP clients on 192.168.50.0/24 and enables serving time even
+   when the Pi itself has no upstream NTP (field deployment without internet).
+
+3. **Restart chrony:**
+   ```bash
+   sudo systemctl restart chrony
+   sudo systemctl enable chrony
+   ```
+
+4. **Set Pi timezone to Jakarta (WIB, UTC+7):**
+   ```bash
+   sudo timedatectl set-timezone Asia/Jakarta
+   ```
+
+### Step 10d: Configure FTP Server for Camera Uploads (10 min)
 
 The camera pushes video and snapshots to the Pi via FTP. This requires vsftpd
 configured with a dedicated upload user. The USB drive (Step 10b) must be
@@ -592,36 +627,100 @@ mounted first since camera uploads land on it.
 > **Note:** The `ftpcam` password must match what is configured on the camera's
 > FTP upload settings (Step 11). Record this password securely.
 
-### Step 11: Configure PoE Camera Settings (15 min)
+### Step 11: Configure PoE Camera Settings (30 min)
 
 **Note:** ANNKE C1200 is factory-sealed IP67. No housing assembly required.
 
-1. **Access camera web interface:**
-   - From the Pi or a laptop on the same network: `http://192.168.50.139`
-   - Default credentials: admin / admin (change password immediately)
-   - Set camera to DHCP (if not already) so it picks up the dnsmasq-assigned address on every boot
-   - Configure FTP upload: point camera at Pi's FTP server (192.168.50.1)
-   - Set video resolution/framerate per ORC requirements
-   - Configure scheduled snapshot/video capture interval
-   - Configure IR to auto-enable in low light
+The camera is configured entirely via `camtool.py` using ISAPI (Hikvision HTTP
+REST API). Configuration files are version-controlled in `camera/common/` and
+pushed to the camera as a batch. No web UI needed.
 
-   **Note:** The ANNKE web interface requires a Windows-only browser plugin for live view. Skip the live view — use FTP test upload or ISAPI snapshot to verify the camera image instead.
+**Pre-requisite:** Ensure `camera/.env` exists with `CAMERA_PASSWORD` and
+`FTP_PASSWORD` set (see `camera/.env.example`).
 
-2. **Configure FTP upload via camtool.py:**
+1. **Insert MicroSD card** into the camera's SD slot (required for local
+   recording — the Pi downloads clips from SD via RTSP playback).
+
+2. **Format the MicroSD card** via ISAPI:
    ```bash
-   # Push FTP config to camera (server = Pi IP, credentials from .env)
-   python3 camtool.py push sukabumi-cam1 ftp
+   # Check camera detects the SD card
+   curl --digest -u admin:<password> http://192.168.50.139/ISAPI/ContentMgmt/Storage
+
+   # Format (takes ~60s for 64GB)
+   curl --digest -u admin:<password> -X PUT \
+     http://192.168.50.139/ISAPI/ContentMgmt/Storage/hdd/1/format
    ```
 
-3. **Test FTP upload:**
-   - Trigger a test snapshot from camera web interface or via ISAPI
-   - Verify file appears in Pi's FTP upload directory
-   - Check image quality meets ORC requirements
+3. **Change the default admin password** on the camera web interface:
+   - From Pi: `http://192.168.50.139`
+   - Default credentials: admin / admin
+   - Change password immediately — must match `CAMERA_PASSWORD` in `.env`
 
-4. **Verify IR function:**
+4. **Push all camera configs via camtool.py:**
+   ```bash
+   cd spring_2026_ID/camera
+   python3 camtool.py push sukabumi-cam1
+   ```
+
+   This pushes the following settings (from `camera/common/`):
+
+   | Setting | Value | Why |
+   |---------|-------|-----|
+   | Resolution | 1920x1080 | ORC recommended (RS docs) |
+   | Codec | H.264 Main | Broad compatibility |
+   | Bitrate | 16 Mbps CBR | Camera maximum; RS recommends 20, confirmed 15 acceptable |
+   | Frame rate | 12.5 fps | Camera max at 1080p |
+   | Audio | Disabled | Not needed for ORC |
+   | IR cut filter | Auto | IR at night, visible light by day |
+   | Supplement light | IR only | No white LEDs (no visible illumination) |
+   | Motion detection | Disabled | Not used — continuous recording instead |
+   | NTP server | 192.168.50.1 (Pi) | Camera has no internet access |
+   | Timezone | WIB (UTC+7) | Jakarta/Western Indonesia Time |
+   | FTP server | 192.168.50.1 | For snapshot uploads to Pi |
+
+   > **Note:** camtool cannot push the FTP config due to a namespace issue
+   > with the ANNKE firmware. Push FTP separately via direct ISAPI — see
+   > `camera/README.md` for the workaround.
+
+5. **Set recording schedule to continuous (CMR):**
+   ```bash
+   # Get current recording config
+   curl --digest -u admin:<password> \
+     http://192.168.50.139/ISAPI/ContentMgmt/record/tracks/101 > /tmp/track.xml
+
+   # Change MOTION to CMR in all ScheduleAction blocks
+   sed -i 's/ActionRecordingMode>MOTION/ActionRecordingMode>CMR/g' /tmp/track.xml
+
+   # Push back
+   curl --digest -u admin:<password> -X PUT \
+     -H "Content-Type: application/xml" -d @/tmp/track.xml \
+     http://192.168.50.139/ISAPI/ContentMgmt/record/tracks/101
+   ```
+
+6. **Verify configuration:**
+   ```bash
+   python3 camtool.py diff sukabumi-cam1
+   ```
+
+7. **Test video capture pipeline:**
+   ```bash
+   # Wait ~30s for recording to accumulate, then download a 5s clip
+   START=$(date -d '15 seconds ago' +%Y%m%dT%H%M%S)
+   END=$(date -d '10 seconds ago' +%Y%m%dT%H%M%S)
+   FNAME="video_$(date -d '15 seconds ago' +%Y%m%d_%H%M%S).mp4"
+
+   ffmpeg -y -rtsp_transport tcp \
+     -i "rtsp://admin:<password>@192.168.50.139:554/Streaming/tracks/101?starttime=${START}&endtime=${END}" \
+     -t 5 -c:v copy -an /mnt/usb/incoming/$FNAME
+
+   # Verify: 1080p, ~16 Mbps, ~5 seconds
+   ffprobe /mnt/usb/incoming/$FNAME
+   ```
+
+8. **Verify IR function:**
    - Cover camera lens (simulate darkness)
-   - IR LEDs should illuminate (visible glow)
-   - Trigger snapshot, verify IR-lit image in FTP directory
+   - IR LEDs should illuminate (visible glow from IR array)
+   - Download a clip — verify IR-lit image (grayscale)
 
 ### Step 12: Mount External Components (30 min)
 
@@ -718,9 +817,14 @@ proceeding.
 2. Connect to WiFi hotspot
 3. SSH into Pi
 4. Check camera is reachable: `ping 192.168.50.139`
-5. Check FTP upload directory for images from camera
-6. If no files, trigger a test snapshot via ISAPI: `curl --digest -u admin:PASSWORD http://192.168.50.139/ISAPI/Streaming/channels/101/picture -o test.jpg`
-7. Verify image captured and quality is acceptable
+5. Download a test clip from camera SD:
+   ```bash
+   START=$(date -d '15 seconds ago' +%Y%m%dT%H%M%S)
+   ffmpeg -y -rtsp_transport tcp \
+     -i "rtsp://admin:PASSWORD@192.168.50.139:554/Streaming/tracks/101?starttime=${START}" \
+     -t 5 -c:v copy -an /mnt/usb/incoming/test.mp4
+   ```
+6. Verify clip: `ffprobe /mnt/usb/incoming/test.mp4` (should show 1080p, ~16 Mbps)
 
 ### Verify IR Light
 
@@ -809,7 +913,11 @@ See `TROUBLESHOOTING.md` for detailed diagnostics.
 | LTE SIM number | |
 | Modem IMEI | |
 | Camera IP address | 192.168.50.139 |
-| Camera FTP target | Pi FTP server at 192.168.50.1 |
+| Camera FTP target | Pi FTP server at 192.168.50.1 (user: ftpcam) |
+| Camera NTP source | Pi at 192.168.50.1 (chrony) |
+| Camera stream | 1920x1080, H.264, 16 Mbps CBR, 12.5fps |
+| Camera recording | Continuous (CMR) to MicroSD |
+| Camera illumination | IR only (no white LEDs) |
 | GPS coordinates | |
 | Installation date | |
 | Installer name | |

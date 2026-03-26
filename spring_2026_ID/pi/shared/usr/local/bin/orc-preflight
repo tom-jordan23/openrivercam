@@ -38,7 +38,7 @@ warn() {
 echo ""
 echo "=== Required Packages ==="
 
-REQUIRED_PKGS="dnsmasq modemmanager gpiod vsftpd"
+REQUIRED_PKGS="dnsmasq modemmanager gpiod vsftpd chrony"
 OPTIONAL_PKGS="minicom"
 MISSING_REQ=""
 
@@ -291,7 +291,7 @@ fi
 echo ""
 echo "=== Services ==="
 
-for svc in dnsmasq NetworkManager ModemManager vsftpd; do
+for svc in dnsmasq NetworkManager ModemManager vsftpd chrony; do
     if systemctl is-enabled "$svc" >/dev/null 2>&1; then
         if systemctl is-active "$svc" >/dev/null 2>&1; then
             pass "$svc enabled and running"

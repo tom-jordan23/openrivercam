@@ -1,0 +1,23 @@
+<?xml version='1.0' encoding='utf-8'?>
+<ns0:FTPNotificationList xmlns:ns0="http://www.std-cgi.com/ver20/XMLSchema" version="2.0">
+  <ns0:FTPNotification version="2.0">
+    <ns0:id>1</ns0:id>
+    <ns0:enabled>true</ns0:enabled>
+    <ns0:addressingFormatType>ipaddress</ns0:addressingFormatType>
+    <ns0:ipAddress>192.168.50.1</ns0:ipAddress>
+    <ns0:portNo>21</ns0:portNo>
+    <ns0:userName>ftpcam</ns0:userName>
+    <ns0:annoyftp>false</ns0:annoyftp>
+    <ns0:uploadPicture>true</ns0:uploadPicture>
+    <ns0:uploadPath>
+      <ns0:pathDepth>0</ns0:pathDepth>
+      <ns0:topDirNameRule>customize</ns0:topDirNameRule>
+      <ns0:topDirName />
+      <ns0:subDirNameRule>customize</ns0:subDirNameRule>
+      <ns0:subDirName />
+    </ns0:uploadPath>
+    <ns0:picArchivingInterval min="0" max="30">0</ns0:picArchivingInterval>
+    <ns0:picNameRuleType>default</ns0:picNameRuleType>
+    <ns0:picNamePrefix min="1" max="32" />
+  </ns0:FTPNotification>
+</ns0:FTPNotificationList>
