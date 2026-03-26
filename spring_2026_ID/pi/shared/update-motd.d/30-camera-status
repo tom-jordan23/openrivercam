@@ -1,9 +1,21 @@
 #!/bin/bash
 CAM_HOST="camera"
 CAM_IP="192.168.50.139"
+GPIO_PIN=24
 
 echo ""
 echo "=== OpenRiverCam Camera Network ==="
+
+# Relay status (GPIO 24: HIGH = ON, LOW = OFF)
+gpio_line=$(pinctrl get "$GPIO_PIN" 2>/dev/null)
+if echo "$gpio_line" | grep -q "| hi"; then
+    echo "  Relay CH1:  ON (PoE switch powered)"
+elif echo "$gpio_line" | grep -q "| lo"; then
+    echo "  Relay CH1:  OFF (PoE switch unpowered)"
+else
+    echo "  Relay CH1:  unknown (GPIO $GPIO_PIN not readable)"
+fi
+
 PI_IP=$(ip -4 -o addr show eth0 2>/dev/null | awk '{print $4}')
 if [ -n "$PI_IP" ]; then
     echo "  Pi (eth0):  $PI_IP"
