@@ -6,6 +6,11 @@ follow the [ORC-OS README](https://github.com/localdevices/ORC-OS/blob/main/READ
 Files here are manually copied to each Pi **after** the base image setup is
 complete — there is no automated deployment.
 
+## Package Manifest
+
+See [PACKAGES.md](PACKAGES.md) for system and Python packages that must be
+installed on top of the base image.
+
 ## Layout Convention
 
 Files are stored under the **filesystem path they occupy on the Pi**, relative
@@ -46,6 +51,8 @@ contains a real file.
 | Repo path | Pi path | Description | Shared / Site | Credentials? | Upstream candidate? |
 |-----------|---------|-------------|---------------|:------------:|:-------------------:|
 | `shared/etc/dnsmasq.d/maintenance.conf` | `/etc/dnsmasq.d/maintenance.conf` | DHCP server for camera PoE network on eth0 | Shared | No | No |
+| `shared/usr/local/bin/poe-relay` | `/usr/local/bin/poe-relay` | Control PoE switch relay (on/off/status) via GPIO 24 | Shared | No | No |
+| `shared/usr/local/bin/orc-preflight` | `/usr/local/bin/orc-preflight` | Pre-deployment checks for packages, configs, services, hardware | Shared | No | Yes |
 | `sukabumi/etc/cloud/templates/hosts.debian.tmpl` | `/etc/cloud/templates/hosts.debian.tmpl` | Hosts file template with camera hostname | Sukabumi | No | No |
 | `sukabumi/etc/NetworkManager/system-connections/camera-net.nmconnection` | `/etc/NetworkManager/system-connections/camera-net.nmconnection` | Static IP (192.168.50.1) for eth0 camera network | Sukabumi | No | No |
 

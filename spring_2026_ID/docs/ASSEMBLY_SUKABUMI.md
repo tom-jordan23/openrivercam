@@ -440,10 +440,12 @@ The Pi serves as DHCP server for the camera network on eth0 using dnsmasq. This 
    Edit `/etc/dnsmasq.conf`:
    ```
    interface=eth0
-   bind-interfaces
+   bind-dynamic
    dhcp-range=192.168.50.100,192.168.50.200,24h
    dhcp-host=<CAMERA_MAC>,192.168.50.139
    ```
+   **Important:** Use `bind-dynamic` (not `bind-interfaces`). This allows dnsmasq to start
+   before eth0 has carrier — required because the PoE relay may not be on at boot time.
    Replace `<CAMERA_MAC>` with the camera's MAC address (printed on the camera label, or found via `arp -a` after the camera boots).
 
    Restart dnsmasq:

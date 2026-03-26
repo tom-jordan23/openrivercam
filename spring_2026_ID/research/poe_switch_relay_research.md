@@ -51,27 +51,21 @@ Wire from Geekworm G469 GPIO breakout screw terminals to relay module screw term
 |---------------|---------------|
 | VCC | Pi 5V (Pin 2) |
 | GND | Pi GND (Pin 6) |
-| IN1 | GPIO17 (Pin 11) |
+| IN1 | GPIO 24 (Pin 18) |
 
-A systemd service sets GPIO17 high at boot:
+> **Note:** This research originally proposed GPIO 17, but the final wiring
+> (see `diagrams/sukabumi/circuit_diagram.txt` Rev 3.0) assigns GPIO 17 to
+> the Green LED relay (CH2). The PoE relay (CH1) uses **GPIO 24**.
+> The legacy sysfs interface (`/sys/class/gpio/`) is also replaced by
+> `pinctrl` on Pi 5.
+
+Manual control via the `poe-relay` utility (see `pi/shared/usr/local/bin/poe-relay`):
 
 ```
-# /etc/systemd/system/relay-poe.service
-[Unit]
-Description=Assert GPIO17 to enable PoE switch relay
-After=sysinit.target
-
-[Service]
-Type=oneshot
-RemainAfterExit=yes
-ExecStart=/bin/bash -c "echo 17 > /sys/class/gpio/export; echo out > /sys/class/gpio/gpio17/direction; echo 1 > /sys/class/gpio/gpio17/value"
-ExecStop=/bin/bash -c "echo 0 > /sys/class/gpio/gpio17/value"
-
-[Install]
-WantedBy=multi-user.target
+poe-relay on      # GPIO 24 HIGH → relay closed → PoE switch ON
+poe-relay off     # GPIO 24 LOW  → relay open   → PoE switch OFF
+poe-relay status  # show current state + eth0 IP
 ```
-
-Enable: `sudo systemctl enable relay-poe.service`
 
 **Note:** The relay will be open for ~30-60s during Pi boot before the service runs. The camera needs this time to boot anyway (~45-60s), so this aligns naturally with the existing 150s active cycle.
 

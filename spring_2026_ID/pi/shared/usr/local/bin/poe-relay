@@ -1,0 +1,81 @@
+#!/bin/bash
+# poe-relay — control the PoE switch relay (camera power)
+#
+# Relay: Electronics-Salon 4-ch SPDT, CH1
+# GPIO:  24 (via Geekworm G469 screw terminals)
+# Logic: GPIO 24 HIGH = relay closed = PoE switch ON = camera ON
+#        GPIO 24 LOW  = relay open   = PoE switch OFF = camera OFF
+#
+# Note: eth0 will not have an IP address unless the PoE relay is ON.
+
+GPIO_PIN=24
+GPIO_CHIP=0
+
+usage() {
+    echo "Usage: poe-relay {on|off|status}"
+    echo ""
+    echo "Controls the PoE switch relay (GPIO ${GPIO_PIN}, relay CH1)."
+    echo "Turning this relay ON powers the PoE switch and camera."
+    echo "eth0 will only have an IP address when this relay is ON."
+    exit 1
+}
+
+get_state() {
+    # Read the current GPIO 24 state via pinctrl
+    local line
+    line=$(pinctrl get "$GPIO_PIN" 2>/dev/null)
+    if [ $? -ne 0 ]; then
+        echo "unknown"
+        return
+    fi
+    # pinctrl output looks like: "24: op -- dh | GPIO24 = 1"
+    if echo "$line" | grep -q "= 1"; then
+        echo "high"
+    elif echo "$line" | grep -q "= 0"; then
+        echo "low"
+    else
+        echo "unknown"
+    fi
+}
+
+case "${1}" in
+    on)
+        echo "GPIO ${GPIO_PIN}: setting HIGH (output)"
+        pinctrl set "$GPIO_PIN" op dh
+        echo "PoE relay CH1: ON — PoE switch and camera powered"
+        echo "eth0 should get an IP once the switch and camera boot (~45-60s)"
+        ;;
+    off)
+        echo "GPIO ${GPIO_PIN}: setting LOW (output)"
+        pinctrl set "$GPIO_PIN" op dl
+        echo "PoE relay CH1: OFF — PoE switch and camera unpowered"
+        echo "eth0 will lose its IP address"
+        ;;
+    status)
+        state=$(get_state)
+        echo "GPIO ${GPIO_PIN} (PoE relay CH1):"
+        raw=$(pinctrl get "$GPIO_PIN" 2>/dev/null)
+        echo "  pinctrl: ${raw}"
+        case "$state" in
+            high)
+                echo "  State: HIGH — relay CLOSED — PoE switch ON"
+                ;;
+            low)
+                echo "  State: LOW — relay OPEN — PoE switch OFF"
+                ;;
+            *)
+                echo "  State: UNKNOWN (pin may not be configured as output)"
+                ;;
+        esac
+        # Show eth0 status for context
+        eth0_ip=$(ip -4 -o addr show eth0 2>/dev/null | awk '{print $4}')
+        if [ -n "$eth0_ip" ]; then
+            echo "  eth0: ${eth0_ip}"
+        else
+            echo "  eth0: no IP address"
+        fi
+        ;;
+    *)
+        usage
+        ;;
+esac

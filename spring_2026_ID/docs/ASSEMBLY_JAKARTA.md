@@ -131,11 +131,13 @@ Configure ANNKE C1200 cameras BEFORE deployment. The Pi acts as DHCP server on t
    Edit `/etc/dnsmasq.conf`:
    ```
    interface=eth0
-   bind-interfaces
+   bind-dynamic
    dhcp-range=192.168.50.100,192.168.50.200,24h
    dhcp-host=<CAMERA_1_MAC>,192.168.50.101
    dhcp-host=<CAMERA_2_MAC>,192.168.50.102
    ```
+   **Important:** Use `bind-dynamic` (not `bind-interfaces`). This allows dnsmasq to start
+   before eth0 has carrier — required because the PoE relay may not be on at boot time.
    Replace `<CAMERA_x_MAC>` with each camera's MAC address (printed on the camera label). If you don't have the MACs yet, omit the `dhcp-host` lines, let the cameras get any IP from the range, then check `cat /var/lib/misc/dnsmasq.leases` to find their MACs and update the config.
 
    Restart dnsmasq:

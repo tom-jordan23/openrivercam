@@ -408,6 +408,27 @@ Both sites use the Pi as a DHCP server (dnsmasq) on the 192.168.50.0/24 camera n
 
 **Note:** The ANNKE web interface requires a Windows-only browser plugin for live view. Use ISAPI snapshot or FTP test upload to verify the camera image instead.
 
+### dnsmasq failed at boot (camera unreachable)
+
+**Symptoms:**
+- Camera has PoE power and link light, but `ping <camera-ip>` fails
+- `sudo systemctl status dnsmasq` shows `failed` with `unknown interface eth0`
+
+**Cause:** dnsmasq started before the PoE relay powered eth0. With `bind-interfaces`,
+dnsmasq fails immediately if the interface has no carrier. The camera never gets a DHCP lease.
+
+**Immediate fix:**
+```bash
+sudo systemctl restart dnsmasq
+# Wait 60-90s for camera to get DHCP lease, then:
+ping 192.168.50.139
+```
+
+**Permanent fix:** Change `bind-interfaces` to `bind-dynamic` in `/etc/dnsmasq.d/maintenance.conf`.
+With `bind-dynamic`, dnsmasq starts successfully even if eth0 is down, and begins serving DHCP
+as soon as the interface appears. See `pi/shared/etc/dnsmasq.d/maintenance.conf` for the
+correct config.
+
 ### Camera not getting expected IP
 
 1. Check dnsmasq leases: `cat /var/lib/misc/dnsmasq.leases`
@@ -466,6 +487,7 @@ Then set your laptop to 192.168.1.50/24 and use `arp -a` to find the camera. Re-
 | PoE camera offline | Cat6 cable fault | Test cable continuity |
 | PoE camera offline | 12V power to switch | Check fuse, terminal connections |
 | PoE camera offline (Sukabumi) | Camera still booting | Wait 60s after Pi wakes |
+| PoE camera not reachable | dnsmasq failed at boot | `sudo systemctl restart dnsmasq`, wait 60-90s — see "dnsmasq failed at boot" below |
 | PoE camera not reachable | Wrong IP address | Verify camera DHCP settings |
 | PoE camera not reachable | Network config | Check Pi and camera on same subnet |
 | PoE camera not reachable | Pi eth0 IPv6-only | Pi has no IPv4 address — see "Pi eth0 Has Only IPv6 Address" above |
