@@ -138,11 +138,12 @@ else
     fail "camera-net NetworkManager connection not found"
 fi
 
-# poe-relay script
-if [ -x /usr/local/bin/poe-relay ]; then
-    pass "/usr/local/bin/poe-relay installed and executable"
+# poe-relay script (check PATH, could be in ~/.local/bin or /usr/local/bin)
+if command -v poe-relay >/dev/null 2>&1; then
+    POE_PATH=$(command -v poe-relay)
+    pass "poe-relay found at $POE_PATH"
 else
-    fail "/usr/local/bin/poe-relay not found or not executable"
+    fail "poe-relay not found in PATH"
 fi
 
 # hosts file camera entry
@@ -251,9 +252,9 @@ fi
 
 # PoE relay state
 POE_STATE=$(pinctrl get 24 2>/dev/null)
-if echo "$POE_STATE" | grep -q "= 1"; then
+if echo "$POE_STATE" | grep -q "| hi"; then
     pass "PoE relay: ON (GPIO 24 HIGH)"
-elif echo "$POE_STATE" | grep -q "= 0"; then
+elif echo "$POE_STATE" | grep -q "| lo"; then
     warn "PoE relay: OFF (GPIO 24 LOW) — camera/eth0 unpowered"
 else
     warn "PoE relay: unknown state (GPIO 24 not configured?)"

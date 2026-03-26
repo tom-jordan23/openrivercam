@@ -22,16 +22,17 @@ usage() {
 
 get_state() {
     # Read the current GPIO 24 state via pinctrl
+    # Output format: "24: op dl pd | lo // GPIO24 = output"
+    #   dh/dl = drive high/low, hi/lo = actual level
     local line
     line=$(pinctrl get "$GPIO_PIN" 2>/dev/null)
     if [ $? -ne 0 ]; then
         echo "unknown"
         return
     fi
-    # pinctrl output looks like: "24: op -- dh | GPIO24 = 1"
-    if echo "$line" | grep -q "= 1"; then
+    if echo "$line" | grep -q "| hi"; then
         echo "high"
-    elif echo "$line" | grep -q "= 0"; then
+    elif echo "$line" | grep -q "| lo"; then
         echo "low"
     else
         echo "unknown"
