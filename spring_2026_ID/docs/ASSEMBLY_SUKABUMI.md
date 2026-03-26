@@ -610,6 +610,20 @@ proceeding.
 2. Check signal: `mmcli -m 0 --signal-get`
 3. Test data: `ping -c 3 8.8.8.8`
 
+### Optional: Install Tailscale (Remote Access)
+
+Tailscale provides secure remote SSH access over LTE without port forwarding or
+a public IP. Useful for field maintenance and troubleshooting.
+
+1. Install: `curl -fsSL https://tailscale.com/install.sh | sh`
+2. Authenticate: `sudo tailscale up --ssh`
+3. Follow the login URL to authorize the device on your tailnet
+4. Verify: `tailscale status` — node should appear as online
+5. Test remote SSH from another device on the same tailnet
+
+The Pi will be reachable by its Tailscale hostname (e.g., `ssh pi@orc-sukabumi`)
+from any device on your tailnet, regardless of LTE carrier NAT.
+
 ### Verify Rain Gauge
 
 1. Check UART device: `ls /dev/ttyAMA0` or `ls /dev/serial0`
