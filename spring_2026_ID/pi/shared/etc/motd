@@ -7,3 +7,5 @@ Debian GNU/Linux comes with ABSOLUTELY NO WARRANTY, to the extent
 permitted by applicable law.
 
 ***TOM: don't forget to remove your SSH keys before deploying***
+
+NOTE: eth0 will not have an IP address unless Relay 1 is ON (powers the PoE injector/camera).

@@ -21,6 +21,7 @@ to Indonesia in Spring 2026. These stations run
 | [docs/ASSEMBLY_JAKARTA.md](docs/ASSEMBLY_JAKARTA.md) | Step-by-step assembly guide for the Jakarta station |
 | [docs/WIRING_SUKABUMI.md](docs/WIRING_SUKABUMI.md) | Power distribution and wiring overview — Sukabumi |
 | [docs/WIRING_JAKARTA.md](docs/WIRING_JAKARTA.md) | Power distribution and wiring overview — Jakarta |
+| [docs/MODEM_VERIFICATION_SUKABUMI.md](docs/MODEM_VERIFICATION_SUKABUMI.md) | LTE modem bench-test procedure and AT command reference |
 | [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) | Diagnostic flowcharts for common issues |
 | [docs/images/](docs/images/) | Build photos referenced in the docs |
 
