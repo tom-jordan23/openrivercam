@@ -131,11 +131,13 @@ Configure ANNKE C1200 cameras BEFORE deployment. The Pi acts as DHCP server on t
    Edit `/etc/dnsmasq.conf`:
    ```
    interface=eth0
-   bind-interfaces
+   bind-dynamic
    dhcp-range=192.168.50.100,192.168.50.200,24h
    dhcp-host=<CAMERA_1_MAC>,192.168.50.101
    dhcp-host=<CAMERA_2_MAC>,192.168.50.102
    ```
+   **Important:** Use `bind-dynamic` (not `bind-interfaces`). This allows dnsmasq to start
+   before eth0 has carrier — required because the PoE relay may not be on at boot time.
    Replace `<CAMERA_x_MAC>` with each camera's MAC address (printed on the camera label). If you don't have the MACs yet, omit the `dhcp-host` lines, let the cameras get any IP from the range, then check `cat /var/lib/misc/dnsmasq.leases` to find their MACs and update the config.
 
    Restart dnsmasq:
@@ -775,6 +777,27 @@ preparation.**
    - Yellow blink = working
    - Red = error
 
+### Run Preflight Checks
+
+After SSH'ing into the Pi, run the preflight script to verify all packages,
+configs, services, and hardware are correct:
+
+```bash
+orc-preflight
+```
+
+Review the output — all items should be PASS (WARN is informational). If there
+are FAILs, run with `--fix` to attempt automatic fixes:
+
+```bash
+orc-preflight --fix
+```
+
+Key checks include: required packages, dnsmasq/NetworkManager config, RTC
+battery charging enabled, PoE relay script in PATH, and hardware detection
+(modem, sensors, USB drive). Fix any remaining FAILs manually before
+proceeding.
+
 ### Verify Cameras
 
 1. Enter maintenance mode (long press button)
@@ -795,6 +818,20 @@ preparation.**
 1. Check modem: `mmcli -L`
 2. Check signal: `mmcli -m 0 --signal-get`
 3. Test data: `ping -c 3 8.8.8.8`
+
+### Optional: Install Tailscale (Remote Access)
+
+Tailscale provides secure remote SSH access over LTE without port forwarding or
+a public IP. Useful for field maintenance and troubleshooting.
+
+1. Install: `curl -fsSL https://tailscale.com/install.sh | sh`
+2. Authenticate: `sudo tailscale up --ssh`
+3. Follow the login URL to authorize the device on your tailnet
+4. Verify: `tailscale status` — node should appear as online
+5. Test remote SSH from another device on the same tailnet
+
+The Pi will be reachable by its Tailscale hostname (e.g., `ssh pi@orc-jakarta`)
+from any device on your tailnet, regardless of LTE carrier NAT.
 
 ### Verify Rain Gauge
 

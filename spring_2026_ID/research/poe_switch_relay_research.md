@@ -20,7 +20,9 @@
 
 The Witty Pi 5 HAT+ performs a full hard power cut when the Pi sleeps — the 5V rail, all GPIO outputs, and all USB ports go completely dead. This means:
 
-- **GPIO approach:** Pin goes to 0V when Pi sleeps, relay opens automatically
+- **GPIO approach:** Pin goes to 0V when Pi sleeps. The relay de-energizes (our board
+  is active-high: 0V = de-energized), and with no VCC the coil also has no power,
+  so the relay opens automatically.
 - **USB approach:** USB power disappears when Pi sleeps, relay opens automatically
 
 Both trigger methods work cleanly. No software timing or shutdown hooks needed — the Witty Pi handles it at the hardware level.
@@ -51,27 +53,34 @@ Wire from Geekworm G469 GPIO breakout screw terminals to relay module screw term
 |---------------|---------------|
 | VCC | Pi 5V (Pin 2) |
 | GND | Pi GND (Pin 6) |
-| IN1 | GPIO17 (Pin 11) |
+| IN1 | GPIO 24 (Pin 18) |
 
-A systemd service sets GPIO17 high at boot:
+> **Note:** This research originally proposed GPIO 17, but the final wiring
+> (see `diagrams/sukabumi/circuit_diagram.txt` Rev 3.0) assigns GPIO 17 to
+> the Green LED relay (CH2). The PoE relay (CH1) uses **GPIO 24**.
+> The legacy sysfs interface (`/sys/class/gpio/`) is also replaced by
+> `pinctrl` on Pi 5.
+
+Manual control via the `poe-relay` utility (see `pi/shared/usr/local/bin/poe-relay`):
 
 ```
-# /etc/systemd/system/relay-poe.service
-[Unit]
-Description=Assert GPIO17 to enable PoE switch relay
-After=sysinit.target
-
-[Service]
-Type=oneshot
-RemainAfterExit=yes
-ExecStart=/bin/bash -c "echo 17 > /sys/class/gpio/export; echo out > /sys/class/gpio/gpio17/direction; echo 1 > /sys/class/gpio/gpio17/value"
-ExecStop=/bin/bash -c "echo 0 > /sys/class/gpio/gpio17/value"
-
-[Install]
-WantedBy=multi-user.target
+poe-relay on      # GPIO 24 HIGH → relay energized → NO closes → PoE switch ON
+poe-relay off     # GPIO 24 LOW  → relay de-energized → NO opens → PoE switch OFF
+poe-relay status  # show current state + eth0 IP
 ```
 
-Enable: `sudo systemctl enable relay-poe.service`
+**Active-high logic (verified empirically 2026-03-26):** On our specific
+Electronics-Salon relay board and wiring, driving GPIO HIGH energizes the relay coil.
+The prior assumption of active-low (based on Darlington driver datasheet) was incorrect
+for our board. ORC's `orc-gpio-relays.py` uses active-low convention
+(`GPIO.output(pin, GPIO.LOW)` = ON) — a PR will be submitted to make relay polarity
+configurable in ORC.
+
+**NO (normally open) wiring:** The PoE switch 12V is wired through the NO contact.
+When the relay is de-energized (GPIO LOW or pin unconfigured at boot), the NO contact
+is open and the PoE switch has no power. This is fail-safe: if the Pi crashes, hangs,
+or hasn't booted yet, the relay de-energizes and cameras power off automatically,
+preventing battery drain.
 
 **Note:** The relay will be open for ~30-60s during Pi boot before the service runs. The camera needs this time to boot anyway (~45-60s), so this aligns naturally with the existing 150s active cycle.
 
@@ -79,7 +88,9 @@ Enable: `sudo systemctl enable relay-poe.service`
 
 Power the relay module's VCC from a Pi USB-A port and bridge IN1 to GND on the screw terminal block. The relay energizes the instant USB power appears (Pi wakes) and drops out when USB power disappears (Pi sleeps). No GPIO pin used, no software needed.
 
-This works because the module uses active-low logic — the relay energizes when IN is pulled LOW. Bridging IN1 to GND means the relay is always on when powered.
+This works because bridging IN1 to GND means the relay input is always driven when
+powered. Note: the USB approach bypasses the active-high/active-low question entirely
+since the relay is simply always energized whenever VCC is present.
 
 ### Relay Output Wiring
 

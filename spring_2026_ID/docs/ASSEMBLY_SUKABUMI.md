@@ -316,13 +316,13 @@ pin assignments, continuity verification checklists, and build photos.
    - Relay IN1 → G469 GPIO 24
    - Short Ethernet patch cable: PoE switch uplink port → Pi 5 Ethernet
 
-2. **Operation:**
-   - Pi wakes (via RTC schedule), drives GPIO 24 HIGH → relay CH1 closes
+2. **Operation (active-high relay logic — verified empirically 2026-03-26):**
+   - Pi wakes (via RTC schedule), drives GPIO 24 HIGH → relay CH1 energizes → NO closes
    - 12V flows to PoE switch
    - PoE switch provides 48V PoE to camera over Ethernet
    - Camera boots (~45-60s), built-in IR activates automatically at night
    - Camera uploads video/snapshot via FTP to Pi over Ethernet
-   - Pi drives GPIO 24 LOW → relay opens → camera powers down
+   - Pi drives GPIO 24 LOW → relay de-energizes → NO opens → camera powers down
    - Pi enters sleep via RTC until next scheduled wake
 
 ### Step 6: Connect Peripherals on Mounting Plate (15 min)
@@ -440,10 +440,12 @@ The Pi serves as DHCP server for the camera network on eth0 using dnsmasq. This 
    Edit `/etc/dnsmasq.conf`:
    ```
    interface=eth0
-   bind-interfaces
+   bind-dynamic
    dhcp-range=192.168.50.100,192.168.50.200,24h
    dhcp-host=<CAMERA_MAC>,192.168.50.139
    ```
+   **Important:** Use `bind-dynamic` (not `bind-interfaces`). This allows dnsmasq to start
+   before eth0 has carrier — required because the PoE relay may not be on at boot time.
    Replace `<CAMERA_MAC>` with the camera's MAC address (printed on the camera label, or found via `arp -a` after the camera boots).
 
    Restart dnsmasq:
@@ -562,6 +564,27 @@ The Pi serves as DHCP server for the camera network on eth0 using dnsmasq. This 
    - Yellow blinking = working (capture/upload)
    - Red = error (check logs)
 
+### Run Preflight Checks
+
+After SSH'ing into the Pi, run the preflight script to verify all packages,
+configs, services, and hardware are correct:
+
+```bash
+orc-preflight
+```
+
+Review the output — all items should be PASS (WARN is informational). If there
+are FAILs, run with `--fix` to attempt automatic fixes:
+
+```bash
+orc-preflight --fix
+```
+
+Key checks include: required packages, dnsmasq/NetworkManager config, RTC
+battery charging enabled, PoE relay script in PATH, and hardware detection
+(modem, sensors, USB drive). Fix any remaining FAILs manually before
+proceeding.
+
 ### Verify Camera
 
 <a href="images/sukabumi/camera-live-view-working.png"><img src="images/sukabumi/camera-live-view-working.png" alt="ANNKE camera live view displayed on monitor via PoE switch and Pi, showing successful end-to-end bench test of camera system" width="400"></a>
@@ -586,6 +609,20 @@ The Pi serves as DHCP server for the camera network on eth0 using dnsmasq. This 
 1. Check modem detected: `mmcli -L`
 2. Check signal: `mmcli -m 0 --signal-get`
 3. Test data: `ping -c 3 8.8.8.8`
+
+### Optional: Install Tailscale (Remote Access)
+
+Tailscale provides secure remote SSH access over LTE without port forwarding or
+a public IP. Useful for field maintenance and troubleshooting.
+
+1. Install: `curl -fsSL https://tailscale.com/install.sh | sh`
+2. Authenticate: `sudo tailscale up --ssh`
+3. Follow the login URL to authorize the device on your tailnet
+4. Verify: `tailscale status` — node should appear as online
+5. Test remote SSH from another device on the same tailnet
+
+The Pi will be reachable by its Tailscale hostname (e.g., `ssh pi@orc-sukabumi`)
+from any device on your tailnet, regardless of LTE carrier NAT.
 
 ### Verify Rain Gauge
 

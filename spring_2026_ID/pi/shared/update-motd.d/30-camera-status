@@ -1,9 +1,48 @@
 #!/bin/bash
 CAM_HOST="camera"
 CAM_IP="192.168.50.139"
+GPIO_PIN=24
 
 echo ""
 echo "=== OpenRiverCam Camera Network ==="
+
+# Relay status — active-high (this relay board energizes when input is HIGH)
+#   GPIO HIGH = relay energized = PoE switch ON
+#   GPIO LOW  = relay de-energized = PoE switch OFF
+# After reboot, pin may be unconfigured (level "--"). If so, briefly set
+# it as input to read the actual electrical level without affecting the
+# relay — the relay board's optocoupler holds its state independently.
+gpio_line=$(pinctrl get "$GPIO_PIN" 2>/dev/null)
+if echo "$gpio_line" | grep -q "| --"; then
+    # Pin not yet configured — read as input to get actual level
+    pinctrl set "$GPIO_PIN" ip 2>/dev/null
+    gpio_line=$(pinctrl get "$GPIO_PIN" 2>/dev/null)
+fi
+if echo "$gpio_line" | grep -q "| hi"; then
+    echo "  Relay CH1:  ON (PoE switch powered)"
+elif echo "$gpio_line" | grep -q "| lo"; then
+    echo "  Relay CH1:  OFF (PoE switch unpowered)"
+else
+    echo "  Relay CH1:  unknown (GPIO $GPIO_PIN not readable)"
+fi
+
+# RTC battery status
+RTC_BASE="/sys/devices/platform/soc@107c000000/soc@107c000000:rpi_rtc/rtc/rtc0"
+if [ -f "$RTC_BASE/battery_voltage" ]; then
+    bat_uv=$(cat "$RTC_BASE/battery_voltage" 2>/dev/null)
+    bat_v=$(awk "BEGIN {printf \"%.2f\", $bat_uv / 1000000}")
+    chg_cfg=$(grep -o 'rtc_bbat_vchg=[0-9]*' /boot/firmware/config.txt 2>/dev/null | head -1)
+    if [ -n "$chg_cfg" ]; then
+        chg_uv=${chg_cfg#*=}
+        chg_v=$(awk "BEGIN {printf \"%.1f\", $chg_uv / 1000000}")
+        echo "  RTC battery: ${bat_v}V (charging to ${chg_v}V)"
+    else
+        echo "  RTC battery: ${bat_v}V (charging DISABLED — add dtparam=rtc_bbat_vchg to config.txt)"
+    fi
+else
+    echo "  RTC battery: not detected"
+fi
+
 PI_IP=$(ip -4 -o addr show eth0 2>/dev/null | awk '{print $4}')
 if [ -n "$PI_IP" ]; then
     echo "  Pi (eth0):  $PI_IP"

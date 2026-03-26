@@ -157,8 +157,9 @@ Pi 5 built-in RTC (ML-2020 coin cell) handles scheduling.
                     ┌─────────────────────────────────────┐
                     │  Coil: 5V from G469 Pin 2/Pin 6     │
                     │  GPIO 24 → IN1 triggers PoE relay   │
-                    │  GPIO HIGH = relay closed = PoE ON  │
-                    │  GPIO LOW  = relay open = PoE OFF   │
+                    │  ACTIVE-HIGH (verified 2026-03-26):  │
+                    │  GPIO HIGH = relay ON  = PoE ON     │
+                    │  GPIO LOW  = relay OFF = PoE OFF    │
                     │                                     │
 12V reg ──────────►│  NO (12V regulated in)              │
 (from DDR-60G-12)  │  COM (12V switched out) ──────────►│──►
@@ -192,12 +193,16 @@ GND ───────────────►│  │  12V-   │       �
 
 OPERATION:
 1. Pi 5 RTC wakes Pi (or external power button brief press) → Pi boots
-2. GPIO 24 set HIGH → Relay CH1 closes → 12V regulated to PoE switch
+2. GPIO 24 set HIGH → Relay CH1 energized → NO closes → 12V to PoE switch
 3. PoE switch provides 48V PoE to camera over Ethernet
 4. Camera boots (~45-60s), establishes DHCP IP
 5. Camera uploads video/snapshot via FTP to Pi over Ethernet
 6. Camera IR LEDs auto-enable in low light (built-in photocell)
-7. Pi sets GPIO 24 LOW → relay opens → camera off → Pi sleeps
+7. Pi sets GPIO 24 LOW → relay de-energized → NO opens → camera off → Pi sleeps
+
+NOTE: Active-high logic (verified 2026-03-26). Differs from ORC orc-gpio-relays.py
+active-low convention — a PR will be submitted to make ORC polarity configurable.
+At boot (GPIO unconfigured), relay defaults to de-energized = cameras off (fail-safe).
 
 MANUAL POWER CONTROL (external power button on Pi 5 J2 header):
 - Pi is off/halted: Brief press → powers on

@@ -408,6 +408,27 @@ Both sites use the Pi as a DHCP server (dnsmasq) on the 192.168.50.0/24 camera n
 
 **Note:** The ANNKE web interface requires a Windows-only browser plugin for live view. Use ISAPI snapshot or FTP test upload to verify the camera image instead.
 
+### dnsmasq failed at boot (camera unreachable)
+
+**Symptoms:**
+- Camera has PoE power and link light, but `ping <camera-ip>` fails
+- `sudo systemctl status dnsmasq` shows `failed` with `unknown interface eth0`
+
+**Cause:** dnsmasq started before the PoE relay powered eth0. With `bind-interfaces`,
+dnsmasq fails immediately if the interface has no carrier. The camera never gets a DHCP lease.
+
+**Immediate fix:**
+```bash
+sudo systemctl restart dnsmasq
+# Wait 60-90s for camera to get DHCP lease, then:
+ping 192.168.50.139
+```
+
+**Permanent fix:** Change `bind-interfaces` to `bind-dynamic` in `/etc/dnsmasq.d/maintenance.conf`.
+With `bind-dynamic`, dnsmasq starts successfully even if eth0 is down, and begins serving DHCP
+as soon as the interface appears. See `pi/shared/etc/dnsmasq.d/maintenance.conf` for the
+correct config.
+
 ### Camera not getting expected IP
 
 1. Check dnsmasq leases: `cat /var/lib/misc/dnsmasq.leases`
@@ -466,6 +487,7 @@ Then set your laptop to 192.168.1.50/24 and use `arp -a` to find the camera. Re-
 | PoE camera offline | Cat6 cable fault | Test cable continuity |
 | PoE camera offline | 12V power to switch | Check fuse, terminal connections |
 | PoE camera offline (Sukabumi) | Camera still booting | Wait 60s after Pi wakes |
+| PoE camera not reachable | dnsmasq failed at boot | `sudo systemctl restart dnsmasq`, wait 60-90s — see "dnsmasq failed at boot" below |
 | PoE camera not reachable | Wrong IP address | Verify camera DHCP settings |
 | PoE camera not reachable | Network config | Check Pi and camera on same subnet |
 | PoE camera not reachable | Pi eth0 IPv6-only | Pi has no IPv4 address — see "Pi eth0 Has Only IPv6 Address" above |
@@ -502,6 +524,12 @@ Then set your laptop to 192.168.1.50/24 and use `arp -a` to find the camera. Re-
 ### System Status
 
 ```bash
+# Run preflight checks (packages, configs, services, hardware, RTC charging)
+orc-preflight
+
+# Run preflight checks and auto-fix failures
+orc-preflight --fix
+
 # Check system uptime
 uptime
 
@@ -642,27 +670,35 @@ echo 0 > /sys/class/gpio/gpio17/value
 
 ### Relay Control (Electronics-Salon 4-channel SPDT, GPIO-triggered)
 
+The relay module uses **active-high logic** (verified empirically 2026-03-26):
+driving GPIO HIGH energizes the relay coil (closing the NO contact).
+The PoE switch is wired through the NO (normally open) contact, so the relay
+must be energized for cameras to have power. At boot (GPIO unconfigured), the
+relay defaults to de-energized = cameras off (fail-safe).
+
+> **Note:** ORC's `orc-gpio-relays.py` uses active-low convention. A PR will be
+> submitted to make ORC's relay polarity configurable.
+
 ```bash
 # Relay channels driven via G469 breakout:
-#   GPIO 24 → IN1 (PoE switch)
+#   GPIO 24 → IN1 (PoE switch)   — active-high (HIGH = relay ON)
 #   GPIO 17 → IN2 (Green LED)
 #   GPIO 27 → IN3 (Yellow LED)
 #   GPIO 22 → IN4 (Red LED)
 
 # Check relay GPIO wiring: VCC, GND, IN1-IN4 connections
 
-# Turn PoE switch relay ON (energize IN1)
-gpioset gpiochip4 24=1
-
-# Turn PoE switch relay OFF (de-energize IN1)
-gpioset gpiochip4 24=0
-
-# Manually cycle PoE switch power
-gpioset gpiochip4 24=0 && sleep 5 && gpioset gpiochip4 24=1
+# Preferred: use poe-relay utility
+poe-relay on       # GPIO 24 HIGH → relay energized → PoE switch ON
+poe-relay off      # GPIO 24 LOW → relay de-energized → PoE switch OFF
+poe-relay status   # show current state + eth0 IP
 
 # Alternative using pinctrl (Pi 5):
-pinctrl set 24 op dh   # drive high (relay ON)
-pinctrl set 24 op dl   # drive low (relay OFF)
+pinctrl set 24 op dh   # drive HIGH (relay ON — energized)
+pinctrl set 24 op dl   # drive LOW (relay OFF — de-energized)
+
+# Manually cycle PoE switch power
+pinctrl set 24 op dl && sleep 5 && pinctrl set 24 op dh
 ```
 
 ### Rainbow Sensing RTC (Pi 5 Built-in RTC)
@@ -680,8 +716,14 @@ sudo hwclock --systohc
 # Sync RTC time to system
 sudo hwclock --hctosys
 
-# Check RTC battery status
-cat /sys/devices/platform/soc/soc:rpi_rtc/rtc/rtc0/device/power/wakeup
+# Check RTC battery voltage (microvolts — divide by 1,000,000 for volts)
+cat /sys/devices/platform/soc@107c000000/soc@107c000000:rpi_rtc/rtc/rtc0/battery_voltage
+
+# Check charging target voltage (microvolts — 0 or missing = charging disabled)
+cat /sys/devices/platform/soc@107c000000/soc@107c000000:rpi_rtc/rtc/rtc0/charging_voltage_max
+
+# Verify charging is enabled in config.txt (should show dtparam=rtc_bbat_vchg=3000000 for ML-2020)
+grep rtc_bbat_vchg /boot/firmware/config.txt
 ```
 
 ### Logs

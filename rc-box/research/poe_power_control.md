@@ -230,7 +230,13 @@ GND → Transistor emitter → Shutdown- terminal
 Raspberry Pi GPIO 17 → Relay IN1 (triggers relay)
 ```
 
-**Control Method:**
+**Control Method (uses ORC active-low convention):**
+
+> **Note (2026-03-26):** This sample uses ORC's active-low convention
+> (`GPIO.LOW` = relay ON). Our Sukabumi deployment's Electronics-Salon board
+> is empirically active-HIGH. Relay polarity should be configurable — a PR
+> will be submitted to ORC to support both conventions.
+
 ```python
 #!/usr/bin/env python3
 import RPi.GPIO as GPIO
@@ -243,17 +249,17 @@ CAMERA_BOOT_TIME = 60  # seconds
 def setup_relay():
     GPIO.setmode(GPIO.BCM)
     GPIO.setup(RELAY_PIN, GPIO.OUT)
-    GPIO.output(RELAY_PIN, GPIO.LOW)  # Cameras OFF initially
+    GPIO.output(RELAY_PIN, GPIO.HIGH)  # Cameras OFF initially (active-low: HIGH = de-energized)
 
 def power_on_cameras():
     print("Powering ON cameras...")
-    GPIO.output(RELAY_PIN, GPIO.HIGH)  # Relay ON
+    GPIO.output(RELAY_PIN, GPIO.LOW)  # Relay ON (active-low: LOW = energized)
     print(f"Waiting {CAMERA_BOOT_TIME}s for camera boot...")
     time.sleep(CAMERA_BOOT_TIME)
 
 def power_off_cameras():
     print("Powering OFF cameras...")
-    GPIO.output(RELAY_PIN, GPIO.LOW)  # Relay OFF
+    GPIO.output(RELAY_PIN, GPIO.HIGH)  # Relay OFF (active-low: HIGH = de-energized)
 
 def cleanup():
     GPIO.cleanup()

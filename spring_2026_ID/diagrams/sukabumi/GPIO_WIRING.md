@@ -183,15 +183,26 @@ Each relay channel has three output terminals. Think of it as a switch:
                          └── NC  (Normally Closed)   ← connected when relay is OFF
 ```
 
-| Terminal | Name | When Relay is OFF (GPIO LOW) | When Relay is ON (GPIO HIGH) |
-|----------|------|------------------------------|------------------------------|
+| Terminal | Name | When Relay is De-energized (GPIO LOW) | When Relay is Energized (GPIO HIGH) |
+|----------|------|----------------------------------------|------------------------------------|
 | **COM** | Common | Connected to NC | Connected to NO |
 | **NO** | Normally Open | Disconnected from COM | **Connected to COM** |
 | **NC** | Normally Closed | Connected to COM | Disconnected from COM |
 
-**We use only COM and NO.** When the GPIO pin goes HIGH, the relay closes the
-COM→NO path, and 12V flows to the load (PoE switch or LED). When the GPIO pin
-goes LOW (or Pi is off), the path opens and the load loses power.
+**Active-high logic:** On our wiring, driving GPIO **HIGH** energizes the relay coil.
+This was verified empirically on 2026-03-26 — the prior assumption of active-low
+(based on the Electronics-Salon Darlington driver datasheet) was incorrect for our
+specific board/wiring.
+
+> **ORC convention mismatch:** ORC's `orc-gpio-relays.py` uses active-low logic
+> (`GPIO.output(pin, GPIO.LOW)` = relay ON). Our hardware is active-high. A PR will
+> be submitted to make ORC's relay polarity configurable. Until then, our `poe-relay`
+> script handles the correct polarity independently.
+
+**We use only COM and NO.** When the GPIO pin goes HIGH, the relay energizes, closing
+the COM→NO path, and 12V flows to the load (PoE switch or LED). When the GPIO pin
+goes LOW (or Pi is off/unconfigured), the relay de-energizes, the path opens, and
+the load loses power.
 
 **NC terminals are not used.** Leave them empty.
 
@@ -201,15 +212,16 @@ Using **NC** would allow the PoE switch and camera to start booting the instant
 12V power is applied, in parallel with the Pi — saving ~15-20 seconds per wake
 cycle. However, **NO is chosen deliberately as a fail-safe:**
 
-- If the Pi crashes, hangs, or fails to shut down cleanly, GPIO pins float LOW
-  and the relay falls open. The PoE switch and camera **lose power automatically**,
-  preventing the system's largest power consumer from draining the solar battery.
+- If the Pi crashes, hangs, or fails to shut down cleanly, GPIO pins float to their
+  default state (HIGH or unconfigured) and the relay de-energizes. The PoE switch
+  and camera **lose power automatically**, preventing the system's largest power
+  consumer from draining the solar battery.
 - With NC, a Pi crash would leave the camera powered indefinitely. On a
   solar-powered station with limited battery capacity, this could drain the
   battery completely and leave the station non-functional until someone
   physically visits the site.
-- The ~15-20 second delay (Pi boots → systemd service drives GPIO HIGH → relay
-  closes → camera begins booting) is an acceptable tradeoff for this protection.
+- The ~15-20 second delay (Pi boots → systemd service drives GPIO LOW → relay
+  energizes → camera begins booting) is an acceptable tradeoff for this protection.
 
 ### Input Side Explained
 
@@ -1123,7 +1135,7 @@ Each GPIO function will have a corresponding systemd service:
 
 | Service | GPIO | Type | Description |
 |---------|------|------|-------------|
-| `relay-poe.service` | GPIO 24 | oneshot, RemainAfterExit | Assert HIGH at boot to power PoE switch |
+| `relay-poe.service` | GPIO 24 | oneshot, RemainAfterExit | Assert HIGH at boot to energize PoE relay (active-high) |
 | `led-status.service` | GPIO 17, 27, 22 | simple (long-running) | Manage LED state based on system status |
 | `maintenance-button.service` | GPIO 23 | simple (long-running) | Monitor button, trigger maintenance mode |
 | `rain-gauge.service` | GPIO 14, 15 | simple (long-running) | Read UART data from Hydreon RG-15 |

@@ -286,12 +286,18 @@ FUSE SPECIFICATIONS:
 |    Relay VCC <- G469 Pin 4 (5V)                                        |
 |    Relay GND <- G469 Pin 20 (GND)                                      |
 |  Control: GPIO 24 (Pin 18) -> IN1 (PoE switch)                        |
+|  ACTIVE-HIGH LOGIC (verified empirically 2026-03-26):                 |
 |  GPIO HIGH = relay energized = NO contact closed = 12V passes          |
 |  GPIO LOW  = relay de-energized = NO contact open = 12V cut            |
 |                                                                         |
+|  NOTE: ORC's orc-gpio-relays.py uses active-LOW convention             |
+|  (GPIO.LOW = relay ON). Our hardware is active-HIGH. A PR will be      |
+|  submitted to make ORC's relay polarity configurable.                  |
+|                                                                         |
 |  WHY NO (NORMALLY OPEN):                                               |
-|  Fail-safe design. If Pi crashes or hangs, GPIO floats LOW, relay      |
-|  opens, cameras lose power automatically. Prevents battery drain.      |
+|  Fail-safe design. If Pi crashes, hangs, or hasn't booted yet,        |
+|  GPIO floats LOW (or unconfigured), relay de-energizes, NO opens,     |
+|  cameras lose power automatically. Prevents battery drain.            |
 |  NC would leave cameras powered indefinitely on Pi failure.            |
 |                                                                         |
 |  IN (12V from fuse) --> CH1 COM --> CH1 NO --> OUT (12V to PoE switch) |
