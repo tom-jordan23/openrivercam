@@ -78,33 +78,22 @@ If `get_throttled` is non-zero, decode with:
 - [ ] CPU temp < 70C
 - [ ] No throttling (0x0)
 
-### 4. USB Storage
+### 4. USB Storage — DEFERRED
 
-**Known issue:** The SanDisk Ultra Fit 3.2Gen1 has intermittent bus disconnects
-during boot. It may not be present after reboot. Check `dmesg` for I/O errors
-and device offline events.
+**Status (2026-03-28):** Samsung FIT Plus 256GB is **removed from the build**.
+The UAS (USB Attached SCSI) driver causes boot-time enumeration storms that
+crash the entire USB bus (modem, keyboard, mouse all disconnect-cycle). Both
+`uas` and `usb-storage` are kernel built-ins, so the fix requires adding
+`usb-storage.quirks=0781:5583:u` to `cmdline.txt` — which is inaccessible
+while 90-qemu.rules is active. See `USB_POWER_TEST_CHECKLIST.md` for full
+root cause analysis.
 
-```bash
-lsblk | grep sda               # should show sda with sda1 partition
-mount | grep /mnt/usb           # should show /dev/sda1 on /mnt/usb type ext4
-df -h /mnt/usb                  # should show ~229G
-ls -la /home/pi/Videos          # should show: Videos -> /mnt/usb/incoming
-ls -la /mnt/usb/incoming/       # should exist, owned by ftpcam
-dmesg | grep -i "sda.*error\|sda.*offline"  # check for I/O errors
-```
+**Deploy without the USB drive.** Captures go to SD card rootfs (~43GB free).
+FTP uploads go to a local directory (see FTP Server section).
 
-If not mounted:
-```bash
-# Check if drive is on the USB bus at all
-lsusb | grep -i sandisk
-# If missing: unplug and replug the USB drive, then:
-sudo mount /mnt/usb
-```
+**Do NOT re-insert the Samsung FIT** until the cmdline.txt fix is applied.
 
-- [ ] USB drive visible in lsblk (sda/sda1)
-- [ ] Mounted at /mnt/usb (ext4, nofail in fstab)
-- [ ] ~/Videos is a symlink to /mnt/usb/incoming
-- [ ] No I/O errors in dmesg for sda
+- [x] USB drive removed (intentional — not a failure)
 
 ### 5. Services
 
@@ -198,12 +187,15 @@ poe-relay off
 ```bash
 source ~/.orc_deploy_sukabumi
 curl -s -T /etc/hostname "ftp://ftpcam:${BASE_PASSWD}@127.0.0.1/reboot_test.txt"
-ls /mnt/usb/incoming/reboot_test.txt
-sudo rm /mnt/usb/incoming/reboot_test.txt
+ls /home/ftpcam/incoming/reboot_test.txt
+sudo rm /home/ftpcam/incoming/reboot_test.txt
 ```
 
+**Note:** FTP target directory will change from `/mnt/usb/incoming` to a local
+path once vsftpd is reconfigured for SD card storage. Update this section then.
+
 - [ ] FTP upload succeeds
-- [ ] File appears in /mnt/usb/incoming/
+- [ ] File appears in FTP incoming directory
 
 ### 12. NTP for Camera
 

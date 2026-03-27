@@ -82,70 +82,61 @@ $ lsinitramfs /boot/initrd.img-$(uname -r) | grep sandisk
 The UAS module loads from initramfs before `usb-storage` sees the quirk, so UAS
 claims the device first. The modprobe.d file is ignored.
 
-## Fix: Rebuild Initramfs
+## Fix Attempts
 
-Rebuild initramfs so it includes `/etc/modprobe.d/sandisk-no-uas.conf`. This makes
-the `usb-storage` quirk available early enough to prevent UAS from claiming the drive.
+### Attempt 1: modprobe.d quirk (already in place, ineffective)
 
-### Pre-reboot steps
+`/etc/modprobe.d/sandisk-no-uas.conf` contains `options usb-storage quirks=0781:5583:u`
+but both `uas` and `usb-storage` are **kernel built-ins** (not modules), so modprobe.d
+is ignored entirely.
 
-```bash
-# Verify the quirk file is correct
-cat /etc/modprobe.d/sandisk-no-uas.conf
-# Should show: options usb-storage quirks=0781:5583:u
+### Attempt 2: Rebuild initramfs (ineffective)
 
-# Rebuild initramfs
-sudo update-initramfs -u
+`sudo update-initramfs -u` completed but the quirk file was not included because
+the drivers are built-in, not loaded from initramfs.
 
-# Verify the file is now included
-lsinitramfs /boot/initrd.img-$(uname -r) | grep sandisk
-# Should show: etc/modprobe.d/sandisk-no-uas.conf
+### Attempt 3: Runtime unbind/rebind (ineffective)
+
+Unbinding from UAS works, but rebinding to usb-storage fails (`No such device or
+address`). Toggling device authorization causes UAS to reclaim the device.
+
+### Required fix (deferred — post-deployment)
+
+The only way to pass quirks to a built-in driver is via kernel command line:
 ```
-
-### Post-reboot verification
-
-```bash
-# 1. Check UAS is NOT used for the SanDisk (most important check)
-lsusb -t | grep "Mass Storage"
-# PASS: Driver=usb-storage    FAIL: Driver=uas
-
-# 2. USB disconnect count (wait 2 min after login)
-dmesg | grep -c "USB disconnect"
-# PASS: < 5    FAIL: > 10
-
-# 3. URB errors
-dmesg | grep -c "nonzero urb status"
-# PASS: 0    FAIL: > 0
-
-# 4. All 4 USB devices present and stable
-lsusb
-# Should show: Logitech keyboard, Logitech mouse, SanDisk Ultra Fit, Quectel 2c7c
-
-# 5. Modem functional
-ls /dev/ttyUSB*          # ttyUSB0-3
-mmcli -L                 # Quectel EG25-G listed
-
-# 6. USB storage mounted
-mount | grep /mnt/usb    # /dev/sda1 on /mnt/usb type ext4
-df -h /mnt/usb           # ~229G
-
-# 7. No throttling
-vcgencmd get_throttled   # 0x0
-
-# 8. Wait 5 min, re-run checks 2-4 — counts should NOT increase
+usb-storage.quirks=0781:5583:u
 ```
+This must be added to `cmdline.txt` on the SD card boot partition. That partition
+is not accessible while 90-qemu.rules is active — fixing this requires careful
+work to temporarily expose the real SD card device nodes without breaking the
+boot chain. See BOOT_FAILURE_ANALYSIS.md.
 
-### If initramfs fix fails
+## Decision: Deploy Without USB Flash Drive (2026-03-28)
 
-Fallback: create a systemd service that unbinds the drive from UAS and rebinds
-to usb-storage after boot. Less clean but does not require /boot/firmware access.
+**Context:** Deployment in 10 days. No time to safely resolve the UAS/cmdline.txt
+issue or order new hardware.
+
+**Plan:**
+- Remove Samsung FIT Plus from the build
+- Reconnect DDR-60G-5 buck converter to GPIO (original power config)
+- Store captures on SD card rootfs (~43GB free) instead of USB drive
+- Modem is stable on its own with GPIO power (confirmed by isolation testing)
+- Revisit USB storage post-deployment when boot partition can be safely accessed
+
+**What this costs:**
+- Storage: 43GB (SD card) instead of 233GB (USB) — still sufficient for captures
+  at 5s video × 96 cycles/day, with regular upload clearing space
+- No redundant storage (captures on same media as OS)
+
+**What this preserves:**
+- Stable USB bus (modem + keyboard/mouse, no storms)
+- Original power architecture (DDR-60G-5 → GPIO, no USB-C cable needed)
+- Known-working boot chain
 
 ## Current Hardware State (2026-03-28)
 
-- **Power:** USB-C PSU (DDR-60G-5 disconnected)
-- **USB-A port 1:** Quectel EG25-G modem via EXVIST adapter
-- **USB-A port 2:** Samsung FIT Plus 256GB (mounted at /mnt/usb)
-- **USB-A port 3:** Logitech keyboard
-- **USB-A port 4:** Logitech mouse
-- **Bus status:** Stable (after manual re-seat of all devices)
+- **Power:** DDR-60G-5 buck converter → GPIO (original config, reconnect needed)
+- **USB-A:** Quectel EG25-G modem via EXVIST adapter only
+- **USB storage:** Samsung FIT Plus 256GB **removed** (UAS boot storm)
+- **Capture storage:** SD card rootfs (~43GB free)
 - **/boot/firmware:** Not mounted (90-qemu.rules — see BOOT_FAILURE_ANALYSIS.md)
