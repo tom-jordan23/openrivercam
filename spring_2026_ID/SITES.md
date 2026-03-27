@@ -48,5 +48,5 @@ This will be a new site that is used for training and testing purposes. We will 
  - Small enclosure / mounting for pi and related hardware within larger power enclosure (suitable for tropics)
  - (optional) External rain gauge
 
- - 2 factory sealed PoE security cameras (8MP minimum) with IR illumination up to 30 meters
- - Pole mounts for cameras
+ - 1 factory sealed PoE security camera (ANNKE C1200, 12MP, built-in IR)
+ - Pole mount for camera

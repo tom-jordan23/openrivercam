@@ -3,7 +3,7 @@
 ## Site Profile
 - **Location:** Jakarta, Indonesia (coastal/urban, hot climate)
 - **Power:** AC utility (220V/50Hz) with battery backup (sourced locally)
-- **Camera:** 2x PoE IP cameras (ANNKE C1200)
+- **Camera:** 1x PoE IP camera (ANNKE C1200)
 - **Purpose:** New training/demo installation
 - **Date:** March 9, 2026 (reconciled against jakarta_order.csv)
 - **Status:** ORDER SUBMITTED - Reconciled against authoritative jakarta_order.csv
@@ -22,7 +22,7 @@ These decisions were made during ordering and differ from earlier BOM versions:
 | **USB-RS485 adapter dropped** | $21.95 | $0 | GPIO breakout handles rain gauge RS232 |
 | **Surge protector swapped** | Phoenix Contact $78.15 | Heschen HS-40-N $20.51 | Cheaper, single-phase (correct for site) |
 | **Distribution block swapped** | DigiKey Phoenix Contact $37 | Amazon generic $23.12 | Cheaper, same function |
-| **Cat6 cable right-sized** | 300ft spool $79.99 | 4x 10ft cables $23.96 | Runs are short |
+| **Cat6 cable right-sized** | 300ft spool $79.99 | 2x 10ft cables $11.98 | Runs are short (1 camera) |
 | **Camera heater dropped** | PTC 10W $29.98 | $0 | ANNKE C1200 is factory-sealed IP67 |
 | **Mounting hardware deferred** | $120+ | $0 | TBD after site survey |
 | **Bulkhead connectors added** | Cable glands only | Ethernet + DC bulkheads $73.75 | Cleaner, more maintainable |
@@ -64,14 +64,14 @@ These decisions were made during ordering and differ from earlier BOM versions:
 | CPU-011 | Raspberry Pi 5 Active Cooler | 1 | $9.90 | $9.90 | [Amazon](https://www.amazon.com/Raspberry-Pi5-Temperature-Controlled-Aluminium-Dissipation/dp/B0CW164TCW) | |
 | CPU-012 | Raspberry Pi 5 RTC Battery (ML-2020 JST-SH) | 2 | $5.00 | $10.00 | [Amazon](https://www.amazon.com/s?k=raspberry+pi+5+RTC+battery) | 1 Jakarta + 1 Sukabumi |
 | **CAMERA** | | | | | | |
-| CAM-001 | ANNKE C1200 PoE IP Camera (12MP 2-pack) | 1 | $85.00 | $85.00 | [Amazon](https://www.amazon.com/ANNKE-Outdoor-Security-Surveillance-Detection/dp/B0CMTHVCV8) | Day/night managed on camera |
+| CAM-001 | ANNKE C1200 PoE IP Camera (12MP 2-pack) | 1 | $85.00 | $85.00 | [Amazon](https://www.amazon.com/ANNKE-Outdoor-Security-Surveillance-Detection/dp/B0CMTHVCV8) | 1 camera used, 1 spare from 2-pack |
 | CAM-003 | LINOVISION Industrial 12V PoE Switch (Gigabit) | 1 | $85.99 | $85.99 | [Amazon](https://www.amazon.com/LINOVISION-Industrial-Gigabit-DC12V-48V-IEEE802-3af/dp/B09HGWLZSD) | |
-| CAM-004 | Outdoor Cat6 Shielded Cable UV-resistant (10ft) | 4 | $5.99 | $23.96 | [Amazon](https://www.amazon.com/Abireiv-Resistant-Waterproof-Buried-able-Compatible/dp/B09M6GXPBM) | 10ft adequate |
+| CAM-004 | Outdoor Cat6 Shielded Cable UV-resistant (10ft) | 2 | $5.99 | $11.98 | [Amazon](https://www.amazon.com/Abireiv-Resistant-Waterproof-Buried-able-Compatible/dp/B09M6GXPBM) | 1 internal patch + 1 external to camera |
 | **ENCLOSURE** | | | | | | |
 | ENC-001 | VEVOR NEMA 4x Box (16"x12"x8") | 1 | $75.21 | $75.21 | [Amazon](https://www.amazon.com/dp/B0924DJGJ9?th=1) | Matches Sukabumi box |
 | CLIP-RPI | DIN Rail Clip for Raspberry Pi | 1 | $18.99 | $18.99 | [Amazon](https://www.amazon.com/Mount-Bracket-Raspberry-Arduino-BeagleBone/dp/B08HRZVFCX) | |
 | **BULKHEAD CONNECTORS** | | | | | | |
-| ETH-BULKHEAD | CNLINKO Weatherproof Ethernet Bulkhead (IP67) | 2 | $17.88 | $35.76 | [Amazon](https://www.amazon.com/CNLINKO-Industrial-Connector-Receptacles-Waterproof/dp/B079BWPJNG) | Panel mount RJ45 for cameras |
+| ETH-BULKHEAD | CNLINKO Weatherproof Ethernet Bulkhead (IP67) | 1 | $17.88 | $17.88 | [Amazon](https://www.amazon.com/CNLINKO-Industrial-Connector-Receptacles-Waterproof/dp/B079BWPJNG) | Panel mount RJ45 for camera |
 | DC-BULKHEAD | Uonecn SP13 DC Power Bulkheads (5-pack IP68) | 1 | $37.99 | $37.99 | [Amazon](https://www.amazon.com/Uonecn-Waterproof-Connectors-Connector-Circular/dp/B07HQ1K4LJ) | 13A 2-pin for 12V power |
 | **HUMIDITY & THERMAL** | | | | | | |
 | COAT-SIL | MG 422C Silicone Conformal Coating | 1 | $18.89 | $18.89 | [Amazon](https://www.amazon.com/MG-Chemicals-422C-Conformal-Coating/dp/B0B1N2XPH5) | Correct product for >95% RH |
@@ -83,7 +83,7 @@ These decisions were made during ordering and differ from earlier BOM versions:
 | **CONSUMABLES** | | | | | | |
 | CONS-006 | Isopropyl Alcohol 99% (16oz) | 1 | $8.99 | $8.99 | [Amazon](https://www.amazon.com/s?k=isopropyl+alcohol+99) | Cleaning |
 
-**Amazon Subtotal: $912.22**
+**Amazon Subtotal: $882.36**
 
 ---
 
@@ -185,16 +185,16 @@ PWR-006 (fuse holders), PWR-007/008 (fuses), ENC-004 (cable glands), ENC-008 (ha
 | Category | Subtotal | Notes |
 |----------|----------|-------|
 | DigiKey | $79.74 | PSU, vents |
-| Amazon | $912.22 | Compute, cameras, power, enclosure, bulkheads, fans, consumables |
+| Amazon | $882.36 | Compute, camera, power, enclosure, bulkhead, fans, consumables |
 | Adafruit | $15.78 | SHT40 sensors + cables |
 | Hydreon | $99.00 | Rain gauge |
-| **Ordered Total** | **$1,106.74** | All shipped items |
+| **Ordered Total** | **$1,076.88** | All shipped items |
 | Local Sourcing (Jakarta) | ~$126+ | Grounding, pole, misc (battery TBD) |
-| **Project Total** | **~$1,233+** | Excluding battery system |
+| **Project Total** | **~$1,203+** | Excluding battery system |
 
-**NOTE:** jakarta_order.csv shows a total of $1,863.19 but that formula is stale — it does not reflect items zeroed out during ordering. The actual ordered total from line items is $1,106.74.
+**NOTE:** jakarta_order.csv shows a total of $1,863.19 but that formula is stale — it does not reflect items zeroed out during ordering. The actual ordered total from line items is $1,076.88 (updated for 1-camera configuration).
 
-**Budget comparison:** Jakarta $1,107 (shipped) + Sukabumi $948 (actual) = ~$2,055 shipped. Well within $3,000 target even with local sourcing and battery.
+**Budget comparison:** Jakarta $1,077 (shipped) + Sukabumi $948 (actual) = ~$2,025 shipped. Well within $3,000 target even with local sourcing and battery.
 
 ---
 
@@ -208,7 +208,7 @@ PWR-006 (fuse holders), PWR-007/008 (fuses), ENC-004 (cable glands), ENC-008 (ha
 - **Quectel EG25-G:** Indonesian LTE bands B1/B3/B5/B8/B40
 - **MG 422C:** Silicone conformal coat rated for >95% RH
 - **SP13 DC bulkheads:** 13A/250V — adequate for 12V 8A bus
-- **CNLINKO RJ45 bulkheads:** IP67 panel mount, PoE compatible
+- **CNLINKO RJ45 bulkhead:** IP67 panel mount, PoE compatible (1 needed for 1 camera)
 
 ---
 
@@ -216,6 +216,7 @@ PWR-006 (fuse holders), PWR-007/008 (fuses), ENC-004 (cable glands), ENC-008 (ha
 
 | Date | Version | Changes |
 |------|---------|---------|
+| 2026-03-26 | 5.1 | Reduced from 2 cameras to 1. Cat6 cables 4→2, CNLINKO bulkheads 2→1. Updated subtotals. |
 | 2026-03-09 | 5.0 | Reconciled against authoritative jakarta_order.csv. Dropped Witty Pi 5 (Pi 5 RTC), Victron BatteryProtect (BMS cutoff), USB-RS485 (GPIO handles it), camera heater (sealed camera). Swapped Phoenix Contact SPD → Heschen HS-40-N, Phoenix PTFIX → Amazon generic. Right-sized Cat6 cable. Added fans, neoprene isolation, ethernet + DC bulkhead connectors. Deferred mounting hardware. Corrected conformal coat to MG 422C. Updated all prices to actual order prices. |
 | 2026-03-06 | 4.0 | Split enclosure approach: electronics in VEVOR 16x12x8" (matched Sukabumi), battery + charger moved to external box sourced locally. |
 | 2026-02-24 | 3.0 | Reconciled with Sukabumi actuals: matched shared components, reduced to 4 suppliers. |
@@ -224,6 +225,6 @@ PWR-006 (fuse holders), PWR-007/008 (fuses), ENC-004 (cable glands), ENC-008 (ha
 
 ---
 
-**Document prepared:** January 9, 2026 | **Last updated:** March 9, 2026
-**Version:** 5.0 (Reconciled against jakarta_order.csv)
+**Document prepared:** January 9, 2026 | **Last updated:** March 26, 2026
+**Version:** 5.1 (Updated for 1-camera configuration)
 **Authoritative source:** `jakarta_order.csv`

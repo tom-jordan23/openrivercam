@@ -9,7 +9,7 @@
 ```
 +-----------------------------------------------------------------------------+
 |                           JAKARTA SITE WIRING                               |
-|                   AC Power / PoE Cameras / 24hr UPS                         |
+|                   AC Power / PoE Camera / 24hr UPS                          |
 +-----------------------------------------------------------------------------+
 
             220V AC (Building Power)
@@ -65,13 +65,11 @@
                            |             |    |  panel-mount)   |
                            +-------------+    +-----------------+
              |
-      +------+------+
-      |             |
-      v             v
-+----------+  +----------+
-| CAMERA 1 |  | CAMERA 2 |
-| (PoE)    |  | (PoE)    |
-+----------+  +----------+
+             v
+      +----------+
+      | CAMERA 1 |
+      | (PoE)    |
+      +----------+
 ```
 
 ---
@@ -247,7 +245,7 @@ POWER PATH LOGIC:
          +--+----+----+----+----+----+----+----++
             |    |    |    +----+----+----+----+--> All GND returns
             |    |    |
-            |    |    +--[FUSE 10A]---> Relay CH1 COM ---> PoE SWITCH (12V)
+            |    |    +--[FUSE 5A]----> Relay CH1 COM ---> PoE SWITCH (12V)
             |    |                      (see PoE Camera System section)
             |    |
             |    +--[FUSE 5A]---> DDR-60G-5 (12V->5V) -> hardwired 5V/GND -> PI 5 GPIO
@@ -260,7 +258,7 @@ FUSE SPECIFICATIONS:
 |  FUSE        |  RATING  |  PROTECTS                                        |
 +--------------+----------+----------------------------------------------------+
 |  F1 (Main)   |  15A     |  Entire 12V bus from battery/PSU                 |
-|  F2 (PoE)    |  10A     |  Fuse + Relay + PoE switch (60W max = 5A, margin)|
+|  F2 (PoE)    |  5A      |  Fuse + Relay + PoE switch (1 camera, ~20W max)  |
 |  F3 (Pi)     |  5A      |  DDR-60G-5 + Pi (25W max = 2A, plus margin)     |
 |  F4 (Heater) |  5A      |  PTC heater + fans (25W max, plus margin)       |
 +-----------------------------------------------------------------------------+
@@ -277,7 +275,7 @@ FUSE SPECIFICATIONS:
 
 12V FROM TB1
     |
-    | [FUSE 10A]
+    | [FUSE 5A]
     |
     v
 +-------------------------------------------------------------------------+
@@ -299,8 +297,8 @@ FUSE SPECIFICATIONS:
 |  WHY NO (NORMALLY OPEN):                                               |
 |  Fail-safe design. If Pi crashes, hangs, or hasn't booted yet,        |
 |  GPIO floats LOW (or unconfigured), relay de-energizes, NO opens,     |
-|  cameras lose power automatically. Prevents battery drain.            |
-|  NC would leave cameras powered indefinitely on Pi failure.            |
+|  camera loses power automatically. Prevents battery drain.            |
+|  NC would leave camera powered indefinitely on Pi failure.             |
 |                                                                         |
 |  IN (12V from fuse) --> CH1 COM --> CH1 NO --> OUT (12V to PoE switch) |
 +---------------------------------+---------------------------------------+
@@ -312,50 +310,50 @@ FUSE SPECIFICATIONS:
 |                    (Gigabit, 12V DC input)                              |
 |                                                                         |
 |  +---------------------------------------------------------------+     |
-|  |  DC INPUT        UPLINK         POE OUT 1        POE OUT 2   |     |
-|  |  +-----+        +------+       +--------+       +--------+   |     |
-|  |  | 12+ |        | RJ45 |       |  RJ45  |       |  RJ45  |   |     |
-|  |  | 12- |        |      |       | 802.3at|       | 802.3at|   |     |
-|  |  +--+--+        +---+--+       +---+----+       +---+----+   |     |
-|  +-----+---------------+-------------+------------------+-------+     |
-|        |               |              |                 |              |
-+--------+---------------+--------------+-----------------+--------------+
-         |               |              |                 |
-From      |               |              |                 |
-relay ----+               |              |                 |
-                          |              |                 |
-              +-----------+              |                 |
-              |                          |                 |
-              v                          |                 |
-    +-----------------+                  |                 |
-    |  Raspberry Pi 5 |                  |                 |
-    |  Ethernet Port  |                  |                 |
-    |                 |                  |                 |
-    |  (short patch   |                  |                 |
-    |   cable to      |                  |                 |
-    |   uplink port)  |                  |                 |
-    +-----------------+                  |                 |
-                                         |                 |
-                           +-------------+                 |
-                           |                               |
-                 +---------+----------+          +--------+----------+
-                 |  CNLINKO ETHERNET  |          |  CNLINKO ETHERNET |
-                 |  BULKHEAD (IP67)   |          |  BULKHEAD (IP67)  |
-                 +---------+----------+          +--------+----------+
-                           |                              |
-                           | Cat6 10ft cable               | Cat6 10ft cable
-                           | (pre-terminated)              | (pre-terminated)
-                           | (to Camera 1)                | (to Camera 2)
-                           |                              |
-                 +---------+----------+          +--------+----------+
-                 |   ANNKE C1200     |          |   ANNKE C1200     |
-                 |   Camera 1        |          |   Camera 2        |
-                 |                   |          |                   |
-                 |   IP: .101        |          |   IP: .102        |
-                 |   12MP, PoE+      |          |   12MP, PoE+      |
-                 |   Built-in IR     |          |   Built-in IR     |
-                 |   IP67 sealed     |          |   IP67 sealed     |
-                 +-------------------+          +-------------------+
+|  |  DC INPUT        UPLINK         POE OUT 1                    |     |
+|  |  +-----+        +------+       +--------+                   |     |
+|  |  | 12+ |        | RJ45 |       |  RJ45  |                   |     |
+|  |  | 12- |        |      |       | 802.3at|                   |     |
+|  |  +--+--+        +---+--+       +---+----+                   |     |
+|  +-----+---------------+-------------+-------------------------+     |
+|        |               |              |                              |
++--------+---------------+--------------+------------------------------+
+         |               |              |
+From      |               |              |
+relay ----+               |              |
+                          |              |
+              +-----------+              |
+              |                          |
+              v                          |
+    +-----------------+                  |
+    |  Raspberry Pi 5 |                  |
+    |  Ethernet Port  |                  |
+    |                 |                  |
+    |  (short patch   |                  |
+    |   cable to      |                  |
+    |   uplink port)  |                  |
+    +-----------------+                  |
+                                         |
+                           +-------------+
+                           |
+                 +---------+----------+
+                 |  CNLINKO ETHERNET  |
+                 |  BULKHEAD (IP67)   |
+                 +---------+----------+
+                           |
+                           | Cat6 10ft cable
+                           | (pre-terminated)
+                           | (to Camera 1)
+                           |
+                 +---------+----------+
+                 |   ANNKE C1200     |
+                 |   Camera 1        |
+                 |                   |
+                 |   IP: .101        |
+                 |   12MP, PoE+      |
+                 |   Built-in IR     |
+                 |   IP67 sealed     |
+                 +-------------------+
 
 
 NETWORK TOPOLOGY:
@@ -370,10 +368,10 @@ NETWORK TOPOLOGY:
 |      |                  LINOVISION PoE Switch                |             |
 |      |                   (Layer 2 switch)                    |             |
 |      |                                                       |             |
-|      +---------------------+-----------------------------+  |             |
+|      +---------------------+                             |  |             |
 |      |                     |                             |  |             |
-|   Camera 1              Camera 2                      (LAN) |             |
-|   192.168.50.101        192.168.50.102                       |             |
+|   Camera 1              (LAN)                               |             |
+|   192.168.50.101                                             |             |
 |                                                                            |
 +----------------------------------------------------------------------------+
 ```
@@ -547,7 +545,7 @@ DS18B20 WATERPROOF TEMPERATURE PROBE (1-Wire):
 NOTES:
 - PTC heater is self-regulating (won't overheat)
 - Hygrostat controls enclosure heater based on humidity
-- ANNKE C1200 cameras are factory-sealed IP67 -- no camera heaters needed
+- ANNKE C1200 camera is factory-sealed IP67 -- no camera heater needed
 - Fans provide internal air circulation
 ```
 
@@ -586,8 +584,8 @@ NOTES:
     |  |  (Velcro)  |  |            |                                      |
     |  +------------+  +------------+                                      |
     |                                                                       |
-    |  [CNLINKO] [CNLINKO]                                                 |
-    |   Cam1 ETH  Cam2 ETH                                                |
+    |  [CNLINKO]                                                            |
+    |   Cam1 ETH                                                           |
     |                                                                       |
     |  [SP13]     [M16]     [SD16]    [PG9]                                |
     |  AC in      Ground    Rain      DS18B20                              |
@@ -716,8 +714,14 @@ GROUND BAR
 
 **PRINT THIS DOCUMENT - LAMINATE FOR FIELD USE**
 
-**Document Version:** 3.0
-**Last Updated:** March 24, 2026
+**Document Version:** 3.1
+**Last Updated:** March 26, 2026
+**Changes from v3.0:**
+- Reduced Jakarta from 2 cameras to 1 camera
+- Removed Camera 2 from all diagrams and network topology
+- Reduced CNLINKO ethernet bulkheads from 2 to 1 in enclosure layout
+- Reduced PoE fuse F2 from 10A to 5A (1 camera draws less current)
+
 **Changes from v2.1:**
 - Fixed relay pin assignments: VCC to G469 Pin 4 (5V), GND to G469 Pin 20 (avoids doubling up wires in screw terminals)
 - Fixed SP13 bulkhead labeling: "SP13 AC MAINS INPUT BULKHEAD" (carries 220V AC, not DC)

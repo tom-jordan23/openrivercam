@@ -106,10 +106,8 @@ camera/
 │   └── cam1/               # Inherits common/ — overrides added as needed
 │
 └── jakarta/
-    ├── cam1/
-    │   └── overlays.xml    # OSD text: "ORC Jakarta - Cam 1 Upstream"
-    └── cam2/
-        └── overlays.xml    # OSD text: "ORC Jakarta - Cam 2 Downstream"
+    └── cam1/
+        └── overlays.xml    # OSD text: "ORC Jakarta - Cam 1"
 ```
 
 ### About the XML stubs
@@ -167,7 +165,7 @@ All commands except `info` accept optional endpoint names to limit scope:
 
 ```bash
 python3 camtool.py pull jakarta-cam1 streaming_101 image
-python3 camtool.py push jakarta-cam2 overlays --dry-run
+python3 camtool.py push jakarta-cam1 overlays --dry-run
 ```
 
 Available endpoints: `ftp`, `image`, `ircutfilter`, `motion_detection`,
@@ -260,11 +258,10 @@ Defined in `cameras.json`. IPs match DHCP reservations in
 | Name | IP | Site | Description |
 |------|-----|------|-------------|
 | sukabumi-cam1 | 192.168.50.139 | Sukabumi | River gauge - single camera |
-| jakarta-cam1 | 192.168.50.101 | Jakarta | Upstream view |
-| jakarta-cam2 | 192.168.50.102 | Jakarta | Downstream view |
+| jakarta-cam1 | 192.168.50.101 | Jakarta | River view - single camera |
 
-All three are ANNKE C1200 (12MP, IP67, built-in IR, Hikvision G6 platform).
-Sukabumi has one camera; Jakarta has two (upstream + downstream views).
+Both are ANNKE C1200 (12MP, IP67, built-in IR, Hikvision G6 platform).
+Each site has one camera.
 
 ---
 

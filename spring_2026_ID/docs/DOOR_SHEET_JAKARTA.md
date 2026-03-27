@@ -11,8 +11,7 @@
 | Site | Jakarta, Indonesia |
 | Power | 220V AC mains with 12V LiFePO4 UPS (100Ah) |
 | Station hostname | *(fill after install)* |
-| Camera 1 IP | 192.168.50.101 |
-| Camera 2 IP | 192.168.50.102 |
+| Camera IP | 192.168.50.101 |
 | Pi IP (camera network) | 192.168.50.1 |
 | WiFi hotspot SSID | *(fill after install)* |
 | WiFi hotspot password | *(fill after install)* |
@@ -31,7 +30,7 @@ All fuses are **5x20mm glass tube** type. Do NOT use US automotive blade fuses
 | Fuse | Rating | Protects | What Happens If It Blows |
 |------|--------|----------|--------------------------|
 | F1 (Main) | 15A | Entire 12V bus from PSU/battery | Everything loses power |
-| F2 (PoE) | 10A | Relay CH1 and PoE switch | Cameras lose power, Pi stays running |
+| F2 (PoE) | 5A | Relay CH1 and PoE switch | Camera loses power, Pi stays running |
 | F3 (Pi) | 5A | DDR-60G-5 buck converter and Pi | Pi loses power |
 | F4 (Heater) | 5A | PTC heater and fans | Climate control stops, system continues |
 
@@ -110,8 +109,7 @@ TB1 — 12V DISTRIBUTION (from PSU / Battery)
 | Connector | Type | Carries | Pin Map |
 |-----------|------|---------|---------|
 | SP13 | AC mains input | 220V AC (L, N, PE) | L / N / PE |
-| CNLINKO #1 | Ethernet IP67 | PoE camera 1 | Standard RJ45 |
-| CNLINKO #2 | Ethernet IP67 | PoE camera 2 | Standard RJ45 |
+| CNLINKO | Ethernet IP67 | PoE camera | Standard RJ45 |
 | SD16 4-pin | Rain gauge | 12V + GND + UART TX/RX | 1:12V, 2:GND, 3:TX→RX, 4:RX→TX |
 | M16 | Ground cable | 6 AWG earth ground | Single conductor |
 
@@ -121,7 +119,7 @@ TB1 — 12V DISTRIBUTION (from PSU / Battery)
 
 | CH | GPIO | Load | State when Pi is OFF |
 |----|------|------|----------------------|
-| 1 | GPIO 24 | PoE switch (cameras) | **OFF** (fail-safe) |
+| 1 | GPIO 24 | PoE switch (camera) | **OFF** (fail-safe) |
 | 2 | GPIO 17 | Green LED | OFF |
 | 3 | GPIO 27 | Yellow LED | OFF |
 | 4 | GPIO 22 | Red LED | OFF |
@@ -151,7 +149,7 @@ battery drain on UPS power.
          │   ┌──┼──────┬──────┬──────┐            Battery
          │   │  │      │      │      │            100Ah
          │   │ [F1   [F2    [F3    [F4           (UPS backup)
-         │   │ 15A]  10A]   5A]    5A]
+         │   │ 15A]   5A]   5A]    5A]
          │   │  │      │      │      │
          │   │  │   Fuse    DDR    PTC heater
          │   │  │   holder  60G-5  + Fans
@@ -161,8 +159,8 @@ battery drain on UPS power.
          │   │  │      │
          │   │  │   PoE Switch
          │   │  │      │
-         │   │  │   ┌──┴──┐
-         │   │  │  Cam1  Cam2
+         │   │  │      │
+         │   │  │    Cam1
          │   │  │
          │  RG-15 12V (always on, through SD16 bulkhead)
 ```
@@ -178,7 +176,7 @@ battery drain on UPS power.
 | **Battery low** | BMS disconnects to protect battery |
 | **AC restored** | Mean Well resumes, charger recharges battery |
 
-**Battery runtime:** ~32 hours at typical load (~40W)
+**Battery runtime:** ~39 hours at typical load (~33W)
 
 ---
 
