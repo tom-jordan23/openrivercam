@@ -2,19 +2,19 @@
 
 Run after rebooting the Pi to confirm all services and configurations persist.
 
-## Context: What changed (2026-03-27)
+## Context
 
-We restored `/etc/udev/rules.d/90-qemu.rules` to preserve the original boot
-process from the Rainbow Sensing image. This means:
+This Pi runs a Rainbow Sensing image with `/etc/udev/rules.d/90-qemu.rules`
+that symlinks `sda → mmcblk0`. This is **required for boot** — removing it
+causes a PARTUUID lookup failure that drops into emergency mode. See
+`BOOT_FAILURE_ANALYSIS.md`.
 
-- `/dev/mmcblk0` is a **symlink to sda** (USB drive), NOT the real SD card
-- `/boot/firmware` will NOT mount (the PARTUUID lookup finds the USB drive, not
-  the boot partition) — this is the same as the original image behavior
+Consequences of 90-qemu.rules:
+- `/boot/firmware` will NOT mount (PARTUUID points to USB drive, not SD boot)
 - Cloud-init is disabled (`/etc/cloud/cloud-init.disabled`)
 - Root password is set for emergency recovery
 
-**Do NOT remove 90-qemu.rules.** Removing it causes a boot partition enumeration
-failure that drops the system into emergency mode. See `BOOT_FAILURE_ANALYSIS.md`.
+**Do NOT remove 90-qemu.rules.**
 
 ## Quick Check
 
@@ -22,9 +22,12 @@ failure that drops the system into emergency mode. See `BOOT_FAILURE_ANALYSIS.md
 orc-preflight
 ```
 
-Should show 0 FAILs. Expected WARNs: minicom (optional), orc-capture not enabled
-(until service file is deployed to /etc/systemd/system/), sensor hardware not
-connected.
+Should show **0 FAILs**. Expected WARNs:
+- minicom not installed (optional)
+- `/boot/firmware` not mounted (expected with 90-qemu.rules)
+- `config.txt` not accessible (same reason)
+- orc-capture service not enabled (until deployed to systemd)
+- I2C / DS18B20 not detected (sensor hardware not connected)
 
 ## Step-by-Step Verification
 
@@ -34,8 +37,6 @@ connected.
 mount | grep "on / "             # should show ext4 root mounted
 uptime                           # confirms clean boot
 ```
-
-Note: `/boot/firmware` will NOT be mounted. This is expected — see Context above.
 
 - [ ] Root filesystem mounted (ext4)
 - [ ] System booted without emergency mode
@@ -53,7 +54,7 @@ KERNEL=="sda?", SYMLINK+="mmcblk0p%n"
 ```
 
 **If this file is missing, the system may not survive a reboot.** Restore it
-immediately — see `BOOT_FAILURE_ANALYSIS.md` for details.
+immediately — see `BOOT_FAILURE_ANALYSIS.md`.
 
 - [ ] 90-qemu.rules exists with correct contents
 
@@ -79,19 +80,29 @@ If `get_throttled` is non-zero, decode with:
 
 ### 4. USB Storage
 
+**Known issue:** The SanDisk Ultra Fit 3.2Gen1 has intermittent bus disconnects
+during boot. It may not be present after reboot. Check `dmesg` for I/O errors
+and device offline events.
+
 ```bash
-mount | grep /mnt/usb          # should show /dev/sda1 on /mnt/usb type ext4
-df -h /mnt/usb                 # should show ~229G
-ls -la /home/pi/Videos         # should show: Videos -> /mnt/usb/incoming
-ls -la /mnt/usb/incoming/      # should exist, owned by ftpcam
-dmesg | grep -i sda | tail -10 # check for I/O errors
+lsblk | grep sda               # should show sda with sda1 partition
+mount | grep /mnt/usb           # should show /dev/sda1 on /mnt/usb type ext4
+df -h /mnt/usb                  # should show ~229G
+ls -la /home/pi/Videos          # should show: Videos -> /mnt/usb/incoming
+ls -la /mnt/usb/incoming/       # should exist, owned by ftpcam
+dmesg | grep -i "sda.*error\|sda.*offline"  # check for I/O errors
 ```
 
-If not mounted but drive is present (`lsblk | grep sda`), try `sudo mount /mnt/usb`.
-Check dmesg for I/O errors — the SanDisk 3.2Gen1 has shown intermittent
-offline/reconnect events.
+If not mounted:
+```bash
+# Check if drive is on the USB bus at all
+lsusb | grep -i sandisk
+# If missing: unplug and replug the USB drive, then:
+sudo mount /mnt/usb
+```
 
-- [ ] USB drive mounted at /mnt/usb (ext4, nofail in fstab)
+- [ ] USB drive visible in lsblk (sda/sda1)
+- [ ] Mounted at /mnt/usb (ext4, nofail in fstab)
 - [ ] ~/Videos is a symlink to /mnt/usb/incoming
 - [ ] No I/O errors in dmesg for sda
 
@@ -99,14 +110,12 @@ offline/reconnect events.
 
 ```bash
 systemctl is-active vsftpd chrony dnsmasq NetworkManager
-systemctl is-enabled orc-gpio-relays
 ```
 
 - [ ] vsftpd: active
 - [ ] chrony: active
 - [ ] dnsmasq: active
 - [ ] NetworkManager: active
-- [ ] orc-gpio-relays: **disabled** (must not be enabled)
 
 ### 6. LTE Modem
 
@@ -121,10 +130,8 @@ error storms (`qmi_wwan: nonzero urb status received: -71`). This causes
 keyboard input lag while the errors are active. If the modem is gone:
 
 ```bash
-# Check if modem is on the bus at all
 lsusb | grep -i 2c7c
 # If missing, try replugging the USB adapter or rebooting
-# Check error history
 dmesg | grep -c "nonzero urb status"
 ```
 
@@ -153,30 +160,44 @@ ping -c 1 192.168.50.139
 
 ### 9. Camera Configuration (after camera is up)
 
+The ANNKE C1200 may revert `supplementLightMode` to `eventIntelligence` on
+power cycle (white LED flashes at night). `orc-capture` enforces `irLight`
+on every cycle, so this is self-healing.
+
 ```bash
-curl -s --digest -u admin:<password> \
+# Credentials in ~/.orc_deploy_sukabumi (BASE_PASSWD)
+source ~/.orc_deploy_sukabumi
+curl -s --digest -u "admin:${BASE_PASSWD}" \
   http://192.168.50.139/ISAPI/Image/channels/1 | grep supplementLightMode
 ```
 
-- [ ] Expect `eventIntelligence` (reverts on power cycle — this is the known bug)
+- [ ] supplementLightMode is `irLight` or `eventIntelligence` (orc-capture fixes this)
 
 ### 10. Capture Script (end-to-end test)
 
 ```bash
-orc-capture --dry-run
+orc-capture --skip-relay --dry-run
 ```
 
-This will: enforce irLight -> capture 5s -> validate quality gate -> relay off.
+This will: enforce irLight, capture 5s via RTSP, validate quality gate.
+Uses `--skip-relay` since relay is already on from step 8.
 
 - [ ] `Enforcing camera config` line appears
-- [ ] `Fixed: supplementLightMode -> irLight` (or "already set" if run twice)
-- [ ] Quality gate PASSED (1920x1080, ~16 Mbps, ~5s)
-- [ ] Relay OFF after script completes: `poe-relay status`
+- [ ] `Fixed: supplementLightMode -> irLight` (or "already set")
+- [ ] Quality gate PASSED (1920x1080, ~15 Mbps, ~5s)
+
+Then power off:
+```bash
+poe-relay off
+```
+
+- [ ] Relay OFF after test
 
 ### 11. FTP Server
 
 ```bash
-curl -s -T /etc/hostname ftp://ftpcam:<password>@127.0.0.1/reboot_test.txt
+source ~/.orc_deploy_sukabumi
+curl -s -T /etc/hostname "ftp://ftpcam:${BASE_PASSWD}@127.0.0.1/reboot_test.txt"
 ls /mnt/usb/incoming/reboot_test.txt
 sudo rm /mnt/usb/incoming/reboot_test.txt
 ```
@@ -187,15 +208,11 @@ sudo rm /mnt/usb/incoming/reboot_test.txt
 ### 12. NTP for Camera
 
 ```bash
-chronyc clients | head -5
+sudo chronyc clients | head -5
 ```
 
-- [ ] chrony is serving time (camera IP should appear as client after boot)
+Camera IP (192.168.50.139) should appear as a client if it has been powered
+on long enough to make an NTP request. If only `localhost` appears, that's
+OK — chrony is serving, camera just hasn't queried yet.
 
-### 13. Git Status (no unintended changes)
-
-```bash
-cd ~/code/git/openrivercam && git status --short
-```
-
-- [ ] No unexpected modifications (working tree matches pre-reboot state)
+- [ ] chrony is running and configured to serve 192.168.50.0/24

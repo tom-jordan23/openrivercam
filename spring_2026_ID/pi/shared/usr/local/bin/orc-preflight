@@ -271,38 +271,34 @@ else
     fail "poe-relay not found in PATH"
 fi
 
-# QEMU udev rules (leftover from image building — breaks mmcblk0p1 on real Pi)
+# QEMU udev rules — required for boot on Rainbow Sensing images.
+# These rules symlink sda → mmcblk0 so the OS finds its root partition.
+# Removing this file causes a boot partition enumeration failure that drops
+# the system into emergency mode. See BOOT_FAILURE_ANALYSIS.md.
 QEMU_RULES="/etc/udev/rules.d/90-qemu.rules"
 if [ -f "$QEMU_RULES" ]; then
-    fail "Stale QEMU udev rules found ($QEMU_RULES) — clobbers mmcblk0p1 device node"
-    echo "         Remove with: sudo rm $QEMU_RULES"
-    if [ "$FIX" -eq 1 ]; then
-        echo "  ... removing $QEMU_RULES"
-        sudo rm "$QEMU_RULES"
-        sudo udevadm trigger && sudo udevadm settle
+    if grep -q 'KERNEL=="sda", SYMLINK+="mmcblk0"' "$QEMU_RULES"; then
+        pass "90-qemu.rules present (required for boot — do NOT remove)"
+    else
+        warn "90-qemu.rules exists but has unexpected contents"
     fi
 else
-    pass "No stale QEMU udev rules"
+    fail "90-qemu.rules MISSING — system may not survive a reboot!"
+    echo "         Restore from BOOT_FAILURE_ANALYSIS.md immediately."
 fi
 
-# Boot firmware partition must be mounted for config.txt access
+# Boot firmware partition — not mounted when 90-qemu.rules is active.
+# The udev rules remap sda → mmcblk0, so the PARTUUID lookup for the boot
+# partition finds the USB drive instead of the real SD card boot partition.
+# This is expected and harmless — config.txt changes require manual mount.
 if mountpoint -q /boot/firmware 2>/dev/null; then
     pass "/boot/firmware mounted"
 else
-    fail "/boot/firmware not mounted (config.txt inaccessible)"
-    # Check if device node is a symlink (qemu rules symptom)
-    if [ -L /dev/mmcblk0p1 ]; then
-        echo "         /dev/mmcblk0p1 is a symlink (should be block device) — see 90-qemu.rules check above"
-    fi
-    if [ "$FIX" -eq 1 ]; then
-        echo "  ... attempting mount"
-        # Recreate device nodes if missing or symlinked
-        if [ ! -b /dev/mmcblk0p1 ]; then
-            sudo rm -f /dev/mmcblk0 /dev/mmcblk0p1
-            sudo mknod /dev/mmcblk0 b 179 0 2>/dev/null
-            sudo mknod /dev/mmcblk0p1 b 179 1 2>/dev/null
-        fi
-        sudo mount /boot/firmware 2>/dev/null && pass "  mounted successfully" || fail "  mount failed"
+    if [ -f "$QEMU_RULES" ]; then
+        warn "/boot/firmware not mounted (expected — 90-qemu.rules remaps mmcblk0)"
+        echo "         To edit config.txt: sudo mount /dev/mmcblk0p1 /boot/firmware (find real device first)"
+    else
+        fail "/boot/firmware not mounted (config.txt inaccessible)"
     fi
 fi
 
@@ -328,7 +324,11 @@ if [ -f "$CONFIG_TXT" ]; then
         fi
     fi
 else
-    fail "$CONFIG_TXT not found"
+    if [ -f "$QEMU_RULES" ]; then
+        warn "$CONFIG_TXT not accessible (/boot/firmware not mounted — see above)"
+    else
+        fail "$CONFIG_TXT not found"
+    fi
 fi
 
 # hosts file camera entry
@@ -400,11 +400,13 @@ else
     warn "Expected Pi 5, found: $PI_MODEL"
 fi
 
-# USB flash drive
-if lsblk -o NAME,MODEL 2>/dev/null | grep -qi "FIT.*Plus\|Samsung.*FIT"; then
-    pass "Samsung FIT Plus USB drive detected"
+# USB flash drive (SanDisk Ultra Fit or Samsung FIT Plus)
+if lsblk -o NAME,MODEL 2>/dev/null | grep -qi "FIT.*Plus\|Samsung.*FIT\|SanDisk.*3.2"; then
+    USB_MODEL=$(lsblk -o MODEL -n /dev/sda 2>/dev/null | xargs)
+    pass "USB flash drive detected (${USB_MODEL:-unknown})"
 elif [ -b /dev/sda ]; then
-    warn "USB block device found but not identified as Samsung FIT Plus"
+    USB_MODEL=$(lsblk -o MODEL -n /dev/sda 2>/dev/null | xargs)
+    warn "USB block device found but unrecognized model: ${USB_MODEL:-unknown}"
 else
     warn "No USB storage device detected"
 fi

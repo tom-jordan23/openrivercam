@@ -1,0 +1,58 @@
+#!/bin/bash
+# orc-boot-usb-log — log USB storage status after boot
+#
+# Captures dmesg USB timeline and mount status to a timestamped log file.
+# Intended to run as a oneshot systemd service after boot stabilizes.
+
+LOGDIR="/var/log/orc"
+mkdir -p "$LOGDIR"
+
+LOGFILE="$LOGDIR/usb-boot-$(date +%Y%m%d_%H%M%S).log"
+
+{
+    echo "=== ORC USB Boot Log ==="
+    echo "Date: $(date)"
+    echo "Uptime: $(uptime)"
+    echo ""
+
+    echo "=== USB Devices ==="
+    lsusb 2>/dev/null
+    echo ""
+
+    echo "=== Block Devices ==="
+    lsblk 2>/dev/null
+    echo ""
+
+    echo "=== Mount Status ==="
+    mount | grep -E "sda|usb" 2>/dev/null || echo "(no sda/usb mounts)"
+    echo ""
+
+    echo "=== USB Driver in Use ==="
+    if [ -d /sys/bus/usb/drivers/uas ]; then
+        ls /sys/bus/usb/drivers/uas/ 2>/dev/null | grep -E "^[0-9]" && echo "  (UAS driver active)" || echo "  (UAS driver loaded but no devices)"
+    fi
+    if [ -d /sys/bus/usb/drivers/usb-storage ]; then
+        ls /sys/bus/usb/drivers/usb-storage/ 2>/dev/null | grep -E "^[0-9]" && echo "  (usb-storage driver active)" || echo "  (usb-storage driver loaded but no devices)"
+    fi
+    echo ""
+
+    echo "=== USB Quirks ==="
+    cat /sys/module/usb_storage/parameters/quirks 2>/dev/null || echo "(none)"
+    echo ""
+
+    echo "=== dmesg USB/sda Timeline ==="
+    dmesg | grep -i -E "sda|usb.*(4-1|sandisk|storage)|uas.*reset|scsi.*sda" 2>/dev/null
+    echo ""
+
+    echo "=== USB Disconnect/Error Count ==="
+    echo "Disconnects: $(dmesg | grep -c 'USB disconnect.*4-1' 2>/dev/null)"
+    echo "I/O errors: $(dmesg | grep -c 'I/O error.*sda' 2>/dev/null)"
+    echo "Device offline: $(dmesg | grep -c 'device offline.*sda' 2>/dev/null)"
+    echo "UAS timeouts: $(dmesg | grep -c 'uas_pre_reset.*timed out' 2>/dev/null)"
+
+} > "$LOGFILE" 2>&1
+
+echo "USB boot log written to $LOGFILE"
+
+# Keep only last 10 logs
+ls -t "$LOGDIR"/usb-boot-*.log 2>/dev/null | tail -n +11 | xargs rm -f 2>/dev/null

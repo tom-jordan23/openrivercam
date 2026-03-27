@@ -1,0 +1,12 @@
+[Unit]
+Description=Log USB storage status after boot
+After=local-fs.target multi-user.target
+Wants=local-fs.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/orc-boot-usb-log
+RemainAfterExit=no
+
+[Install]
+WantedBy=multi-user.target
