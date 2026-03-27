@@ -140,3 +140,49 @@ issue or order new hardware.
 - **USB storage:** Samsung FIT Plus 256GB **removed** (UAS boot storm)
 - **Capture storage:** SD card rootfs (~43GB free)
 - **/boot/firmware:** Not mounted (90-qemu.rules — see BOOT_FAILURE_ANALYSIS.md)
+
+## Clean Boot Verification (2026-03-28)
+
+Fresh reboot with Samsung FIT removed, DDR-60G-5 → GPIO power.
+
+### Boot Baseline (Pi only, PoE relay OFF)
+
+| Metric | Result |
+|--------|--------|
+| Boot time | Clean, no errors |
+| `throttled` | `0x0` — no undervoltage |
+| CPU temp (idle, no cooler) | 50.5°C |
+| USB bus errors in dmesg | **Zero** |
+| USB disconnects in dmesg | **Zero** |
+| Modem (EG25-G) | Detected at t=8s, ttyUSB0-3 + wwan0 all present |
+| Keyboard/mouse | Stable |
+
+### Under Load (PoE relay ON — camera + PoE switch powered)
+
+| Metric | +10s | +60s |
+|--------|------|------|
+| `throttled` | `0x0` | `0x0` |
+| CPU temp | 53.8°C | 56.5°C |
+| USB bus errors | Zero | Zero |
+| Modem status | Stable | Stable |
+| eth0 link | — | Up, 1Gbps |
+| Camera (192.168.50.139) | — | Pingable, 0.3ms |
+
+**Result: PASS — GPIO 5V power handles full system load (Pi + modem + relay + PoE switch + camera) with no voltage sag or USB instability.**
+
+### Phase 4 Checklist Status
+
+| Check | Expected | Actual | Status |
+|-------|----------|--------|--------|
+| Boot | ≤60s | Clean | PASS |
+| OS | RPi OS Lite 64-bit | Debian 13 trixie aarch64 | PASS |
+| Memory | ~8 GB | 7.9 GB | PASS |
+| SD card | Detected | 59.5 GB mmcblk0 | PASS |
+| USB flash | — | Removed (deferred) | SHELVED |
+| CPU temp idle | ≤50°C | 50.5°C (no cooler installed) | OK |
+| Hostname | orc-sukabumi | orc-sukabumi | PASS |
+| SSH | Enabled | Active | PASS |
+| Timezone | Asia/Jakarta | Asia/Jakarta (WIB) | PASS |
+| Serial HW | Enabled | /dev/serial0 present | PASS |
+| Undervoltage | None | `0x0` at idle and under load | PASS |
+| PoE relay + camera | Stable | Camera pingable, no power issues | PASS |
