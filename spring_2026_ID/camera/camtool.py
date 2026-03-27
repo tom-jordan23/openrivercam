@@ -553,7 +553,7 @@ def build_parser() -> argparse.ArgumentParser:
               %(prog)s pull jakarta-cam1
               %(prog)s pull jakarta-cam1 streaming_101 image
               %(prog)s diff sukabumi-cam1
-              %(prog)s push jakarta-cam2 overlays --dry-run
+              %(prog)s push jakarta-cam1 overlays --dry-run
               %(prog)s verify sukabumi-cam1
 
             endpoints:

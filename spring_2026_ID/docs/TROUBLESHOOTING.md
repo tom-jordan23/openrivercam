@@ -402,7 +402,7 @@ Both sites use the Pi as a DHCP server (dnsmasq) on the 192.168.50.0/24 camera n
 | Site | Pi IP | Camera IPs |
 |------|-------|------------|
 | Sukabumi | 192.168.50.1 | 192.168.50.139 |
-| Jakarta | 192.168.50.1 | 192.168.50.101, 192.168.50.102 |
+| Jakarta | 192.168.50.1 | 192.168.50.101 |
 
 **Note:** The SADP utility (Hikvision/ANNKE) does not run on ARM Macs — neither natively nor under Parallels. The dnsmasq approach eliminates the need for SADP entirely.
 
@@ -587,9 +587,8 @@ mmcli -m 0 --disable && sleep 5 && mmcli -m 0 --enable
 # Ping cameras (Sukabumi)
 ping -c 3 192.168.50.139
 
-# Ping cameras (Jakarta)
+# Ping camera (Jakarta)
 ping -c 3 192.168.50.101
-ping -c 3 192.168.50.102
 
 # Test camera connectivity with ISAPI snapshot
 curl --digest -u admin:PASSWORD http://192.168.50.101/ISAPI/Streaming/channels/101/picture -o /tmp/cam1.jpg

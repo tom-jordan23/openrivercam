@@ -377,26 +377,10 @@
   <rect x="810" y="445" width="300" height="25" class="box"/>
   <text x="960" y="462" class="component" text-anchor="middle">Cat6 outdoor shielded + IP68 RJ45 coupler</text>
 
-  <!-- Camera 2 -->
-  <rect x="790" y="490" width="340" height="130" class="box-camera"/>
-  <text x="960" y="515" class="section-title" text-anchor="middle">CAMERA 2 - ANNKE C1200</text>
-
-  <rect x="810" y="530" width="150" height="50" class="box"/>
-  <text x="885" y="552" class="component" text-anchor="middle">12MP PoE (IP67)</text>
-  <text x="885" y="567" class="component-detail" text-anchor="middle">134deg | Built-in IR</text>
-  <text x="885" y="579" class="component-detail" text-anchor="middle">RTSP | ~12W</text>
-
-  <rect x="975" y="530" width="140" height="50" class="box"/>
-  <text x="1045" y="552" class="component" text-anchor="middle">PTC Heater 5-7W</text>
-  <text x="1045" y="567" class="component-detail" text-anchor="middle">w/ thermostat</text>
-
-  <rect x="810" y="590" width="300" height="25" class="box"/>
-  <text x="960" y="607" class="component" text-anchor="middle">Cat6 outdoor shielded + IP68 RJ45 coupler</text>
-
   <!-- Camera mount info -->
-  <rect x="790" y="635" width="340" height="45" class="box"/>
-  <text x="960" y="657" class="component" text-anchor="middle">Hikvision DS-1275ZJ vertical mount plates (x2)</text>
-  <text x="960" y="672" class="component-detail" text-anchor="middle">Stainless steel, pole-mounted</text>
+  <rect x="790" y="490" width="340" height="45" class="box"/>
+  <text x="960" y="512" class="component" text-anchor="middle">Hikvision DS-1275ZJ vertical mount plate (x1)</text>
+  <text x="960" y="527" class="component-detail" text-anchor="middle">Stainless steel, pole-mounted</text>
 
   <!-- Rain gauge (outdoor) -->
   <rect x="790" y="695" width="340" height="35" class="box-sensor"/>
@@ -507,7 +491,7 @@
 
   <text x="640" y="1115" class="component">Raspberry Pi 5: 15W</text>
   <text x="640" y="1135" class="component">Quectel modem: 5W</text>
-  <text x="640" y="1155" class="component">2x PoE cameras: 24W</text>
+  <text x="640" y="1155" class="component">1x PoE camera: 12W</text>
   <text x="640" y="1175" class="component">PTC heaters (avg): 15W</text>
   <text x="640" y="1195" class="component">PoE switch + misc: 3W</text>
   <text x="640" y="1220" class="section-title">TOTAL: ~62W</text>

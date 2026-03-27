@@ -86,10 +86,10 @@
 
 ### Jakarta — software + testing
 
-- [ ] ORC-OS config (GPIO 24, capture schedule, 2-camera FTP)
+- [ ] ORC-OS config (GPIO 24, capture schedule, camera FTP)
 - [ ] Pangolin/Newt remote access
-- [ ] Power cycle test: Pi → relay → PoE switch → 2 cameras
-- [ ] Camera FTP upload (both cameras)
+- [ ] Power cycle test: Pi → relay → PoE switch → camera
+- [ ] Camera FTP upload
 - [ ] Wire and test J2 power button
 - [ ] Wire PTC heater and fans
 - [ ] Wire LEDs
@@ -215,7 +215,7 @@ corrected power budget is ~118 Wh/day. Update to reflect current PoE camera arch
 | **Site** | Jakarta |
 
 No detailed power budget exists for Jakarta. Need to calculate:
-- Continuous load (Pi + 2 cameras + modem + sensors + fans)
+- Continuous load (Pi + 1 camera + modem + sensors + fans)
 - UPS runtime estimate with selected battery
 - PTC heater duty cycle and impact
 
@@ -234,7 +234,7 @@ Less critical than Sukabumi (AC power is abundant) but needed for UPS sizing.
 Sukabumi has detailed GPIO_WIRING.md with step-by-step instructions, verification
 checklists, and build photos. Jakarta needs equivalent, adapted for:
 - AC power input (surge suppressor + PSU)
-- 2 cameras instead of 1
+- 1 camera (same as Sukabumi)
 - PTC heater + fans
 - DS18B20 external temp probe (GPIO 4)
 - Same relay, GPIO, rain gauge, SHT40 wiring as Sukabumi

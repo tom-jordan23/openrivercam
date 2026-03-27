@@ -13,15 +13,7 @@
       "site": "jakarta",
       "camera": "cam1",
       "model": "ANNKE C1200",
-      "description": "Jakarta upstream view",
-      "username": "admin"
-    },
-    "jakarta-cam2": {
-      "host": "192.168.50.102",
-      "site": "jakarta",
-      "camera": "cam2",
-      "model": "ANNKE C1200",
-      "description": "Jakarta downstream view",
+      "description": "Jakarta river view - single camera",
       "username": "admin"
     }
   }

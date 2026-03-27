@@ -1,7 +1,7 @@
 # Assembly Guide - Jakarta Site
 
 **Site:** Jakarta, Indonesia (coastal/urban)
-**Type:** AC-powered with 24hr UPS, 2x PoE cameras
+**Type:** AC-powered with 24hr UPS, 1x PoE camera
 **Purpose:** New training/demo installation
 
 ---
@@ -26,7 +26,7 @@
   - [Step 10: Prepare Enclosure and Install Bulkheads](#step-10-prepare-enclosure-and-install-bulkheads)
   - [Step 11: Install Mounting Plate and Connect External Peripherals](#step-11-install-mounting-plate-and-connect-external-peripherals)
   - [Step 12: Mount Enclosure on Pole](#step-12-mount-enclosure-on-pole-30-min)
-  - [Step 13: Mount Cameras](#step-13-mount-cameras-45-min)
+  - [Step 13: Mount Camera](#step-13-mount-camera-30-min)
   - [Step 14: Mount Rain Gauge](#step-14-mount-rain-gauge-20-min)
   - [Step 15: Final Assembly and Testing](#step-15-final-assembly--testing-30-min)
 - [Power-On Procedure](#power-on-procedure)
@@ -58,9 +58,9 @@ Complete these steps BEFORE traveling to Indonesia:
 - [ ] Install and configure chrony as NTP server for camera network
 - [ ] Format USB drive as ext4, mount at /mnt/usb, add to fstab
 - [ ] Configure vsftpd with ftpcam user for camera FTP uploads
-- [ ] Configure both cameras via camtool.py (1080p, 16Mbps CBR, IR-only, NTP from Pi)
-- [ ] Insert and format MicroSD in each camera, set recording to continuous (CMR)
-- [ ] Test video capture pipeline (download 5s clip from each camera SD via RTSP)
+- [ ] Configure camera via camtool.py (1080p, 16Mbps CBR, IR-only, NTP from Pi)
+- [ ] Insert and format MicroSD in camera, set recording to continuous (CMR)
+- [ ] Test video capture pipeline (download 5s clip from camera SD via RTSP)
 - [ ] Configure WiFi hotspot for maintenance mode
 - [ ] Set up LED GPIO control script
 - [ ] Pre-configure Telkomsel APN (if known)
@@ -74,7 +74,7 @@ that must be masked during coating.
 - [ ] Test Pi 5 + Geekworm G469 stack boots correctly (2-board stack)
 - [ ] Verify USB flash drive is recognized
 - [ ] Test LTE modem connects (with test SIM)
-- [ ] Test PoE switch powers both cameras
+- [ ] Test PoE switch powers camera
 - [ ] Verify LEDs light up on GPIO control
 - [ ] Test relay switches PoE switch power on/off (GPIO 24)
 
@@ -115,7 +115,7 @@ that are difficult to diagnose in the field.
 
 ### 4. Camera Pre-Configuration
 
-Configure ANNKE C1200 cameras BEFORE deployment. The Pi acts as DHCP server on the camera network using dnsmasq, assigning predictable IPs to each camera.
+Configure the ANNKE C1200 camera BEFORE deployment. The Pi acts as DHCP server on the camera network using dnsmasq, assigning a predictable IP to the camera.
 
 **Note:** The SADP utility (Hikvision's camera discovery tool) does not run on ARM Macs — neither natively nor under Parallels. The dnsmasq approach below eliminates the need for SADP entirely.
 
@@ -140,11 +140,10 @@ Configure ANNKE C1200 cameras BEFORE deployment. The Pi acts as DHCP server on t
    bind-dynamic
    dhcp-range=192.168.50.100,192.168.50.200,24h
    dhcp-host=<CAMERA_1_MAC>,192.168.50.101
-   dhcp-host=<CAMERA_2_MAC>,192.168.50.102
    ```
    **Important:** Use `bind-dynamic` (not `bind-interfaces`). This allows dnsmasq to start
    before eth0 has carrier — required because the PoE relay may not be on at boot time.
-   Replace `<CAMERA_x_MAC>` with each camera's MAC address (printed on the camera label). If you don't have the MACs yet, omit the `dhcp-host` lines, let the cameras get any IP from the range, then check `cat /var/lib/misc/dnsmasq.leases` to find their MACs and update the config.
+   Replace `<CAMERA_1_MAC>` with the camera's MAC address (printed on the camera label). If you don't have the MAC yet, omit the `dhcp-host` line, let the camera get any IP from the range, then check `cat /var/lib/misc/dnsmasq.leases` to find the MAC and update the config.
 
    Restart dnsmasq:
    ```bash
@@ -188,7 +187,7 @@ The USB flash drive stores camera uploads and ORC data. Format as ext4 and mount
 
 **Configure NTP server for camera time sync:**
 
-The cameras are on an isolated network with no internet. The Pi must serve NTP.
+The camera is on an isolated network with no internet. The Pi must serve NTP.
 
 1. Install chrony:
    ```bash
@@ -283,7 +282,7 @@ mounted first (above) since camera uploads land on it.
 
 1. Connect camera to PoE switch, connect switch uplink port to Pi Ethernet
 2. Wait 60-90 seconds for camera to boot and receive DHCP lease
-3. Verify: `ping 192.168.50.101` (or .102)
+3. Verify: `ping 192.168.50.101`
 4. Access web interface at `http://192.168.50.101` (default credentials: admin / admin)
 5. Test ISAPI snapshot (works on macOS/Linux without plugins):
    ```bash
@@ -292,16 +291,15 @@ mounted first (above) since camera uploads land on it.
 
 - [ ] Change admin password (record in secure location — must match `CAMERA_PASSWORD` in `.env`)
 - [ ] Set camera to DHCP so it picks up the dnsmasq-assigned address on every boot
-- [ ] Insert MicroSD card into each camera (required for local recording)
+- [ ] Insert MicroSD card into camera (required for local recording)
 - [ ] Format MicroSD via ISAPI:
   ```bash
   curl --digest -u admin:<password> -X PUT \
     http://192.168.50.101/ISAPI/ContentMgmt/Storage/hdd/1/format
   ```
-- [ ] Push all camera configs via camtool.py:
+- [ ] Push camera config via camtool.py:
   ```bash
   python3 camtool.py push jakarta-cam1
-  python3 camtool.py push jakarta-cam2
   ```
   This sets: 1920x1080 H.264 at 16 Mbps CBR, 12.5fps, audio off, IR-only
   illumination, motion detection off, NTP from Pi, WIB timezone, FTP to Pi.
@@ -312,9 +310,8 @@ mounted first (above) since camera uploads land on it.
   > re-applies `irLight` automatically on each wake cycle. If testing manually,
   > verify with: `curl --digest -u admin:<password> http://<cam-ip>/ISAPI/Image/channels/1 | grep supplementLightMode`
 
-- [ ] Set recording schedule to continuous (CMR) on each camera:
+- [ ] Set recording schedule to continuous (CMR):
   ```bash
-  # For each camera IP (192.168.50.101, .102):
   curl --digest -u admin:<password> \
     http://192.168.50.101/ISAPI/ContentMgmt/record/tracks/101 > /tmp/track.xml
   sed -i 's/ActionRecordingMode>MOTION/ActionRecordingMode>CMR/g' /tmp/track.xml
@@ -331,7 +328,7 @@ mounted first (above) since camera uploads land on it.
     -t 5 -c:v copy -an /mnt/usb/incoming/test_cam1.mp4
   ffprobe /mnt/usb/incoming/test_cam1.mp4  # verify 1080p, ~16 Mbps
   ```
-- [ ] Verify both cameras record and download correctly
+- [ ] Verify camera records and downloads correctly
 - [ ] Verify IR function: cover lens, IR LEDs should illuminate, download clip shows grayscale
 
 **Enable capture service:**
@@ -376,15 +373,15 @@ sudo systemctl disable orc-gpio-relays
 - [ ] LiFePO4 100Ah battery (source locally)
 - [ ] 20A LiFePO4 charger (source locally or carry)
 - [ ] Power distribution blocks (12-position, DIN rail)
-- [ ] Blade fuse holders + fuses (5A, 10A, 15A)
+- [ ] Blade fuse holders + fuses (5A, 15A)
 
 ### Camera System
-- [ ] ANNKE C1200 PoE cameras (x2, factory-sealed IP67)
+- [ ] ANNKE C1200 PoE camera (x1, factory-sealed IP67)
 - [ ] LINOVISION Industrial PoE Switch (Gigabit, 12V DC input)
 - [ ] Electronics-Salon 4-channel SPDT DIN Rail relay module (GPIO-triggered via G469)
-- [ ] Cat6 outdoor shielded cables, 10ft pre-terminated (x4)
-- [ ] CNLINKO weatherproof ethernet bulkheads, IP67 (x2)
-- [ ] Camera pole mount brackets (x2)
+- [ ] Cat6 outdoor shielded cables, 10ft pre-terminated (x2: 1 internal patch + 1 external to camera)
+- [ ] CNLINKO weatherproof ethernet bulkhead, IP67 (x1)
+- [ ] Camera pole mount bracket (x1)
 
 ### Humidity Control & Climate Monitoring
 - [ ] PTC heater 15W (for enclosure)
@@ -401,7 +398,7 @@ sudo systemctl disable orc-gpio-relays
 - [ ] VEVOR NEMA 4x enclosure (16"x12"x8")
 - [ ] DIN rail 35mm (x2)
 - [ ] DIN rail clips
-- [ ] CNLINKO weatherproof ethernet bulkheads (x2, for cameras)
+- [ ] CNLINKO weatherproof ethernet bulkhead (x1, for camera)
 - [ ] SP13 weatherproof AC mains input bulkhead (IP68, for 220V AC input)
 - [ ] Neoprene rubber (galvanic isolation for mounting)
 
@@ -715,7 +712,7 @@ rail terminal blocks.
 
 13. **Install fuses:**
    - Main 12V feed: 15A fuse
-   - PoE relay/switch feed: 10A fuse (includes inline fuse between TB1 and relay)
+   - PoE relay/switch feed: 5A fuse (1 camera draws less current than 2)
    - Pi/DDR-60G-5 feed: 5A fuse
    - Heater/fan feed: 5A fuse
 
@@ -732,24 +729,23 @@ rail terminal blocks.
    - GPIO 22 (Pin 15) -> IN4 (Red LED)
 
 2. **Wire PoE switch power through fuse and relay:**
-   - 12V+ from TB1 -> inline fuse (10A) -> relay CH1 COM input
+   - 12V+ from TB1 -> inline fuse (5A) -> relay CH1 COM input
    - Relay CH1 NO output -> LINOVISION PoE switch 12V+ input
    - TB1 GND -> PoE switch GND input
 
    **Why NO (Normally Open) instead of NC (Normally Closed):** Using NO is a
    deliberate fail-safe. If the Pi crashes, hangs, or fails to shut down
    cleanly, GPIO pins float LOW and the relay falls open. The PoE switch and
-   cameras **lose power automatically**, preventing the system's largest power
-   consumers from draining the battery. With NC, a Pi crash would leave both
-   cameras powered indefinitely, which could drain the UPS battery and leave
+   camera **loses power automatically**, preventing the system's largest power
+   consumer from draining the battery. With NC, a Pi crash would leave the
+   camera powered indefinitely, which could drain the UPS battery and leave
    the station non-functional until someone physically visits the site. The
-   ~15-20 second delay (Pi boots -> GPIO HIGH -> relay closes -> cameras begin
+   ~15-20 second delay (Pi boots -> GPIO HIGH -> relay closes -> camera begins
    booting) is an acceptable tradeoff for this protection.
 
 3. **Connect Ethernet cables:**
    - Short patch cable: PoE switch uplink port -> Pi 5 Ethernet
    - PoE Port 1 -> internal Cat6 patch cable (connects to CNLINKO bulkhead later)
-   - PoE Port 2 -> internal Cat6 patch cable (connects to CNLINKO bulkhead later)
 
 ### Step 8: Connect Peripherals on Mounting Plate (15 min)
 
@@ -778,8 +774,8 @@ before final assembly.
 
 - [ ] 12V supply -> DDR-60G-5 -> Pi boots
 - [ ] GPIO 24 -> relay CH1 -> PoE switch powers on
-- [ ] Both cameras boot and are reachable via Pi
-- [ ] Video capture from both camera SDs to /mnt/usb/incoming works
+- [ ] Camera boots and is reachable via Pi
+- [ ] Video capture from camera SD to /mnt/usb/incoming works
 - [ ] LTE modem detected
 - [ ] SHT40 sensor readable via I2C
 - [ ] DS18B20 temperature probe readable
@@ -800,7 +796,7 @@ preparation.**
 1. **Mark hole positions:**
    - 2x M12 holes for Gore vents
    - 1x 12mm hole for Proxicast puck antenna (enclosure top)
-   - 2x holes for CNLINKO ethernet bulkheads (camera cables)
+   - 1x hole for CNLINKO ethernet bulkhead (camera cable)
    - 1x hole for SP13 AC mains input bulkhead (220V AC input)
    - 1x M16 hole for ground cable
    - 2x holes for 40 CFM fans
@@ -818,7 +814,7 @@ preparation.**
 3. **Install bulkheads and glands:**
    - Gore M12 vents (hand-tight plus 1/4 turn, position for cross-ventilation)
    - SP13 AC mains input bulkhead
-   - CNLINKO ethernet bulkheads (x2)
+   - CNLINKO ethernet bulkhead (x1)
    - SD16 4-pin bulkhead connector for rain gauge
 
 4. **Install user interface components:**
@@ -868,8 +864,8 @@ preparation.**
 1. **Install mounting plate** into enclosure with provided screws
 
 2. **Install CNLINKO ethernet bulkheads:**
-   - Connect internal Cat6 patch cables from PoE switch ports to bulkheads
-   - External Cat6 cables connect to cameras
+   - Connect internal Cat6 patch cable from PoE switch port to bulkhead
+   - External Cat6 cable connects to camera
 
 3. **Connect antenna:**
    - Mount Proxicast ANT-122-S02 puck antenna in 12mm hole on enclosure top
@@ -920,25 +916,24 @@ preparation.**
    - AC power cable (from building) through conduit
    - Ground cable to ground rod
 
-### Step 13: Mount Cameras (45 min)
+### Step 13: Mount Camera (30 min)
 
-1. **Install camera brackets** on pole:
-   - Camera 1: Upstream view
-   - Camera 2: Downstream or different angle
+1. **Install camera bracket** on pole:
+   - Position for optimal river view
    - Use stainless U-bolts
 
-2. **Mount cameras:**
-   - Attach cameras to brackets
-   - Connect Cat6 cables to CNLINKO bulkhead exterior connectors
-   - Aim and focus cameras
+2. **Mount camera:**
+   - Attach camera to bracket
+   - Connect Cat6 cable to CNLINKO bulkhead exterior connector
+   - Aim and focus camera
 
 3. **Protect connections:**
-   - CNLINKO bulkheads provide IP67 weatherproofing
+   - CNLINKO bulkhead provides IP67 weatherproofing
    - Secure cables with UV-resistant ties
 
 ### Step 14: Mount Rain Gauge (20 min)
 
-1. **Mount Hydreon RG-15** on pole (separate from cameras)
+1. **Mount Hydreon RG-15** on pole (separate from camera)
    - Built-in mounting holes, no separate bracket needed
 2. **Level the gauge** (critical for accuracy)
 3. **Route 18/4 stranded jacketed cable** from rain gauge to SD16 bulkhead plug
@@ -1023,17 +1018,16 @@ battery charging enabled, PoE relay script in PATH, and hardware detection
 (modem, sensors, USB drive). Fix any remaining FAILs manually before
 proceeding.
 
-### Verify Cameras
+### Verify Camera
 
 1. Enter maintenance mode (long press button)
 2. Connect laptop to WiFi hotspot
 3. SSH into Pi
-4. Ping cameras:
+4. Ping camera:
    ```
    ping 192.168.50.101
-   ping 192.168.50.102
    ```
-5. Test video capture from both cameras:
+5. Test video capture:
    ```bash
    START=$(date -d '15 seconds ago' +%Y%m%dT%H%M%S)
    ffmpeg -y -rtsp_transport tcp \
@@ -1041,7 +1035,6 @@ proceeding.
      -t 5 -c:v copy -an /mnt/usb/incoming/test_cam1.mp4
    ffprobe /mnt/usb/incoming/test_cam1.mp4  # verify 1080p, ~16 Mbps
    ```
-   Repeat for camera 2 (192.168.50.102).
 
 ### Verify LTE Connection
 
@@ -1087,14 +1080,14 @@ After installation, verify actual power consumption:
 |-----------|----------|----------|
 | Pi 5 (idle) | ~5W | |
 | Pi 5 (active) | ~8W | |
-| PoE cameras (x2) | ~15W | |
+| PoE camera (x1) | ~8W | |
 | PoE switch | ~5W | |
 | Modem (idle) | ~1W | |
 | PTC heater (avg) | ~8W | |
 | Fans (x2) | ~3W | |
-| **Total average** | **~40W** | |
+| **Total average** | **~33W** | |
 
-**Battery runtime:** 1280Wh / 40W = 32 hours (theoretical)
+**Battery runtime:** 1280Wh / 33W = ~39 hours (theoretical)
 
 ---
 
@@ -1122,8 +1115,7 @@ See `TROUBLESHOOTING.md` for detailed diagnostics.
 |-----------|-------|
 | Pi hostname | |
 | Pi IP (static) | 192.168.50.1 |
-| Camera 1 IP | 192.168.50.101 |
-| Camera 2 IP | 192.168.50.102 |
+| Camera IP | 192.168.50.101 |
 | Camera password | |
 | WiFi hotspot SSID | |
 | WiFi hotspot password | |
@@ -1137,8 +1129,18 @@ See `TROUBLESHOOTING.md` for detailed diagnostics.
 
 ---
 
-**Document Version:** 3.0
-**Last Updated:** March 24, 2026
+**Document Version:** 3.1
+**Last Updated:** March 26, 2026
+**Changes from v3.0:**
+- Reduced Jakarta from 2 cameras to 1 camera (matches project decision)
+- Reduced CNLINKO ethernet bulkheads from 2 to 1
+- Reduced Cat6 cables from 4 to 2 (1 internal patch + 1 external to camera)
+- Reduced camera pole mount brackets from 2 to 1
+- Reduced PoE fuse F2 from 10A to 5A (1 camera draws less current)
+- Removed Camera 2 IP (192.168.50.102) and second dhcp-host line from dnsmasq config
+- Updated power budget: camera power ~8W (was ~15W for 2), total ~33W (was ~40W), battery runtime ~39hr (was ~32hr)
+- Updated all verification steps to single-camera language
+
 **Changes from v2.0:**
 - Reordered conformal coating to AFTER hardware testing (dry-fit) — you need to test first to identify all contact points that need masking
 - Added J5 (BAT) and J2 pogo pins to conformal coating masking list

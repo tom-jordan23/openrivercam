@@ -9,7 +9,7 @@ to Indonesia in Spring 2026. These stations run
 | Site | Power | Camera | Status |
 |------|-------|--------|--------|
 | **Sukabumi** | Solar (existing 200W/50Ah) | ANNKE C1200 PoE, power-cycled with Pi | Assembly in progress |
-| **Jakarta** | AC utility + 24hr UPS | ANNKE C1200 PoE, continuous | Pending Sukabumi completion |
+| **Jakarta** | AC utility + 24hr UPS | ANNKE C1200 PoE (1 camera), continuous | Pending Sukabumi completion |
 
 ## Directory Guide
 

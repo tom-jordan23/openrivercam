@@ -139,7 +139,7 @@
   <rect x="443" y="239" width="100" height="55" class="box-camera-teal"/>
   <text x="493" y="256" class="component" text-anchor="middle">PoE Switch</text>
   <text x="493" y="269" class="component-detail" text-anchor="middle">LINOVISION</text>
-  <text x="493" y="282" class="component-detail" text-anchor="middle">2 cameras</text>
+  <text x="493" y="282" class="component-detail" text-anchor="middle">1 camera</text>
   <text x="493" y="306" class="dim-bold" text-anchor="middle">50 mm</text>
   <text x="493" y="316" class="clip-label" text-anchor="middle">alum clip</text>
 
@@ -188,7 +188,7 @@
   <text x="315" y="418" class="section-title">MOUNTING NOTES</text>
   <text x="315" y="434" class="note-text">1. SPD goes FIRST (leftmost) &#x2014; AC mains hits surge protector before PSU.</text>
   <text x="315" y="448" class="note-text">2. SDR-120-12 is AC-powered. Everything right of it on upper rail is 12V DC.</text>
-  <text x="315" y="462" class="note-text">3. PoE switch powers 2 cameras continuously (no relay duty-cycling).</text>
+  <text x="315" y="462" class="note-text">3. PoE switch powers 1 camera continuously (no relay duty-cycling).</text>
   <text x="315" y="476" class="note-text">4. Pi 5 + G469 via CLIP-RPI DIN adapter. Alum clips for fuse, PoE, modem.</text>
   <text x="315" y="490" class="note-text">5. Route AC wiring upper-left only. 12V DC rest of upper. USB/ETH on lower.</text>
 

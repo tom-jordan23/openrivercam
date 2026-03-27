@@ -12,9 +12,9 @@ Amazon,CPU-009,Proxicast ANT-122-S02 2x2 MIMO LTE Puck Antenna (IP67),,1,$64.95,
 Amazon,CPU-006,MicroSD Card 64G x2 Pack (SanDisk),,1,$26.92,$26.92,https://www.amazon.com/SanDisk-128GB-MicroSDXC-Ultra-Memory/dp/B07XDCZ9J3,,Ordered
 Amazon,CPU-011,Raspberry Pi 5 Active Cooler,,1,$9.90,$9.90,https://www.amazon.com/Raspberry-Pi5-Temperature-Controlled-Aluminium-Dissipation/dp/B0CW164TCW,Matched Sukabumi (Coupa #484671),Ordered
 Amazon,CPU-012,Raspberry Pi 5 RTC Battery (rechargeable ML-2020 JST-SH connector),,2,$5.00,$10.00,https://www.amazon.com/s?k=raspberry+pi+5+RTC+battery,1 for Jakarta + 1 for Sukabumi (forgotten from Sukabumi order),Ordered
-Amazon,CAM-001,ANNKE C1200 PoE IP Camera (12MP 134deg FOV 2-pack),,1,$85.00,$85.00,https://www.amazon.com/ANNKE-Outdoor-Security-Surveillance-Detection/dp/B0CMTHVCV8,"Only one camera - per Hessel, we can manage day/night settings on camera rather than in ORC",Ordered
+Amazon,CAM-001,ANNKE C1200 PoE IP Camera (12MP 134deg FOV 2-pack),,1,$85.00,$85.00,https://www.amazon.com/ANNKE-Outdoor-Security-Surveillance-Detection/dp/B0CMTHVCV8,"1 camera used at Jakarta; 1 spare from 2-pack",Ordered
 Amazon,CAM-003,LINOVISION Industrial 12V PoE Switch (Gigabit IEEE802.3af/at),,1,$85.99,$85.99,https://www.amazon.com/LINOVISION-Industrial-Gigabit-DC12V-48V-IEEE802-3af/dp/B09HGWLZSD,Matched Sukabumi (Coupa #484673) - replaces Planet IPOE-260-12V,Ordered
-Amazon,CAM-004,"Outdoor Cat6 Shielded Cable, UV resistant (10ft)",,4,$5.99,$23.96,https://www.amazon.com/Abireiv-Resistant-Waterproof-Buried-able-Compatible/dp/B09M6GXPBM,10ft should be adequate,Ordered
+Amazon,CAM-004,"Outdoor Cat6 Shielded Cable, UV resistant (10ft)",,2,$5.99,$11.98,https://www.amazon.com/Abireiv-Resistant-Waterproof-Buried-able-Compatible/dp/B09M6GXPBM,1 internal patch + 1 external to camera,Ordered
 Amazon,RELAY-POE,Electronics-Salon DIN Rail 4-SPDT 10A Relay Module 5V,,1,$32.00,$32.00,https://www.amazon.com/Electronics-Salon-Mount-Interface-Module-Version/dp/B00M1MW5BW,Switches 12V to PoE switch; GPIO or passive USB trigger,Ordered
 Amazon,BUCK-5V,Mean Well DDR-60G-5 DIN Rail DC-DC Converter (5V 10.8A 9-36V input),,1,$25.20,$25.20,https://www.amazon.com/MEAN-WELL-DDR-60G-5-Converter-5V10-8A/dp/B07B64RCTR,Converts 12V bus to 5V for Pi + modem + LEDs + rain sensor,Ordered
 Amazon,ENC-001,"VEVOR NEMA 4x box 16""x12""x8""",,1,$75.21,$75.21,https://www.amazon.com/dp/B0924DJGJ9?th=1,Matching Sukabumi box; external battery box sourced locally,Ordered
@@ -26,7 +26,7 @@ Amazon,HUM-HEATER,PTC Heater 15W for Enclosure (hygrostat control),,1,$10.99,$10
 Amazon,HUM-TEMP-PROBES,DS18B20 Waterproof Temperature Probes,,1,$9.99,$9.99,https://www.amazon.com/Temperature-Waterproof-Stainless-Compatible-Raspberry/dp/B0FH4WRN6H,Temp probes for active humidity management,Ordered
 Amazon,FAN-01,40 CFM Fans (2-pack),,1,$15.99,$15.99,https://www.amazon.com/GDSTIME-Bearings-Brushless-Computer-Cooling/dp/B081N7BT4H?th=1,Fans for internal air circulation,Ordered
 Amazon,VIB-01,Neoprene Rubber for Galvanic Isolation,,1,$21.99,$21.99,https://www.amazon.com/Neoprene-Adhesive-Gaskets-Warehouse-Flooring/dp/B09T9F9GJB,"Not sure what mounts we'll end up with, so let's plan for isolation to avoid galvanic rot",Ordered
-Amazon,ETH-BULKHEAD,CNLINKO Weatherproof Ethernet Bulkhead Connectors,,2,$17.88,$35.76,https://www.amazon.com/CNLINKO-Industrial-Connector-Receptacles-Waterproof/dp/B079BWPJNG,IP67 panel mount RJ45 for camera ethernet,Ordered
+Amazon,ETH-BULKHEAD,CNLINKO Weatherproof Ethernet Bulkhead Connector,,1,$17.88,$17.88,https://www.amazon.com/CNLINKO-Industrial-Connector-Receptacles-Waterproof/dp/B079BWPJNG,IP67 panel mount RJ45 for camera ethernet (1 camera),Ordered
 Amazon,DC-BULKHEAD,Uonecn SP13 Weatherproof DC Power Bulkheads (5-pack),,1,$37.99,$37.99,https://www.amazon.com/Uonecn-Waterproof-Connectors-Connector-Circular/dp/B07HQ1K4LJ,IP68 2-pin 13A panel mount for 12V DC power,Ordered
 Amazon,CONS-006,Isopropyl Alcohol 99% (16oz),,1,$8.99,$8.99,https://www.amazon.com/s?k=isopropyl+alcohol+99,Cleaning,Ordered
 Hydreon,RAIN-001,Hydreon RG-15 Optical Rain Gauge (solid-state RS232 TTL 3.3V + pulse output),RG-15,1,$99.00,$99.00,https://store.hydreon.com/RG-15.html,Same as Sukabumi (Hydreon #OEDES-00049484),Ordered
@@ -86,5 +86,5 @@ Local,MISC,"Concrete mix, wire nuts, additional cable ties",,"100,000",$6,,Any h
 ,,,,,,,,,
 COST SUMMARY,,,,,,,,,
 Category,Subtotal,Notes,,,,,,,
-Ordered (shipped),"$1,106.74","DigiKey + Amazon + Adafruit + Hydreon (items with Qty > 0 in jakarta_order.csv). NOTE: jakarta_order.csv states $1863.19 but that total is stale — does not reflect items zeroed out.",,,,,,,
+Ordered (shipped),"$1,076.88","DigiKey + Amazon + Adafruit + Hydreon (updated for 1-camera config). NOTE: jakarta_order.csv states $1863.19 but that total is stale — does not reflect items zeroed out.",,,,,,,
 Local Sourcing (Jakarta),$96-346+,"Grounding, mounting pole, battery system, misc (battery price TBD)",,,,,,,
