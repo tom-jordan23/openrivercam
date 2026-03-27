@@ -57,7 +57,37 @@ enabling if I2C sensors (e.g., SHT40 temp/humidity) are added later.
 
 ## Resolved Issues
 
-*None yet*
+### Issue #3: orc-capture cannot deliver to ~/Videos (permission denied)
+
+**Phase:** Capture testing
+**Date Found:** 2026-03-28
+**Severity:** Blocking
+**Status:** Resolved
+
+#### Symptoms
+
+`mv: cannot create regular file '/home/pi/Videos/video_*.mp4': Permission denied`
+
+`~/Videos` symlinks to `/mnt/usb/incoming/` which was owned by `ftpcam:ftpcam`
+with mode 755. User `pi` (the capture user) had no write permission.
+
+#### Root Cause
+
+FTP incoming directory was created for `ftpcam` only. `orc-capture` runs as `pi`
+and needs write access to the same directory.
+
+#### Resolution
+
+```bash
+sudo usermod -aG ftpcam pi
+sudo chmod 775 /mnt/usb/incoming
+```
+
+Group membership active after next login/reboot.
+
+#### Prevention
+
+For future builds: add `pi` to `ftpcam` group during FTP setup (Phase 6/7).
 
 ---
 

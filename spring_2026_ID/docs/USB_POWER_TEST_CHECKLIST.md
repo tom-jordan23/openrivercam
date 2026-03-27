@@ -186,3 +186,69 @@ Fresh reboot with Samsung FIT removed, DDR-60G-5 → GPIO power.
 | Serial HW | Enabled | /dev/serial0 present | PASS |
 | Undervoltage | None | `0x0` at idle and under load | PASS |
 | PoE relay + camera | Stable | Camera pingable, no power issues | PASS |
+
+## End-to-End Capture Verification (2026-03-28)
+
+Tested `orc-capture` pipeline: relay control → camera boot → RTSP capture → quality gate → delivery.
+
+### Permission Fix Required
+
+`/mnt/usb/incoming/` (symlinked from `~/Videos`) was owned by `ftpcam:ftpcam`
+with mode 755 — user `pi` (the capture user) could not write. Fixed:
+
+```bash
+sudo usermod -aG ftpcam pi   # pi joins ftpcam group
+sudo chmod 775 /mnt/usb/incoming  # group-writable
+```
+
+Group membership takes effect after next login/reboot.
+
+### Test Results
+
+**Run 1 — skip-relay (camera already on):**
+
+| Metric | Result | Threshold | Status |
+|--------|--------|-----------|--------|
+| Resolution | 1920x1080 | 1920x1080 | PASS |
+| Duration | 5.037s | 4-7s | PASS |
+| Bitrate | 16,287 kbps | >12,000 kbps | PASS |
+| Frames | 64 | >40 | PASS |
+| File size | 9.8 MB | — | — |
+| Delivery | `~/Videos/` | — | PASS (after perm fix) |
+
+**Run 2 — skip-relay (repeat):**
+
+| Metric | Result | Threshold | Status |
+|--------|--------|-----------|--------|
+| Bitrate | 17,043 kbps | >12,000 kbps | PASS |
+| Frames | 64 | >40 | PASS |
+| File size | 11 MB | — | — |
+| Delivery | — | — | PASS |
+
+**Run 3 — full cycle (relay off → on → boot → capture → relay off):**
+
+| Phase | Duration |
+|-------|----------|
+| Relay on → camera reachable | 36s |
+| Settle wait | 15s |
+| RTSP capture + quality gate | 6s |
+| **Total active time** | **~68s** |
+
+| Metric | Result | Threshold | Status |
+|--------|--------|-----------|--------|
+| Resolution | 1920x1080 | 1920x1080 | PASS |
+| Duration | 5.037s | 4-7s | PASS |
+| Bitrate | 16,315 kbps | >12,000 kbps | PASS |
+| Frames | 64 | >40 | PASS |
+| File size | 9.8 MB | — | — |
+| Relay off after capture | Yes | — | PASS |
+| `throttled` after cycle | `0x0` | `0x0` | PASS |
+
+**Result: PASS — Full capture pipeline working end-to-end. All 3 runs passed quality gates. No power issues during relay cycling.**
+
+### Notes
+
+- ffmpeg emits cosmetic timestamp warnings during RTSP codec copy — does not affect output quality
+- Camera config enforcement (IR light mode) confirmed on each run
+- Camera boot time ~36s from PoE power-on to pingable (within 45-60s budget)
+- 68s total active time fits well within the 150s budget per 15-minute cycle
