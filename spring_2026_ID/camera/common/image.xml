@@ -78,7 +78,7 @@
     <ns0:mode>WhiteHot</ns0:mode>
   </ns0:Palettes>
   <ns0:SupplementLight version="2.0">
-    <ns0:supplementLightMode>eventIntelligence</ns0:supplementLightMode>
+    <ns0:supplementLightMode>irLight</ns0:supplementLightMode>
     <ns0:mixedLightBrightnessRegulatMode>auto</ns0:mixedLightBrightnessRegulatMode>
     <ns0:whiteLightBrightness>100</ns0:whiteLightBrightness>
     <ns0:irLightBrightness>100</ns0:irLightBrightness>

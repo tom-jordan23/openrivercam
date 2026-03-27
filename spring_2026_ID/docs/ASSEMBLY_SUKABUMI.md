@@ -698,6 +698,17 @@ pushed to the camera as a batch. No web UI needed.
    > with the ANNKE firmware. Push FTP separately via direct ISAPI — see
    > `camera/README.md` for the workaround.
 
+   > **Warning — supplement light reverts on power cycle:** The ANNKE C1200
+   > resets `supplementLightMode` from `irLight` back to `eventIntelligence`
+   > after every reboot. In `eventIntelligence` mode the camera fires bright
+   > **white LEDs** on detected events. The `orc-capture` script re-applies
+   > `irLight` on every wake cycle before capturing video, so this is handled
+   > automatically. If you test the camera manually (without `orc-capture`),
+   > verify the setting with:
+   > ```
+   > curl --digest -u admin:<password> http://192.168.50.139/ISAPI/Image/channels/1 | grep supplementLightMode
+   > ```
+
 5. **Set recording schedule to continuous (CMR):**
    ```bash
    # Get current recording config

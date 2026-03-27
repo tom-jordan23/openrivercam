@@ -305,6 +305,13 @@ mounted first (above) since camera uploads land on it.
   ```
   This sets: 1920x1080 H.264 at 16 Mbps CBR, 12.5fps, audio off, IR-only
   illumination, motion detection off, NTP from Pi, WIB timezone, FTP to Pi.
+
+  > **Warning — supplement light reverts on power cycle:** The ANNKE C1200
+  > resets `supplementLightMode` from `irLight` to `eventIntelligence` after
+  > every reboot, causing bright white LED flashes. The `orc-capture` script
+  > re-applies `irLight` automatically on each wake cycle. If testing manually,
+  > verify with: `curl --digest -u admin:<password> http://<cam-ip>/ISAPI/Image/channels/1 | grep supplementLightMode`
+
 - [ ] Set recording schedule to continuous (CMR) on each camera:
   ```bash
   # For each camera IP (192.168.50.101, .102):

@@ -271,6 +271,41 @@ else
     fail "poe-relay not found in PATH"
 fi
 
+# QEMU udev rules (leftover from image building — breaks mmcblk0p1 on real Pi)
+QEMU_RULES="/etc/udev/rules.d/90-qemu.rules"
+if [ -f "$QEMU_RULES" ]; then
+    fail "Stale QEMU udev rules found ($QEMU_RULES) — clobbers mmcblk0p1 device node"
+    echo "         Remove with: sudo rm $QEMU_RULES"
+    if [ "$FIX" -eq 1 ]; then
+        echo "  ... removing $QEMU_RULES"
+        sudo rm "$QEMU_RULES"
+        sudo udevadm trigger && sudo udevadm settle
+    fi
+else
+    pass "No stale QEMU udev rules"
+fi
+
+# Boot firmware partition must be mounted for config.txt access
+if mountpoint -q /boot/firmware 2>/dev/null; then
+    pass "/boot/firmware mounted"
+else
+    fail "/boot/firmware not mounted (config.txt inaccessible)"
+    # Check if device node is a symlink (qemu rules symptom)
+    if [ -L /dev/mmcblk0p1 ]; then
+        echo "         /dev/mmcblk0p1 is a symlink (should be block device) — see 90-qemu.rules check above"
+    fi
+    if [ "$FIX" -eq 1 ]; then
+        echo "  ... attempting mount"
+        # Recreate device nodes if missing or symlinked
+        if [ ! -b /dev/mmcblk0p1 ]; then
+            sudo rm -f /dev/mmcblk0 /dev/mmcblk0p1
+            sudo mknod /dev/mmcblk0 b 179 0 2>/dev/null
+            sudo mknod /dev/mmcblk0p1 b 179 1 2>/dev/null
+        fi
+        sudo mount /boot/firmware 2>/dev/null && pass "  mounted successfully" || fail "  mount failed"
+    fi
+fi
+
 # RTC battery charging (Pi 5 ships with charging disabled — must enable for ML-2020)
 CONFIG_TXT="/boot/firmware/config.txt"
 RTC_PARAM="dtparam=rtc_bbat_vchg=3000000"
@@ -446,6 +481,37 @@ if [ -n "$ETH0_IP" ]; then
             warn "Camera at $cam_ip: not reachable (may still be booting)"
         fi
     done
+
+    # Camera supplement light check (only if camera is reachable)
+    # The ANNKE C1200 reverts supplementLightMode to eventIntelligence on
+    # power cycle, which causes bright white LED flashes at night.
+    CAM_PASS=""
+    for f in ~/.orc_deploy_*; do
+        if [ -f "$f" ]; then
+            # shellcheck disable=SC1090
+            CAM_PASS=$(grep "^BASE_PASSWD=" "$f" 2>/dev/null | cut -d= -f2)
+            break
+        fi
+    done
+    if [ -n "$CAM_PASS" ]; then
+        for cam_ip in $DNSMASQ_HOSTS; do
+            if ping -c 1 -W 1 "$cam_ip" >/dev/null 2>&1; then
+                LIGHT_MODE=$(curl -s --digest -u "admin:${CAM_PASS}" \
+                    "http://${cam_ip}/ISAPI/Image/channels/1" 2>/dev/null \
+                    | grep -o '<supplementLightMode>[^<]*</supplementLightMode>' \
+                    | sed 's/<[^>]*>//g')
+                if [ "$LIGHT_MODE" = "irLight" ]; then
+                    pass "Camera $cam_ip: supplement light = irLight"
+                elif [ -n "$LIGHT_MODE" ]; then
+                    fail "Camera $cam_ip: supplement light = $LIGHT_MODE (should be irLight)"
+                    echo "         White LEDs may flash at night. orc-capture fixes this on each cycle."
+                    if [ "$FIX" -eq 1 ]; then
+                        echo "  ... run: orc-capture --skip-relay --dry-run (to enforce irLight)"
+                    fi
+                fi
+            fi
+        done
+    fi
 fi
 
 # ─── Summary ──────────────────────────────────────────────────────────

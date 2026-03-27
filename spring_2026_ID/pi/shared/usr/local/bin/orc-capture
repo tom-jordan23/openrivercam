@@ -145,6 +145,45 @@ wait_for_camera() {
     return 1
 }
 
+# ─── Camera config enforcement ───────────────────────────────────────
+# Some ANNKE C1200 settings revert after power cycle. Re-apply critical
+# settings via ISAPI on each boot to prevent white light flashing etc.
+
+enforce_camera_config() {
+    log "Enforcing camera config (supplement light → IR only)..."
+
+    local response
+    response=$(curl -s --digest -u "${CAMERA_USER}:${CAMERA_PASS}" \
+        "http://${CAMERA_IP}/ISAPI/Image/channels/1" 2>/dev/null)
+
+    if [ -z "$response" ]; then
+        warn "Could not read camera image config — skipping enforcement"
+        return
+    fi
+
+    # Check if supplementLightMode needs fixing
+    if echo "$response" | grep -q "<supplementLightMode>irLight</supplementLightMode>"; then
+        log "  Supplement light already set to irLight"
+        return
+    fi
+
+    # Replace and push
+    local fixed
+    fixed=$(echo "$response" | sed 's|<supplementLightMode>[^<]*</supplementLightMode>|<supplementLightMode>irLight</supplementLightMode>|')
+
+    local result
+    result=$(curl -s --digest -u "${CAMERA_USER}:${CAMERA_PASS}" \
+        -X PUT -H "Content-Type: application/xml" \
+        -d "$fixed" \
+        "http://${CAMERA_IP}/ISAPI/Image/channels/1" 2>/dev/null)
+
+    if echo "$result" | grep -q "OK"; then
+        log "  Fixed: supplementLightMode → irLight"
+    else
+        warn "  Failed to set supplementLightMode"
+    fi
+}
+
 # ─── Capture ─────────────────────────────────────────────────────────
 
 capture_video() {
@@ -273,7 +312,10 @@ main() {
         exit 1
     fi
 
-    # Step 3: Capture with retries
+    # Step 3: Enforce camera settings that revert on power cycle
+    enforce_camera_config
+
+    # Step 4: Capture with retries
     local attempt=0
     local success=0
     local timestamp filename tmpfile
