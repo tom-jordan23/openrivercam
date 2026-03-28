@@ -677,17 +677,41 @@ rail terminal blocks.
     - F3: 5A — Pi/DDR-60G-5 feed (already installed)
     - F4: 5A — Heater/fan feed
 
-### Step 7: Install PoE System (30 min)
+### Step 7: Wire Relay Module and PoE System (30 min)
 
 **Wire spec:** Use solid core wire (18-22 AWG) for all internal DIN rail wiring.
 
-1. **Wire relay module (via Geekworm G469 terminals):**
-   - Relay VCC -> G469 Pin 4 (5V)
-   - Relay GND -> G469 Pin 20 (GND)
-   - GPIO 24 (Pin 18) -> IN1 (PoE switch power)
-   - GPIO 17 (Pin 11) -> IN2 (Green LED)
-   - GPIO 27 (Pin 13) -> IN3 (Yellow LED)
-   - GPIO 22 (Pin 15) -> IN4 (Red LED)
+**Wire routing:** Route all DC low-voltage wires (5V, GPIO signals) **over the
+top of the upper DIN rail**. Keep them physically separated from the AC mains
+wiring that runs between the two rails. This prevents accidental contact
+between AC and DC during service and makes it easy to visually trace each
+domain.
+
+1. **Wire relay module input side (via Geekworm G469 terminals):**
+
+   | Wire | From (G469) | To (Relay) | Color | Gauge |
+   |------|-------------|------------|-------|-------|
+   | 6 | Pin 4 — 5V | VCC | Yellow | 22 AWG solid |
+   | 7 | Pin 20 — GND | GND | Black | 22 AWG solid |
+   | 8 | Pin 18 — GPIO 24 | IN1 (PoE) | Blue | 22 AWG solid |
+   | 9 | Pin 11 — GPIO 17 | IN2 (Green LED) | Green | 22 AWG solid |
+   | 10 | Pin 13 — GPIO 27 | IN3 (Yellow LED) | Blue stripe | 22 AWG solid |
+   | 11 | Pin 15 — GPIO 22 | IN4 (Red LED) | Green stripe | 22 AWG solid |
+
+   **Relay input continuity checks (AC unplugged):**
+
+   Should beep:
+   - [ ] G469 Pin 4 ↔ Relay VCC — beep
+   - [ ] G469 Pin 20 ↔ Relay GND — beep
+   - [ ] G469 Pin 18 ↔ Relay IN1 — beep
+   - [ ] G469 Pin 11 ↔ Relay IN2 — beep
+   - [ ] G469 Pin 13 ↔ Relay IN3 — beep
+   - [ ] G469 Pin 15 ↔ Relay IN4 — beep
+
+   Should NOT beep:
+   - [ ] Relay VCC ↔ Relay GND — **NO beep**
+   - [ ] Any IN terminal ↔ any other IN terminal — **NO beep**
+   - [ ] Any IN terminal ↔ VCC or GND — **NO beep**
 
 2. **Wire PoE switch power through fuse and relay:**
    - 12V+ from TB1 -> inline fuse (5A) -> relay CH1 COM input

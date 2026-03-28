@@ -663,6 +663,26 @@ GROUND RESISTANCE: Measure with multimeter
 
 ---
 
+## Wire Routing
+
+Route all DC low-voltage wires (5V power, GPIO signals, sensor cables)
+**over the top of the upper DIN rail**. AC mains wiring (L, N, PE) runs
+**between the two rails** only. This physical separation:
+- Prevents accidental contact between 220V AC and DC during service
+- Makes each voltage domain visually distinct and easy to trace
+- Reduces the chance of a wiring error during future maintenance
+
+```
+  [UPPER RAIL — 12V DC components]
+         --- DC low-voltage wires route OVER the top ---
+
+         --- AC mains wires route BETWEEN rails only ---
+
+  [LOWER RAIL — AC power components]
+```
+
+---
+
 ## Wire Gauge Spec
 
 | Domain | Gauge | Type | Standard |
