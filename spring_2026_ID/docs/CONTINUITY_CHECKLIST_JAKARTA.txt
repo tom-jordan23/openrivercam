@@ -1,0 +1,127 @@
+JAKARTA STATION — PRE-POWER CONTINUITY CHECKLIST
+==================================================
+Date: ____________    Technician: ____________
+
+Instructions: Use multimeter in continuity (beep) mode.
+Mark PASS or FAIL for each test. ALL must pass before powering on.
+AC cord must be UNPLUGGED from wall for all tests.
+
+
+SECTION 1: AC WIRING (should beep)
+------------------------------------
+[ ] AC cord L wire      <-->  L terminal block           ___PASS ___FAIL
+[ ] L terminal block    <-->  PSU L terminal             ___PASS ___FAIL
+[ ] L terminal block    <-->  Surge suppressor L         ___PASS ___FAIL
+[ ] AC cord N wire      <-->  N terminal block           ___PASS ___FAIL
+[ ] N terminal block    <-->  PSU N terminal             ___PASS ___FAIL
+[ ] N terminal block    <-->  Surge suppressor N         ___PASS ___FAIL
+[ ] AC cord PE wire     <-->  PE terminal block          ___PASS ___FAIL
+[ ] PE terminal block   <-->  Surge suppressor PE        ___PASS ___FAIL
+
+AC cord plug end:
+[ ] Narrow blade (hot)  <-->  L terminal block           ___PASS ___FAIL
+[ ] Wide blade (neutral)<-->  N terminal block           ___PASS ___FAIL
+[ ] Round prong (ground)<-->  PE terminal block          ___PASS ___FAIL
+
+
+SECTION 2: AC SHORT CHECKS (should NOT beep)
+----------------------------------------------
+[ ] L terminal block    <-->  N terminal block           ___PASS(silent) ___FAIL(beep)
+[ ] L terminal block    <-->  PE terminal block          ___PASS(silent) ___FAIL(beep)
+[ ] N terminal block    <-->  PE terminal block          ___PASS(silent) ___FAIL(beep)
+[ ] PSU L               <-->  PSU N                      ___PASS(silent) ___FAIL(beep)
+
+
+SECTION 3: 12V DISTRIBUTION (should beep)
+-------------------------------------------
+[ ] PSU V+              <-->  TB1 12V+                   ___PASS ___FAIL
+[ ] PSU V-              <-->  TB1 GND                    ___PASS ___FAIL
+
+
+SECTION 4: AC/DC ISOLATION (should NOT beep)
+----------------------------------------------
+*** CRITICAL — DC ground must be floating, NOT connected to AC earth ***
+
+[ ] TB1 12V+            <-->  L terminal block           ___PASS(silent) ___FAIL(beep)
+[ ] TB1 12V+            <-->  N terminal block           ___PASS(silent) ___FAIL(beep)
+[ ] TB1 12V+            <-->  PE terminal block          ___PASS(silent) ___FAIL(beep)
+[ ] TB1 GND             <-->  PE terminal block          ___PASS(silent) ___FAIL(beep)
+[ ] TB1 GND             <-->  L terminal block           ___PASS(silent) ___FAIL(beep)
+[ ] TB1 GND             <-->  N terminal block           ___PASS(silent) ___FAIL(beep)
+
+
+SECTION 5: 5V POWER INPUT (should beep)
+-----------------------------------------
+[ ] TB1 12V+            <-->  F3 fuse holder input       ___PASS ___FAIL
+[ ] F3 fuse output      <-->  DDR-60G-5 V+ input        ___PASS ___FAIL
+[ ] TB1 GND             <-->  DDR-60G-5 V- input        ___PASS ___FAIL
+[ ] DDR-60G-5 V+ out    <-->  G469 Pin 2 (5V)           ___PASS ___FAIL
+[ ] DDR-60G-5 V- out    <-->  G469 Pin 25 (GND)         ___PASS ___FAIL
+
+
+SECTION 6: 5V SHORT CHECKS (should NOT beep)
+----------------------------------------------
+[ ] G469 Pin 2 (5V)     <-->  G469 Pin 25 (GND)         ___PASS(silent) ___FAIL(beep)
+[ ] DDR-60G-5 V+ in     <-->  DDR-60G-5 V- in           ___PASS(silent) ___FAIL(beep)
+[ ] TB1 12V+            <-->  G469 Pin 2 (5V)           ___PASS(silent) ___FAIL(beep)
+
+
+SECTION 7: RELAY LOGIC (should beep)
+--------------------------------------
+[ ] G469 Pin 4 (5V)     <-->  Relay VCC                  ___PASS ___FAIL
+[ ] G469 Pin 20 (GND)   <-->  Relay GND                  ___PASS ___FAIL
+[ ] G469 Pin 18 (GPIO 24)<--> Relay IN1                  ___PASS ___FAIL
+[ ] G469 Pin 11 (GPIO 17)<--> Relay IN2                  ___PASS ___FAIL
+[ ] G469 Pin 13 (GPIO 27)<--> Relay IN3                  ___PASS ___FAIL
+[ ] G469 Pin 15 (GPIO 22)<--> Relay IN4                  ___PASS ___FAIL
+
+
+SECTION 8: RELAY SHORT CHECKS (should NOT beep)
+-------------------------------------------------
+[ ] Relay VCC            <-->  Relay GND                  ___PASS(silent) ___FAIL(beep)
+[ ] Relay IN1            <-->  Relay IN2                  ___PASS(silent) ___FAIL(beep)
+[ ] Relay IN1            <-->  Relay VCC                  ___PASS(silent) ___FAIL(beep)
+[ ] Relay IN1            <-->  Relay GND                  ___PASS(silent) ___FAIL(beep)
+
+
+SECTION 9: 12V POE PATH (should beep)
+---------------------------------------
+[ ] TB1 12V+            <-->  F2 fuse holder input       ___PASS ___FAIL
+[ ] F2 fuse output      <-->  Relay CH1 COM              ___PASS ___FAIL
+[ ] TB1 12V+            <-->  Relay CH1 COM (w/fuse)     ___PASS ___FAIL
+[ ] Relay CH1 NO        <-->  PoE switch 12V (+)         ___PASS ___FAIL
+[ ] TB1 GND             <-->  PoE switch GND (-)         ___PASS ___FAIL
+
+
+SECTION 10: 12V POE SHORT CHECKS (should NOT beep)
+----------------------------------------------------
+[ ] Relay CH1 COM       <-->  Relay CH1 NO               ___PASS(silent) ___FAIL(beep)
+[ ] PoE switch 12V (+)  <-->  PoE switch GND (-)         ___PASS(silent) ___FAIL(beep)
+
+
+SECTION 11: 12V ISOLATION FROM PI GPIO (should NOT beep)
+---------------------------------------------------------
+*** IF ANY OF THESE BEEP, STOP. DO NOT POWER ON. ***
+*** 12V on a GPIO pin will destroy the Pi instantly. ***
+
+[ ] TB1 12V+  <-->  DDR-60G-5 V+ output                 ___PASS(silent) ___FAIL(beep)
+[ ] TB1 12V+  <-->  G469 Pin 2 (5V)                     ___PASS(silent) ___FAIL(beep)
+[ ] TB1 12V+  <-->  G469 Pin 3 (GPIO 2)                 ___PASS(silent) ___FAIL(beep)
+[ ] TB1 12V+  <-->  G469 Pin 4 (5V)                     ___PASS(silent) ___FAIL(beep)
+[ ] TB1 12V+  <-->  G469 Pin 5 (GPIO 3)                 ___PASS(silent) ___FAIL(beep)
+[ ] TB1 12V+  <-->  G469 Pin 8 (GPIO 14)                ___PASS(silent) ___FAIL(beep)
+[ ] TB1 12V+  <-->  G469 Pin 10 (GPIO 15)               ___PASS(silent) ___FAIL(beep)
+[ ] TB1 12V+  <-->  G469 Pin 11 (GPIO 17)               ___PASS(silent) ___FAIL(beep)
+[ ] TB1 12V+  <-->  G469 Pin 13 (GPIO 27)               ___PASS(silent) ___FAIL(beep)
+[ ] TB1 12V+  <-->  G469 Pin 15 (GPIO 22)               ___PASS(silent) ___FAIL(beep)
+[ ] TB1 12V+  <-->  G469 Pin 18 (GPIO 24)               ___PASS(silent) ___FAIL(beep)
+
+
+SIGN-OFF
+--------
+All BEEP sections pass (1,3,5,7,9):       [ ] YES  [ ] NO
+All SILENT sections pass (2,4,6,8,10,11): [ ] YES  [ ] NO
+
+SAFE TO POWER ON:  [ ] YES  [ ] NO — DO NOT PROCEED
+
+Signature: ________________________  Date: ____________
