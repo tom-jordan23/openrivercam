@@ -130,11 +130,23 @@ dmesg | grep -c "nonzero urb status"
 
 ### 7. Timezone
 
+> **WARNING: Do NOT change the timezone from UTC.** The Rainbow Sensing image
+> ships with GMT0/UTC as the default. If the timezone is changed to a regional
+> zone (e.g. `Asia/Jakarta`), the ORC API passes the abbreviation (e.g. "WIB")
+> to the frontend via `Intl.DateTimeFormat`. Browsers do not recognize these
+> abbreviations and the frontend crashes with a white screen.
+
 ```bash
 timedatectl | grep "Time zone"
 ```
 
-- [ ] Time zone: Asia/Jakarta (WIB, +0700)
+- [ ] Time zone: Etc/UTC (UTC, +0000)
+
+**If timezone is NOT UTC**, fix with:
+```bash
+sudo timedatectl set-timezone UTC
+```
+Then reboot or restart orc-api (`sudo systemctl restart orc-api`).
 
 ### 8. PoE Relay and Camera
 
