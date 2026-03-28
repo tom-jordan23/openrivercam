@@ -253,15 +253,15 @@ POWER PATH LOGIC:
             +--[FUSE 5A]---> PTC HEATER (via hygrostat) + FANS
 
 
-FUSE SPECIFICATIONS:
+FUSE SPECIFICATIONS (3 fuse holders):
 +-----------------------------------------------------------------------------+
 |  FUSE        |  RATING  |  PROTECTS                                        |
 +--------------+----------+----------------------------------------------------+
-|  F1 (Main)   |  15A     |  Entire 12V bus from battery/PSU                 |
-|  F2 (PoE)    |  5A      |  Fuse + Relay + PoE switch (1 camera, ~20W max)  |
+|  F2 (PoE)    |  5A      |  Relay + PoE switch (1 camera, ~20W max)         |
 |  F3 (Pi)     |  5A      |  DDR-60G-5 + Pi (25W max = 2A, plus margin)     |
 |  F4 (Heater) |  5A      |  PTC heater + fans (25W max, plus margin)       |
 +-----------------------------------------------------------------------------+
+F1 (15A main bus fuse) removed — redundant with 3 branches all at 5A.
 ```
 
 ---
