@@ -57,8 +57,6 @@ contains a real file.
 | `shared/etc/systemd/system/orc-capture.service` | `/etc/systemd/system/orc-capture.service` | Oneshot service: runs orc-capture on each boot (conflicts with orc-gpio-relays) | Shared | No | No |
 | `shared/update-motd.d/30-camera-status` | `/etc/update-motd.d/30-camera-status` | Dynamic MOTD: relay status, RTC battery, eth0 IP, camera reachability | Shared | No | No |
 | `shared/etc/chrony/conf.d/camera-net.conf` | `/etc/chrony/conf.d/camera-net.conf` | NTP server for camera network (Pi serves time to cameras) | Shared | No | Yes |
-| `shared/etc/vsftpd.conf` | `/etc/vsftpd.conf` | FTP server config for camera uploads (chroot, userlist, passive mode) | Shared | No | Yes |
-| `shared/etc/vsftpd.userlist` | `/etc/vsftpd.userlist` | Allowed FTP users (ftpcam only) | Shared | No | Yes |
 | `sukabumi/etc/cloud/templates/hosts.debian.tmpl` | `/etc/cloud/templates/hosts.debian.tmpl` | Hosts file template with camera hostname | Sukabumi | No | No |
 | `sukabumi/etc/NetworkManager/system-connections/camera-net.nmconnection` | `/etc/NetworkManager/system-connections/camera-net.nmconnection` | Static IP (192.168.50.1) for eth0 camera network | Sukabumi | No | No |
 
