@@ -29,7 +29,6 @@ All fuses are **5x20mm glass tube** type. Do NOT use US automotive blade fuses
 
 | Fuse | Rating | Protects | What Happens If It Blows |
 |------|--------|----------|--------------------------|
-| F1 (Main) | 15A | Entire 12V bus from PSU/battery | Everything loses power |
 | F2 (PoE) | 5A | Relay CH1 and PoE switch | Camera loses power, Pi stays running |
 | F3 (Pi) | 5A | DDR-60G-5 buck converter and Pi | Pi loses power |
 | F4 (Heater) | 5A | PTC heater and fans | Climate control stops, system continues |

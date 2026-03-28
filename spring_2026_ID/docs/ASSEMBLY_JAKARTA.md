@@ -703,18 +703,47 @@ rail terminal blocks.
     ```
     Battery BMS handles low-voltage cutoff automatically.
 
-12. **Install DDR-60G-5 buck converter:**
-   ```
-   TB1 12V+ --[FUSE 5A]--> DDR-60G-5 input (+)
-   TB1 GND --> DDR-60G-5 input (-)
-   DDR-60G-5 output (5V) --> hardwired 5V/GND --> Pi 5 GPIO pins
-   ```
+12. **Wire DDR-60G-5 buck converter:**
 
-13. **Install fuses:**
-   - Main 12V feed: 15A fuse
-   - PoE relay/switch feed: 5A fuse (1 camera draws less current than 2)
-   - Pi/DDR-60G-5 feed: 5A fuse
-   - Heater/fan feed: 5A fuse
+    **Input (12V from TB1 through fuse):**
+
+    | Wire | From | To | Color | Gauge |
+    |------|------|----|-------|-------|
+    | 1 | TB1 12V+ | Fuse holder input (F3) | Red | 18 AWG solid |
+    | 2 | Fuse holder output (F3) | DDR-60G-5 V+ input | Red | 18 AWG solid |
+    | 3 | TB1 GND | DDR-60G-5 V- input | Black | 18 AWG solid |
+
+    **Trim output voltage:**
+    - Install 5A fuse in F3
+    - Power on AC
+    - Measure DDR-60G-5 output with multimeter — adjust trim pot to **5.10V**
+    - Power off AC
+
+    **Output (5V to Pi via G469):**
+
+    | Wire | From | To | Color | Gauge |
+    |------|------|----|-------|-------|
+    | 4 | DDR-60G-5 V+ output | G469 Pin 2 (5V) | Yellow | 18 AWG solid |
+    | 5 | DDR-60G-5 V- output | G469 Pin 25 (GND) | Black | 18 AWG solid |
+
+    **Continuity checks (AC unplugged):**
+
+    Should beep:
+    - [ ] TB1 12V+ ↔ Fuse holder input — beep
+    - [ ] Fuse holder output ↔ DDR-60G-5 V+ input — beep
+    - [ ] TB1 GND ↔ DDR-60G-5 V- input — beep
+    - [ ] DDR-60G-5 V+ output ↔ G469 Pin 2 — beep
+    - [ ] DDR-60G-5 V- output ↔ G469 Pin 25 — beep
+
+    Should NOT beep:
+    - [ ] G469 Pin 2 ↔ G469 Pin 25 — **NO beep**
+    - [ ] TB1 12V+ ↔ G469 Pin 2 — **NO beep** (12V/5V isolation)
+    - [ ] DDR-60G-5 V+ input ↔ V- input — **NO beep**
+
+13. **Fuse summary (3 fuse holders):**
+    - F2: 5A — PoE relay/switch feed
+    - F3: 5A — Pi/DDR-60G-5 feed (already installed)
+    - F4: 5A — Heater/fan feed
 
 ### Step 7: Install PoE System (30 min)
 
