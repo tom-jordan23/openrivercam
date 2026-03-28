@@ -28,32 +28,49 @@
 #   orc-capture --dry-run          # capture and validate, don't deliver
 #   orc-capture --skip-relay       # don't toggle PoE (camera already on)
 #
-# Environment / config:
-#   Reads camera credentials from ~/.orc_deploy_<site> or env vars.
-#   CAMERA_IP, CAMERA_USER, CAMERA_PASS, ORC_INCOMING_DIRECTORY
+# Configuration:
+#   /etc/orc-capture.conf    — all capture settings (see file for docs)
+#   ~/.orc_deploy_<site>     — camera credentials (CAMERA_PASS / BASE_PASSWD)
+#   ORC_CAPTURE_CONF env var — point to alternate config file for testing
 
 set -o pipefail
 
-# ─── Defaults ────────────────────────────────────────────────────────
+# ─── Load configuration ─────────────────────────────────────────────
+# Config file is the single source of truth. To override for testing,
+# point ORC_CAPTURE_CONF to a different file.
+
+ORC_CAPTURE_CONF="${ORC_CAPTURE_CONF:-/etc/orc-capture.conf}"
+if [ -f "$ORC_CAPTURE_CONF" ]; then
+    # shellcheck disable=SC1090
+    source "$ORC_CAPTURE_CONF"
+fi
+
+# ─── Defaults (for any values not set by the config file) ───────────
 
 CAMERA_IP="${CAMERA_IP:-192.168.50.139}"
 CAMERA_USER="${CAMERA_USER:-admin}"
 CAMERA_PASS="${CAMERA_PASS:-}"
-INCOMING_DIR="${ORC_INCOMING_DIRECTORY:-/home/pi/Videos}"
-
-CAPTURE_DURATION=5          # seconds of video to capture
-CAMERA_BOOT_TIMEOUT=90      # max seconds to wait for camera
-CAMERA_SETTLE_TIME=15       # seconds after ping before capture (RTSP takes longer than ping)
-MAX_RETRIES=3               # retry attempts on quality gate failure
-RETRY_DELAY=5               # seconds between retries
-
-# Quality gate thresholds
-MIN_BITRATE_KBPS=12000      # 12 Mbps minimum
-EXPECTED_WIDTH=1920
-EXPECTED_HEIGHT=1080
-MIN_DURATION=4.0            # seconds
-MAX_DURATION=7.0            # seconds
-MIN_FRAMES=40               # ~12.5fps × 4s minimum
+RTSP_PORT="${RTSP_PORT:-554}"
+RTSP_PATH="${RTSP_PATH:-Streaming/Channels/101}"
+CAPTURE_DURATION="${CAPTURE_DURATION:-5}"
+VIDEO_FORMAT="${VIDEO_FORMAT:-mp4}"
+VIDEO_CODEC="${VIDEO_CODEC:-copy}"
+VIDEO_AUDIO="${VIDEO_AUDIO:-0}"
+INCOMING_DIR="${ORC_INCOMING_DIRECTORY:-${INCOMING_DIR:-/home/pi/Videos}}"
+FILENAME_PREFIX="${FILENAME_PREFIX:-video}"
+TEMP_DIR="${TEMP_DIR:-/tmp}"
+CAMERA_BOOT_TIMEOUT="${CAMERA_BOOT_TIMEOUT:-90}"
+CAMERA_SETTLE_TIME="${CAMERA_SETTLE_TIME:-15}"
+MAX_RETRIES="${MAX_RETRIES:-3}"
+RETRY_DELAY="${RETRY_DELAY:-5}"
+MIN_BITRATE_KBPS="${MIN_BITRATE_KBPS:-12000}"
+EXPECTED_WIDTH="${EXPECTED_WIDTH:-1920}"
+EXPECTED_HEIGHT="${EXPECTED_HEIGHT:-1080}"
+MIN_DURATION="${MIN_DURATION:-4.0}"
+MAX_DURATION="${MAX_DURATION:-7.0}"
+MIN_FRAMES="${MIN_FRAMES:-40}"
+ISAPI_CHANNEL="${ISAPI_CHANNEL:-/ISAPI/Image/channels/1}"
+SUPPLEMENT_LIGHT_MODE="${SUPPLEMENT_LIGHT_MODE:-irLight}"
 
 DRY_RUN=0
 SKIP_RELAY=0
@@ -150,11 +167,11 @@ wait_for_camera() {
 # settings via ISAPI on each boot to prevent white light flashing etc.
 
 enforce_camera_config() {
-    log "Enforcing camera config (supplement light → IR only)..."
+    log "Enforcing camera config (supplement light → ${SUPPLEMENT_LIGHT_MODE})..."
 
     local response
     response=$(curl -s --digest -u "${CAMERA_USER}:${CAMERA_PASS}" \
-        "http://${CAMERA_IP}/ISAPI/Image/channels/1" 2>/dev/null)
+        "http://${CAMERA_IP}${ISAPI_CHANNEL}" 2>/dev/null)
 
     if [ -z "$response" ]; then
         warn "Could not read camera image config — skipping enforcement"
@@ -162,23 +179,23 @@ enforce_camera_config() {
     fi
 
     # Check if supplementLightMode needs fixing
-    if echo "$response" | grep -q "<supplementLightMode>irLight</supplementLightMode>"; then
-        log "  Supplement light already set to irLight"
+    if echo "$response" | grep -q "<supplementLightMode>${SUPPLEMENT_LIGHT_MODE}</supplementLightMode>"; then
+        log "  Supplement light already set to ${SUPPLEMENT_LIGHT_MODE}"
         return
     fi
 
     # Replace and push
     local fixed
-    fixed=$(echo "$response" | sed 's|<supplementLightMode>[^<]*</supplementLightMode>|<supplementLightMode>irLight</supplementLightMode>|')
+    fixed=$(echo "$response" | sed "s|<supplementLightMode>[^<]*</supplementLightMode>|<supplementLightMode>${SUPPLEMENT_LIGHT_MODE}</supplementLightMode>|")
 
     local result
     result=$(curl -s --digest -u "${CAMERA_USER}:${CAMERA_PASS}" \
         -X PUT -H "Content-Type: application/xml" \
         -d "$fixed" \
-        "http://${CAMERA_IP}/ISAPI/Image/channels/1" 2>/dev/null)
+        "http://${CAMERA_IP}${ISAPI_CHANNEL}" 2>/dev/null)
 
     if echo "$result" | grep -q "OK"; then
-        log "  Fixed: supplementLightMode → irLight"
+        log "  Fixed: supplementLightMode → ${SUPPLEMENT_LIGHT_MODE}"
     else
         warn "  Failed to set supplementLightMode"
     fi
@@ -191,11 +208,15 @@ capture_video() {
 
     log "Capturing ${CAPTURE_DURATION}s via RTSP (TCP, codec copy)..."
 
+    local audio_flag=""
+    [ "$VIDEO_AUDIO" -eq 0 ] && audio_flag="-an"
+
     ffmpeg -y -hide_banner -loglevel warning \
         -rtsp_transport tcp \
-        -i "rtsp://${CAMERA_USER}:${CAMERA_PASS}@${CAMERA_IP}:554/Streaming/Channels/101" \
+        -i "rtsp://${CAMERA_USER}:${CAMERA_PASS}@${CAMERA_IP}:${RTSP_PORT}/${RTSP_PATH}" \
         -t "$CAPTURE_DURATION" \
-        -c:v copy -an \
+        -c:v "$VIDEO_CODEC" $audio_flag \
+        -f "$VIDEO_FORMAT" \
         "$outfile" 2>&1
 
     return $?
@@ -324,8 +345,8 @@ main() {
         attempt=$((attempt + 1))
 
         timestamp=$(date +%Y%m%d_%H%M%S)
-        filename="video_${timestamp}.mp4"
-        tmpfile="/tmp/orc_capture_${timestamp}.mp4"
+        filename="${FILENAME_PREFIX}_${timestamp}.${VIDEO_FORMAT}"
+        tmpfile="${TEMP_DIR}/orc_capture_${timestamp}.${VIDEO_FORMAT}"
 
         log "Attempt $attempt/$MAX_RETRIES: capturing as $filename"
 
