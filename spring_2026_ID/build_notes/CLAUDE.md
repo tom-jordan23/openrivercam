@@ -130,7 +130,7 @@ The build proceeds in phases. Each phase has verification criteria that must pas
 | 8 | Rain gauge setup | Phase 4 | |
 | 9 | Status LEDs & button | Phase 4 | |
 | 10 | Enclosure assembly | Phases 3-9 | |
-| 11 | ORC software installation | Phase 10 | NodeORC + FTP capture + LiveORC connectivity |
+| 11 | ORC software installation | Phase 10 | NodeORC + RTSP capture (orc-capture) + LiveORC connectivity |
 | 12 | Integration testing | Phase 11 | **Test Pangolin remote access** |
 | 13 | Power budget verification | Phase 12 | |
 | 14 | Schedule testing | Phase 13 | Verify LiveORC polling on wake |

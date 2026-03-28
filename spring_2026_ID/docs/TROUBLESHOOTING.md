@@ -184,26 +184,26 @@ START: No video capture
      │             │
      ▼             ▼
 ┌──────────────┐  ┌────────────────────┐
-│ Check PoE    │  │ Test FTP upload:   │
-│ switch:      │  │ Trigger snapshot   │
-│ - 12V input? │  │ from camera, check │
-│ - LED on?    │  │ Pi FTP directory   │
-│ - Relay GPIO │  │ for new files      │
+│ Check PoE    │  │ Test RTSP capture: │
+│ switch:      │  │ orc-capture        │
+│ - 12V input? │  │   --skip-relay     │
+│ - LED on?    │  │   --dry-run        │
+│ - Relay GPIO │  │                    │
 │   wiring?    │  │                    │
 └──────┬───────┘  └─────────┬──────────┘
        │                    │
   ┌────┴────┐         ┌─────┴─────┐
   │         │         │           │
-No LED    LED on    No files   Files OK
+No LED    LED on    QG FAIL   QG PASS
   │         │         │           │
   ▼         ▼         ▼           ▼
 ┌─────┐  ┌────────┐ ┌───────┐  ┌────────┐
 │Check│  │Check   │ │Check  │  │Camera  │
-│12V  │  │Cat6    │ │camera │  │OK,     │
-│fuse │  │cable & │ │FTP    │  │check   │
+│12V  │  │Cat6    │ │RTSP   │  │OK,     │
+│fuse │  │cable & │ │stream │  │check   │
 │& PoE│  │CNLINKO │ │config │  │ORC     │
-│sw   │  │connect-│ │& Pi   │  │config  │
-│power│  │ions    │ │FTP svc│  └────────┘
+│sw   │  │connect-│ │& cam  │  │config  │
+│power│  │ions    │ │creds  │  └────────┘
 └─────┘  └────────┘ └───────┘
 
 NOTE: Camera takes ~45-60s to boot after Pi wakes.
@@ -227,27 +227,26 @@ START: Camera offline
      │             │
      ▼             ▼
 ┌──────────────┐  ┌────────────────────┐
-│ Check PoE    │  │ Test FTP upload:   │
-│ switch LED   │  │ Trigger snapshot   │
-│ and camera   │  │ from camera, check │
-│ power LED    │  │ Pi FTP directory   │
-└──────┬───────┘  │ for new files      │
-       │          │                    │
-  ┌────┴────┐     └─────────┬──────────┘
-  │         │               │
-No LED    LED on      ┌─────┴─────┐
-  │         │         │           │
-  ▼         ▼       No files   Files OK
-┌─────┐  ┌────────┐   │           │
-│Check│  │Check   │   ▼           ▼
-│12V  │  │Cat6    │ ┌───────┐  ┌────────┐
-│to   │  │cable   │ │Check  │  │Camera  │
-│PoE  │  │& bulk- │ │camera │  │OK,     │
-│sw & │  │head    │ │FTP    │  │check   │
-│relay│  │connect-│ │config │  │ORC     │
-└─────┘  │ions    │ │& Pi   │  │config  │
-         └────────┘ │FTP svc│  └────────┘
-                    └───────┘
+│ Check PoE    │  │ Test RTSP capture: │
+│ switch LED   │  │ orc-capture        │
+│ and camera   │  │   --skip-relay     │
+│ power LED    │  │   --dry-run        │
+└──────┬───────┘  │                    │
+       │          └─────────┬──────────┘
+  ┌────┴────┐               │
+  │         │         ┌─────┴─────┐
+No LED    LED on      │           │
+  │         │       QG FAIL   QG PASS
+  ▼         ▼         │           │
+┌─────┐  ┌────────┐   ▼           ▼
+│Check│  │Check   │ ┌───────┐  ┌────────┐
+│12V  │  │Cat6    │ │Check  │  │Camera  │
+│to   │  │cable   │ │RTSP   │  │OK,     │
+│PoE  │  │& bulk- │ │stream │  │check   │
+│sw & │  │head    │ │config │  │ORC     │
+│relay│  │connect-│ │& cam  │  │config  │
+└─────┘  │ions    │ │creds  │  └────────┘
+         └────────┘ └───────┘
 ```
 
 ### No LTE Connectivity
@@ -406,7 +405,7 @@ Both sites use the Pi as a DHCP server (dnsmasq) on the 192.168.50.0/24 camera n
 
 **Note:** The SADP utility (Hikvision/ANNKE) does not run on ARM Macs — neither natively nor under Parallels. The dnsmasq approach eliminates the need for SADP entirely.
 
-**Note:** The ANNKE web interface requires a Windows-only browser plugin for live view. Use ISAPI snapshot or FTP test upload to verify the camera image instead.
+**Note:** The ANNKE web interface requires a Windows-only browser plugin for live view. Use ISAPI snapshot to verify the camera image instead.
 
 ### dnsmasq failed at boot (camera unreachable)
 
@@ -593,8 +592,8 @@ ping -c 3 192.168.50.101
 # Test camera connectivity with ISAPI snapshot
 curl --digest -u admin:PASSWORD http://192.168.50.101/ISAPI/Streaming/channels/101/picture -o /tmp/cam1.jpg
 
-# Check FTP upload directory for incoming files
-ls -la /path/to/ftp/upload/dir/
+# Test RTSP capture
+orc-capture --skip-relay --dry-run
 
 # Check DHCP leases
 cat /var/lib/misc/dnsmasq.leases

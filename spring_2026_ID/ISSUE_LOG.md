@@ -77,51 +77,83 @@ Documentation added:
 
 ---
 
-### ISS-003: Video capture changed from RTSP to FTP
+### ISS-003: Video capture method — RTSP (final)
 
 | Field | Value |
 |-------|-------|
 | **Date opened** | 2026-03-13 |
+| **Date updated** | 2026-03-28 |
 | **Site** | Both |
 | **Risk** | Low |
 | **Impact** | High |
-| **Status** | RESOLVED (documentation updated; FTP server setup still needed) |
+| **Status** | RESOLVED |
+
+**History:**
+The original design used RTSP streaming (Pi pulls video via ffmpeg). This was
+changed to FTP-based capture (camera pushes to Pi) for higher quality, but the
+ANNKE C1200 does not support the scheduled event triggers needed to push video
+on a 15-minute duty cycle. FTP push requires motion detection or alarm events,
+which are not suitable for continuous scheduled capture.
+
+**Final decision (2026-03-28):**
+Revert to RTSP-based capture via `orc-capture` script. The Pi pulls 5s video
+clips from the camera's RTSP stream using ffmpeg (TCP transport, codec copy, no
+re-encoding). Quality gate validation confirms 1920x1080 at ~15.5 Mbps average
+across 20 consecutive tests (100% pass rate). This exceeds ORC requirements.
+
+**Capture pipeline:**
+- Pi wakes → powers camera via PoE relay → waits for boot (~37s) → pulls 5s
+  RTSP clip → validates via quality gate → delivers to ORC-OS incoming directory
+- Configuration driven by `/etc/orc-capture.conf`
+- Script: `orc-capture` (see `pi/shared/usr/local/bin/orc-capture`)
+
+**What this means:**
+- vsftpd / ftpcam user are **not needed** — can be disabled
+- Camera FTP config (`camera/common/ftp.xml`) is dormant — not pushed to camera
+- `camtool.py` still manages all other ISAPI endpoints (streaming, image, NTP, etc.)
+- No camera-side event/schedule configuration needed for capture
+
+---
+
+### ISS-004: ANNKE C1200 white spotlight fires on every power-on
+
+| Field | Value |
+|-------|-------|
+| **Date opened** | 2026-03-28 |
+| **Site** | Sukabumi, Jakarta |
+| **Risk** | High |
+| **Impact** | High |
+| **Status** | OPEN |
 
 **Problem:**
-The original design used RTSP streaming (Pi pulls video from camera via ffmpeg) for
-video capture. RTSP quality is not high enough for ORC river monitoring analysis.
+The ANNKE C1200 fires its white spotlight at full brightness for 2-3 seconds on
+every power-on. This is a documented Hikvision firmware hardware self-check that
+runs before the OS loads — no ISAPI configuration prevents it. With a 15-minute
+duty cycle (96 power-on events/day), this is unacceptable for the Sukabumi site,
+which is an urban canal with residences on both sides.
 
-**Decision:**
-Switch to FTP-based capture. The camera saves full-resolution video/snapshots and
-pushes them via FTP to the Pi, which runs an FTP server (vsftpd). Files land in
-NodeORC's `incoming/` directory for processing.
+**Investigated and ruled out:**
+- `supplementLightMode=irLight` via ISAPI — persists, but boot flash still fires
+- `whiteLightBrightness=0` via ISAPI — persists, but boot flash still fires
+- `/ISAPI/System/externalDevice` `enabled=false` — endpoint not supported on this firmware
+- Disabling smart events / motion detection — boot flash is not event-triggered
+- CGI endpoints — removed from G5/G6 firmware
+- Telnet/SSH — not accessible on this firmware generation
+- ONVIF auxiliary control — maps to wired relay outputs, not LED drivers
+- Firmware update — no Hikvision firmware version offers a boot flash disable option
 
-**Why this matters:**
-This is a fundamental change to the capture pipeline. It affects camera configuration,
-Pi software setup (FTP server needed), the capture workflow, and all documentation
-that referenced RTSP/ffmpeg. The ANNKE C1200 already supports FTP via ISAPI, and
-`camtool.py` already has an `ftp` endpoint, so the camera side is straightforward.
+**Why tape won't work:**
+IR and white LEDs are interleaved in the same ring behind a single dome. Covering
+white LEDs also blocks IR night vision.
 
-**What changed:**
-- Camera config: FTP upload instead of RTSP streaming
-- Pi software: needs FTP server (vsftpd) instead of ffmpeg capture script
-- Capture flow: camera pushes → Pi receives (vs. Pi pulls via RTSP)
+**Why always-on camera won't work:**
+Keeping the camera powered 24/7 increases daily consumption from 118 Wh to 425 Wh.
+Battery autonomy drops from 2.5 days to <1 day. Not viable on the solar budget.
 
-**Files updated:**
-- `CLAUDE.md` — compatibility/gaps tables
-- `BOM_Sukabumi.md` — camera notes, pre-deployment steps, troubleshooting
-- `TODO.md` — TODO-004 updated
-- `docs/ASSEMBLY_SUKABUMI.md` — checklists, camera config steps, verification
-- `docs/ASSEMBLY_JAKARTA.md` — camera config steps, verification
-- `docs/WIRING_SUKABUMI.md` — operation description
-- `docs/TROUBLESHOOTING.md` — flowcharts, command reference
-- `TRAVEL_AND_IMPORT.md` — pre-departure checklist
-- `build_notes/CLAUDE.md` — phase description
-- `build_notes/sukabumi/build_checklist.md` — Phase 7, 11, 12 updated
-
-**Still needed:**
-- FTP server setup procedure finalized (vsftpd config, user creation)
-- Camera FTP schedule/trigger mechanism confirmed with ORC team
-- File naming convention confirmed for NodeORC compatibility
+**Possible solutions (not yet pursued):**
+1. Replace with an IR-only camera model (Hikvision "-I" suffix, no white LEDs)
+2. Longer duty cycle (30 min) to halve the frequency
+3. Flash genuine Hikvision firmware and retest (unlikely to help per community reports)
+4. File firmware feature request with Hikvision
 
 ---

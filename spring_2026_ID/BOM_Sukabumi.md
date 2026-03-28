@@ -104,7 +104,7 @@
 - **Day/night config:** ORC software will handle switching between day and night capture configurations.
 - **1 camera installed** at Sukabumi (single viewpoint). Second camera from 2-pack kept as spare at PMI office.
 - Same camera model as Jakarta site for parts commonality.
-- Pre-configure camera before deployment: set static IP, configure FTP upload to Pi, set credentials. See `camera/` for ISAPI config tool.
+- Pre-configure camera before deployment: set static IP, set credentials, push streaming/image/NTP config via `camtool.py`. Video capture is via RTSP pull (orc-capture), not FTP.
 
 ---
 
@@ -433,7 +433,7 @@ Equipment travels with installer under humanitarian exemption. No shipping or cu
 
 2. **Test compute stack** before coating
    - Verify Pi 5 boots, SSD recognized, modem connects
-   - Test ORC software with PoE camera (verify FTP upload from camera to Pi)
+   - Test ORC software with PoE camera (verify RTSP capture via orc-capture)
    - Verify Witty Pi 5 scheduling works
    - Test GPIO control of LEDs
 
@@ -445,8 +445,8 @@ Equipment travels with installer under humanitarian exemption. No shipping or cu
    - Pre-load Indonesian SIM config (if known)
 
 4. **Pre-configure PoE camera**
-   - Set static IP address, configure FTP upload to Pi, set credentials
-   - Use `camtool.py` to push FTP and image config
+   - Set static IP address, set credentials
+   - Use `camtool.py` to push streaming, image, and NTP config
    - Verify built-in IR LEDs activate in darkness
 
 ### Field Assembly (Indonesia)
@@ -485,7 +485,7 @@ Equipment travels with installer under humanitarian exemption. No shipping or cu
 
 5. **System test**
    - Verify Pi boots and LEDs indicate status
-   - Test PoE camera FTP upload to Pi
+   - Test RTSP capture via orc-capture
    - Verify camera IR LEDs activate in darkness (cover lens to test)
    - Verify LTE connectivity (may need IMEI registration first)
    - Test rain gauge serial communication (RS232 TTL over Pi UART)
@@ -545,7 +545,7 @@ See CLAUDE.md "Tools & Spares Inventory" section for comprehensive list. Key spa
 1. Verify Cat6 cable connection at camera and PoE injector
 2. Check PoE injector status LEDs (verify 12V power to injector)
 3. Verify camera has IP address (check DHCP or static config)
-4. SSH into Pi, check FTP upload directory for incoming files from camera
+4. SSH into Pi, run `orc-capture --skip-relay --dry-run` to test RTSP capture
 5. Check ORC logs: `/var/log/orc/`
 6. Verify camera boots within the active cycle window (~60s boot time)
 

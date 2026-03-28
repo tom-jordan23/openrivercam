@@ -580,7 +580,7 @@ Lower priority. Can be deferred if needed.
 **ORC Software:**
 - PoE cameras with built-in IR handle day/night automatically - no software changes needed
 - Both sites now use identical PoE camera approach (ANNKE C1200)
-- Video/image capture via FTP upload from camera to Pi (higher quality than RTSP streaming)
+- Video capture via RTSP pull from camera to Pi (orc-capture script, ~15.5 Mbps avg)
 
 **Research documents:**
 - `research/indonesian_cellular_research.md`
@@ -670,7 +670,7 @@ After all decisions are made.
 4. Check power consumption against budget
 
 ### Compatibility Verification
-1. PoE cameras (ANNKE C1200) support FTP upload to Pi (used instead of RTSP for higher quality)
+1. PoE cameras (ANNKE C1200) captured via RTSP pull (orc-capture script)
 2. Planet IPOE-260-12V works with native 12V input (both sites)
 3. Modem works with Indonesian carriers
 4. Witty Pi 5 HAT+ compatible with Pi 5
@@ -706,7 +706,7 @@ Based on research review, the following items may need attention:
 | **12V PoE switch vs injector** | Medium | SITES.md says "12v PoE switch" but most PoE switches need 48V. Planet IPOE-260-12V is an injector, not a switch. Clarify network topology |
 | **AC input voltage** | Low | Indonesia uses 220V/50Hz. Verify power supply accepts 220V |
 | **Mounting pole** | Low | No specs for pole. Standard camera pole or custom? Height? Material? |
-| **Camera FTP configuration** | Low | Configure cameras to FTP upload video/snapshots to Pi. Pre-configure before deployment. See `camera/` for ISAPI config tool |
+| **Camera ISAPI configuration** | Low | Configure streaming, image, NTP settings via camtool.py. Video captured via RTSP pull (orc-capture), not FTP push. |
 
 ### Both Sites
 
@@ -715,7 +715,7 @@ Based on research review, the following items may need attention:
 | **GPIO terminal block riser** | Medium | Need to source HAT/riser that exposes GPIO as screw terminals while Witty Pi 5 HAT+ is installed. Enables future expansion without resoldering |
 | **Modbus sensor details** | Medium | What device will connect via Modbus? Rain gauge? Water level sensor? External data logger? Need to specify interface requirements |
 | **SIM card strategy** | Medium | Pre-paid or postpaid? Which carrier? Data plan size? |
-| **ORC software compatibility** | Low | Both sites use PoE cameras with built-in IR and FTP upload - no special day/night handling needed |
+| **ORC software compatibility** | Low | Both sites use PoE cameras with built-in IR and RTSP capture - no special day/night handling needed |
 | **Shipping strategy** | Low | Batteries/panels may need local sourcing per DESIGN_SPECS.md shipping section |
 | **Customs documentation** | Low | Prepare commercial invoices, HS codes, IMEI list for modems |
 

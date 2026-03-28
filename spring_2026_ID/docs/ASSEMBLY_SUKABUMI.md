@@ -26,7 +26,7 @@
   - [Step 10: Configure Pi Camera Network](#step-10-configure-pi-camera-network-15-min)
   - [Step 10b: Prepare USB Storage](#step-10b-prepare-usb-storage-10-min)
   - [Step 10c: Configure NTP Server for Camera Time Sync](#step-10c-configure-ntp-server-for-camera-time-sync-5-min)
-  - [Step 10d: Configure FTP Server for Camera Uploads](#step-10d-configure-ftp-server-for-camera-uploads-10-min)
+  - ~~Step 10d: FTP Server~~ — removed, not used (see ISS-003)
   - [Step 11: Configure PoE Camera Settings](#step-11-configure-poe-camera-settings-30-min)
   - [Step 11b: Enable Capture Service](#step-11b-enable-capture-service-5-min)
   - [Step 12: Mount External Components](#step-12-mount-external-components-30-min)
@@ -61,7 +61,7 @@ Complete these steps BEFORE traveling to Indonesia:
 - [ ] Set Pi timezone to Asia/Jakarta (WIB, UTC+7)
 - [ ] Install and configure chrony as NTP server for camera network
 - [ ] Format USB drive as ext4, mount at /mnt/usb, add to fstab
-- [ ] Configure vsftpd with ftpcam user for camera FTP uploads
+- ~~Configure vsftpd~~ — not needed; capture is via RTSP pull (orc-capture)
 - [ ] Configure camera via camtool.py (1080p, 16Mbps CBR, IR-only, NTP from Pi)
 - [ ] Insert and format MicroSD in camera, set recording to continuous (CMR)
 - [ ] Test video capture pipeline (download 5s clip from camera SD via RTSP)
@@ -330,7 +330,7 @@ pin assignments, continuity verification checklists, and build photos.
    - 12V flows to PoE switch
    - PoE switch provides 48V PoE to camera over Ethernet
    - Camera boots (~45-60s), built-in IR activates automatically at night
-   - Camera uploads video/snapshot via FTP to Pi over Ethernet
+   - Pi captures 5s video via RTSP pull (orc-capture script)
    - Pi drives GPIO 24 LOW → relay de-energizes → NO opens → camera powers down
    - Pi enters sleep via RTC until next scheduled wake
 
@@ -563,85 +563,14 @@ NTP servers. The Pi must serve NTP so the camera's clock stays in sync.
    sudo timedatectl set-timezone Asia/Jakarta
    ```
 
-### Step 10d: Configure FTP Server for Camera Uploads (10 min)
+### ~~Step 10d: FTP Server~~ — REMOVED
 
-The camera pushes video and snapshots to the Pi via FTP. This requires vsftpd
-configured with a dedicated upload user. The USB drive (Step 10b) must be
-mounted first since camera uploads land on it.
-
-1. **Install vsftpd** (if not already installed):
-   ```bash
-   sudo apt install vsftpd -y
-   ```
-
-2. **Create the FTP upload user:**
-   ```bash
-   sudo useradd -m -d /mnt/usb/incoming -s /usr/sbin/nologin ftpcam
-   sudo passwd ftpcam  # Set password — must match camera FTP config
-   ```
-
-3. **Add nologin to allowed shells** (required by PAM):
-   ```bash
-   echo "/usr/sbin/nologin" | sudo tee -a /etc/shells
-   ```
-
-4. **Create the userlist** (restricts FTP login to this user only):
-   ```bash
-   echo "ftpcam" | sudo tee /etc/vsftpd.userlist
-   ```
-
-5. **Deploy vsftpd config** from the overlay:
-   ```bash
-   sudo cp pi/shared/etc/vsftpd.conf /etc/vsftpd.conf
-   sudo cp pi/shared/etc/vsftpd.userlist /etc/vsftpd.userlist
-   ```
-   Or replace `/etc/vsftpd.conf` manually with:
-   ```
-   listen=NO
-   listen_ipv6=YES
-   anonymous_enable=NO
-   local_enable=YES
-   write_enable=YES
-   chroot_local_user=YES
-   allow_writeable_chroot=YES
-   userlist_enable=YES
-   userlist_file=/etc/vsftpd.userlist
-   userlist_deny=NO
-   local_umask=022
-   xferlog_enable=YES
-   xferlog_file=/var/log/vsftpd.log
-   connect_from_port_20=YES
-   use_localtime=YES
-   dirmessage_enable=YES
-   pasv_enable=YES
-   pasv_min_port=40000
-   pasv_max_port=40100
-   secure_chroot_dir=/var/run/vsftpd/empty
-   pam_service_name=vsftpd
-   ssl_enable=NO
-   ```
-
-6. **Create the upload directory and set ownership:**
-   ```bash
-   sudo mkdir -p /mnt/usb/incoming
-   sudo chown ftpcam:ftpcam /mnt/usb/incoming
-   ```
-
-7. **Restart and enable vsftpd:**
-   ```bash
-   sudo systemctl restart vsftpd
-   sudo systemctl enable vsftpd
-   ```
-
-8. **Verify FTP server works** (from the Pi itself):
-   ```bash
-   curl -T /etc/hostname ftp://ftpcam:<password>@192.168.50.1/test_upload.txt
-   ls /mnt/usb/incoming/test_upload.txt  # should exist
-   sudo rm /mnt/usb/incoming/test_upload.txt  # clean up
-   ```
-
-> **Note:** The `ftpcam` password must match what is configured on the camera's
-> FTP upload settings (Step 11). Record this password securely.
+> **This step is no longer needed.** Video capture uses RTSP pull via the
+> `orc-capture` script, not camera FTP push. The ANNKE C1200 does not support
+> the scheduled event triggers required for FTP-based capture on a 15-minute
+> duty cycle. See ISS-003 in ISSUE_LOG.md for full history.
+>
+> vsftpd can be disabled: `sudo systemctl disable --now vsftpd`
 
 ### Step 11: Configure PoE Camera Settings (30 min)
 
@@ -651,8 +580,8 @@ The camera is configured entirely via `camtool.py` using ISAPI (Hikvision HTTP
 REST API). Configuration files are version-controlled in `camera/common/` and
 pushed to the camera as a batch. No web UI needed.
 
-**Pre-requisite:** Ensure `camera/.env` exists with `CAMERA_PASSWORD` and
-`FTP_PASSWORD` set (see `camera/.env.example`).
+**Pre-requisite:** Ensure `camera/.env` exists with `CAMERA_PASSWORD` set
+(see `camera/.env.example`). FTP password is not needed — capture is via RTSP.
 
 1. **Insert MicroSD card** into the camera's SD slot (required for local
    recording — the Pi downloads clips from SD via RTSP playback).
@@ -692,11 +621,9 @@ pushed to the camera as a batch. No web UI needed.
    | Motion detection | Disabled | Not used — continuous recording instead |
    | NTP server | 192.168.50.1 (Pi) | Camera has no internet access |
    | Timezone | WIB (UTC+7) | Jakarta/Western Indonesia Time |
-   | FTP server | 192.168.50.1 | For snapshot uploads to Pi |
 
-   > **Note:** camtool cannot push the FTP config due to a namespace issue
-   > with the ANNKE firmware. Push FTP separately via direct ISAPI — see
-   > `camera/README.md` for the workaround.
+   > **Note:** FTP config is not pushed. Video capture uses RTSP pull via
+   > `orc-capture`, not camera FTP push. See ISS-003.
 
    > **Warning — supplement light reverts on power cycle:** The ANNKE C1200
    > resets `supplementLightMode` from `irLight` back to `eventIntelligence`
@@ -980,7 +907,7 @@ See `TROUBLESHOOTING.md` for detailed diagnostics.
 | LTE SIM number | |
 | Modem IMEI | |
 | Camera IP address | 192.168.50.139 |
-| Camera FTP target | Pi FTP server at 192.168.50.1 (user: ftpcam) |
+| Video capture method | RTSP pull via orc-capture (not FTP) |
 | Camera NTP source | Pi at 192.168.50.1 (chrony) |
 | Camera stream | 1920x1080, H.264, 16 Mbps CBR, 12.5fps |
 | Camera recording | Continuous (CMR) to MicroSD |

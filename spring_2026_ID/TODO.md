@@ -30,8 +30,7 @@
 - [ ] Verify ORC-OS manages GPIO 24 (relay/PoE switch control)
 - [ ] If ORC-OS doesn't manage GPIO 24, create systemd service as fallback
 - [ ] Configure ORC-OS capture schedule (15-minute wake cycle)
-- [ ] Camera FTP upload config (camtool.py or web interface)
-- [ ] FTP server (vsftpd) installed and configured on Pi
+- [ ] Camera ISAPI config (streaming, image, NTP via camtool.py)
 - [ ] Rain gauge serial test (UART, 9600 baud, send `R` command)
 - [ ] Pangolin/Newt remote access setup (TODO-008)
 
@@ -44,8 +43,7 @@
 - [x] Install RTC battery
 - [x] Wire rain gauge internal side (bulkhead end loose, labeled)
 - [ ] Power cycle test: Pi boots → GPIO 24 HIGH → PoE switch on → camera boots
-- [ ] Camera FTP upload to Pi working
-- [ ] End-to-end: Pi wakes, camera captures, video arrives on Pi
+- [ ] End-to-end: Pi wakes, orc-capture pulls RTSP, video delivered to ORC-OS
 - [ ] Verify RTC keeps time after power off (5 minute test)
 - [ ] Verify SHT40 readable (`i2cdetect -y 1` shows 0x44)
 
@@ -86,10 +84,10 @@
 
 ### Jakarta — software + testing
 
-- [ ] ORC-OS config (GPIO 24, capture schedule, camera FTP)
+- [ ] ORC-OS config (GPIO 24, capture schedule, RTSP capture)
 - [ ] Pangolin/Newt remote access
 - [ ] Power cycle test: Pi → relay → PoE switch → camera
-- [ ] Camera FTP upload
+- [ ] Test RTSP capture with orc-capture
 - [ ] Wire and test J2 power button
 - [ ] Wire PTC heater and fans
 - [ ] Wire LEDs
@@ -176,7 +174,7 @@ heights, and cable run lengths. May need to resolve in-country.
 
 ---
 
-### TODO-004: Pre-configure cameras (FTP upload, credentials)
+### TODO-004: Pre-configure cameras (credentials, streaming, image settings)
 
 | Field | Value |
 |-------|-------|
@@ -184,12 +182,15 @@ heights, and cable run lengths. May need to resolve in-country.
 | **Site** | Both |
 | **Target** | Week 1 (Sukabumi), Week 2 (Jakarta) |
 
-ANNKE C1200 cameras need FTP upload configured before deployment.
-Use the ISAPI config tool (see `camera/README.md`):
-- Configure FTP upload to Pi (192.168.50.1)
-- Set credentials (must match Pi's FTP server user)
-- Set resolution and image format per ORC requirements
-- Verify FTP upload delivers files to Pi
+ANNKE C1200 cameras configured via `camtool.py` using ISAPI.
+FTP upload is **not used** — video is captured via RTSP pull (see ISS-003).
+
+Remaining camera config:
+- Set admin credentials (record securely)
+- Push streaming config (1920x1080, H.264, 16 Mbps CBR, 12.5fps)
+- Push image config (IR-only supplement light, auto IR cut filter)
+- Push NTP config (Pi as NTP server)
+- Verify RTSP stream accessible from Pi (`orc-capture --skip-relay --dry-run`)
 
 ---
 

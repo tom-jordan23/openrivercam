@@ -57,7 +57,7 @@ Complete these steps BEFORE traveling to Indonesia:
 - [ ] Set Pi timezone to Asia/Jakarta (WIB, UTC+7)
 - [ ] Install and configure chrony as NTP server for camera network
 - [ ] Format USB drive as ext4, mount at /mnt/usb, add to fstab
-- [ ] Configure vsftpd with ftpcam user for camera FTP uploads
+- ~~Configure vsftpd~~ — not needed; capture is via RTSP pull (orc-capture)
 - [ ] Configure camera via camtool.py (1080p, 16Mbps CBR, IR-only, NTP from Pi)
 - [ ] Insert and format MicroSD in camera, set recording to continuous (CMR)
 - [ ] Test video capture pipeline (download 5s clip from camera SD via RTSP)
@@ -119,7 +119,7 @@ Configure the ANNKE C1200 camera BEFORE deployment. The Pi acts as DHCP server o
 
 **Note:** The SADP utility (Hikvision's camera discovery tool) does not run on ARM Macs — neither natively nor under Parallels. The dnsmasq approach below eliminates the need for SADP entirely.
 
-**Note:** The ANNKE web interface requires a Windows-only browser plugin for live view. Use ISAPI snapshot or FTP test upload to verify the camera image instead.
+**Note:** The ANNKE web interface requires a Windows-only browser plugin for live view. Use ISAPI snapshot to verify the camera image instead.
 
 **Set up Pi camera network (one-time):**
 
@@ -205,78 +205,10 @@ The camera is on an isolated network with no internet. The Pi must serve NTP.
    sudo timedatectl set-timezone Asia/Jakarta
    ```
 
-**Set up FTP server for camera uploads:**
+**~~FTP server setup~~ — REMOVED:**
 
-The camera pushes video and snapshots to the Pi via FTP. The USB drive must be
-mounted first (above) since camera uploads land on it.
-
-1. Install vsftpd (if not already installed):
-   ```bash
-   sudo apt install vsftpd -y
-   ```
-
-2. Create the FTP upload user:
-   ```bash
-   sudo useradd -m -d /mnt/usb/incoming -s /usr/sbin/nologin ftpcam
-   sudo passwd ftpcam  # Set password — must match camera FTP config
-   ```
-
-3. Add nologin to allowed shells (required by PAM):
-   ```bash
-   echo "/usr/sbin/nologin" | sudo tee -a /etc/shells
-   ```
-
-4. Deploy vsftpd config from the overlay:
-   ```bash
-   sudo cp pi/shared/etc/vsftpd.conf /etc/vsftpd.conf
-   sudo cp pi/shared/etc/vsftpd.userlist /etc/vsftpd.userlist
-   ```
-   Or replace `/etc/vsftpd.conf` manually with:
-   ```
-   listen=NO
-   listen_ipv6=YES
-   anonymous_enable=NO
-   local_enable=YES
-   write_enable=YES
-   chroot_local_user=YES
-   allow_writeable_chroot=YES
-   userlist_enable=YES
-   userlist_file=/etc/vsftpd.userlist
-   userlist_deny=NO
-   local_umask=022
-   xferlog_enable=YES
-   xferlog_file=/var/log/vsftpd.log
-   connect_from_port_20=YES
-   use_localtime=YES
-   dirmessage_enable=YES
-   pasv_enable=YES
-   pasv_min_port=40000
-   pasv_max_port=40100
-   secure_chroot_dir=/var/run/vsftpd/empty
-   pam_service_name=vsftpd
-   ssl_enable=NO
-   ```
-
-5. Create the upload directory and set ownership:
-   ```bash
-   sudo mkdir -p /mnt/usb/incoming
-   sudo chown ftpcam:ftpcam /mnt/usb/incoming
-   ```
-
-6. Restart and enable vsftpd:
-   ```bash
-   sudo systemctl restart vsftpd
-   sudo systemctl enable vsftpd
-   ```
-
-7. Verify FTP server works (from the Pi itself):
-   ```bash
-   curl -T /etc/hostname ftp://ftpcam:<password>@192.168.50.1/test_upload.txt
-   ls /mnt/usb/incoming/test_upload.txt  # should exist
-   sudo rm /mnt/usb/incoming/test_upload.txt  # clean up
-   ```
-
-> **Note:** The `ftpcam` password must match what is configured on each camera's FTP upload settings below. Record this password securely.
+> FTP server (vsftpd) is not needed. Video capture uses RTSP pull via the
+> `orc-capture` script, not camera FTP push. See ISS-003 in ISSUE_LOG.md.
 
 **Configure each camera:**
 
@@ -302,7 +234,7 @@ mounted first (above) since camera uploads land on it.
   python3 camtool.py push jakarta-cam1
   ```
   This sets: 1920x1080 H.264 at 16 Mbps CBR, 12.5fps, audio off, IR-only
-  illumination, motion detection off, NTP from Pi, WIB timezone, FTP to Pi.
+  illumination, motion detection off, NTP from Pi, WIB timezone.
 
   > **Warning — supplement light reverts on power cycle:** The ANNKE C1200
   > resets `supplementLightMode` from `irLight` to `eventIntelligence` after

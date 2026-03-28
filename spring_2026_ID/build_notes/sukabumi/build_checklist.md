@@ -504,7 +504,7 @@ Connect and verify peripherals work (can skip modem data test if no SIM yet).
 |-------|------|
 | Camera boots (LEDs active) | [ ] |
 | Can access camera web UI | [ ] |
-| Can capture test frame via FTP upload or ISAPI snapshot | [ ] |
+| Can capture test frame via RTSP (`orc-capture --skip-relay --dry-run`) or ISAPI snapshot | [ ] |
 
 **Rain Gauge (if wiring to GPIO breakout):**
 
@@ -1138,7 +1138,11 @@ APN used:
 
 ## Phase 7: Camera Configuration
 
-**Goal:** Configure ANNKE C1200 and verify FTP upload to Pi
+**Goal:** Configure ANNKE C1200 and verify RTSP capture
+
+> **UPDATE (2026-03-28):** FTP-based capture has been removed. Video capture
+> uses RTSP pull via `orc-capture`. FTP references below are historical.
+> See ISS-003 in ISSUE_LOG.md.
 **Prerequisite:** Phase 4 complete
 
 ### 7.1 Environmental Conditions
@@ -1595,7 +1599,11 @@ Sketch or notes:
 
 ## Phase 11: ORC Software Installation
 
-**Goal:** Install NodeORC software, configure LiveORC connectivity, and set up FTP-based video capture
+**Goal:** Install NodeORC software, configure LiveORC connectivity, and set up RTSP-based video capture
+
+> **UPDATE (2026-03-28):** FTP-based capture has been removed. Video capture
+> uses RTSP pull via `orc-capture`. FTP references below are historical.
+> See ISS-003 in ISSUE_LOG.md.
 **Prerequisite:** Phase 10 complete
 **Note:** Use upstream packages - do not fork. See https://github.com/localdevices/nodeorc
 

@@ -186,7 +186,7 @@ GND ───────────────►│  │  12V-   │       �
                     │   • 12MP resolution                 │
                     │   • Built-in IR LEDs (auto on/off)  │
                     │   • Factory-sealed IP67             │
-                    │   • FTP upload to Pi                │
+                    │   • RTSP stream to Pi               │
                     │   • DHCP IP: 192.168.50.139         │
                     │                                     │
                     └─────────────────────────────────────┘
@@ -196,7 +196,7 @@ OPERATION:
 2. GPIO 24 set HIGH → Relay CH1 energized → NO closes → 12V to PoE switch
 3. PoE switch provides 48V PoE to camera over Ethernet
 4. Camera boots (~45-60s), establishes DHCP IP
-5. Camera uploads video/snapshot via FTP to Pi over Ethernet
+5. Pi captures 5s video via RTSP pull (orc-capture script)
 6. Camera IR LEDs auto-enable in low light (built-in photocell)
 7. Pi sets GPIO 24 LOW → relay de-energized → NO opens → camera off → Pi sleeps
 

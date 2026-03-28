@@ -89,7 +89,6 @@ while 90-qemu.rules is active. See `USB_POWER_TEST_CHECKLIST.md` for full
 root cause analysis.
 
 **Deploy without the USB drive.** Captures go to SD card rootfs (~43GB free).
-FTP uploads go to a local directory (see FTP Server section).
 
 **Do NOT re-insert the Samsung FIT** until the cmdline.txt fix is applied.
 
@@ -98,13 +97,15 @@ FTP uploads go to a local directory (see FTP Server section).
 ### 5. Services
 
 ```bash
-systemctl is-active vsftpd chrony dnsmasq NetworkManager
+systemctl is-active chrony dnsmasq NetworkManager
 ```
 
-- [ ] vsftpd: active
 - [ ] chrony: active
 - [ ] dnsmasq: active
 - [ ] NetworkManager: active
+
+> **Note:** vsftpd is not used. Video capture is via RTSP pull (`orc-capture`),
+> not camera FTP push. See ISS-003 in ISSUE_LOG.md.
 
 ### 6. LTE Modem
 
@@ -194,22 +195,7 @@ poe-relay off
 
 - [ ] Relay OFF after test
 
-### 11. FTP Server
-
-```bash
-source ~/.orc_deploy_sukabumi
-curl -s -T /etc/hostname "ftp://ftpcam:${BASE_PASSWD}@127.0.0.1/reboot_test.txt"
-ls /home/ftpcam/incoming/reboot_test.txt
-sudo rm /home/ftpcam/incoming/reboot_test.txt
-```
-
-**Note:** FTP target directory will change from `/mnt/usb/incoming` to a local
-path once vsftpd is reconfigured for SD card storage. Update this section then.
-
-- [ ] FTP upload succeeds
-- [ ] File appears in FTP incoming directory
-
-### 12. NTP for Camera
+### 11. NTP for Camera
 
 ```bash
 sudo chronyc clients | head -5
