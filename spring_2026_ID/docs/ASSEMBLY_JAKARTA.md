@@ -61,6 +61,8 @@ Complete these steps BEFORE traveling to Indonesia:
 - [ ] Configure camera via camtool.py (1080p, 16Mbps CBR, IR-only, NTP from Pi)
 - [ ] Insert and format MicroSD in camera, set recording to continuous (CMR)
 - [ ] Test video capture pipeline (download 5s clip from camera SD via RTSP)
+- [ ] Enable sensor logging (`orc-sensors.timer`) — see "Enable sensor logging service" section
+- [ ] Verify SHT40 readings in `/var/log/orc/sensors/sht40_*.csv`
 - [ ] Configure WiFi hotspot for maintenance mode
 - [ ] Set up LED GPIO control script
 - [ ] Pre-configure Telkomsel APN (if known)
@@ -75,6 +77,7 @@ that must be masked during coating.
 - [ ] Verify USB flash drive is recognized
 - [ ] Test LTE modem connects (with test SIM)
 - [ ] Test PoE switch powers camera
+- [ ] Test SHT40 sensor: `i2cdetect -y 1` shows 0x44, `orc-sensors` returns readings
 - [ ] Verify LEDs light up on GPIO control
 - [ ] Test relay switches PoE switch power on/off (GPIO 24)
 
@@ -281,6 +284,30 @@ sudo systemctl disable orc-gpio-relays
 - [ ] `orc-capture` service enabled
 - [ ] `orc-gpio-relays` service disabled
 - [ ] Test: `poe-relay off && orc-capture --dry-run` completes with quality gate PASS
+
+**Enable sensor logging service:**
+
+Deploy and enable `orc-sensors`, which reads the SHT40 temperature/humidity
+sensor (and any future sensors) on a configurable interval and appends readings
+to daily CSV files.
+
+```bash
+sudo mkdir -p /etc/orc-sensors /usr/local/lib/orc-sensors /var/log/orc/sensors
+sudo cp pi/shared/etc/orc-sensors/sht40.conf /etc/orc-sensors/
+sudo cp pi/shared/usr/local/bin/orc-sensors /usr/local/bin/
+sudo chmod +x /usr/local/bin/orc-sensors
+sudo cp pi/shared/usr/local/lib/orc-sensors/sensors_logger.py /usr/local/lib/orc-sensors/
+sudo cp pi/shared/etc/systemd/system/orc-sensors.service /etc/systemd/system/
+sudo cp pi/shared/etc/systemd/system/orc-sensors.timer /etc/systemd/system/
+sudo chown pi:pi /var/log/orc/sensors
+sudo systemctl daemon-reload
+sudo systemctl enable orc-sensors.timer
+sudo systemctl start orc-sensors.timer
+```
+
+- [ ] `orc-sensors.timer` enabled and started
+- [ ] Test: `orc-sensors` produces CSV at `/var/log/orc/sensors/sht40_*.csv`
+- [ ] `systemctl list-timers orc-sensors.timer` shows next activation
 
 ---
 

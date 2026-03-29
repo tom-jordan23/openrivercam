@@ -1,0 +1,31 @@
+#!/bin/bash
+# orc-sensors — log environmental sensor readings to daily CSVs
+#
+# Iterates over per-sensor config files in /etc/orc-sensors/ and reads
+# each sensor that is due based on its configured interval. Called by
+# orc-sensors.service (timer-triggered oneshot).
+#
+# Each sensor config defines its own type, interval, log directory,
+# and CSV columns. Add new sensors by dropping a .conf file into
+# the config directory.
+#
+# Configuration: /etc/orc-sensors/*.conf
+# Output: per-sensor daily CSVs (e.g. /var/log/orc/sensors/sht40_YYYY-MM-DD.csv)
+
+set -o pipefail
+
+# ─── Logging ─────────────────────────────────────────────────────────
+log()  { echo "$(date '+%Y-%m-%d %H:%M:%S') [orc-sensors] $1"; }
+err()  { echo "$(date '+%Y-%m-%d %H:%M:%S') [orc-sensors] ERROR: $1" >&2; }
+
+# ─── Config directory ────────────────────────────────────────────────
+ORC_SENSORS_CONF_DIR="${ORC_SENSORS_CONF_DIR:-/etc/orc-sensors}"
+export ORC_SENSORS_CONF_DIR
+
+if [ ! -d "$ORC_SENSORS_CONF_DIR" ]; then
+    err "Config directory $ORC_SENSORS_CONF_DIR not found"
+    exit 1
+fi
+
+# ─── Execute Python sensor handler ──────────────────────────────────
+exec python3 /usr/local/lib/orc-sensors/sensors_logger.py

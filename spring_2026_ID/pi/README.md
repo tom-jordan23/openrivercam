@@ -55,6 +55,11 @@ contains a real file.
 | `shared/usr/local/bin/orc-capture` | `/usr/local/bin/orc-capture` | Capture 5s video from PoE camera via RTSP with quality gate | Shared | No | Yes |
 | `shared/usr/local/bin/orc-preflight` | `/usr/local/bin/orc-preflight` | Pre-deployment checks for packages, configs, services, hardware | Shared | No | Yes |
 | `shared/etc/systemd/system/orc-capture.service` | `/etc/systemd/system/orc-capture.service` | Oneshot service: runs orc-capture on each boot (conflicts with orc-gpio-relays) | Shared | No | No |
+| `shared/etc/orc-sensors/sht40.conf` | `/etc/orc-sensors/sht40.conf` | SHT40 sensor config (I2C addr, interval, log dir, CSV columns) | Shared | No | Yes |
+| `shared/usr/local/bin/orc-sensors` | `/usr/local/bin/orc-sensors` | Wrapper: sources per-sensor configs, execs into Python logger | Shared | No | Yes |
+| `shared/usr/local/lib/orc-sensors/sensors_logger.py` | `/usr/local/lib/orc-sensors/sensors_logger.py` | Multi-sensor reader: I2C read, CRC validation, CSV append, log rotation | Shared | No | Yes |
+| `shared/etc/systemd/system/orc-sensors.service` | `/etc/systemd/system/orc-sensors.service` | Oneshot service: reads all due sensors and appends to daily CSVs | Shared | No | Yes |
+| `shared/etc/systemd/system/orc-sensors.timer` | `/etc/systemd/system/orc-sensors.timer` | Timer: ticks every 60s, per-sensor interval checked in Python | Shared | No | Yes |
 | `shared/update-motd.d/30-camera-status` | `/etc/update-motd.d/30-camera-status` | Dynamic MOTD: relay status, RTC battery, eth0 IP, camera reachability | Shared | No | No |
 | `shared/etc/chrony/conf.d/camera-net.conf` | `/etc/chrony/conf.d/camera-net.conf` | NTP server for camera network (Pi serves time to cameras) | Shared | No | Yes |
 | `sukabumi/etc/cloud/templates/hosts.debian.tmpl` | `/etc/cloud/templates/hosts.debian.tmpl` | Hosts file template with camera hostname | Sukabumi | No | No |

@@ -1,0 +1,9 @@
+[Unit]
+Description=Log environmental sensor readings
+After=local-fs.target
+
+[Service]
+Type=oneshot
+User=pi
+ExecStart=/usr/local/bin/orc-sensors
+TimeoutStartSec=30

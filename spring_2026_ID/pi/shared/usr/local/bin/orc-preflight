@@ -38,8 +38,8 @@ warn() {
 echo ""
 echo "=== Required Packages ==="
 
-REQUIRED_PKGS="dnsmasq modemmanager gpiod chrony"
-OPTIONAL_PKGS="minicom"
+REQUIRED_PKGS="dnsmasq modemmanager gpiod chrony minicom"
+OPTIONAL_PKGS=""
 MISSING_REQ=""
 
 for pkg in $REQUIRED_PKGS; do
@@ -52,9 +52,9 @@ for pkg in $REQUIRED_PKGS; do
 done
 
 for pkg in $OPTIONAL_PKGS; do
-    if dpkg -s "$pkg" >/dev/null 2>&1; then
+    if [ -n "$pkg" ] && dpkg -s "$pkg" >/dev/null 2>&1; then
         pass "$pkg installed (optional)"
-    else
+    elif [ -n "$pkg" ]; then
         warn "$pkg not installed (optional — debugging only)"
     fi
 done
@@ -253,6 +253,32 @@ else
     warn "/etc/hosts missing camera hostname entry"
 fi
 
+# orc-sensors config directory
+if [ -d /etc/orc-sensors ] && ls /etc/orc-sensors/*.conf >/dev/null 2>&1; then
+    SENSOR_COUNT=$(ls /etc/orc-sensors/*.conf 2>/dev/null | wc -l)
+    pass "/etc/orc-sensors/ has $SENSOR_COUNT sensor config(s)"
+else
+    warn "/etc/orc-sensors/ not found or empty (sensor logging will not run)"
+fi
+
+# orc-sensors log directory
+ORC_SENSORS_LOG_DIR="/var/log/orc/sensors"
+if [ -d /etc/orc-sensors ]; then
+    # Check the LOG_DIR from the first config file found
+    FIRST_CONF=$(ls /etc/orc-sensors/*.conf 2>/dev/null | head -1)
+    if [ -n "$FIRST_CONF" ]; then
+        CONF_LOG_DIR=$(grep "^LOG_DIR=" "$FIRST_CONF" 2>/dev/null | cut -d= -f2 | xargs)
+        ORC_SENSORS_LOG_DIR="${CONF_LOG_DIR:-$ORC_SENSORS_LOG_DIR}"
+    fi
+fi
+if [ -d "$ORC_SENSORS_LOG_DIR" ] && [ -w "$ORC_SENSORS_LOG_DIR" ]; then
+    pass "sensor log directory writable ($ORC_SENSORS_LOG_DIR)"
+elif [ -d "$ORC_SENSORS_LOG_DIR" ]; then
+    fail "sensor log directory exists but not writable ($ORC_SENSORS_LOG_DIR)"
+else
+    warn "sensor log directory does not exist yet ($ORC_SENSORS_LOG_DIR) — created on first run"
+fi
+
 # ─── Services ─────────────────────────────────────────────────────────
 
 echo ""
@@ -263,6 +289,13 @@ if systemctl is-enabled orc-capture >/dev/null 2>&1; then
     pass "orc-capture service enabled"
 else
     warn "orc-capture service not enabled (run: sudo systemctl enable orc-capture)"
+fi
+
+# orc-sensors timer (environmental sensor logging)
+if systemctl is-enabled orc-sensors.timer >/dev/null 2>&1; then
+    pass "orc-sensors.timer enabled"
+else
+    warn "orc-sensors.timer not enabled (run: sudo systemctl enable orc-sensors.timer)"
 fi
 
 # orc-gpio-relays must be DISABLED — it uses active-low logic incompatible

@@ -27,6 +27,7 @@ Should show **0 FAILs**. Expected WARNs:
 - `/boot/firmware` not mounted (expected with 90-qemu.rules)
 - `config.txt` not accessible (same reason)
 - orc-capture service not enabled (until deployed to systemd)
+- orc-sensors.timer not enabled (until deployed to systemd)
 - SHT40 sensor not detected at 0x44 (if sensor hardware not connected)
 
 ## Step-by-Step Verification
@@ -95,6 +96,7 @@ Expected config.txt entries:
 - [ ] RTC battery charging enabled (`rtc_bbat_vchg=3000000`)
 - [ ] SHT40 sensor at 0x44 (if connected)
 - [ ] RTC time correct
+- [ ] If SHT40 connected: `orc-sensors` returns readings and appends to CSV
 
 ### 5. USB Storage — DEFERRED
 
@@ -116,11 +118,13 @@ root cause analysis.
 
 ```bash
 systemctl is-active chrony dnsmasq NetworkManager
+systemctl list-timers orc-sensors.timer
 ```
 
 - [ ] chrony: active
 - [ ] dnsmasq: active
 - [ ] NetworkManager: active
+- [ ] orc-sensors.timer: active (next activation shown)
 
 > **Note:** vsftpd is not used. Video capture is via RTSP pull (`orc-capture`),
 > not camera FTP push. See ISS-003 in ISSUE_LOG.md.

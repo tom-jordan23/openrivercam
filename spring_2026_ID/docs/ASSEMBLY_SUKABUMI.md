@@ -29,6 +29,7 @@
   - ~~Step 10d: FTP Server~~ — removed, not used (see ISS-003)
   - [Step 11: Configure PoE Camera Settings](#step-11-configure-poe-camera-settings-30-min)
   - [Step 11b: Enable Capture Service](#step-11b-enable-capture-service-5-min)
+  - [Step 11c: Enable Sensor Logging Service](#step-11c-enable-sensor-logging-service-5-min)
   - [Step 12: Mount External Components](#step-12-mount-external-components-30-min)
   - [Step 13: Final Assembly and Sealing](#step-13-final-assembly--sealing-15-min)
 - [Power-On Procedure](#power-on-procedure)
@@ -65,6 +66,8 @@ Complete these steps BEFORE traveling to Indonesia:
 - [ ] Configure camera via camtool.py (1080p, 16Mbps CBR, IR-only, NTP from Pi)
 - [ ] Insert and format MicroSD in camera, set recording to continuous (CMR)
 - [ ] Test video capture pipeline (download 5s clip from camera SD via RTSP)
+- [ ] Enable sensor logging (`orc-sensors.timer`) — see Step 11c
+- [ ] Verify SHT40 readings in `/var/log/orc/sensors/sht40_*.csv`
 - [ ] Configure WiFi hotspot for maintenance mode
 - [ ] Set up LED relay control script (GPIO 17/27/22 → relay channels → 12V LEDs)
 - [ ] Pre-configure Telkomsel APN (if known)
@@ -80,6 +83,7 @@ that must be masked during coating.
 - [ ] Test LTE modem connects (with test SIM)
 - [ ] Test video capture pipeline (5s clip from camera SD → /mnt/usb/incoming)
 - [ ] Test PoE switch powers camera when relay energized
+- [ ] Test SHT40 sensor: `i2cdetect -y 1` shows 0x44, `orc-sensors` returns readings
 - [ ] Verify LEDs light up via relay channels (GPIO 17/27/22)
 
 ### 3. Conformal Coating (After Testing, Before Travel)
@@ -715,6 +719,48 @@ powers off the PoE relay.
    Should show:
    - `[PASS] orc-capture service enabled`
    - `[PASS] orc-gpio-relays disabled (correct — orc-capture owns relay)`
+
+### Step 11c: Enable Sensor Logging Service (5 min)
+
+The `orc-sensors` service reads the SHT40 temperature/humidity sensor (and any
+future sensors) on a configurable interval and appends readings to daily CSV
+files. It runs as a timer-triggered oneshot — the timer ticks every 60 seconds
+and each sensor's own interval is checked before reading.
+
+1. **Deploy the sensor files** from the overlay:
+   ```bash
+   sudo mkdir -p /etc/orc-sensors /usr/local/lib/orc-sensors /var/log/orc/sensors
+   sudo cp pi/shared/etc/orc-sensors/sht40.conf /etc/orc-sensors/
+   sudo cp pi/shared/usr/local/bin/orc-sensors /usr/local/bin/
+   sudo chmod +x /usr/local/bin/orc-sensors
+   sudo cp pi/shared/usr/local/lib/orc-sensors/sensors_logger.py /usr/local/lib/orc-sensors/
+   sudo cp pi/shared/etc/systemd/system/orc-sensors.service /etc/systemd/system/
+   sudo cp pi/shared/etc/systemd/system/orc-sensors.timer /etc/systemd/system/
+   sudo chown pi:pi /var/log/orc/sensors
+   sudo systemctl daemon-reload
+   ```
+
+2. **Enable the timer** (not the service — the timer triggers it):
+   ```bash
+   sudo systemctl enable orc-sensors.timer
+   sudo systemctl start orc-sensors.timer
+   ```
+
+3. **Test a manual read:**
+   ```bash
+   orc-sensors
+   cat /var/log/orc/sensors/sht40_$(date +%Y-%m-%d).csv
+   ```
+   Should show a CSV with `timestamp,temp_c,humidity_pct` header and one data row.
+
+4. **Verify timer is scheduled:**
+   ```bash
+   systemctl list-timers orc-sensors.timer
+   ```
+
+> **Adding future sensors:** Drop a new `.conf` file into `/etc/orc-sensors/`
+> with its own `SENSOR_TYPE`, `INTERVAL_SEC`, `CSV_HEADER`, and `LOG_DIR`.
+> Add a matching `read_<type>()` driver function in `sensors_logger.py`.
 
 ### Step 12: Mount External Components (30 min)
 
