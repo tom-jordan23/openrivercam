@@ -69,6 +69,14 @@
 - [x] SOMELINE crimp tool kit (Amazon, arrived — missing correct Molex KK fittings)
 - [ ] SD16 4-pin bulkhead connectors ×2 (need to order)
 
+### Before Chester's trip
+
+- [ ] Finalize LED choice — verify current LEDs are the right type/voltage for relay-switched 12V operation. Decide before buying any additional parts.
+
+### New tasks
+
+- [ ] Power status MOTD script — Pi 5 reports undervoltage warnings when powered via GPIO instead of USB-C (expected, since PMIC doesn't see a USB-C negotiation). Write a simple script that checks `vcgencmd get_throttled` and reports recent power issues in the MOTD. Suppress or contextualize the false positive from GPIO power.
+
 ### Chester's Electronics trip (3/30)
 
 - [ ] Molex KK 254 housings, 6-pin (Molex 22-01-3067 or equiv) — qty 2

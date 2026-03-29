@@ -157,3 +157,57 @@ Battery autonomy drops from 2.5 days to <1 day. Not viable on the solar budget.
 4. File firmware feature request with Hikvision
 
 ---
+
+### ISS-005: Status LED design — single RGB vs 3× single-color
+
+| Field | Value |
+|-------|-------|
+| **Date opened** | 2026-03-29 |
+| **Site** | Both |
+| **Status** | OPEN |
+| **Decision needed by** | 2026-03-30 (before Chester's trip) |
+
+**Problem:** The original design uses 3 single-color 12V panel-mount LEDs
+(red/yellow/green) switched by relay channels CH2-4. This has several issues:
+- Uses 3 relay channels, leaving none for future growth
+- 3 panel holes = 3 potential seal failures in tropical humidity
+- Limited to on/off per color (7 states total)
+- 12V LEDs draw more power (relevant for Sukabumi solar budget)
+- Current LEDs have minimal shoulder for weathersealing
+
+**Requirements:**
+- Daylight visible from ground level
+- Weatherproof seal (IP67+) with solid bulkhead
+- Multi-color to communicate different statuses
+- Minimal panel holes (ideally 1)
+- Low power (Sukabumi solar constraint)
+- Free up relay channels for PMI team experimentation
+
+**Options under consideration:**
+
+| Option | Pros | Cons |
+|--------|------|------|
+| **A: APEM Q16 RGB, 12V, IP67** | Professional, great seal, Fresnel lens for daylight, 16mm mount | Still uses 3 relay channels, 12V power draw, ~$18/unit |
+| **B: Bare RGB LED (3.3V) + IP67 housing** | Direct GPIO drive, no relays, low power | No off-the-shelf IP67 panel mount product exists at 3.3V |
+| **C: WS2812B (NeoPixel), 5V, 1 data wire** | 1 GPIO pin, unlimited colors, ~60mA, frees all relay channels | No off-the-shelf IP67 panel mount, need custom housing or find suitable enclosure |
+| **D: Internal mount behind clear window** | Zero additional panel holes, no seal risk | Less visible, may need light pipe, requires enclosure modification |
+
+**Status color/pattern chart (applies to all options):**
+
+| Color | Pattern | Meaning |
+|-------|---------|---------|
+| Green | Solid | System OK, idle |
+| Blue | Solid | Capturing / uploading |
+| Yellow | Solid | Warning (degraded — e.g. sensor offline) |
+| Red | Solid | Error (capture failed, camera unreachable) |
+| Cyan | Solid | Maintenance mode active |
+| Purple | Solid | Firmware update in progress |
+| White | Solid | Boot in progress |
+| Green | Slow blink | OK, on battery/UPS (Jakarta) |
+| Red | Fast blink | Critical error (multiple failures) |
+| OFF | — | Pi is off / sleeping (Sukabumi between cycles) |
+
+**Leaning toward:** Option C (NeoPixel) if a weatherproof housing can be
+found or fabricated, otherwise Option D (internal mount).
+
+---
