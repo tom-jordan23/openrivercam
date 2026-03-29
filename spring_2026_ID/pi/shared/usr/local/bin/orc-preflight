@@ -335,17 +335,23 @@ fi
 
 # I2C (SHT40 sensor)
 if [ -e /dev/i2c-1 ]; then
+    pass "I2C bus available (/dev/i2c-1)"
     if command -v i2cdetect >/dev/null 2>&1; then
         if i2cdetect -y 1 2>/dev/null | grep -q "44"; then
             pass "SHT40 sensor detected on I2C bus (0x44)"
         else
             warn "I2C bus available but SHT40 (0x44) not detected"
         fi
-    else
-        pass "I2C bus available (/dev/i2c-1)"
     fi
 else
-    warn "I2C bus not available (/dev/i2c-1 missing)"
+    fail "I2C bus not available (/dev/i2c-1 missing — enable with raspi-config)"
+fi
+
+# RTC battery charging
+if grep -q "^dtparam=rtc_bbat_vchg" /boot/firmware/config.txt 2>/dev/null; then
+    pass "RTC battery charging enabled in config.txt"
+else
+    warn "RTC battery charging not configured (dtparam=rtc_bbat_vchg missing from config.txt)"
 fi
 
 # 1-Wire (DS18B20 sensor)

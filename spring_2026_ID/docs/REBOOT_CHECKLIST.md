@@ -27,7 +27,7 @@ Should show **0 FAILs**. Expected WARNs:
 - `/boot/firmware` not mounted (expected with 90-qemu.rules)
 - `config.txt` not accessible (same reason)
 - orc-capture service not enabled (until deployed to systemd)
-- I2C / DS18B20 not detected (sensor hardware not connected)
+- SHT40 sensor not detected at 0x44 (if sensor hardware not connected)
 
 ## Step-by-Step Verification
 
@@ -78,7 +78,25 @@ If `get_throttled` is non-zero, decode with:
 - [ ] CPU temp < 70C
 - [ ] No throttling (0x0)
 
-### 4. USB Storage — DEFERRED
+### 4. I2C Bus and RTC
+
+```bash
+ls /dev/i2c-1                  # should exist (I2C enabled in config.txt)
+i2cdetect -y 1                 # look for 0x44 (SHT40) and 0x68 (RTC)
+timedatectl                    # RTC time should match system time
+cat /boot/firmware/config.txt | grep -E "i2c_arm|bbat"
+```
+
+Expected config.txt entries:
+- `dtparam=i2c_arm=on` — enables I2C bus 1 on GPIO 2/3
+- `dtparam=rtc_bbat_vchg=3000000` — trickle-charges RTC backup battery at 3V
+
+- [ ] `/dev/i2c-1` exists
+- [ ] RTC battery charging enabled (`rtc_bbat_vchg=3000000`)
+- [ ] SHT40 sensor at 0x44 (if connected)
+- [ ] RTC time correct
+
+### 5. USB Storage — DEFERRED
 
 **Status (2026-03-28):** Samsung FIT Plus 256GB is **removed from the build**.
 The UAS (USB Attached SCSI) driver causes boot-time enumeration storms that
@@ -94,7 +112,7 @@ root cause analysis.
 
 - [x] USB drive removed (intentional — not a failure)
 
-### 5. Services
+### 6. Services
 
 ```bash
 systemctl is-active chrony dnsmasq NetworkManager
@@ -107,7 +125,7 @@ systemctl is-active chrony dnsmasq NetworkManager
 > **Note:** vsftpd is not used. Video capture is via RTSP pull (`orc-capture`),
 > not camera FTP push. See ISS-003 in ISSUE_LOG.md.
 
-### 6. LTE Modem
+### 7. LTE Modem
 
 ```bash
 mmcli -L                       # should show Quectel EG25-G
@@ -129,7 +147,7 @@ dmesg | grep -c "nonzero urb status"
 - [ ] /dev/ttyUSB0-3 present
 - [ ] No URB error storm in dmesg
 
-### 7. Timezone
+### 8. Timezone
 
 > **WARNING: Do NOT change the timezone from UTC.** The Rainbow Sensing image
 > ships with GMT0/UTC as the default. If the timezone is changed to a regional
@@ -149,7 +167,7 @@ sudo timedatectl set-timezone UTC
 ```
 Then reboot or restart orc-api (`sudo systemctl restart orc-api`).
 
-### 8. PoE Relay and Camera
+### 9. PoE Relay and Camera
 
 ```bash
 poe-relay on
@@ -160,7 +178,7 @@ ping -c 1 192.168.50.139
 - [ ] Relay powers on (GPIO 24 HIGH)
 - [ ] Camera reachable after boot
 
-### 9. Camera Configuration (after camera is up)
+### 10. Camera Configuration (after camera is up)
 
 The ANNKE C1200 may revert `supplementLightMode` to `eventIntelligence` on
 power cycle (white LED flashes at night). `orc-capture` enforces `irLight`
@@ -175,7 +193,7 @@ curl -s --digest -u "admin:${BASE_PASSWD}" \
 
 - [ ] supplementLightMode is `irLight` or `eventIntelligence` (orc-capture fixes this)
 
-### 10. Capture Script (end-to-end test)
+### 11. Capture Script (end-to-end test)
 
 ```bash
 orc-capture --skip-relay --dry-run
@@ -195,7 +213,7 @@ poe-relay off
 
 - [ ] Relay OFF after test
 
-### 11. NTP for Camera
+### 12. NTP for Camera
 
 ```bash
 sudo chronyc clients | head -5
