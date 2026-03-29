@@ -1,17 +1,20 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<!-- STUB: Pull from live camera to populate. OSD overlays for Jakarta Cam 2. -->
+<!-- OSD overlays DISABLED — any on-screen text or timestamp interferes
+     with ORC's image-based surface velocity measurement.
+     Note: cam2 removed from Jakarta build (1 camera only) but file
+     retained for reference. -->
 <VideoOverlay xmlns="http://www.hikvision.com/ver20/XMLSchema" version="2.0">
   <TextOverlayList>
     <TextOverlay>
       <id>1</id>
-      <enabled>true</enabled>
+      <enabled>false</enabled>
       <positionX>0</positionX>
       <positionY>0</positionY>
-      <displayText>ORC Jakarta - Cam 2 Downstream</displayText>
+      <displayText></displayText>
     </TextOverlay>
   </TextOverlayList>
   <DateTimeOverlay>
-    <enabled>true</enabled>
+    <enabled>false</enabled>
     <positionX>0</positionX>
     <positionY>544</positionY>
     <dateStyle>YYYY-MM-DD</dateStyle>

@@ -6,6 +6,18 @@
 **Date:** November 2025
 **Target Audience:** Humanitarian IM Officers and Program Managers
 
+> **Note (March 2026):** This manual needs revision and is not actively being
+> worked on. It was drafted during an earlier project phase and has not been
+> updated to reflect current hardware decisions, the switch to ORC-OS, or
+> lessons learned from the Spring 2026 Indonesia deployment. Some sections
+> contain outdated component references and procedures that no longer match
+> the current build.
+>
+> **For current build documentation**, see the
+> [spring_2026_ID/](../spring_2026_ID/) directory.
+>
+> A revision pass is planned after the Indonesia deployment is complete.
+
 ---
 
 ## About This Manual

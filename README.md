@@ -16,11 +16,12 @@ our deployments.
 
 ## Current Focus
 
-Equipment ordered. Assembling the Sukabumi device, then Jakarta.
+Both stations are in active build. Sukabumi is in software integration
+testing. Jakarta wiring is underway. Departure ~April 15, 2026.
 
 ### Deployment Overview
 
-**Trip:** March/April 2026
+**Trip:** April 2026
 **Sites:** Sukabumi (redeploy) + Jakarta (new install)
 **Budget:** $3,000 USD for both sites
 **Method:** Personal carry with humanitarian papers
@@ -29,16 +30,20 @@ Equipment ordered. Assembling the Sukabumi device, then Jakarta.
 
 | Site | Power | Camera | Status |
 |------|-------|--------|--------|
-| **Sukabumi** | Solar (existing 200W/50Ah) | Factory-sealed PoE (1 camera) | Assembly in progress |
-| **Jakarta** | AC utility + 24hr UPS | Factory-sealed PoE (1 camera) | Pending Sukabumi completion |
+| **Sukabumi** | Solar (existing 200W/50Ah) | Factory-sealed PoE (1 camera) | ORC-OS config and capture testing |
+| **Jakarta** | AC utility + 24hr UPS | Factory-sealed PoE (1 camera) | 12V/5V wiring complete, relay wired, first Pi boot done |
 
 ### Project Status
 
-- **Research phases 1-5:** Complete (mounting, humidity, UI, cameras, connectivity)
-- **BOMs:** Complete - equipment ordered
-- **Travel/import strategy:** Documented - what to carry vs source locally
+- **Research phases 1-5:** Complete
+- **BOMs:** Complete — equipment ordered and mostly received
+- **Travel/import strategy:** Documented (TRAVEL_AND_IMPORT.md)
 - **Wiring diagrams:** Complete for both sites
-- **Assembly:** Sukabumi build in progress
+- **Assembly docs:** Comprehensive step-by-step guides with build photos, continuity checklists, door sheets, and bilingual exterior placards
+- **Sukabumi hardware:** Mounted, wired, powered on, relay tested, RTC and SHT40 installed. ORC-OS software integration in progress.
+- **Jakarta hardware:** AC power chain complete (surge suppressor → PSU → 12V distribution). 5V buck converter trimmed and wired to Pi. Relay 5V side wired. CH1 PoE path wired. First boot successful.
+- **Software:** `orc-capture` script with quality gate, `poe-relay` control, `orc-sensors` for SHT40, `orc-preflight` checks. Site-specific config via `RELAY_MODE` (cycle for solar, always for AC).
+- **Remaining:** LED decision (ISS-005), rain gauge external wiring, J2 power buttons, conformal coating, final integration testing, Jakarta battery+charger (sourced in-country)
 
 ## Repository Structure
 
@@ -87,20 +92,35 @@ survey/
 ## Key Decisions
 
 **Humidity management:**
-- Jakarta: Conformal coating + PTC heaters + Gore vents (full industrial approach)
+- Jakarta: Conformal coating (MG 422C silicone) + PTC heaters + Gore vents
 - Sukabumi: Conformal coating + Gore vents only (solar power constraint)
+- Coating applied after full hardware testing (dry-fit first, coat last)
 
 **Camera strategy:**
 - Both sites: Single ANNKE C1200 factory-sealed PoE camera with built-in IR
+- Video captured via RTSP pull (`orc-capture` script), not camera FTP push
+- Camera power-cycled on Sukabumi (RELAY_MODE=cycle), always-on on Jakarta (RELAY_MODE=always)
 
-**IR illumination:** Tendelux AI4 with built-in photocell + Numato USB relay (no cable cutting)
+**Power delivery:**
+- Pi powered via GPIO header (DDR-60G-5 buck converter, 5.1V), not USB-C
+- Relay uses NO (normally open) contacts as fail-safe — camera powers down if Pi crashes
+- Active-high relay logic (verified empirically, differs from ORC-OS default)
+
+**Wiring standards:**
+- Solid core wire for all DC internal DIN rail wiring (no ferrules)
+- One wire per screw terminal (no doubling up)
+- AC and DC wiring physically separated (AC between rails, DC over top rail)
+- Jakarta AC wiring: 2.5 mm² / 14 AWG per IEC 60364 / Indonesian SNI
 
 ## Next Steps
 
-1. Assemble and test Sukabumi device
-2. Conformal coat electronics before travel
-3. Assemble and test Jakarta device
-4. Request humanitarian letter from sponsoring organization
+1. Finalize status LED design (ISS-005 — decision by 3/30)
+2. Complete ORC-OS software integration on Sukabumi
+3. Complete Jakarta wiring (sensors, rain gauge, power button)
+4. Conformal coat both stations
+5. Final integration testing (end-to-end capture on both)
+6. Print and laminate door sheets and exterior placards
+7. Pack per TRAVEL_AND_IMPORT.md
 
 ## Related Projects
 

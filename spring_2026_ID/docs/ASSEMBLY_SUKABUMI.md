@@ -59,7 +59,7 @@ Complete these steps BEFORE traveling to Indonesia:
 - [ ] **Enable RTC battery charging** in `/boot/firmware/config.txt` — this is OFF by default because the Pi cannot detect whether the battery is rechargeable. Without this line, the RTC battery will silently drain and the clock will lose time. Set `dtparam=rtc_bbat_vchg=3000000` for ML cells or `dtparam=rtc_bbat_vchg=4200000` for LIR cells. See GPIO_WIRING.md Step 9.
 - [ ] Configure Pi 5 RTC wake schedule (15-minute wake cycle via ML-2020 coin cell)
 - [ ] Configure Pi eth0 static IP (192.168.50.1/24) and dnsmasq DHCP for camera network
-- [ ] Set Pi timezone to Asia/Jakarta (WIB, UTC+7)
+- [ ] **Do NOT change timezone from UTC** — ORC-OS requires UTC (see REBOOT_CHECKLIST.md)
 - [ ] Install and configure chrony as NTP server for camera network
 - [ ] Format USB drive as ext4, mount at /mnt/usb, add to fstab
 - ~~Configure vsftpd~~ — not needed; capture is via RTSP pull (orc-capture)
@@ -562,9 +562,11 @@ NTP servers. The Pi must serve NTP so the camera's clock stays in sync.
    sudo systemctl enable chrony
    ```
 
-4. **Set Pi timezone to Jakarta (WIB, UTC+7):**
+4. **Timezone: leave as UTC (do NOT change).**
+   ORC-OS requires UTC. Changing to a regional timezone (e.g. Asia/Jakarta)
+   breaks the ORC API's timestamp parsing. Verify with:
    ```bash
-   sudo timedatectl set-timezone Asia/Jakarta
+   timedatectl | grep "Time zone"   # should show Etc/UTC or GMT
    ```
 
 ### ~~Step 10d: FTP Server~~ — REMOVED
@@ -624,7 +626,9 @@ pushed to the camera as a batch. No web UI needed.
    | Supplement light | IR only | No white LEDs (no visible illumination) |
    | Motion detection | Disabled | Not used — continuous recording instead |
    | NTP server | 192.168.50.1 (Pi) | Camera has no internet access |
-   | Timezone | WIB (UTC+7) | Jakarta/Western Indonesia Time |
+   | Timezone | UTC | Must match Pi — ORC-OS requires UTC |
+   | OSD text overlay | Disabled | On-screen text interferes with ORC image analysis |
+   | OSD datetime overlay | Disabled | On-screen timestamps interfere with ORC image analysis |
 
    > **Note:** FTP config is not pushed. Video capture uses RTSP pull via
    > `orc-capture`, not camera FTP push. See ISS-003.
@@ -776,7 +780,7 @@ and each sensor's own interval is checked before reading.
 3. **Rain gauge mounting:**
    - Mount Hydreon RG-15 on pole arm, away from obstructions
    - Built-in mounting holes, no separate bracket needed
-   - Level the gauge (critical for accuracy)
+   - Mount with dome facing up, away from overhanging surfaces that could drip onto it (no leveling needed — optical sensor, not tipping bucket)
    - Route cable to enclosure
 
 4. **Antenna:**

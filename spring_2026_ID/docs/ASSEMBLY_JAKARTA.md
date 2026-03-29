@@ -54,7 +54,7 @@ Complete these steps BEFORE traveling to Indonesia:
   - After reboot, navigate to `http://<hostname>.local` to verify the ORC-OS web dashboard loads
   - Set the ORC-OS web dashboard password when prompted
 - [ ] **Enable RTC battery charging** in `/boot/firmware/config.txt` — this is OFF by default because the Pi cannot detect whether the battery is rechargeable. Without this line, the RTC battery will silently drain and the clock will lose time. Set `dtparam=rtc_bbat_vchg=3000000` for ML cells or `dtparam=rtc_bbat_vchg=4200000` for LIR cells. See the RTC battery section in Step 4 for chemistry options and charge voltage settings.
-- [ ] Set Pi timezone to Asia/Jakarta (WIB, UTC+7)
+- [ ] **Do NOT change timezone from UTC** — ORC-OS requires UTC (see REBOOT_CHECKLIST.md)
 - [ ] Install and configure chrony as NTP server for camera network
 - [ ] Format USB drive as ext4, mount at /mnt/usb, add to fstab
 - ~~Configure vsftpd~~ — not needed; capture is via RTSP pull (orc-capture)
@@ -203,9 +203,11 @@ The camera is on an isolated network with no internet. The Pi must serve NTP.
    sudo systemctl restart chrony
    sudo systemctl enable chrony
    ```
-3. Set Pi timezone to Jakarta (WIB, UTC+7):
+3. **Timezone: leave as UTC (do NOT change).**
+   ORC-OS requires UTC. Changing to a regional timezone (e.g. Asia/Jakarta)
+   breaks the ORC API's timestamp parsing. Verify with:
    ```bash
-   sudo timedatectl set-timezone Asia/Jakarta
+   timedatectl | grep "Time zone"   # should show Etc/UTC or GMT
    ```
 
 **~~FTP server setup~~ — REMOVED:**
@@ -237,7 +239,7 @@ The camera is on an isolated network with no internet. The Pi must serve NTP.
   python3 camtool.py push jakarta-cam1
   ```
   This sets: 1920x1080 H.264 at 16 Mbps CBR, 12.5fps, audio off, IR-only
-  illumination, motion detection off, NTP from Pi, WIB timezone.
+  illumination, motion detection off, NTP from Pi, UTC timezone.
 
   > **Warning — supplement light reverts on power cycle:** The ANNKE C1200
   > resets `supplementLightMode` from `irLight` to `eventIntelligence` after
@@ -953,7 +955,7 @@ preparation.**
 
 1. **Mount Hydreon RG-15** on pole (separate from camera)
    - Built-in mounting holes, no separate bracket needed
-2. **Level the gauge** (critical for accuracy)
+2. **Mount with dome facing up**, away from overhanging surfaces that could drip onto it (no leveling needed — the RG-15 is optical, not a tipping bucket)
 3. **Route 18/4 stranded jacketed cable** from rain gauge to SD16 bulkhead plug
 4. **Connect to bulkhead:**
    - Pin 1: VCC (12V)

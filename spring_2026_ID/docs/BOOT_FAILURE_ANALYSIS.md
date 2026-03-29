@@ -129,9 +129,9 @@ Cloud-init's status.json confirms the failure:
    entry. This means: try to mount it, wait up to 30 seconds, but if it fails,
    continue booting normally.
 
-2. **Set root password** to `orc-emergency` via `chpasswd`. If emergency mode
-   ever triggers again, you'll be able to get a shell. **Change this after
-   deployment.**
+2. **Set a root password** via `chpasswd` so that if emergency mode ever
+   triggers again, you can get a shell. Use a unique password and record it
+   securely — do not store it in version control. **Change it after deployment.**
 
 3. **Disabled cloud-init** by touching `/etc/cloud/cloud-init.disabled`. The
    image is fully configured — cloud-init has nothing left to do and only causes
