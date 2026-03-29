@@ -66,9 +66,17 @@
 
 ### Parts to arrive this week
 
-- [ ] SOMELINE crimp tool kit (Amazon, ordered 3/25)
+- [x] SOMELINE crimp tool kit (Amazon, arrived — missing correct Molex KK fittings)
 - [ ] SD16 4-pin bulkhead connectors ×2 (need to order)
-- [ ] Pogo pins — Adafruit 5381 (need to order from Adafruit or Digi-Key)
+
+### Chester's Electronics trip (3/30)
+
+- [ ] Molex KK 254 housings, 6-pin (Molex 22-01-3067 or equiv) — qty 2
+- [ ] Molex KK 254 crimp pins (Molex 08-55-0131 or equiv) — qty 10+
+- [ ] SD16 4-pin IP68 aviation connector pairs (plug + panel socket) — qty 2
+- [ ] M1.6 or #0-80 bolts, nuts, washers (for J2 power button) — qty 4+ each (bring Pi to test-fit)
+- [ ] O-ring crimp terminals for M1.6/#0 bolt, 18 AWG wire — qty 4+
+- [ ] Green/yellow 12 AWG stranded wire — a few feet (Jakarta PE ground)
 
 ---
 
@@ -77,7 +85,7 @@
 ### Sukabumi — finish integration
 
 - [ ] Implement rain gauge capture script (TODO-001)
-- [ ] Wire and test J2 power button (pogo pins + Dupont, once parts arrive)
+- [ ] Wire and test J2 power button (bolt-through + O-ring terminals, once parts arrive)
 - [ ] Wire rain gauge external side (SD16 bulkhead + 18/4 cable, once parts arrive)
 - [ ] Wire LEDs through relay CH2-4 (if time permits)
 - [ ] Full end-to-end soak test (leave running overnight on capture schedule)

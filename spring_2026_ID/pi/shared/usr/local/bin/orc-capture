@@ -6,6 +6,10 @@
 # relay module). The ORC-OS orc-gpio-relays service is NOT used because it
 # assumes active-low logic.
 #
+# Relay modes (set RELAY_MODE in /etc/orc-capture.conf):
+#   "cycle"  — power on relay before capture, power off after (default)
+#   "always" — assert relay on, leave on permanently after capture
+#
 # Workflow:
 #   1. Power on PoE relay via poe-relay
 #   2. Wait for camera to boot and become reachable
@@ -13,7 +17,7 @@
 #   4. Validate captured file against quality gate
 #   5. On pass: deliver to ORC-OS incoming directory
 #   6. On fail: retry up to MAX_RETRIES
-#   7. Power off PoE relay
+#   7. Power off PoE relay (cycle mode) or leave on (always mode)
 #
 # Quality gate checks:
 #   - File exists and is non-empty
@@ -47,6 +51,7 @@ fi
 
 # ─── Defaults (for any values not set by the config file) ───────────
 
+RELAY_MODE="${RELAY_MODE:-cycle}"
 CAMERA_IP="${CAMERA_IP:-192.168.50.139}"
 CAMERA_USER="${CAMERA_USER:-admin}"
 CAMERA_PASS="${CAMERA_PASS:-}"
@@ -121,7 +126,7 @@ relay_on() {
         log "Relay: skip (--skip-relay)"
         return
     fi
-    log "Relay: powering on PoE"
+    log "Relay: powering on PoE (mode: ${RELAY_MODE})"
     poe-relay on >/dev/null
 }
 
@@ -129,7 +134,11 @@ relay_off() {
     if [ "$SKIP_RELAY" -eq 1 ]; then
         return
     fi
-    log "Relay: powering off PoE"
+    if [ "$RELAY_MODE" = "always" ]; then
+        log "Relay: leaving on (mode: always)"
+        return
+    fi
+    log "Relay: powering off PoE (mode: cycle)"
     poe-relay off >/dev/null
 }
 

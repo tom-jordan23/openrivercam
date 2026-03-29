@@ -626,34 +626,37 @@ momentary switch.
 switch works. See the button requirements table in Step 5 for options.
 
 **J2 connector:** J2 is **unpopulated** — it's two bare through-holes at
-2.54mm pitch, not header pins. You need to add pins before you can connect
-wires.
+2.54mm pitch on the Pi 5 board.
 
-**No-solder method (recommended):** Use **through-hole pogo pins** (Adafruit
-product 5381, or equivalent). These are spring-loaded pins with thin stems
-that press-fit into through-holes without soldering.
+**Bolt-through method (recommended):** Use small bolts through the J2
+through-holes with O-ring terminal crimps on 18 AWG solid wire. This is
+mechanically robust, requires no soldering, and holds up well to vibration.
 
-1. Snap 2 pogo pins off the strip (they break apart like a Kit-Kat bar)
-2. Press the thin stems into the J2 through-holes from the top of the board
-3. The stems friction-fit into the holes; the spring tips protrude above
-4. Push **Dupont female jumper wires** onto the spring tips
-5. Cut the other ends of the Dupont wires, strip them, and connect to the
-   button's screw terminals
+**Hardware:** The J2 through-holes are standard PCB size (~1.0mm). Use
+**M1.6 bolts** (1.6mm shaft) or **#0-80 bolts** (1.52mm, US equivalent)
+with matching nuts and washers. Verify fit on your board before buying in
+quantity — bring the Pi to the hardware store if possible.
 
-**Vibration resistance:** Apply a small dab of **hot glue** over the pogo
-pins and Dupont connections after verifying everything works. Hot glue holds
-firmly but can be peeled off for service — do not use superglue or epoxy.
+**O-ring terminals:** Use crimp-on O-ring (ring) terminals sized for the
+bolt diameter (M1.6 or #0) and rated for 18 AWG wire.
 
-**Alternative:** Solder a standard 2-pin 2.54mm header into J2. This is the
-only solder point in the entire build if you choose this option.
+1. Insert a small bolt through each J2 through-hole from the bottom of
+   the board
+2. Crimp an O-ring terminal onto each 18 AWG solid wire
+3. Place the O-ring terminal over the bolt on the top side of the board
+4. Secure with a nut — finger-tight plus a quarter turn (don't overtorque
+   and crack the PCB)
+5. Route the wires to the external power button's screw terminals
+
+**Alternative:** Solder a standard 2-pin 2.54mm header into J2.
 
 The J2 wires must route through or around the G469 HAT stack to reach the
 external button. Leave enough slack to separate the stack for service.
 
 | Wire # | From | To | Label | Color | Gauge |
 |--------|------|----|-------|-------|-------|
-| 32 | Pi 5 J2 pin 1 | Power button terminal 1 | "PWR BTN" | Blue/White | 22 AWG |
-| 33 | Pi 5 J2 pin 2 | Power button terminal 2 | "PWR BTN" | Blue/White | 22 AWG |
+| 32 | Pi 5 J2 pin 1 | Power button terminal 1 | "PWR BTN" | Blue/White | 18 AWG solid |
+| 33 | Pi 5 J2 pin 2 | Power button terminal 2 | "PWR BTN" | Blue/White | 18 AWG solid |
 
 The power button is a simple momentary switch (normally open). It does not
 matter which terminal gets which wire (not polarized). It also does not matter

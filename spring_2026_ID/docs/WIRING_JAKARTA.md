@@ -432,9 +432,9 @@ EXTERNAL POWER BUTTON WIRING (Pi 5 J2 Header):
 |   Pi 5 J2 Header ---> IP67 MOMENTARY SWITCH ---> (loop back to J2)       |
 |   (2-pin, near USB-C)   (panel-mount)                                     |
 |                                                                            |
-|   J2 is UNPOPULATED (bare through-holes). Use pogo pins (Adafruit 5381)  |
-|   or solder a 2-pin header. Connect with Dupont female jumper wires.      |
-|   Apply hot glue over connections for vibration resistance.               |
+|   J2 is UNPOPULATED (bare through-holes). Use bolt-through method:       |
+|   M2 bolt through each hole, O-ring terminal crimp on 18 AWG solid wire, |
+|   secured with nut. Alternative: solder a 2-pin 2.54mm header.           |
 |                                                                            |
 |   This is a DEDICATED HARDWARE power header on the Pi 5 -- NOT a GPIO.   |
 |   Active low -- button shorts the two pins together.                      |

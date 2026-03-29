@@ -106,7 +106,7 @@ that are difficult to diagnose in the field.
 - Ethernet port
 - MicroSD card slot
 - J5 (BAT) RTC battery connector
-- J2 power button through-holes (or pogo pins if installed)
+- J2 power button through-holes (or bolt terminals if installed)
 - Heat sink mounting holes / thermal pad contact area
 - Any other connector or contact point used during testing
 
