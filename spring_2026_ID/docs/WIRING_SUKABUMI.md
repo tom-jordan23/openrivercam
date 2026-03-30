@@ -267,26 +267,7 @@ STATUS LED WIRING (12V panel-mount LEDs via relay channels):
 └────────────────────────────────────────────────────────────────────────────┘
 
 
-MAINTENANCE BUTTON WIRING:
-┌────────────────────────────────────────────────────────────────────────────┐
-│                                                                            │
-│   GPIO 23 (with internal pull-up enabled)                                  │
-│      │                                                                     │
-│      └──────────────┐                                                      │
-│                     │                                                      │
-│              ┌──────┴──────┐                                               │
-│              │   BUTTON    │                                               │
-│              │  (NO, IP67) │                                               │
-│              └──────┬──────┘                                               │
-│                     │                                                      │
-│                     └──────────────► GND                                   │
-│                                                                            │
-│   Button press: GPIO 23 goes LOW (active low)                             │
-│                                                                            │
-└────────────────────────────────────────────────────────────────────────────┘
-
-
-EXTERNAL POWER BUTTON WIRING (Pi 5 J2 header — NOT GPIO):
+POWER BUTTON WIRING (Pi 5 J2 header — NOT GPIO):
 ┌────────────────────────────────────────────────────────────────────────────┐
 │                                                                            │
 │   Pi 5 J2 header (2-pin, near USB-C port)                                 │
@@ -306,7 +287,10 @@ EXTERNAL POWER BUTTON WIRING (Pi 5 J2 header — NOT GPIO):
 │                                                                            │
 │   Brief press (halted) = power on                                         │
 │   Brief press (running) = clean shutdown                                  │
+│   Long press (3s, running) = enter maintenance mode                       │
 │   Hold ~10s (frozen) = force power off                                    │
+│                                                                            │
+│   Single button handles power control AND maintenance mode.               │
 │                                                                            │
 └────────────────────────────────────────────────────────────────────────────┘
 
@@ -427,17 +411,16 @@ CABLE DETAILS:
     │  │  (Velcro)      │                                                │
     │  └────────────────┘                                                │
     │                                                                     │
-    │  ○ ○ ○   [●]  [●]   [CNLINKO]   [SP13]    [PG9]   [PG9]           │
-    │  LEDs   Maint Pwr   PoE cam     12V in    Rain    DS18B20          │
-    │  R Y G  Btn   Btn   (IP67)      power     gauge   probe            │
+    │  ○ ○ ○   [●]        [CNLINKO]   [SP13]    [PG9]   [PG9]           │
+    │  LEDs   Power      PoE cam     12V in    Rain    DS18B20          │
+    │  R Y G  Button     (IP67)      power     gauge   probe            │
     │                                                                     │
     └─────────────────────────────────────────────────────────────────────┘
 
 LEGEND:
 ○ = 10mm LED (panel mount)
-● = 16mm Button (panel mount, IP67 momentary)
-    Maint Btn = Maintenance button (GPIO 23)
-    Pwr Btn   = Power button (Pi 5 J2 header)
+● = Power button (panel mount, IP67 momentary, Pi 5 J2 header)
+    Brief press = power on/off, long press (3s) = maintenance mode
 [CNLINKO] = Weatherproof ethernet bulkhead (IP67)
 [SP13] = Weatherproof DC power bulkhead (IP68)
 [PG9] = Cable gland for sensor cables
@@ -475,11 +458,15 @@ TB1 - MAIN POWER
 
 **PRINT THIS DOCUMENT - LAMINATE FOR FIELD USE**
 
-**Document Version:** 3.1
-**Last Updated:** March 12, 2026
+**Document Version:** 3.2
+**Last Updated:** March 30, 2026
+**Changes from v3.1:**
+- Removed separate maintenance button (GPIO 23) — maintenance mode now triggered by long press (3s) on J2 power button
+- Enclosure layout updated: 1 button (power) instead of 2
+- Removed maintenance button wiring section
+
 **Changes from v3.0:**
 - Added external power button wired to Pi 5 J2 header (dedicated hardware power control, not GPIO)
-- Enclosure layout updated to show separate maintenance and power buttons
 
 **Changes from v2.0:**
 - Replaced Planet IPOE-260-12V PoE injector with LINOVISION PoE Switch + Electronics-Salon relay

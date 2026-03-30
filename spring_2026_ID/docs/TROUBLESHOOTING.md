@@ -124,9 +124,9 @@ START: Pi not responding (SSH hangs, no LED activity)
                   └──────────┘  └──────────────────────────┘
 
 NOTE: The J2 power button is near the USB-C port on the Pi 5.
-It is separate from the maintenance pushbutton (GPIO 23).
 - Brief press on halted Pi → powers on
 - Brief press on running Pi → clean shutdown
+- Long press (3s) on running Pi → enters maintenance mode
 - Hold ~10s → force power off (use only if Pi is frozen)
 ```
 
@@ -640,12 +640,13 @@ cat /sys/bus/w1/devices/28-*/temperature
 
 ### External Power Button (Pi 5 J2 Header)
 
-Both sites have an external momentary power button wired to the Pi 5's **J2 power button header** (2-pin, located near the USB-C port). This is a **dedicated hardware power control** — it is NOT a GPIO pin and is completely separate from the maintenance pushbutton (GPIO 23).
+Both sites have an external momentary power button wired to the Pi 5's **J2 power button header** (2-pin, located near the USB-C port). This is a **dedicated hardware power control** — it is NOT a GPIO pin. The power button also serves as the maintenance mode trigger (long press, 3 seconds).
 
 | Pi State | Action | Result |
 |----------|--------|--------|
 | Off (halted) | Brief press | Powers on |
 | Running | Brief press | Initiates clean shutdown |
+| Running | Long press (3s) | Enters maintenance mode |
 | Frozen | Hold ~10 seconds | Forces power off |
 
 No software configuration is required — the J2 header is active whenever the Pi has power from the USB-C supply.
@@ -746,7 +747,7 @@ dmesg | grep -i usb
 
 ### Entering Maintenance Mode
 
-1. **Long press** maintenance button (3+ seconds)
+1. **Long press** power button (3+ seconds)
 2. Wait for **yellow LED** steady on
 3. System will:
    - Start WiFi hotspot
@@ -770,7 +771,7 @@ dmesg | grep -i usb
 
 ### Exiting Maintenance Mode
 
-- **Short press** button, OR
+- **Short press** power button, OR
 - Reboot: `sudo reboot`, OR
 - Wait 30 minutes (auto-timeout)
 

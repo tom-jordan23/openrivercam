@@ -82,7 +82,7 @@ All fuses are **5x20mm glass tube** type. Do NOT use US automotive blade fuses
 | GPIO 15 | 10 | UART RX ← RG-15 TX |
 | GPIO 17 | 11 | Relay IN2 (Green LED) |
 | GPIO 22 | 15 | Relay IN4 (Red LED) |
-| GPIO 23 | 16 | Maintenance button |
+| GPIO 23 | 16 | Available |
 | GPIO 24 | 18 | Relay IN1 (PoE switch) |
 | — | 20 | GND (relay module) |
 | — | 25 | GND (buck converter) |
@@ -119,13 +119,30 @@ TB1 — 12V DISTRIBUTION (from PSU / Battery)
 | CH | GPIO | Load | State when Pi is OFF |
 |----|------|------|----------------------|
 | 1 | GPIO 24 | PoE switch (camera) | **OFF** (fail-safe) |
-| 2 | GPIO 17 | Green LED | OFF |
-| 3 | GPIO 27 | Yellow LED | OFF |
-| 4 | GPIO 22 | Red LED | OFF |
+| 2 | — | Available for future use | OFF |
+| 3 | — | Available for future use | OFF |
+| 4 | — | Available for future use | OFF |
 
 All relays use **NO (Normally Open)** contacts. When the Pi loses power or
 crashes, all relays open and all loads lose power. This prevents uncontrolled
 battery drain on UPS power.
+
+## Status LED
+
+Single WS2812B (NeoPixel) RGB LED behind sealed acrylic light window.
+Driven by 1 GPIO data pin + 5V power. No relay channels used.
+
+| Color | Pattern | Meaning |
+|-------|---------|---------|
+| Green | Solid | System OK, idle |
+| Blue | Solid | Capturing / uploading |
+| Yellow | Solid | Warning (degraded) |
+| Red | Solid | Error |
+| Cyan | Solid | Maintenance mode active |
+| White | Solid | Boot in progress |
+| Green | Slow blink | OK, on battery/UPS |
+| Red | Fast blink | Critical error |
+| OFF | — | Pi is off / sleeping |
 
 ---
 
@@ -201,17 +218,20 @@ battery drain on UPS power.
 
 ---
 
+## Power Button
+
+The power button (Pi 5 J2 header) handles all power and maintenance functions:
+
+- **Brief press:** power on (from halted) or clean shutdown (while running)
+- **Long press (3 seconds):** enter maintenance mode (WiFi hotspot + SSH)
+- **10-second hold:** force power off (if frozen)
+
 ## Maintenance Mode
 
-1. Press and hold maintenance button (3 seconds)
+1. Long press power button (3 seconds)
 2. Pi starts WiFi hotspot
 3. Connect to hotspot with laptop/phone
 4. SSH to Pi for diagnostics
-
-## Power Button
-
-- Brief press: power on (from halted) or clean shutdown (while running)
-- 10-second hold: force power off (if frozen)
 
 ---
 

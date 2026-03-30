@@ -352,8 +352,10 @@ sudo systemctl start orc-sensors.timer
 - [ ] 40 CFM fans (x2, for internal air circulation)
 
 ### User Interface
-- [ ] 12V IP67 panel-mount LEDs: Red, Yellow, Green
-- [ ] 2x momentary pushbuttons, normally open (maintenance + power). Any panel-mount momentary NO switch works — common options include Gebildet 16mm stainless (Amazon, ~$9, IP67), C&K AP Series (~$12, IP67), or generic 12mm metal momentary (~$3-5, IP65-67). Match hole size to the button you purchase.
+- [ ] WS2812B (NeoPixel) individual RGB pixel PCB (1 per site)
+- [ ] Clear cast acrylic sheet (small offcuts, ~2-3mm thick)
+- [ ] Clear neutral-cure silicone sealant (GE Silicone II or equivalent — NOT acetoxy)
+- [ ] 1x momentary pushbutton, normally open (power). Any panel-mount momentary NO switch works — common options include Gebildet 16mm stainless (Amazon, ~$9, IP67), C&K AP Series (~$12, IP67), or generic 12mm metal momentary (~$3-5, IP65-67). Match hole size to the button you purchase.
 
 ### Enclosure & Mounting
 - [ ] VEVOR NEMA 4x enclosure (16"x12"x8")
@@ -814,9 +816,9 @@ preparation.**
    - 1x hole for SP13 AC mains input bulkhead (220V AC input)
    - 1x M16 hole for ground cable
    - 2x holes for 40 CFM fans
-   - 3x 10mm holes for status LEDs
-   - 2x holes for pushbuttons (maintenance + power) — hole size depends on
-     the buttons you purchased (12mm, 16mm, 19mm, or 22mm are common)
+   - 1× 10-12mm hole for status LED light window
+   - 1x hole for power button — hole size depends on
+     the button you purchased (12mm, 16mm, 19mm, or 22mm are common)
    - 1x 16mm hole for rain gauge SD16 bulkhead connector
    - 1x PG9 hole for DS18B20 temperature probe
 
@@ -831,18 +833,19 @@ preparation.**
    - CNLINKO ethernet bulkhead (x1)
    - SD16 4-pin bulkhead connector for rain gauge
 
-4. **Install user interface components:**
-   - Insert LEDs into 10mm panel holes, secure with nuts
-   - Install pushbuttons, secure with nuts
-   - Label power button clearly as "POWER"
-   - Wire LEDs through relay channels (12V switched by relay):
-     - Green LED: 12V from TB1 -> relay CH2 COM -> CH2 NO -> LED -> GND (GPIO 17 -> IN2)
-     - Yellow LED: 12V from TB1 -> relay CH3 COM -> CH3 NO -> LED -> GND (GPIO 27 -> IN3)
-     - Red LED: 12V from TB1 -> relay CH4 COM -> CH4 NO -> LED -> GND (GPIO 22 -> IN4)
-   - Wire maintenance pushbutton to Geekworm G469 terminals:
-     - Button: GPIO 23 (Pin 16) -> Button -> GND (Pin 14)
+4. **Install status LED light window:**
 
-5. **Wire external power button to Pi 5 J2 header:**
+   Same silicone-filled acrylic sandwich procedure as Sukabumi — see
+   ASSEMBLY_SUKABUMI.md Step 8 item 3 for the detailed procedure.
+
+   Single WS2812B NeoPixel, 1 GPIO data pin, 5V power. No relay channels
+   used — all relay channels remain free for future use.
+
+5. **Install power button:**
+   - Install power button, secure with nut
+   - Label power button clearly as "POWER"
+
+6. **Wire external power button to Pi 5 J2 header:**
 
    J2 is a dedicated 2-pin power button header on the Pi 5, located near the
    USB-C port. This is NOT a GPIO pin — it is hardware-level power control.
@@ -1040,7 +1043,7 @@ proceeding.
 
 ### Verify Camera
 
-1. Enter maintenance mode (long press button)
+1. Enter maintenance mode (long press power button, 3 seconds)
 2. Connect laptop to WiFi hotspot
 3. SSH into Pi
 4. Ping camera:

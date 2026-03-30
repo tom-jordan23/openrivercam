@@ -207,7 +207,14 @@ Battery autonomy drops from 2.5 days to <1 day. Not viable on the solar budget.
 | Red | Fast blink | Critical error (multiple failures) |
 | OFF | — | Pi is off / sleeping (Sukabumi between cycles) |
 
-**Leaning toward:** Option C (NeoPixel) if a weatherproof housing can be
-found or fabricated, otherwise Option D (internal mount).
+**Decision (2026-03-30):** WS2812B NeoPixel with silicone-filled acrylic
+sandwich light window. Single LED inside enclosure, visible through a drilled
+hole sealed with two acrylic sheets and clear neutral-cure silicone filling
+the gap solid. No air cavity = no condensation risk. Uses 1 GPIO data pin,
+5V power from Pi rail. Frees all 3 relay channels for future use by PMI team.
+
+**Status:** RESOLVED
+
+See assembly docs for installation procedure.
 
 ---

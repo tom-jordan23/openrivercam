@@ -56,7 +56,7 @@ Complete these steps BEFORE traveling to Indonesia:
   - First boot takes 2-3 minutes (services compile, filesystem expands, then auto-reboots)
   - After reboot, navigate to `http://<hostname>.local` to verify the ORC-OS web dashboard loads
   - Set the ORC-OS web dashboard password when prompted
-- [ ] **Enable RTC battery charging** in `/boot/firmware/config.txt` — this is OFF by default because the Pi cannot detect whether the battery is rechargeable. Without this line, the RTC battery will silently drain and the clock will lose time. Set `dtparam=rtc_bbat_vchg=3000000` for ML cells or `dtparam=rtc_bbat_vchg=4200000` for LIR cells. See GPIO_WIRING.md Step 9.
+- [ ] **Enable RTC battery charging** in `/boot/firmware/config.txt` — this is OFF by default because the Pi cannot detect whether the battery is rechargeable. Without this line, the RTC battery will silently drain and the clock will lose time. Set `dtparam=rtc_bbat_vchg=3000000` for ML cells or `dtparam=rtc_bbat_vchg=4200000` for LIR cells. See GPIO_WIRING.md Step 8.
 - [ ] Configure Pi 5 RTC wake schedule (15-minute wake cycle via ML-2020 coin cell)
 - [ ] Configure Pi eth0 static IP (192.168.50.1/24) and dnsmasq DHCP for camera network
 - [ ] **Do NOT change timezone from UTC** — ORC-OS requires UTC (see REBOOT_CHECKLIST.md)
@@ -155,8 +155,10 @@ Verify all components before starting assembly:
 - [ ] SHT40 temperature/humidity sensor (I2C, inside enclosure)
 
 ### User Interface
-- [ ] 12V IP67 panel-mount LEDs: Red, Yellow, Green
-- [ ] 2× momentary pushbuttons, normally open (maintenance + power). Any panel-mount momentary NO switch works — see GPIO_WIRING.md Step 5 for requirements and options. Match hole size to the button you purchase.
+- [ ] WS2812B (NeoPixel) individual RGB pixel PCB (1 per site)
+- [ ] Clear cast acrylic sheet (small offcuts, ~2-3mm thick)
+- [ ] Clear neutral-cure silicone sealant (GE Silicone II or equivalent — NOT acetoxy)
+- [ ] 1× momentary pushbutton, normally open (power). Any panel-mount momentary NO switch works — see GPIO_WIRING.md Step 5 for requirements and options. Match hole size to the button you purchase.
 
 ### Enclosure & Mounting
 - [ ] Outdoor enclosure (~300×200×150mm)
@@ -388,9 +390,9 @@ coating (Pre-Assembly Checklist Step 3), then enclosure preparation.**
    - 1× 12mm hole for Proxicast puck antenna (enclosure top)
    - 1× hole for CNLINKO ethernet bulkhead (PoE camera)
    - 1× hole for SP13 DC power bulkhead (12V input)
-   - 3× 10mm holes for status LEDs
-   - 2× holes for pushbuttons (maintenance + power) — hole size depends on
-     the buttons you purchased (12mm, 16mm, 19mm, or 22mm are common)
+   - 1× 10-12mm hole for status LED light window
+   - 1× hole for power button — hole size depends on
+     the button you purchased (12mm, 16mm, 19mm, or 22mm are common)
    - 1× 16mm hole for rain gauge SD16 bulkhead connector
 
 2. **Install bulkheads and glands:**
@@ -399,15 +401,51 @@ coating (Pre-Assembly Checklist Step 3), then enclosure preparation.**
    - CNLINKO ethernet bulkhead
    - SD16 4-pin bulkhead connector for rain gauge
 
-3. **Install user interface components:**
-   - Insert LEDs into 10mm panel holes, secure with nuts
-   - Install pushbuttons, secure with nuts
+3. **Install status LED light window (silicone-filled acrylic sandwich):**
+
+   A single WS2812B (NeoPixel) RGB LED provides multi-color status indication
+   using only 1 GPIO data pin and 5V power. The LED is mounted inside the
+   enclosure behind a sealed clear window — no relay channels used.
+
+   **Materials:**
+   - 2× clear acrylic (cast PMMA) squares, ~25mm × 25mm, 2-3mm thick
+   - Clear **neutral-cure** silicone sealant (GE Silicone II or equivalent —
+     NOT acetoxy. If it smells like vinegar, don't use it on acrylic.)
+   - 1× WS2812B individual pixel PCB
+   - IPA (isopropyl alcohol) for cleaning — never use acetone on acrylic
+
+   **Procedure:**
+   1. Drill a 10-12mm hole in the enclosure wall where the LED will be visible
+   2. Deburr the hole edges and clean with IPA
+   3. Cut two acrylic squares large enough to cover the hole with ~5mm overlap
+      on all sides
+   4. Clean acrylic pieces with IPA (not acetone — acetone crazes acrylic)
+   5. Apply neutral-cure silicone around the hole perimeter on the **outside**
+      of the enclosure wall
+   6. Press the outer acrylic square onto the silicone, centered over the hole
+   7. From the inside, squeeze clear neutral-cure silicone into the hole cavity
+      until it's completely filled — no air bubbles
+   8. Apply silicone around the hole perimeter on the **inside** of the wall
+   9. Press the inner acrylic square onto the silicone, centered over the hole
+   10. Allow to cure 24 hours minimum before water exposure
+   11. Mount the WS2812B pixel on the inner acrylic face using a small dab of
+       silicone or double-sided tape, LED facing outward through the window
+
+   **Why solid fill:** An air gap between the sheets will fog with
+   condensation in tropical humidity. The solid silicone fill eliminates the
+   air cavity entirely — no condensation surface, no fogging.
+
+   **Wiring (1 GPIO data pin + 5V power):**
+   - WS2812B VCC → G469 5V (Pin 2 or Pin 4)
+   - WS2812B GND → G469 GND (any available)
+   - WS2812B DIN (data in) → GPIO pin (TBD — any free GPIO)
+
+4. **Install power button:**
+   - Install power button, secure with nut
    - Label power button clearly as "POWER"
 
    See **GPIO_WIRING.md** for detailed wiring instructions:
-   - **Step 4** — LED wiring (12V, relay-switched)
-   - **Step 5** — Maintenance pushbutton (GPIO 23 to GND)
-   - **Step 6** — Power button (Pi 5 J2 header)
+   - **Step 5** — Power button (Pi 5 J2 header)
 
 ### Step 9: Install Mounting Plate and Connect External Peripherals
 
@@ -426,7 +464,7 @@ coating (Pre-Assembly Checklist Step 3), then enclosure preparation.**
    - Inside: solid core 22 AWG from bulkhead socket to G469/TB1
    - Pin 1: 12V (TB1), Pin 2: GND (G469 Pin 9), Pin 3: TX→RX (GPIO 14),
      Pin 4: RX→TX (GPIO 15)
-   - See GPIO_WIRING.md Step 7 for full pin map, connector details, and
+   - See GPIO_WIRING.md Step 6 for full pin map, connector details, and
      verification checklists
 
 5. **Connect Cat6 outdoor cable:**
@@ -802,7 +840,6 @@ and each sensor's own interval is checked before reading.
    - [ ] All connections secure
    - [ ] Gore vents unobstructed
    - [ ] LEDs visible from outside
-   - [ ] Maintenance button accessible
    - [ ] Power button accessible and labeled
    - [ ] Power button wired to Pi 5 J2 header (not G469 terminals)
    - [ ] No loose items inside
@@ -857,7 +894,7 @@ proceeding.
 
 <a href="images/sukabumi/camera-live-view-working.png"><img src="images/sukabumi/camera-live-view-working.png" alt="ANNKE camera live view displayed on monitor via PoE switch and Pi, showing successful end-to-end bench test of camera system" width="400"></a>
 
-1. Enter maintenance mode (long press button)
+1. Enter maintenance mode (long press power button, 3 seconds)
 2. Connect to WiFi hotspot
 3. SSH into Pi
 4. Check camera is reachable: `ping 192.168.50.139`

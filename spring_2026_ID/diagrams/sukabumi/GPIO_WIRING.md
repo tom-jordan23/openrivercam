@@ -1,6 +1,6 @@
 # GPIO Wiring Guide — Sukabumi ORC Station
 
-**Rev C — 2026-03-20**
+**Rev D — 2026-03-30**
 **Hardware:** Raspberry Pi 5 → Stacking Headers → Geekworm G469 Breakout
 
 ---
@@ -18,11 +18,10 @@
   - [Step 2: Wire the Relay Module Input Side](#step-2-wire-the-relay-module-input-side-low-voltage)
   - [Step 3: Wire the Relay Module Output Side — CH1 (PoE Switch)](#step-3-wire-the-relay-module-output-side--ch1-poe-switch)
   - [Step 4: Wire the Relay Module Output Side — CH2/3/4 (LEDs)](#step-4-wire-the-relay-module-output-side--ch234-status-leds)
-  - [Step 5: Wire the Maintenance Pushbutton](#step-5-wire-the-maintenance-pushbutton)
-  - [Step 6: Wire the External Power Button](#step-6-wire-the-external-power-button-pi-5-j2-header)
-  - [Step 7: Wire the Hydreon RG-15 Rain Gauge](#step-7-wire-the-hydreon-rg-15-rain-gauge-uart)
-  - [Step 8: Wire the SHT40 Sensor](#step-8-wire-the-sht40-temperaturehumidity-sensor-i2c)
-  - [Step 9: Install RTC Battery](#step-9-install-rtc-battery-ml-2020)
+  - [Step 5: Wire the External Power Button](#step-5-wire-the-external-power-button-pi-5-j2-header)
+  - [Step 6: Wire the Hydreon RG-15 Rain Gauge](#step-6-wire-the-hydreon-rg-15-rain-gauge-uart)
+  - [Step 7: Wire the SHT40 Sensor](#step-7-wire-the-sht40-temperaturehumidity-sensor-i2c)
+  - [Step 8: Install RTC Battery](#step-8-install-rtc-battery-ml-2020)
 - [Final Pre-Power Verification](#final-pre-power-verification)
 - [First Power-On Procedure](#first-power-on-procedure)
 - [Channel Summary](#channel-summary)
@@ -262,8 +261,8 @@ Orientation: GPIO header at top-right corner of the Pi board.
   Pin 11 │  [GPIO 17     ] ●  ●  [GPIO 18]                 │  Pin 12
          │   ★ Green LED                                     │
   Pin 13 │  [GPIO 27     ] ●  ●  [GND]                     │  Pin 14
-         │   ★ Yellow LED         ★ Button GND               │
-  Pin 15 │  [GPIO 22     ] ●  ●  [GPIO 23]       ★ Button  │  Pin 16
+         │   ★ Yellow LED                                    │
+  Pin 15 │  [GPIO 22     ] ●  ●  [GPIO 23]                 │  Pin 16
          │   ★ Red LED                                       │
   Pin 17 │  [3V3 Power]    ●  ●  [GPIO 24]       ★ Relay   │  Pin 18
   Pin 19 │  [GPIO 10  MOSI] ●  ●  [GND]      ★ Relay GND  │  Pin 20
@@ -536,19 +535,10 @@ position rather than running three separate wires to TB1.
 
 ---
 
-### Step 5: Wire the Maintenance Pushbutton
+### Pushbutton Requirements
 
-The pushbutton is a simple switch between GPIO 23 and GND. The Pi's internal
-pull-up resistor (enabled in software) holds GPIO 23 at 3.3V when the button is
-not pressed. Pressing the button connects GPIO 23 to GND, which the software
-reads as a button press.
-
-**This is a 3.3V logic circuit — no 12V involved.**
-
-### Pushbutton Requirements (Steps 5 and 6)
-
-Both the maintenance button (Step 5) and the power button (Step 6) use the same
-type of switch. Any switch that meets these requirements will work:
+The power button uses a simple momentary switch. Any switch that meets these
+requirements will work:
 
 - **Type:** Momentary (normally open) — the circuit is open until you press it,
   and opens again when you release it. Do NOT use a latching/toggle switch.
@@ -572,44 +562,11 @@ type of switch. Any switch that meets these requirements will work:
 | Any arcade-style momentary | 24-30mm | Quick-connect | None | ~$2 |
 
 The key requirement is **momentary, normally open**. Everything else is
-preference. Both buttons in this build use the same type of switch — they
-are not interchangeable in function, but they are interchangeable in hardware.
+preference.
 
 ---
 
-| Wire # | From (G469 Terminal) | To | Label | Color | Gauge |
-|--------|---------------------|-----|-------|-------|-------|
-| 19 | Pin 16 — GPIO 23 | Button terminal 1 | "BTN signal" | Blue/White | 22 AWG |
-| 20 | Pin 14 — GND | Button terminal 2 | "BTN GND" | Black | 22 AWG |
-
-The pushbutton has two terminals. It does not matter which terminal gets which wire
-(a momentary switch is not polarized).
-
-```
-        3.3V (internal pull-up, enabled by software)
-          │
-          ├─── GPIO 23 (Pin 16) ──── read by systemd service
-          │
-     ┌────┴────┐
-     │  Button │  IP67 momentary (normally open)
-     └────┬────┘
-          │
-         GND (Pin 14)
-```
-
-**Cable routing:** The button wires pass through the enclosure wall via a M16
-cable gland. Apply dielectric grease to the cable gland threads.
-
-### Step 5 Verification
-
-- [ ] Continuity: G469 Pin 16 ↔ button terminal 1 — beep
-- [ ] Continuity: G469 Pin 14 ↔ button terminal 2 — beep
-- [ ] Button NOT pressed: button terminal 1 ↔ terminal 2 — **NO beep**
-- [ ] Button PRESSED (hold it): button terminal 1 ↔ terminal 2 — **beep**
-
----
-
-### Step 6: Wire the External Power Button (Pi 5 J2 Header)
+### Step 5: Wire the External Power Button (Pi 5 J2 Header)
 
 The Raspberry Pi 5 has a dedicated **J2 power button header** — a 2-pin header
 located near the USB-C port on the Pi board. Shorting these two pins briefly
@@ -622,8 +579,8 @@ momentary switch.
 
 **This is a 3.3V logic circuit — no 12V involved.**
 
-**Button:** Same type as the maintenance button — any momentary, normally open
-switch works. See the button requirements table in Step 5 for options.
+**Button:** Any momentary, normally open switch works. See the pushbutton
+requirements table above for options.
 
 **J2 connector:** J2 is **unpopulated** — it's two bare through-holes at
 2.54mm pitch on the Pi 5 board.
@@ -676,17 +633,18 @@ which J2 pin goes to which button terminal — either orientation works.
 ```
 
 **Cable routing:** The power button wires pass through the enclosure wall via a
-cable gland (can share the M16 gland with the maintenance button if both fit).
+cable gland.
 
 **Behavior:**
 - **Pi is off (halted):** Brief press powers on the Pi
 - **Pi is running:** Brief press initiates clean shutdown
+- **Pi is running:** Long press (3 seconds) enters maintenance mode
 - **Pi is frozen:** Hold for ~10 seconds to force power off
 
 **Note:** J2 is a Pi 5 feature. Earlier Pi models (Pi 4, Pi 3, etc.) do not
 have this header and cannot support an external hardware power button this way.
 
-### Step 6 Verification
+### Step 5 Verification
 
 - [ ] Continuity: J2 pin 1 ↔ power button terminal 1 — beep
 - [ ] Continuity: J2 pin 2 ↔ power button terminal 2 — beep
@@ -695,7 +653,7 @@ have this header and cannot support an external hardware power button this way.
 
 ---
 
-### Step 7: Wire the Hydreon RG-15 Rain Gauge (UART)
+### Step 6: Wire the Hydreon RG-15 Rain Gauge (UART)
 
 The RG-15 is an **optical** rain gauge — it has no funnel, no tipping bucket,
 and no moving parts. It works by bouncing infrared light off the inside
@@ -811,7 +769,7 @@ dtoverlay=uart0
 dtoverlay=disable-bt
 ```
 
-### Step 7 Verification
+### Step 6 Verification
 
 **Internal wiring (bulkhead to G469/TB1):**
 
@@ -839,7 +797,7 @@ destroy the Pi. Trace the wires and fix it before proceeding.**
 
 ---
 
-### Step 8: Wire the SHT40 Temperature/Humidity Sensor (I2C)
+### Step 7: Wire the SHT40 Temperature/Humidity Sensor (I2C)
 
 The SHT40 is mounted **inside** the enclosure to monitor internal climate
 (humidity, temperature). It connects via I2C using a STEMMA QT cable.
@@ -872,7 +830,7 @@ component — for example, the Pi's carrier tray has a flat surface that works
 well. This keeps the sensor secure without adding another rail mount. Position
 away from heat sources (Pi CPU, DC-DC converters) for accurate readings.
 
-### Step 8 Verification
+### Step 7 Verification
 
 - [ ] Continuity: G469 Pin 1 (3V3) ↔ SHT40 VIN — beep
 - [ ] Continuity: G469 Pin 3 (GPIO 2) ↔ SHT40 SDA — beep
@@ -881,7 +839,7 @@ away from heat sources (Pi CPU, DC-DC converters) for accurate readings.
 
 ---
 
-### Step 9: Install RTC Battery (ML-2020)
+### Step 8: Install RTC Battery (ML-2020)
 
 The Raspberry Pi 5 has a built-in real-time clock (RTC) that keeps time when the
 Pi loses power. It needs a rechargeable coin cell battery to function.
@@ -986,7 +944,7 @@ To test RTC backup:
 4. Reconnect power and boot
 5. Check `timedatectl` — the time should be correct (within a few seconds)
 
-### Step 9 Notes
+### Step 8 Notes
 
 - The ML-2020 charges slowly (3mA). Allow several hours of powered-on time for
   a full charge on a new battery.
@@ -1029,8 +987,6 @@ Complete this entire checklist before reconnecting the battery or USB-C cable.
 - [ ] G469 Pin 11 (GPIO 17) ↔ Relay IN2
 - [ ] G469 Pin 13 (GPIO 27) ↔ Relay IN3
 - [ ] G469 Pin 15 (GPIO 22) ↔ Relay IN4
-- [ ] G469 Pin 16 (GPIO 23) ↔ Button terminal
-- [ ] G469 Pin 14 (GND) ↔ Button terminal (other side)
 - [ ] G469 Pin 8 (GPIO 14) ↔ RG-15 green wire
 - [ ] G469 Pin 10 (GPIO 15) ↔ RG-15 yellow wire
 - [ ] G469 Pin 3 (GPIO 2) ↔ SHT40 SDA
@@ -1050,7 +1006,6 @@ These verify that 12V cannot reach the Pi GPIO:
 - [ ] TB1 12V ↔ G469 Pin 11 (GPIO 17) — **NO beep**
 - [ ] TB1 12V ↔ G469 Pin 13 (GPIO 27) — **NO beep**
 - [ ] TB1 12V ↔ G469 Pin 15 (GPIO 22) — **NO beep**
-- [ ] TB1 12V ↔ G469 Pin 16 (GPIO 23) — **NO beep**
 - [ ] TB1 12V ↔ G469 Pin 18 (GPIO 24) — **NO beep**
 - [ ] Relay VCC ↔ Relay GND — **NO beep**
 
@@ -1090,9 +1045,9 @@ These verify that 12V cannot reach the Pi GPIO:
 
 ## Pin Assignment Summary
 
-**Total GPIO pins used:** 9 (of 28 total)
+**Total GPIO pins used:** 8 (of 28 total)
 **Total GPIO pins reserved (EEPROM):** 2
-**Total GPIO pins free:** 17
+**Total GPIO pins free:** 18
 
 ### All Used Pins
 
@@ -1104,7 +1059,6 @@ These verify that 12V cannot reach the Pi GPIO:
 | GPIO 15 | 10 | UART RX | RG-15 rain gauge TX |
 | GPIO 17 | 11 | Relay IN2 | Green LED (via relay) |
 | GPIO 22 | 15 | Relay IN4 | Red LED (via relay) |
-| GPIO 23 | 16 | Button input | Maintenance pushbutton |
 | GPIO 24 | 18 | Relay IN1 | PoE switch (via relay) |
 | GPIO 27 | 13 | Relay IN3 | Yellow LED (via relay) |
 
@@ -1114,6 +1068,7 @@ These verify that 12V cannot reach the Pi GPIO:
 |------|-----|-------|
 | GPIO 4 | 7 | General purpose (1-Wire capable) |
 | GPIO 5 | 29 | General purpose |
+| GPIO 23 | 16 | General purpose |
 | GPIO 6 | 31 | General purpose |
 | GPIO 7 | 26 | SPI CE1 |
 | GPIO 8 | 24 | SPI CE0 |
@@ -1140,9 +1095,12 @@ Each GPIO function will have a corresponding systemd service:
 |---------|------|------|-------------|
 | `relay-poe.service` | GPIO 24 | oneshot, RemainAfterExit | Assert HIGH at boot to energize PoE relay (active-high) |
 | `led-status.service` | GPIO 17, 27, 22 | simple (long-running) | Manage LED state based on system status |
-| `maintenance-button.service` | GPIO 23 | simple (long-running) | Monitor button, trigger maintenance mode |
 | `rain-gauge.service` | GPIO 14, 15 | simple (long-running) | Read UART data from Hydreon RG-15 |
 | `climate-monitor.service` | GPIO 2, 3 | simple (long-running) | Read SHT40 (I2C) temperature and humidity |
+
+Maintenance mode is triggered by long press (3 seconds) on the J2 power button.
+The ORC software monitors the power button press duration — no separate GPIO
+service is needed.
 
 ---
 
@@ -1164,8 +1122,9 @@ Each GPIO function will have a corresponding systemd service:
 5. **Pi 5 power button (J2 header):** The external power button connects to the
    Pi 5's dedicated J2 power button header (2-pin, near USB-C port). This is NOT
    a GPIO pin — it's a hardware power control. Brief press = power on or clean
-   shutdown. 10-second hold = force power off. The J2 wires route through the
-   G469 stack but do not use the G469 screw terminals.
+   shutdown. Long press (3s) = enter maintenance mode. 10-second hold = force
+   power off. The J2 wires route through the G469 stack but do not use the G469
+   screw terminals.
 
 6. **Relay click noise:** You will hear an audible click each time a relay channel
    turns on or off. This is normal — it's the mechanical contact inside the relay

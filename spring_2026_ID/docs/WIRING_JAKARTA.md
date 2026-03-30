@@ -416,16 +416,6 @@ STATUS LED WIRING (12V panel-mount LEDs via relay channels):
 +----------------------------------------------------------------------------+
 
 
-MAINTENANCE BUTTON WIRING:
-+----------------------------------------------------------------------------+
-|                                                                            |
-|   GPIO 23 (Pin 16, internal pull-up) ---> BUTTON ---> GND (Pin 14)       |
-|                                                                            |
-|   Button press: GPIO 23 goes LOW (active low)                             |
-|                                                                            |
-+----------------------------------------------------------------------------+
-
-
 EXTERNAL POWER BUTTON WIRING (Pi 5 J2 Header):
 +----------------------------------------------------------------------------+
 |                                                                            |
@@ -442,11 +432,10 @@ EXTERNAL POWER BUTTON WIRING (Pi 5 J2 Header):
 |   Behavior:                                                                |
 |   - Pi is OFF:     Brief press -> powers on                               |
 |   - Pi is RUNNING: Brief press -> initiates clean shutdown                |
+|   - Pi is RUNNING: Long press (3s) -> enters maintenance mode            |
 |   - Pi is FROZEN:  Hold ~10s  -> forces power off                        |
 |                                                                            |
-|   Separate from the maintenance pushbutton (GPIO 23).                     |
-|   Maintenance button = software function (enters maintenance mode).       |
-|   Power button = hardware power control (on/off/force-off).              |
+|   Single button handles power control AND maintenance mode.               |
 |                                                                            |
 +----------------------------------------------------------------------------+
 
@@ -591,17 +580,16 @@ NOTES:
     |  AC in      Ground    Rain      DS18B20                              |
     |                       Gauge                                           |
     |                                                                       |
-    |  o o o   [*]    [*]                                                   |
-    |  LEDs   Maint  Power                                                  |
-    |  R Y G  Button Button                                                 |
+    |  o o o   [*]                                                          |
+    |  LEDs   Power                                                         |
+    |  R Y G  Button                                                        |
     |                                                                       |
     +---------------------------------------------------------------------+
 
 LEGEND:
 o = 10mm LED (panel mount)
-* = Pushbutton (panel mount, IP67 momentary NO)
-    Left button  = Maintenance mode (GPIO 23)
-    Right button = Power on/off (Pi 5 J2 header)
+* = Power button (panel mount, IP67 momentary NO, Pi 5 J2 header)
+    Brief press = power on/off, long press (3s) = maintenance mode
 [CNLINKO] = Weatherproof ethernet bulkhead connector (IP67)
 [SP13] = Weatherproof AC mains input bulkhead connector (IP68, 220V AC)
 [SD16] = Weatherproof 4-pin bulkhead connector (IP68, rain gauge)
@@ -734,13 +722,18 @@ GROUND BAR
 
 **PRINT THIS DOCUMENT - LAMINATE FOR FIELD USE**
 
-**Document Version:** 3.1
-**Last Updated:** March 26, 2026
+**Document Version:** 3.2
+**Last Updated:** March 30, 2026
 **Changes from v3.0:**
 - Reduced Jakarta from 2 cameras to 1 camera
 - Removed Camera 2 from all diagrams and network topology
 - Reduced CNLINKO ethernet bulkheads from 2 to 1 in enclosure layout
 - Reduced PoE fuse F2 from 10A to 5A (1 camera draws less current)
+
+**Changes from v3.1:**
+- Removed separate maintenance button (GPIO 23) — maintenance mode now triggered by long press (3s) on J2 power button
+- Enclosure layout updated: 1 button (power) instead of 2
+- Removed maintenance button wiring section
 
 **Changes from v2.1:**
 - Fixed relay pin assignments: VCC to G469 Pin 4 (5V), GND to G469 Pin 20 (avoids doubling up wires in screw terminals)
@@ -756,7 +749,6 @@ GROUND BAR
 
 **Changes from v2.0:**
 - Added external power button wired to Pi 5 J2 header (dedicated hardware power control)
-- Updated enclosure layout to show both maintenance button (GPIO 23) and power button (J2)
 
 **Changes from v1.0:**
 - Removed Victron BatteryProtect (LiFePO4 BMS has built-in cutoff)
