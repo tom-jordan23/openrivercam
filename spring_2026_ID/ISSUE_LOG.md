@@ -218,3 +218,22 @@ the gap solid. No air cavity = no condensation risk. Uses 1 GPIO data pin,
 See assembly docs for installation procedure.
 
 ---
+
+### ISS-006: Minor solder contact on TP11 test pad (Jakarta Pi)
+
+| Field | Value |
+|-------|-------|
+| **Date opened** | 2026-03-30 |
+| **Site** | Jakarta |
+| **Status** | MONITORING |
+
+During soldering of the J2 power button header on the Jakarta Pi 5, a small
+amount of solder contacted the TP11 test pad adjacent to J2. TP11 is a
+manufacturing test point with no functional connection in normal operation.
+Visual inspection confirms no solder bridge between TP11 and either J2 pin.
+
+**Action:** No fix needed unless problems arise. If the Jakarta Pi exhibits
+unexplained behavior (boot issues, power anomalies), inspect TP11 area for
+a solder bridge as part of troubleshooting.
+
+---
