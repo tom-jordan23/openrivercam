@@ -65,6 +65,10 @@ contains a real file.
 | `shared/etc/orc-capture.conf` | `/etc/orc-capture.conf` | Capture settings template with all options documented (overridden by site-specific versions) | Shared (template) | No | No |
 | `sukabumi/etc/orc-capture.conf` | `/etc/orc-capture.conf` | Sukabumi capture config: RELAY_MODE=cycle, CAMERA_IP=192.168.50.139 | Sukabumi | No | No |
 | `jakarta/etc/orc-capture.conf` | `/etc/orc-capture.conf` | Jakarta capture config: RELAY_MODE=always, CAMERA_IP=192.168.50.101 | Jakarta | No | No |
+| `shared/usr/local/bin/orc-led-status` | `/usr/local/bin/orc-led-status` | Bash wrapper for LED status daemon (validates config, execs Python) | Shared | No | Yes |
+| `shared/usr/local/lib/orc-led-status/led_status.py` | `/usr/local/lib/orc-led-status/led_status.py` | LED status daemon: polls health, drives WS2812B on GPIO 18 | Shared | No | Yes |
+| `shared/etc/systemd/system/orc-led-status.service` | `/etc/systemd/system/orc-led-status.service` | Simple service: long-running LED daemon (requires root for PWM) | Shared | No | Yes |
+| `shared/etc/orc/led-status.yaml` | `/etc/orc/led-status.yaml` | LED status config: colors, patterns, error suppression, GPIO pin | Shared | No | Yes |
 | `sukabumi/etc/cloud/templates/hosts.debian.tmpl` | `/etc/cloud/templates/hosts.debian.tmpl` | Hosts file template with camera hostname | Sukabumi | No | No |
 | `sukabumi/etc/NetworkManager/system-connections/camera-net.nmconnection` | `/etc/NetworkManager/system-connections/camera-net.nmconnection` | Static IP (192.168.50.1) for eth0 camera network | Sukabumi | No | No |
 

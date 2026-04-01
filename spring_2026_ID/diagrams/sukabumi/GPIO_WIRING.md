@@ -17,7 +17,7 @@
   - [Step 1: Wire 5V Power Input to Pi](#step-1-wire-5v-power-input-to-pi-ddr-60g-5-buck-converter)
   - [Step 2: Wire the Relay Module Input Side](#step-2-wire-the-relay-module-input-side-low-voltage)
   - [Step 3: Wire the Relay Module Output Side — CH1 (PoE Switch)](#step-3-wire-the-relay-module-output-side--ch1-poe-switch)
-  - [Step 4: Wire the Relay Module Output Side — CH2/3/4 (LEDs)](#step-4-wire-the-relay-module-output-side--ch234-status-leds)
+  - [Step 4: Wire the WS2812B Status LED](#step-4-wire-the-ws2812b-status-led)
   - [Step 5: Wire the External Power Button](#step-5-wire-the-external-power-button-pi-5-j2-header)
   - [Step 6: Wire the Hydreon RG-15 Rain Gauge](#step-6-wire-the-hydreon-rg-15-rain-gauge-uart)
   - [Step 7: Wire the SHT40 Sensor](#step-7-wire-the-sht40-temperaturehumidity-sensor-i2c)
@@ -58,8 +58,8 @@ Read this section completely before touching any wire.
 ### Rule 1: Always Wire With Power OFF
 
 **Disconnect the 12V battery and USB-C cable before wiring anything.**
-The Pi, relay module, LEDs, and PoE switch must all be completely unpowered while
-you connect or disconnect wires. Wiring while powered risks short circuits that can
+The Pi, relay module, status LED, and PoE switch must all be completely unpowered
+while you connect or disconnect wires. Wiring while powered risks short circuits that can
 instantly destroy components.
 
 **How to verify power is off:**
@@ -113,9 +113,7 @@ Use consistent colors to reduce mistakes. Suggested scheme:
 | **Yellow** | 5V power (DDR-60G-5 → Pi, and Pi → relay VCC) |
 | | *(same color for both — shared 5V rail)* |
 | **Blue** | GPIO signal — relay IN1 (PoE switch) |
-| **Green** | GPIO signal — relay IN2 (Green LED) |
-| **Blue stripe** | GPIO signal — relay IN3 (Yellow LED) |
-| **Green stripe** | GPIO signal — relay IN4 (Red LED) |
+| **White** | GPIO signal — WS2812B data (GPIO 18) |
 
 If you don't have colored wire, **label both ends** of every wire with tape
 and a marker before connecting.
@@ -199,9 +197,9 @@ specific board/wiring.
 > script handles the correct polarity independently.
 
 **We use only COM and NO.** When the GPIO pin goes HIGH, the relay energizes, closing
-the COM→NO path, and 12V flows to the load (PoE switch or LED). When the GPIO pin
-goes LOW (or Pi is off/unconfigured), the relay de-energizes, the path opens, and
-the load loses power.
+the COM→NO path, and 12V flows to the load (PoE switch). When the GPIO pin goes LOW
+(or Pi is off/unconfigured), the relay de-energizes, the path opens, and the load
+loses power.
 
 **NC terminals are not used.** Leave them empty.
 
@@ -231,9 +229,9 @@ cycle. However, **NO is chosen deliberately as a fail-safe:**
 | **VCC** | Powers the relay module's logic circuit | Pi 5V (from G469 Pin 4) |
 | **GND** | Ground reference for the module | Pi GND (from G469 Pin 20) |
 | **IN1** | Control signal for relay channel 1 | GPIO 24 (Pin 18) — PoE switch |
-| **IN2** | Control signal for relay channel 2 | GPIO 17 (Pin 11) — Green LED |
-| **IN3** | Control signal for relay channel 3 | GPIO 27 (Pin 13) — Yellow LED |
-| **IN4** | Control signal for relay channel 4 | GPIO 22 (Pin 15) — Red LED |
+| **IN2** | Control signal for relay channel 2 | *(available — not connected)* |
+| **IN3** | Control signal for relay channel 3 | *(available — not connected)* |
+| **IN4** | Control signal for relay channel 4 | *(available — not connected)* |
 
 The input side accepts **3.3V signals** from the Pi GPIO. The module has built-in
 Darlington transistor drivers that amplify the 3.3V signal to drive the relay coils.
@@ -258,12 +256,12 @@ Orientation: GPIO header at top-right corner of the Pi board.
   Pin 7  │  [GPIO 4      ] ●  ●  [GPIO 14  TXD]  ★ UART   │  Pin 8
          │                                                   │
   Pin 9  │  [GND]          ●  ●  [GPIO 15  RXD]  ★ UART   │  Pin 10
-  Pin 11 │  [GPIO 17     ] ●  ●  [GPIO 18]                 │  Pin 12
-         │   ★ Green LED                                     │
+  Pin 11 │  [GPIO 17     ] ●  ●  [GPIO 18]  ★ WS2812B data │  Pin 12
+         │                                                   │
   Pin 13 │  [GPIO 27     ] ●  ●  [GND]                     │  Pin 14
-         │   ★ Yellow LED                                    │
+         │                                                   │
   Pin 15 │  [GPIO 22     ] ●  ●  [GPIO 23]                 │  Pin 16
-         │   ★ Red LED                                       │
+         │                                                   │
   Pin 17 │  [3V3 Power]    ●  ●  [GPIO 24]       ★ Relay   │  Pin 18
   Pin 19 │  [GPIO 10  MOSI] ●  ●  [GND]      ★ Relay GND  │  Pin 20
   Pin 21 │  [GPIO 9   MISO] ●  ●  [GPIO 25]               │  Pin 22
@@ -368,10 +366,11 @@ the output voltage:
 
 ### Step 2: Wire the Relay Module Input Side (Low Voltage)
 
-These 6 wires go from the G469 terminal block to the relay module input terminals.
-All are 22 AWG signal wire.
+These 3 wires go from the G469 terminal block to the relay module input terminals.
+All are 22 AWG signal wire. Only relay channel 1 (PoE switch) is used — channels
+2/3/4 are available for future use.
 
-**Cut 6 wires** to appropriate length (measure the distance between the G469 and relay
+**Cut 3 wires** to appropriate length (measure the distance between the G469 and relay
 module on your DIN rail, add 3cm slack on each end). Strip 7-8mm on each end.
 
 | Wire # | From (G469 Terminal) | To (Relay Terminal) | Label | Color |
@@ -379,9 +378,6 @@ module on your DIN rail, add 3cm slack on each end). Strip 7-8mm on each end.
 | 1 | Pin 4 — 5V | VCC | "5V" | Yellow |
 | 2 | Pin 20 — GND | GND | "GND" | Black |
 | 3 | Pin 18 — GPIO 24 | IN1 | "PoE relay" | Blue |
-| 4 | Pin 11 — GPIO 17 | IN2 | "Green LED" | Green |
-| 5 | Pin 13 — GPIO 27 | IN3 | "Yellow LED" | Blue stripe |
-| 6 | Pin 15 — GPIO 22 | IN4 | "Red LED" | Green stripe |
 
 **Wiring procedure for each wire:**
 
@@ -391,7 +387,7 @@ module on your DIN rail, add 3cm slack on each end). Strip 7-8mm on each end.
 4. Insert the other stripped end into the correct **relay input** screw terminal
 5. Tighten the screw — tug to confirm grip
 
-<a href="../../docs/images/sukabumi/g469-relay-signal-wires.png"><img src="../../docs/images/sukabumi/g469-relay-signal-wires.png" alt="G469 breakout with all relay input wires connected: yellow 5V, black GND, and colored signal wires for GPIO 24, 17, 27, and 22" width="400"></a>
+<a href="../../docs/images/sukabumi/g469-relay-signal-wires.png"><img src="../../docs/images/sukabumi/g469-relay-signal-wires.png" alt="G469 breakout with relay input wires connected: yellow 5V, black GND, and blue signal wire for GPIO 24" width="400"></a>
 
 ### Step 2 Verification (DO THIS BEFORE CONTINUING)
 
@@ -401,9 +397,6 @@ end of every connection and confirm you get a beep:
 - [ ] G469 Pin 4 (5V) ↔ Relay VCC — beep
 - [ ] G469 Pin 20 (GND) ↔ Relay GND — beep
 - [ ] G469 Pin 18 (GPIO 24) ↔ Relay IN1 — beep
-- [ ] G469 Pin 11 (GPIO 17) ↔ Relay IN2 — beep
-- [ ] G469 Pin 13 (GPIO 27) ↔ Relay IN3 — beep
-- [ ] G469 Pin 15 (GPIO 22) ↔ Relay IN4 — beep
 
 Now check for shorts — **none of these should beep:**
 
@@ -463,75 +456,68 @@ fuses). If your fuses don't fit, check the size — see photo below.
 
 ---
 
-### Step 4: Wire the Relay Module Output Side — CH2/3/4 (Status LEDs)
+### Step 4: Wire the WS2812B Status LED
 
-Each LED channel switches 12V to a panel-mount LED. These are low current (~20mA),
-so 22 AWG is fine.
+The status indicator is a single **WS2812B addressable RGB LED** driven directly
+from a Pi GPIO pin. It replaces the previous 3-LED relay-driven scheme, freeing
+relay channels 2/3/4 for future use. No relay channels are used for the status
+LED.
 
-**12V feed to LED relay channels:**
+The WS2812B is a 5V addressable LED with an integrated driver chip. A single
+data wire carries color and brightness commands using a timed digital protocol
+(NeoPixel / WS2812B). The LED can display any RGB color and supports patterns
+(blink, pulse, chase) — all controlled in software.
 
-Each COM terminal gets its own home run from TB1. This avoids doubling up wires
-in screw terminals.
+**Cut 3 wires** to appropriate length (measure from the G469 breakout to the LED
+mounting location, add 3cm slack on each end). Use **22 AWG solid** wire.
 
-| Wire # | From | To | Label | Color | Gauge |
-|--------|------|----|-------|-------|-------|
-| 10 | TB1 12V output | Relay CH2 **COM** | "12V → Green" | Red | 22 AWG |
-| 11 | TB1 12V output | Relay CH3 **COM** | "12V → Yellow" | Red | 22 AWG |
-| 12 | TB1 12V output | Relay CH4 **COM** | "12V → Red" | Red | 22 AWG |
+| Wire # | From (G469 Terminal) | To (WS2812B) | Label | Color | Gauge |
+|--------|---------------------|--------------|-------|-------|-------|
+| 10 | Pin 2 or Pin 4 — 5V | VCC | "LED 5V" | Yellow | 22 AWG |
+| 11 | Pin 6, 14, or 20 — GND | GND | "LED GND" | Black | 22 AWG |
+| 12 | Pin 12 — GPIO 18 | DIN (data in) | "LED data" | White | 22 AWG |
 
-**LED connections from relay NO terminals:**
-
-| Wire # | From | To | Label | Color | Gauge |
-|--------|------|----|-------|-------|-------|
-| 13 | Relay CH2 **NO** | Green LED (+) red wire | "CH2 → Green" | Red | 22 AWG |
-| 14 | Relay CH3 **NO** | Yellow LED (+) red wire | "CH3 → Yellow" | Red | 22 AWG |
-| 15 | Relay CH4 **NO** | Red LED (+) red wire | "CH4 → Red" | Red | 22 AWG |
-
-**LED ground returns:**
-
-| Wire # | From | To | Label | Color | Gauge |
-|--------|------|----|-------|-------|-------|
-| 16 | Green LED (-) black wire | GND bus (TB1 GND) | "LED GND" | Black | 22 AWG |
-| 17 | Yellow LED (-) black wire | GND bus (TB1 GND) | "LED GND" | Black | 22 AWG |
-| 18 | Red LED (-) black wire | GND bus (TB1 GND) | "LED GND" | Black | 22 AWG |
-
-**Tip:** You can combine the three LED ground wires at a single GND terminal block
-position rather than running three separate wires to TB1.
+**Note:** Pin 2 and Pin 4 share the same 5V rail. Use whichever has a free
+screw terminal position. If Pin 2 is occupied by the DDR-60G-5 power wire and
+Pin 4 is occupied by the relay VCC wire, use Pin 2 — the DDR-60G-5 power wire
+and the WS2812B 5V wire can share the terminal (both are low gauge and the
+combined current draw is well within the terminal's rating). Similarly, use any
+available GND pin.
 
 ```
-                    Relay Module CH2/3/4
-                   ┌────────────────────┐
-  TB1 12V ── RED ──┤ COM2              │         (home run from TB1)
-  TB1 12V ── RED ──┤ COM3              │         (home run from TB1)
-  TB1 12V ── RED ──┤ COM4              │         (home run from TB1)
-                   │                   │
-                   │  NO2  NO3  NO4    │
-                   └───┬────┬────┬─────┘
-                       │    │    │
-                   Green(+) Yellow(+) Red(+)     LED (+) red wires
-                       │    │    │
-                     [LED] [LED] [LED]           (panel mount, 12V)
-                       │    │    │
-                   Green(-) Yellow(-) Red(-)     LED (-) black wires
-                       │    │    │
-                       └────┴────┘
-                            │
-                        GND bus ── BLACK ── TB1 GND
+WS2812B STATUS LED WIRING (single addressable RGB, 5V):
+┌────────────────────────────────────────────────────────────────────────────┐
+│                                                                            │
+│   G469 5V (Pin 2 or Pin 4) ──► WS2812B VCC                               │
+│   G469 GND (any)            ──► WS2812B GND                               │
+│   G469 GPIO 18 (Pin 12)    ──► WS2812B DIN (data in)                     │
+│                                                                            │
+│   Single LED behind sealed acrylic light window.                          │
+│   Config-driven colors/patterns: /etc/orc/led-status.yaml                │
+│   See docs/LED_STATUS_SPEC.md for full status table.                      │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
 ```
+
+**Mounting:** The WS2812B mounts behind a sealed acrylic light window in the
+enclosure wall. The LED is inside the enclosure; light passes through the
+window. No panel hole or cable gland is needed for the LED itself — only the
+3 signal/power wires route internally from the G469 to the LED.
+
+**Software:** The `led-status.service` drives the WS2812B via GPIO 18 using
+the rpi_ws281x library. Color meanings and blink patterns are defined in
+`/etc/orc/led-status.yaml`. See `docs/LED_STATUS_SPEC.md` for the full
+status table.
 
 ### Step 4 Verification
 
-- [ ] Continuity: TB1 12V ↔ Relay CH2 COM — beep
-- [ ] Continuity: TB1 12V ↔ Relay CH3 COM — beep
-- [ ] Continuity: TB1 12V ↔ Relay CH4 COM — beep
-- [ ] Continuity: Relay CH2 NO ↔ Green LED (+) — beep
-- [ ] Continuity: Relay CH3 NO ↔ Yellow LED (+) — beep
-- [ ] Continuity: Relay CH4 NO ↔ Red LED (+) — beep
-- [ ] Continuity: Green LED (-) ↔ GND bus — beep
-- [ ] Continuity: Yellow LED (-) ↔ GND bus — beep
-- [ ] Continuity: Red LED (-) ↔ GND bus — beep
-- [ ] NO short: Any COM ↔ its NO — **NO beep** (relay is off)
-- [ ] NO short: Any LED (+) ↔ any LED (-) — **NO beep**
+- [ ] Continuity: G469 5V pin ↔ WS2812B VCC — beep
+- [ ] Continuity: G469 GND pin ↔ WS2812B GND — beep
+- [ ] Continuity: G469 Pin 12 (GPIO 18) ↔ WS2812B DIN — beep
+- [ ] NO short: WS2812B VCC ↔ WS2812B GND — **NO beep**
+- [ ] NO short: WS2812B DIN ↔ WS2812B VCC — **NO beep**
+- [ ] NO short: WS2812B DIN ↔ WS2812B GND — **NO beep**
+- [ ] Visual test (after first boot): run `led-test` — LED lights up in sequence (red, green, blue, white)
 
 ---
 
@@ -999,17 +985,16 @@ Complete this entire checklist before reconnecting the battery or USB-C cable.
 
 **12V power connections — should beep:**
 - [ ] TB1 12V ↔ Relay CH1 COM
-- [ ] TB1 12V ↔ Relay CH2 COM
-- [ ] TB1 12V ↔ Relay CH3 COM
-- [ ] TB1 12V ↔ Relay CH4 COM
 - [ ] G469 Pin 2 (5V) ↔ Relay VCC
 - [ ] G469 Pin 6 (GND) ↔ Relay GND
 
+**5V LED connection — should beep:**
+- [ ] G469 5V pin ↔ WS2812B VCC
+- [ ] G469 GND pin ↔ WS2812B GND
+
 **Signal connections — should beep:**
 - [ ] G469 Pin 18 (GPIO 24) ↔ Relay IN1
-- [ ] G469 Pin 11 (GPIO 17) ↔ Relay IN2
-- [ ] G469 Pin 13 (GPIO 27) ↔ Relay IN3
-- [ ] G469 Pin 15 (GPIO 22) ↔ Relay IN4
+- [ ] G469 Pin 12 (GPIO 18) ↔ WS2812B DIN
 - [ ] G469 Pin 8 (GPIO 14) ↔ RG-15 green wire
 - [ ] G469 Pin 10 (GPIO 15) ↔ RG-15 yellow wire
 - [ ] G469 Pin 3 (GPIO 2) ↔ SHT40 SDA
@@ -1026,9 +1011,7 @@ These verify that 12V cannot reach the Pi GPIO:
 - [ ] TB1 12V ↔ G469 Pin 6 (GND) — **NO beep**
 - [ ] TB1 12V ↔ G469 Pin 8 (GPIO 14) — **NO beep**
 - [ ] TB1 12V ↔ G469 Pin 10 (GPIO 15) — **NO beep**
-- [ ] TB1 12V ↔ G469 Pin 11 (GPIO 17) — **NO beep**
-- [ ] TB1 12V ↔ G469 Pin 13 (GPIO 27) — **NO beep**
-- [ ] TB1 12V ↔ G469 Pin 15 (GPIO 22) — **NO beep**
+- [ ] TB1 12V ↔ G469 Pin 12 (GPIO 18) — **NO beep**
 - [ ] TB1 12V ↔ G469 Pin 18 (GPIO 24) — **NO beep**
 - [ ] Relay VCC ↔ Relay GND — **NO beep**
 
@@ -1060,17 +1043,20 @@ These verify that 12V cannot reach the Pi GPIO:
 | Channel | Relay Input | GPIO | G469 Pin | Load (12V side) | Purpose |
 |---------|------------|------|----------|-----------------|---------|
 | CH1 | IN1 | GPIO 24 | Pin 18 | PoE switch 12V power | Camera power cycling |
-| CH2 | IN2 | GPIO 17 | Pin 11 | Green LED 12V | System OK indicator |
-| CH3 | IN3 | GPIO 27 | Pin 13 | Yellow LED 12V | Working indicator |
-| CH4 | IN4 | GPIO 22 | Pin 15 | Red LED 12V | Error indicator |
+| CH2 | IN2 | — | — | *(available)* | — |
+| CH3 | IN3 | — | — | *(available)* | — |
+| CH4 | IN4 | — | — | *(available)* | — |
+
+**Note:** Status indication uses a single WS2812B addressable RGB LED on GPIO 18
+(Pin 12), powered from the Pi 5V rail. It does not use any relay channels.
 
 ---
 
 ## Pin Assignment Summary
 
-**Total GPIO pins used:** 8 (of 28 total)
+**Total GPIO pins used:** 6 (of 28 total)
 **Total GPIO pins reserved (EEPROM):** 2
-**Total GPIO pins free:** 18
+**Total GPIO pins free:** 20
 
 ### All Used Pins
 
@@ -1080,10 +1066,8 @@ These verify that 12V cannot reach the Pi GPIO:
 | GPIO 3 | 5 | I2C SCL | SHT40 sensor |
 | GPIO 14 | 8 | UART TX | RG-15 rain gauge RX |
 | GPIO 15 | 10 | UART RX | RG-15 rain gauge TX |
-| GPIO 17 | 11 | Relay IN2 | Green LED (via relay) |
-| GPIO 22 | 15 | Relay IN4 | Red LED (via relay) |
+| GPIO 18 | 12 | WS2812B data | Status LED (addressable RGB) |
 | GPIO 24 | 18 | Relay IN1 | PoE switch (via relay) |
-| GPIO 27 | 13 | Relay IN3 | Yellow LED (via relay) |
 
 ### Available Pins
 
@@ -1091,7 +1075,6 @@ These verify that 12V cannot reach the Pi GPIO:
 |------|-----|-------|
 | GPIO 4 | 7 | General purpose (1-Wire capable) |
 | GPIO 5 | 29 | General purpose |
-| GPIO 23 | 16 | General purpose |
 | GPIO 6 | 31 | General purpose |
 | GPIO 7 | 26 | SPI CE1 |
 | GPIO 8 | 24 | SPI CE0 |
@@ -1101,12 +1084,15 @@ These verify that 12V cannot reach the Pi GPIO:
 | GPIO 12 | 32 | PWM0 capable |
 | GPIO 13 | 33 | PWM1 capable |
 | GPIO 16 | 36 | General purpose |
-| GPIO 18 | 12 | PWM0 capable |
+| GPIO 17 | 11 | General purpose (was relay IN2 — now free) |
 | GPIO 19 | 35 | PWM1 capable |
 | GPIO 20 | 38 | General purpose |
 | GPIO 21 | 40 | General purpose |
+| GPIO 22 | 15 | General purpose (was relay IN4 — now free) |
+| GPIO 23 | 16 | General purpose |
 | GPIO 25 | 22 | General purpose |
 | GPIO 26 | 37 | General purpose |
+| GPIO 27 | 13 | General purpose (was relay IN3 — now free) |
 
 ---
 
@@ -1117,7 +1103,7 @@ Each GPIO function will have a corresponding systemd service:
 | Service | GPIO | Type | Description |
 |---------|------|------|-------------|
 | `relay-poe.service` | GPIO 24 | oneshot, RemainAfterExit | Assert HIGH at boot to energize PoE relay (active-high) |
-| `led-status.service` | GPIO 17, 27, 22 | simple (long-running) | Manage LED state based on system status |
+| `led-status.service` | GPIO 18 | simple (long-running) | Drive WS2812B status LED via rpi_ws281x; config in `/etc/orc/led-status.yaml` |
 | `rain-gauge.service` | GPIO 14, 15 | simple (long-running) | Read UART data from Hydreon RG-15 |
 | `climate-monitor.service` | GPIO 2, 3 | simple (long-running) | Read SHT40 (I2C) temperature and humidity |
 

@@ -391,27 +391,21 @@ RELAY MODULE INPUT WIRING:
 |   G469 Pin 4  (5V)      ---> Relay VCC                                    |
 |   G469 Pin 20 (GND)     ---> Relay GND                                    |
 |   G469 Pin 18 (GPIO 24) ---> Relay IN1  (PoE switch)                     |
-|   G469 Pin 11 (GPIO 17) ---> Relay IN2  (Green LED)                      |
-|   G469 Pin 13 (GPIO 27) ---> Relay IN3  (Yellow LED)                     |
-|   G469 Pin 15 (GPIO 22) ---> Relay IN4  (Red LED)                        |
+|   G469 Pin 12 (GPIO 18) ---> WS2812B data in (status LED)               |
 |                                                                            |
 +----------------------------------------------------------------------------+
 
 
-STATUS LED WIRING (12V panel-mount LEDs via relay channels):
+STATUS LED WIRING (WS2812B NeoPixel, directly driven by Pi GPIO):
 +----------------------------------------------------------------------------+
 |                                                                            |
-|   12V (TB1) ---> RELAY CH2 COM ---> CH2 NO ---> GREEN LED (+) ---> GND   |
-|                 GPIO 17 -> IN2                                             |
+|   G469 Pin 2  (5V)      ---> WS2812B VDD (power)                         |
+|   G469 Pin 14 (GND)     ---> WS2812B GND                                 |
+|   G469 Pin 12 (GPIO 18) ---> WS2812B DIN (data in)                       |
 |                                                                            |
-|   12V (TB1) ---> RELAY CH3 COM ---> CH3 NO ---> YELLOW LED (+) ---> GND  |
-|                 GPIO 27 -> IN3                                             |
-|                                                                            |
-|   12V (TB1) ---> RELAY CH4 COM ---> CH4 NO ---> RED LED (+) ---> GND     |
-|                 GPIO 22 -> IN4                                             |
-|                                                                            |
-|   LEDs are 12V panel-mount indicators (built-in resistor).               |
-|   Each LED switched by its own relay channel.                             |
+|   Single addressable RGB LED. Color and pattern set by software           |
+|   via /etc/orc/led-status.yaml. No relay channels used for LEDs.         |
+|   Relay channels CH2/CH3/CH4 remain free for future use.                 |
 |                                                                            |
 +----------------------------------------------------------------------------+
 
@@ -580,14 +574,14 @@ NOTES:
     |  AC in      Ground    Rain      DS18B20                              |
     |                       Gauge                                           |
     |                                                                       |
-    |  o o o   [*]                                                          |
-    |  LEDs   Power                                                         |
-    |  R Y G  Button                                                        |
+    |  [o]    [*]                                                            |
+    |  LED   Power                                                          |
+    | Status  Button                                                        |
     |                                                                       |
     +---------------------------------------------------------------------+
 
 LEGEND:
-o = 10mm LED (panel mount)
+[o] = WS2812B status LED (behind acrylic light window, 10-12mm hole)
 * = Power button (panel mount, IP67 momentary NO, Pi 5 J2 header)
     Brief press = power on/off, long press (3s) = maintenance mode
 [CNLINKO] = Weatherproof ethernet bulkhead connector (IP67)

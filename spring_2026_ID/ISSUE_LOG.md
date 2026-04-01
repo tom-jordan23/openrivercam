@@ -192,20 +192,23 @@ Battery autonomy drops from 2.5 days to <1 day. Not viable on the solar budget.
 | **C: WS2812B (NeoPixel), 5V, 1 data wire** | 1 GPIO pin, unlimited colors, ~60mA, frees all relay channels | No off-the-shelf IP67 panel mount, need custom housing or find suitable enclosure |
 | **D: Internal mount behind clear window** | Zero additional panel holes, no seal risk | Less visible, may need light pipe, requires enclosure modification |
 
-**Status color/pattern chart (applies to all options):**
+**Status color/pattern chart — see `docs/LED_STATUS_SPEC.md` for full spec:**
 
 | Color | Pattern | Meaning |
 |-------|---------|---------|
-| Green | Solid | System OK, idle |
-| Blue | Solid | Capturing / uploading |
-| Yellow | Solid | Warning (degraded — e.g. sensor offline) |
-| Red | Solid | Error (capture failed, camera unreachable) |
-| Cyan | Solid | Maintenance mode active |
-| Purple | Solid | Firmware update in progress |
 | White | Solid | Boot in progress |
-| Green | Slow blink | OK, on battery/UPS (Jakarta) |
-| Red | Fast blink | Critical error (multiple failures) |
+| Green | Solid | System OK, idle |
+| Green | Flash (2 Hz) | Capture running |
+| Cyan | Solid | Maintenance mode active |
+| Red | Solid / Blink | Camera error (unreachable / capture failed) |
+| Blue | Solid / Blink | Network error (modem down / upload failed) |
+| Yellow | Solid / Blink | Storage error (low space / write error) |
+| Magenta | Solid | Power error (undervoltage) |
 | OFF | — | Pi is off / sleeping (Sukabumi between cycles) |
+
+Multiple errors: LED cycles through all active errors (3s each).
+Config-driven (`/etc/orc/led-status.yaml`) — errors can be suppressed
+per-subsystem for bench testing.
 
 **Decision (2026-03-30):** WS2812B NeoPixel with silicone-filled acrylic
 sandwich light window. Single LED inside enclosure, visible through a drilled

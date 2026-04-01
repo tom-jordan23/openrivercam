@@ -1,0 +1,24 @@
+#!/bin/bash
+# orc-led-status — drive WS2812B status LED based on system health
+#
+# Long-running daemon (Type=simple). Polls subsystem health and sets
+# LED color/pattern accordingly. Requires root (WS2812B PWM access).
+#
+# Configuration: /etc/orc/led-status.yaml
+# LED spec:      docs/LED_STATUS_SPEC.md
+
+set -o pipefail
+
+log()  { echo "$(date '+%Y-%m-%d %H:%M:%S') [orc-led-status] $1"; }
+err()  { echo "$(date '+%Y-%m-%d %H:%M:%S') [orc-led-status] ERROR: $1" >&2; }
+
+ORC_LED_STATUS_CONF="${ORC_LED_STATUS_CONF:-/etc/orc/led-status.yaml}"
+export ORC_LED_STATUS_CONF
+
+if [ ! -f "$ORC_LED_STATUS_CONF" ]; then
+    err "Config file $ORC_LED_STATUS_CONF not found"
+    exit 1
+fi
+
+# Pass any CLI args through (e.g., --test-color R G B)
+exec python3 /usr/local/lib/orc-led-status/led_status.py "$@"

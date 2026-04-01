@@ -16,7 +16,7 @@
 - **Primary enclosure:** VEVOR carbon steel hinged IP66 box (16×12×8" / 406×305×203mm) houses all electronics
 - Hinged door with lock for easy field access — no screws to remove
 - Includes removable galvanized mounting plate (backplate)
-- Fully self-contained: Pi stack, PoE injector, modem, USB flash drive, terminal blocks, status LEDs, pushbutton, antenna
+- Fully self-contained: Pi stack, PoE injector, modem, USB flash drive, terminal blocks, status LED, pushbutton, antenna
 - Can be pole-mounted standalone at sites without an existing outer box
 - At Sukabumi: sits inside existing outer aluminum box for bonus physical protection
 - Gore vent for pressure equalization; all cables enter through IP68 cable glands
@@ -112,19 +112,17 @@
 
 | Item | Description | Qty | Unit Price | Ext. Price | Source | Notes |
 |------|-------------|-----|------------|------------|--------|-------|
-| **LED-RED** | 10mm IP67 panel-mount LED, Red | 1 | $6.00 | $6.00 | DigiKey, Mouser | Error indication |
-| **LED-YEL** | 10mm IP67 panel-mount LED, Yellow | 1 | $6.00 | $6.00 | DigiKey, Mouser | Working (capture/upload) |
-| **LED-GRN** | 10mm IP67 panel-mount LED, Green | 1 | $6.00 | $6.00 | DigiKey, Mouser | OK/Ready status |
+| **LED-WS2812B** | WS2812B (NeoPixel) addressable RGB LED pixel PCB | 1 | $3.40 | $3.40 | Amazon (FILN 5-pack, Coupa #484675) | Single LED, all colors via GPIO 18. See `docs/LED_STATUS_SPEC.md` |
 | **BTN-MAINT** | IP67 momentary pushbutton (C&K AP or E-Switch PVA6) | 1 | $12.00 | $12.00 | DigiKey, Mouser | Maintenance mode input |
 | **GLAND-BTN** | PG9 cable gland for button wiring | 1 | $3.00 | $3.00 | Amazon, DigiKey | 16mm panel hole |
-| **RESISTOR** | Current-limiting resistors for LEDs (assorted) | 1 | $5.00 | $5.00 | Amazon, DigiKey | 220-470Ω range |
-| | | | **Subtotal** | **$38.00** | | |
+| | | | **Subtotal** | **$18.40** | | |
 
 **Notes:**
-- LEDs controlled via Pi-EzConnect GPIO screw terminals
+- WS2812B status LED driven from GPIO 18 (PWM0) via Pi-EzConnect screw terminals; powered from 5V Pi rail
+- Color meanings config-driven via `/etc/orc/led-status.yaml`; see `docs/LED_STATUS_SPEC.md` for full state table
 - Button: Short press = show status, Long press (3s) = enter maintenance mode
 - Maintenance mode: prevents auto-shutdown, starts WiFi hotspot, enables SSH
-- LEDs visible at 3-5m distance, excellent sunlight readability (no display power needed)
+- LED visible at 3-5m distance behind sealed acrylic light window (no display power needed)
 - Recessed button mounting prevents accidental activation
 
 ---
@@ -182,11 +180,11 @@
 - Samsung FIT Plus plugs directly into Pi USB-A port (no mounting needed)
 
 **Panel-Mount Components (drilled into enclosure lid or side):**
-- 3× 10mm holes for IP67 panel-mount LEDs (Red, Yellow, Green)
+- 1× 10-12mm hole for status LED light window
 - 1× 16mm hole for IP67 pushbutton
 - 1× 12mm hole for Proxicast antenna mount (1/2" + locking nut)
 - Cable glands for: 12V power in, Cat6 to camera, rain gauge cable
-- LED/button/antenna housings self-seal against panel
+- LED light window, button, and antenna housings self-seal against panel
 
 **Antenna Mounting:**
 - Proxicast ANT-122-S02 screw-mounts to top surface of enclosure (single 1/2" / 12mm hole + locking nut)
@@ -247,7 +245,7 @@ collect rainfall continuously, including while the Pi sleeps.
 
 | Item | Description | Qty | Unit Price | Ext. Price | Source | Notes |
 |------|-------------|-----|------------|------------|--------|-------|
-| **BUCK-5V** | Mean Well DDR-60G-5 DIN Rail DC-DC Converter (5V 10.8A, 9-36V input) | 1 | $39.00 | $39.00 | [Amazon](https://www.amazon.com/s?k=DDR-60G-5+Mean+Well) | Powers Pi + modem + LEDs + rain sensor. See [research](research/dc_dc_buck_converter_research.md) |
+| **BUCK-5V** | Mean Well DDR-60G-5 DIN Rail DC-DC Converter (5V 10.8A, 9-36V input) | 1 | $39.00 | $39.00 | [Amazon](https://www.amazon.com/s?k=DDR-60G-5+Mean+Well) | Powers Pi + modem + status LED + rain sensor. See [research](research/dc_dc_buck_converter_research.md) |
 | **BUCK-12V** | Mean Well DDR-60G-12 DIN Rail DC-DC Converter (12V 5A, 9-36V input) | 1 | $39.00 | $39.00 | [Amazon](https://www.amazon.com/s?k=DDR-60G-12+Mean+Well) | Powers PoE injector + camera. See [research](research/dc_dc_buck_converter_research.md) |
 | **USB-C-PWR** | USB-C power cable (1.5m, right-angle) | 1 | $8.00 | $8.00 | Amazon | Pi 5 power from 5V buck converter |
 | **USB-A-SHORT** | USB-A cables (0.5m, various) | 3 | $4.00 | $12.00 | Amazon | Modem, relay, short runs |
@@ -260,7 +258,7 @@ collect rainfall continuously, including while the Pi sleeps.
 
 **Notes:**
 - Mean Well DDR-60G pair provides regulated 12V and 5V from battery. See [dc_dc_buck_converter_research.md](research/dc_dc_buck_converter_research.md) for full analysis
-- Cell modem and LEDs powered via Pi USB/GPIO (load on 5V rail, not 12V)
+- Cell modem and status LED powered via Pi USB/GPIO (load on 5V rail, not 12V)
 - Right-angle USB-C connector reduces strain on Pi 5 power port
 - Ferrules recommended for all screw terminal connections (prevents wire fraying)
 - UV-resistant cable ties essential for outdoor tropical environment
@@ -297,16 +295,16 @@ collect rainfall continuously, including while the Pi sleeps.
 |----------|----------|
 | 1. Compute Platform | $336.84 |
 | 2. PoE Camera System | $417.96 |
-| 3. User Interface | $38.00 |
+| 3. User Interface | $18.40 |
 | 4. Humidity Protection | $38.00 |
 | 5. Enclosure & Mounting | $146.99 |
 | 6. Rain Gauge | $99.00 |
 | 7. Cables & Connectors | $164.00 |
 | 8. Hardware & Fasteners | $119.00 |
-| **TOTAL (Materials)** | **$1,359.79** |
+| **TOTAL (Materials)** | **$1,340.19** |
 
 **Budget Status:** ✅ Within $1,500 target for Sukabumi site
-**Remaining Budget (of $3,000 total):** ~$1,707 for Jakarta site + shared spares
+**Remaining Budget (of $3,000 total):** ~$1,727 for Jakarta site + shared spares
 **Note:** Equipment travels with installer under humanitarian exemption — no shipping, customs, or contingency costs.
 
 ---
@@ -346,19 +344,19 @@ Note: Active phase is ~150s per cycle to accommodate PoE camera boot time (~45-6
 
 **Note:** The DDR-60G buck converters are always powered from TB1 (they have no enable/shutdown pin). Their quiescent draw (~0.5W each) is the largest always-on load. The RG-15's 150µA idle draw is negligible. If sleep-phase power becomes a concern, adding a relay or load switch to disconnect the DDR-60G-12 (camera circuit) during sleep would save ~12 Wh/day.
 
-**LED Status Indicators:**
+**LED Status Indicator:**
 | Component | Power | Duration | Daily Energy |
 |-----------|-------|----------|--------------|
-| 1× LED (average) | 0.02W | 24 hr | 0.48 Wh |
+| 1× WS2812B (typical) | 0.1W | 24 hr | 2.4 Wh |
 
-**TOTAL DAILY CONSUMPTION:** ~118 Wh/day (90.4 active + 27.0 sleep + 0.48 LEDs)
+**TOTAL DAILY CONSUMPTION:** ~120 Wh/day (90.4 active + 27.0 sleep + 2.4 LED)
 
 **Solar Generation (Sukabumi - foothills, decent sun):**
 - 200W panel × 4.5 peak sun hours × 0.8 efficiency = ~720 Wh/day
-- **Margin:** 720 Wh generation - 118 Wh consumption = **602 Wh surplus**
+- **Margin:** 720 Wh generation - 120 Wh consumption = **600 Wh surplus**
 
 **Battery Runtime (no sun):**
-- 300 Wh usable ÷ 118 Wh/day = **2.5 days autonomy**
+- 300 Wh usable ÷ 120 Wh/day = **2.5 days autonomy**
 
 **Status:** ✅ Good power budget margin. The always-on buck converter quiescent draw (~24 Wh/day) is notable but well within solar capacity. If autonomy needs to be extended, the DDR-60G-12 (camera circuit) could be disconnected during sleep via a relay to save ~12 Wh/day.
 
@@ -435,7 +433,7 @@ Equipment travels with installer under humanitarian exemption. No shipping or cu
    - Verify Pi 5 boots, SSD recognized, modem connects
    - Test ORC software with PoE camera (verify RTSP capture via orc-capture)
    - Verify Witty Pi 5 scheduling works
-   - Test GPIO control of LEDs
+   - Test WS2812B status LED (GPIO 18)
 
 3. **Pre-configure software**
    - Install ORC, configure for single PoE camera
@@ -459,7 +457,7 @@ Equipment travels with installer under humanitarian exemption. No shipping or cu
    - Samsung FIT Plus plugs directly into Pi USB-A port
 
 2. **Drill panel holes** in enclosure lid or side
-   - 3× 10mm holes for IP67 LEDs
+   - 1× 10-12mm hole for LED light window
    - 1× 16mm hole for IP67 pushbutton
    - 1× 12mm hole for Proxicast antenna mount
    - Cable gland holes per gland sizes
@@ -475,7 +473,7 @@ Equipment travels with installer under humanitarian exemption. No shipping or cu
    - Proxicast ANT-122-S02 cables to modem SMA ports (main + diversity)
    - Cat6 from PoE injector to camera (via cable gland)
    - Rain gauge serial TX/RX + 12V power to Pi-EzConnect UART terminals (via cable gland)
-   - LEDs and pushbutton wired to GPIO via Pi-EzConnect terminals
+   - WS2812B and pushbutton wired to GPIO via Pi-EzConnect terminals
 
 5. **Mount camera** on pole
    - Use stainless U-bolt clamps and pole mount bracket
@@ -484,7 +482,7 @@ Equipment travels with installer under humanitarian exemption. No shipping or cu
    - Use IP68 waterproof coupler at camera connection
 
 5. **System test**
-   - Verify Pi boots and LEDs indicate status
+   - Verify Pi boots and status LED indicates state
    - Test RTSP capture via orc-capture
    - Verify camera IR LEDs activate in darkness (cover lens to test)
    - Verify LTE connectivity (may need IMEI registration first)
@@ -582,7 +580,7 @@ Deployment is successful when:
 - [ ] IR illumination activates automatically at night
 - [ ] Rain gauge data logs correctly
 - [ ] LTE connectivity stable (registered with Indonesian network)
-- [ ] Status LEDs indicate system health accurately
+- [ ] Status LED indicates system health accurately
 - [ ] Maintenance mode accessible via pushbutton
 - [ ] Power consumption <50 Wh/day (verified with solar controller)
 - [ ] System runs for 7 days without intervention
@@ -595,6 +593,7 @@ Deployment is successful when:
 
 | Date | Version | Changes | Author |
 |------|---------|---------|--------|
+| 2026-04-01 | 2.5 | Replaced 3x IP67 panel-mount LEDs (Red/Yellow/Green) + resistors + relay channels with single WS2812B NeoPixel on GPIO 18 (5V Pi rail). Saves $19.60, frees relay channels, config-driven via `/etc/orc/led-status.yaml`. See `docs/LED_STATUS_SPEC.md` | Claude (Opus 4.6) |
 | 2026-01-30 | 2.4 | Replaced DFRobot SEN0575 tipping bucket rain gauge with Hydreon RG-15 solid-state optical rain gauge ($99 vs $48) — no moving parts, self-cleaning, RS232 3.3V TTL direct to Pi UART, ±10% accuracy; removed mount bracket and cable (built-in mounting, powered from 12V system) | Claude (Opus 4.5) |
 | 2026-01-30 | 2.3 | Replaced M.2 SATA SSD + USB enclosure with Samsung FIT Plus 256GB USB flash drive — IP67, smaller, cheaper ($25 vs $65), no mounting needed | Claude (Opus 4.5) |
 | 2026-01-30 | 2.2 | Switched to VEVOR carbon steel hinged enclosure (16×12×8") — hinged door for field access, includes mounting plate; saves $30 vs cast aluminum | Claude (Opus 4.5) |

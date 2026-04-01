@@ -681,9 +681,7 @@ relay defaults to de-energized = cameras off (fail-safe).
 ```bash
 # Relay channels driven via G469 breakout:
 #   GPIO 24 → IN1 (PoE switch)   — active-high (HIGH = relay ON)
-#   GPIO 17 → IN2 (Green LED)
-#   GPIO 27 → IN3 (Yellow LED)
-#   GPIO 22 → IN4 (Red LED)
+#   GPIO 18 → WS2812B NeoPixel status LED (RGB, accent via light pipe/window)
 
 # Check relay GPIO wiring: VCC, GND, IN1-IN4 connections
 

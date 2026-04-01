@@ -38,7 +38,7 @@
 │   │                    PI 5 + HAT STACK                  │               │ │
 │   │  ┌─────────────┐                                    │               │ │
 │   │  │ Geekworm    │◄── GPIO terminals for relay,        │               │ │
-│   │  │ G469        │    LEDs, button, sensors            │               │ │
+│   │  │ G469        │    LED, button, sensors             │               │ │
 │   │  ├─────────────┤                                    │               │ │
 │   │  │   Pi 5      │◄── USB: Flash Drive, Modem         │               │ │
 │   │  │   8GB       │    ETH: PoE Switch uplink          │               │ │
@@ -52,12 +52,13 @@
 │   ├── USB 3.0 (blue) ──► SanDisk 256GB USB Flash Drive                   │
 │   └── USB 2.0 ──► Quectel Modem (EXVIST mPCIe-USB)                       │
 │                                                                            │
-│   GPIO TO RELAY (Electronics-Salon 4ch SPDT, 5V coil from G469):         │
-│   ├── GPIO 24 ──► IN1 (PoE Switch power)                                 │
-│   ├── GPIO 17 ──► IN2 (Green LED 12V)                                    │
-│   ├── GPIO 27 ──► IN3 (Yellow LED 12V)                                   │
-│   └── GPIO 22 ──► IN4 (Red LED 12V)                                      │
+│   GPIO TO RELAY (Electronics-Salon 4ch SPDT, only CH1 used):             │
+│   └── GPIO 24 ──► IN1 (PoE Switch power)                                 │
 │   Relay 5V/GND from G469 Pin 2 (5V) / Pin 6 (GND)                       │
+│   (CH2-CH4 available for future use)                                      │
+│                                                                            │
+│   STATUS LED (WS2812B NeoPixel, directly on GPIO):                        │
+│   └── GPIO 18 ──► WS2812B data (RGB status LED, 5V)                      │
 │                                                                            │
 │   POWER BUTTON (Pi 5 J2 header, NOT GPIO):                                │
 │   └── J2 ──► soldered pigtail w/ Dupont female ──► IP67 momentary switch │
@@ -109,7 +110,7 @@ SOLAR CONTROLLER 12V OUTPUT
            │     │     │     │     │     │
            │     │     │     │     │     └──► GND bus (all ground returns)
            │     │     │     │     │
-           │     │     │     │     └──► LED cathodes, button, sensors
+           │     │     │     │     └──► button, sensors
            │     │     │     │
            │     │     │     └──► 12V return from all 12V devices
            │     │     │
@@ -234,11 +235,11 @@ Geekworm G469 Terminal Block (top of HAT stack)
 │                                                                            │
 └────────────────────────────────────────────────────────────────────────────┘
          │   │   │   │    │    │
-         │   │   │   │    │    └──► RELAY IN4 → RED LED (12V panel-mount)
+         │   │   │   │    │    └──► (available)
          │   │   │   │    │
-         │   │   │   │    └──► RELAY IN3 → YELLOW LED (12V panel-mount)
+         │   │   │   │    └──► (available)
          │   │   │   │
-         │   │   │   └──► RELAY IN2 → GREEN LED (12V panel-mount)
+         │   │   │   └──► (available)
          │   │   │
          │   │   └──► GND bus (button, sensors)
          │   │
@@ -248,22 +249,25 @@ Geekworm G469 Terminal Block (top of HAT stack)
 
 Additional GPIO connections (active on G469 but not shown in header above):
   GP4  (Pin 7)  ──► DS18B20 1-Wire data (with 4.7kΩ pull-up to 3V3)
+  GP18 (Pin 12) ──► WS2812B NeoPixel data (RGB status LED)
   GP24 (Pin 18) ──► RELAY IN1 (PoE switch power)
-  5V   (Pin 2)  ──► Relay module VCC
-  GND  (Pin 6)  ──► Relay module GND
+  5V   (Pin 2)  ──► Relay module VCC + WS2812B VCC
+  GND  (Pin 6)  ──► Relay module GND + WS2812B GND
 
 
-STATUS LED WIRING (12V panel-mount LEDs via relay channels):
+STATUS LED WIRING (WS2812B NeoPixel, single addressable RGB LED):
 ┌────────────────────────────────────────────────────────────────────────────┐
 │                                                                            │
-│   GPIO 17 ──► RELAY IN2 ──► CH2 COM/NO ──► GREEN LED (+) ──┐              │
-│                                                              │              │
-│   GPIO 27 ──► RELAY IN3 ──► CH3 COM/NO ──► YELLOW LED (+) ──┼──► GND      │
-│                                                              │              │
-│   GPIO 22 ──► RELAY IN4 ──► CH4 COM/NO ──► RED LED (+) ────┘              │
+│   Geekworm G469                  WS2812B NeoPixel                         │
+│   ┌─────────────┐               ┌──────────────┐                          │
+│   │  5V  (Pin 2)│───────────────│  VCC (5V)    │                          │
+│   │  GND (Pin 6)│───────────────│  GND         │                          │
+│   │  GPIO 18    │───────────────│  DIN (data)  │                          │
+│   └─────────────┘               └──────────────┘                          │
 │                                                                            │
-│   12V from TB1 ──► RELAY CH2/CH3/CH4 COM (common 12V supply)              │
-│   LEDs are 12V panel-mount (IP67), switched by relay channels             │
+│   Single RGB LED replaces 3 separate panel-mount LEDs.                    │
+│   Colors driven via PWM on GPIO 18 (no relay channels needed).            │
+│   Powered from Pi 5V rail. See docs/LED_STATUS_SPEC.md for color codes.  │
 │                                                                            │
 └────────────────────────────────────────────────────────────────────────────┘
 
@@ -412,14 +416,14 @@ CABLE DETAILS:
     │  │  (Velcro)      │                                                │
     │  └────────────────┘                                                │
     │                                                                     │
-    │  ○ ○ ○   [●]        [CNLINKO]   [SP13]    [PG9]   [PG9]           │
-    │  LEDs   Power      PoE cam     12V in    Rain    DS18B20          │
-    │  R Y G  Button     (IP67)      power     gauge   probe            │
+    │  [○]     [●]        [CNLINKO]   [SP13]    [PG9]   [PG9]           │
+    │  LED    Power      PoE cam     12V in    Rain    DS18B20          │
+    │  RGB    Button     (IP67)      power     gauge   probe            │
     │                                                                     │
     └─────────────────────────────────────────────────────────────────────┘
 
 LEGEND:
-○ = 10mm LED (panel mount)
+[○] = WS2812B RGB LED (light pipe or diffused window)
 ● = Power button (panel mount, IP67 momentary, Pi 5 J2 header)
     Brief press = power on/off, long press (3s) = maintenance mode
 [CNLINKO] = Weatherproof ethernet bulkhead (IP67)
@@ -436,10 +440,8 @@ LEGEND:
 | **Red** | 12V positive (+) |
 | **Black** | Ground / 12V negative (-) |
 | **Yellow** | 5V (Pi power to relay module VCC) |
-| **Blue** | GPIO signal — relay IN1 (PoE switch) |
-| **Green** | GPIO signal — relay IN2 (Green LED) |
-| **Blue stripe** | GPIO signal — relay IN3 (Yellow LED) |
-| **Green stripe** | GPIO signal — relay IN4 (Red LED) |
+| **Blue** | GPIO signal -- relay IN1 (PoE switch) |
+| **Green** | GPIO signal -- WS2812B data (GPIO 18) |
 
 ---
 
@@ -459,8 +461,14 @@ TB1 - MAIN POWER
 
 **PRINT THIS DOCUMENT - LAMINATE FOR FIELD USE**
 
-**Document Version:** 3.3
+**Document Version:** 3.4
 **Last Updated:** April 1, 2026
+**Changes from v3.3:**
+- Replaced 3x 12V relay-driven panel-mount LEDs (R/Y/G on GPIO 17/27/22 via relay CH2-4) with single WS2812B NeoPixel RGB LED on GPIO 18 (5V, no relay needed)
+- Relay channels CH2-CH4 now available for future use; only CH1 (PoE switch) remains active
+- Updated enclosure layout, GPIO map, wire color code table, and power distribution to reflect single-LED approach
+- Added reference to docs/LED_STATUS_SPEC.md for color codes and behavior
+
 **Changes from v3.2:**
 - Power button: updated J2 wiring to reflect soldered pigtail with Dupont female connectors and strain relief zip tie (bolt-through method deferred)
 

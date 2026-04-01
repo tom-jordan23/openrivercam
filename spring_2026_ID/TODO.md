@@ -71,7 +71,7 @@
 
 ### Before Chester's trip
 
-- [ ] Finalize LED choice — verify current LEDs are the right type/voltage for relay-switched 12V operation. Decide before buying any additional parts.
+- [x] Finalize LED choice — WS2812B NeoPixel RGB, config-driven status (see `docs/LED_STATUS_SPEC.md`)
 
 ### New tasks
 
@@ -95,7 +95,7 @@
 - [ ] Implement rain gauge capture script (TODO-001)
 - [x] Wire and test J2 power button (soldered pigtail + Dupont female, strain relief zip tie)
 - [ ] Wire rain gauge external side (SD16 bulkhead + 18/4 cable, once parts arrive)
-- [ ] Wire LEDs through relay CH2-4 (if time permits)
+- [ ] Wire WS2812B LED (GPIO 18 data, 5V/GND from G469) and install light window
 - [ ] Full end-to-end soak test (leave running overnight on capture schedule)
 
 ### Jakarta — software + testing
@@ -106,7 +106,7 @@
 - [ ] Test RTSP capture with orc-capture
 - [ ] Wire and test J2 power button
 - [ ] Wire PTC heater and fans
-- [ ] Wire LEDs
+- [ ] Wire WS2812B NeoPixel LED (GPIO 18 data, 5V/GND from G469)
 - [ ] Rain gauge serial test
 - [ ] Full continuity and isolation checks
 

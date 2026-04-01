@@ -69,7 +69,7 @@ fi
 echo ""
 echo "=== Python Packages ==="
 
-REQUIRED_PY="requests smbus2"
+REQUIRED_PY="requests smbus2 rpi_ws281x yaml"
 OPTIONAL_PY="pyserial"
 
 for pkg in $REQUIRED_PY; do
@@ -296,6 +296,24 @@ if systemctl is-enabled orc-sensors.timer >/dev/null 2>&1; then
     pass "orc-sensors.timer enabled"
 else
     warn "orc-sensors.timer not enabled (run: sudo systemctl enable orc-sensors.timer)"
+fi
+
+# orc-led-status service (WS2812B status LED)
+if systemctl is-enabled orc-led-status >/dev/null 2>&1; then
+    if systemctl is-active orc-led-status >/dev/null 2>&1; then
+        pass "orc-led-status enabled and running"
+    else
+        fail "orc-led-status enabled but NOT running"
+    fi
+else
+    warn "orc-led-status not enabled (run: sudo systemctl enable orc-led-status)"
+fi
+
+# LED status config
+if [ -f /etc/orc/led-status.yaml ]; then
+    pass "/etc/orc/led-status.yaml present"
+else
+    fail "/etc/orc/led-status.yaml not found"
 fi
 
 # orc-gpio-relays must be DISABLED — it uses active-low logic incompatible

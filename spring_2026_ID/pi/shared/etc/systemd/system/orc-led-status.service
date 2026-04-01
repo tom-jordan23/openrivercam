@@ -1,0 +1,25 @@
+[Unit]
+Description=LED status indicator (WS2812B on GPIO 18)
+After=local-fs.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/orc-led-status
+Restart=on-failure
+RestartSec=5
+
+# WS2812B requires root for PWM/DMA access
+User=root
+
+# Hardening — limit root's scope
+ProtectHome=read-only
+ProtectSystem=strict
+ReadWritePaths=/sys /dev
+NoNewPrivileges=yes
+PrivateTmp=yes
+
+Environment="PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+Environment="ORC_LED_STATUS_CONF=/etc/orc/led-status.yaml"
+
+[Install]
+WantedBy=multi-user.target

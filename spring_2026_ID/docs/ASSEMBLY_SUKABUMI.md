@@ -69,7 +69,7 @@ Complete these steps BEFORE traveling to Indonesia:
 - [ ] Enable sensor logging (`orc-sensors.timer`) — see Step 11c
 - [ ] Verify SHT40 readings in `/var/log/orc/sensors/sht40_*.csv`
 - [ ] Configure WiFi hotspot for maintenance mode
-- [ ] Set up LED relay control script (GPIO 17/27/22 → relay channels → 12V LEDs)
+- [ ] Set up WS2812B NeoPixel status LED (GPIO 18 data, 5V/GND from Pi rail)
 - [ ] Pre-configure Telkomsel APN (if known)
 
 ### 2. Hardware Testing (Dry-Fit)
@@ -84,7 +84,7 @@ that must be masked during coating.
 - [ ] Test video capture pipeline (5s clip from camera SD → /mnt/usb/incoming)
 - [ ] Test PoE switch powers camera when relay energized
 - [ ] Test SHT40 sensor: `i2cdetect -y 1` shows 0x44, `orc-sensors` returns readings
-- [ ] Verify LEDs light up via relay channels (GPIO 17/27/22)
+- [ ] Verify WS2812B NeoPixel cycles R/G/B via GPIO 18
 
 ### 3. Conformal Coating (After Testing, Before Travel)
 
@@ -438,7 +438,10 @@ coating (Pre-Assembly Checklist Step 3), then enclosure preparation.**
    **Wiring (1 GPIO data pin + 5V power):**
    - WS2812B VCC → G469 5V (Pin 2 or Pin 4)
    - WS2812B GND → G469 GND (any available)
-   - WS2812B DIN (data in) → GPIO pin (TBD — any free GPIO)
+   - WS2812B DIN (data in) → G469 GPIO 18 (Pin 12)
+
+   See **GPIO_WIRING.md Step 4** for full wiring details and verification.
+   See **docs/LED_STATUS_SPEC.md** for color/pattern meanings and config.
 
 4. **Install power button:**
    - Install power button in panel, secure with nut
@@ -1025,6 +1028,7 @@ See `TROUBLESHOOTING.md` for detailed diagnostics.
 - Changed DS18B20 from GPIO 24 to GPIO 4 (Pin 7)
 - Changed LEDs from direct 3.3V GPIO with 330 Ohm resistors to 12V panel-mount LEDs switched through relay channels (GPIO 17→IN2, GPIO 27→IN3, GPIO 22→IN4)
 - Removed current-limiting resistors from parts list
+- **v5.0 update:** Replaced 3x relay-driven 12V LEDs with single WS2812B NeoPixel on GPIO 18 (5V from Pi rail). Frees relay channels IN2-IN4.
 
 **Changes from v2.0:**
 - Renamed Pi-EzConnect → Geekworm G469

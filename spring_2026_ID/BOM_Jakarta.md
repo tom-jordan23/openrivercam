@@ -119,7 +119,7 @@ These are NOT in the Jakarta order because they're already available:
 | CLIP-TERM | DIN Rail Terminal Block Kit |
 | DIN-PCB | Molence C45 PCB DIN Rail Clip-Pairs |
 | DIN-CLIP | CNQLIS Aluminum DIN Rail Mounting Clips |
-| LED-MULTI | Multi-color LED 5-pack (FILN IP67) |
+| LED-WS2812B | WS2812B NeoPixel addressable RGB LED |
 | BTN-MAINT | IP67 Momentary Pushbutton 16mm Stainless |
 | PWR-12V | 12V Power Couplers - Screw Terminal |
 | DI-GREASE | Dielectric Grease |

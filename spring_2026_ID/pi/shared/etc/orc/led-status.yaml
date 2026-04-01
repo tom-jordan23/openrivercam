@@ -1,0 +1,64 @@
+# LED Status Indicator Configuration
+# ===================================
+# Drives a single WS2812B (NeoPixel) RGB LED to indicate system health.
+# Restart orc-led-status.service after editing.
+#
+# Spec: docs/LED_STATUS_SPEC.md
+
+led:
+  gpio_pin: 18          # BCM pin number for WS2812B DIN
+  brightness: 200       # 0-255 (200 is good for daylight through acrylic)
+
+# Poll interval for subsystem health checks (seconds).
+# Lower = faster response, higher = less CPU. 5s is a good default.
+poll_interval_s: 5
+
+# Normal operation states.
+# Colors are [R, G, B] 0-255. Patterns: solid, flash, pulse.
+states:
+  boot:
+    color: [255, 255, 255]   # white
+    pattern: solid
+  idle:
+    color: [0, 255, 0]       # green
+    pattern: solid
+  capture:
+    color: [0, 255, 0]       # green
+    pattern: flash
+    flash_hz: 2
+  maintenance:
+    color: [0, 255, 255]     # cyan
+    pattern: solid
+  shutdown:
+    color: [0, 255, 0]       # green
+    pattern: pulse
+
+# Error subsystems.
+# Each has a color and can be suppressed. Suppressed errors are still
+# logged but do not drive the LED. Use suppression for bench testing
+# (e.g., suppress network when no LTE modem is connected).
+errors:
+  camera:
+    color: [255, 0, 0]       # red
+    suppressed: false
+  network:
+    color: [0, 0, 255]       # blue
+    suppressed: false
+  storage:
+    color: [255, 255, 0]     # yellow
+    suppressed: false
+  power:
+    color: [255, 0, 255]     # magenta
+    suppressed: false
+
+# Error display behavior.
+# When multiple errors are active, the LED cycles through them.
+error_display:
+  cycle_interval_s: 3        # seconds per error when cycling
+  blink_hz: 4                # blink rate for blinking error patterns
+
+# Optional overrides. Uncomment to override values read from other configs.
+# overrides:
+#   camera_ip: 192.168.50.139     # default: read from /etc/orc-capture.conf
+#   storage_path: /home/pi/Videos  # default: /home/pi/Videos
+#   storage_threshold_pct: 90      # default: 90

@@ -64,7 +64,7 @@ Complete these steps BEFORE traveling to Indonesia:
 - [ ] Enable sensor logging (`orc-sensors.timer`) — see "Enable sensor logging service" section
 - [ ] Verify SHT40 readings in `/var/log/orc/sensors/sht40_*.csv`
 - [ ] Configure WiFi hotspot for maintenance mode
-- [ ] Set up LED GPIO control script
+- [ ] Set up WS2812B status LED service (GPIO 18, config in /etc/orc/led-status.yaml)
 - [ ] Pre-configure Telkomsel APN (if known)
 
 ### 2. Hardware Testing (Dry-Fit)
@@ -78,7 +78,7 @@ that must be masked during coating.
 - [ ] Test LTE modem connects (with test SIM)
 - [ ] Test PoE switch powers camera
 - [ ] Test SHT40 sensor: `i2cdetect -y 1` shows 0x44, `orc-sensors` returns readings
-- [ ] Verify LEDs light up on GPIO control
+- [ ] Verify WS2812B status LED cycles colors on GPIO 18
 - [ ] Test relay switches PoE switch power on/off (GPIO 24)
 
 ### 3. Conformal Coating (After Testing, Before Travel)
@@ -725,9 +725,9 @@ domain.
    | 6 | Pin 4 — 5V | VCC | Yellow | 22 AWG solid |
    | 7 | Pin 20 — GND | GND | Black | 22 AWG solid |
    | 8 | Pin 18 — GPIO 24 | IN1 (PoE) | Blue | 22 AWG solid |
-   | 9 | Pin 11 — GPIO 17 | IN2 (Green LED) | Green | 22 AWG solid |
-   | 10 | Pin 13 — GPIO 27 | IN3 (Yellow LED) | Blue stripe | 22 AWG solid |
-   | 11 | Pin 15 — GPIO 22 | IN4 (Red LED) | Green stripe | 22 AWG solid |
+
+   Only relay channel CH1 (PoE switch) is wired. Channels CH2-CH4
+   are unused and available for future expansion.
 
    **Relay input continuity checks (AC unplugged):**
 
@@ -735,14 +735,10 @@ domain.
    - [ ] G469 Pin 4 ↔ Relay VCC — beep
    - [ ] G469 Pin 20 ↔ Relay GND — beep
    - [ ] G469 Pin 18 ↔ Relay IN1 — beep
-   - [ ] G469 Pin 11 ↔ Relay IN2 — beep
-   - [ ] G469 Pin 13 ↔ Relay IN3 — beep
-   - [ ] G469 Pin 15 ↔ Relay IN4 — beep
 
    Should NOT beep:
    - [ ] Relay VCC ↔ Relay GND — **NO beep**
-   - [ ] Any IN terminal ↔ any other IN terminal — **NO beep**
-   - [ ] Any IN terminal ↔ VCC or GND — **NO beep**
+   - [ ] Relay IN1 ↔ VCC or GND — **NO beep**
 
 2. **Wire PoE switch power through fuse and relay:**
    - 12V+ from TB1 -> inline fuse (5A) -> relay CH1 COM input
@@ -780,7 +776,11 @@ domain.
      - Data -> GPIO 4 / Pin 7 (with 4.7k ohm pull-up to 3.3V)
      - VCC -> 3.3V
      - GND -> GND
-5. **Relay GPIO:** Already wired in Step 7 (VCC, GND, IN1-IN4 from G469)
+5. **WS2812B status LED:** Wire from Geekworm G469 to WS2812B NeoPixel:
+     - 5V (Pin 2) -> WS2812B VDD
+     - GND (Pin 14) -> WS2812B GND
+     - GPIO 18 (Pin 12) -> WS2812B DIN (data in)
+6. **Relay GPIO:** Already wired in Step 7 (VCC, GND, IN1 from G469)
 
 ### Step 9: Test Mounting Plate Assembly
 
@@ -795,7 +795,7 @@ before final assembly.
 - [ ] LTE modem detected
 - [ ] SHT40 sensor readable via I2C
 - [ ] DS18B20 temperature probe readable
-- [ ] LEDs light up via relay channels (GPIO 17/27/22)
+- [ ] WS2812B status LED lights up on GPIO 18 (test with led-status service)
 - [ ] All connections secure, no loose wires
 
 **Once the mounting plate assembly is fully tested, proceed to enclosure
@@ -1015,7 +1015,7 @@ preparation.**
    - The Pi does not auto-power-on from 5V alone — the J2 power button (or software config) is required
    - If the Pi was previously shut down cleanly, a brief press on the external power button will boot it
 2. Wait 2-3 minutes for full boot
-3. Status LEDs should indicate:
+3. WS2812B status LED should indicate (colors configured in /etc/orc/led-status.yaml):
    - Green = OK
    - Yellow blink = working
    - Red = error

@@ -35,7 +35,7 @@ Shared spare components that can service either site.
 | Quectel EG25-G + EXVIST Mini PCIe-USB | LTE modem spare | 1 | $119.00 | $119.00 | Amazon |
 | LTE Antenna 9dBi | Replacement antennas | 2 | $8.50 | $17.00 | Amazon |
 | USB-RS485 Adapter | Modbus interface spare | 1 | $11.95 | $11.95 | Adafruit |
-| IP67 LED (R/Y/G set) | Status LED replacement | 1 | $8.85 | $8.85 | Adafruit |
+| WS2812B NeoPixel (5-pack) | Status LED replacement (addressable RGB) | 1 | $3.00 | $3.00 | Adafruit |
 | IP67 Pushbutton | Maintenance button spare | 1 | $9.99 | $9.99 | Amazon |
 | Inline fuse holders | With 5A and 10A fuses | 5 | $2.60 | $13.00 | Amazon |
 | Cable glands (M12) | IP68 replacement | 3 | $1.90 | $5.70 | Amazon |

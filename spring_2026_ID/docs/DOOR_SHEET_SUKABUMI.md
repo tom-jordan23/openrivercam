@@ -43,9 +43,7 @@ chemistry RTC battery replacement info, see GPIO_WIRING.md Step 8.
 | **Black** | Ground (GND) |
 | **Yellow** | 5V power (buck converter to Pi, Pi to relay VCC) |
 | **Blue** | GPIO signal — relay IN1 (PoE switch, GPIO 24) |
-| **Green** | GPIO signal — relay IN2 (Green LED, GPIO 17) |
-| **Blue stripe** | GPIO signal — relay IN3 (Yellow LED, GPIO 27) |
-| **Green stripe** | GPIO signal — relay IN4 (Red LED, GPIO 22) |
+| **Green** | GPIO 18 data — WS2812B status LED |
 
 ---
 
@@ -60,13 +58,11 @@ chemistry RTC battery replacement info, see GPIO_WIRING.md Step 8.
 | — | 9 | GND (SHT40, rain gauge) |
 | GPIO 14 | 8 | UART TX → RG-15 RX |
 | GPIO 15 | 10 | UART RX ← RG-15 TX |
-| GPIO 17 | 11 | Relay IN2 (Green LED) |
-| GPIO 22 | 15 | Relay IN4 (Red LED) |
+| GPIO 18 | 12 | WS2812B data (status LED) |
 | GPIO 23 | 16 | Available |
 | GPIO 24 | 18 | Relay IN1 (PoE switch) |
 | — | 20 | GND (relay module) |
 | — | 25 | GND (buck converter) |
-| GPIO 27 | 13 | Relay IN3 (Yellow LED) |
 
 ---
 
@@ -145,7 +141,7 @@ SOLAR 12V ──► SP13 bulkhead ──► TB1
            Pin 4 → Relay VCC
            Pin 20 → Relay GND
            Pin 18 → Relay IN1 (PoE)
-           GPIO TBD → WS2812B data (status LED)
+           GPIO 18 → WS2812B data (status LED)
 ```
 
 ---

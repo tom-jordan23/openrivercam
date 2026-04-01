@@ -25,6 +25,8 @@ that the base image does not provide.
 | `requests` | HTTP client for camera ISAPI configuration | `camera/camtool.py` | May already be in base image |
 | `pyserial` | Serial port access for modem AT commands | Modem diagnostics | Optional — only for manual diagnostics |
 | `smbus2` | I2C interface for SHT40 temp/humidity sensor | Sensor readout | |
+| `rpi-ws281x` | WS2812B NeoPixel LED driver (PWM/DMA) | `orc-led-status` | Requires root. Pi 5 support in v5.0.0+ |
+| `pyyaml` | YAML config parser | `orc-led-status` | May already be in base image |
 
 ## Install Script
 
@@ -34,7 +36,10 @@ sudo apt update
 sudo apt install -y dnsmasq modemmanager gpiod minicom chrony
 
 # Python packages
-pip install requests pyserial smbus2
+pip install requests pyserial smbus2 pyyaml
+
+# LED status service (requires sudo for PWM access)
+sudo pip install rpi-ws281x
 ```
 
 ## User/Group Setup
