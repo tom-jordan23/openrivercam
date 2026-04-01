@@ -60,7 +60,8 @@
 │   Relay 5V/GND from G469 Pin 2 (5V) / Pin 6 (GND)                       │
 │                                                                            │
 │   POWER BUTTON (Pi 5 J2 header, NOT GPIO):                                │
-│   └── J2 (2-pin) ──► IP67 momentary switch (panel-mount, 22 AWG)         │
+│   └── J2 ──► soldered pigtail w/ Dupont female ──► IP67 momentary switch │
+│       Strain relief zip tie at G469 carrier back                          │
 │       Brief press = power on (if halted) / clean shutdown (if running)    │
 │       Hold ~10s = force power off (if frozen)                             │
 │                                                                            │
@@ -458,8 +459,11 @@ TB1 - MAIN POWER
 
 **PRINT THIS DOCUMENT - LAMINATE FOR FIELD USE**
 
-**Document Version:** 3.2
-**Last Updated:** March 30, 2026
+**Document Version:** 3.3
+**Last Updated:** April 1, 2026
+**Changes from v3.2:**
+- Power button: updated J2 wiring to reflect soldered pigtail with Dupont female connectors and strain relief zip tie (bolt-through method deferred)
+
 **Changes from v3.1:**
 - Removed separate maintenance button (GPIO 23) — maintenance mode now triggered by long press (3s) on J2 power button
 - Enclosure layout updated: 1 button (power) instead of 2

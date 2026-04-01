@@ -1,6 +1,6 @@
 # GPIO Wiring Guide — Sukabumi ORC Station
 
-**Rev D — 2026-03-30**
+**Rev E — 2026-04-01**
 **Hardware:** Raspberry Pi 5 → Stacking Headers → Geekworm G469 Breakout
 
 ---
@@ -605,25 +605,48 @@ bolt diameter (M1.6 or #0) and rated for 18 AWG wire.
    and crack the PCB)
 5. Route the wires to the external power button's screw terminals
 
-**Alternative:** Solder a standard 2-pin 2.54mm header into J2.
+**Alternative — soldered pigtail with Dupont female connectors
+(Sukabumi method):** Solder two bare wires directly to the J2
+through-holes, then terminate the other end with Dupont female connectors.
+This creates a detachable connection to the switch's male header pins.
+Add a strain relief zip tie where the pigtail exits the back of the Pi
+carrier board (Geekworm G469) to prevent mechanical stress on the solder
+joints.
+
+> **Sukabumi build note (2026-04-01):** We first tried soldering a 2-pin
+> 2.54mm header into J2, but the header pin broke loose under pressure from
+> the Dupont connector — a bad solder joint on the small through-hole
+> couldn't withstand lateral force. The fix was to solder bare wires
+> directly to J2 (more surface contact, less leverage) and terminate with
+> Dupont female connectors for a detachable fitting. A zip tie on the back
+> of the G469 carrier provides strain relief so the solder joints never see
+> cable tension. This approach works well but does require soldering — the
+> bolt-through method remains the recommended no-solder approach for future
+> builds.
 
 The J2 wires must route through or around the G469 HAT stack to reach the
 external button. Leave enough slack to separate the stack for service.
 
 | Wire # | From | To | Label | Color | Gauge |
 |--------|------|----|-------|-------|-------|
-| 32 | Pi 5 J2 pin 1 | Power button terminal 1 | "PWR BTN" | Blue/White | 18 AWG solid |
-| 33 | Pi 5 J2 pin 2 | Power button terminal 2 | "PWR BTN" | Blue/White | 18 AWG solid |
+| 32 | Pi 5 J2 pin 1 | Power button terminal 1 | "PWR BTN" | — | Bare wire, soldered pigtail w/ Dupont female |
+| 33 | Pi 5 J2 pin 2 | Power button terminal 2 | "PWR BTN" | — | Bare wire, soldered pigtail w/ Dupont female |
 
 The power button is a simple momentary switch (normally open). It does not
 matter which terminal gets which wire (not polarized). It also does not matter
 which J2 pin goes to which button terminal — either orientation works.
 
 ```
-     Pi 5 J2 Header
+     Pi 5 J2 Header (through-holes)
      ┌─────┐
-     │ 1 2 │  ← 2-pin header near USB-C port
+     │ 1 2 │  ← bare wires soldered to J2
      └──┬──┘
+        │ (pigtail, strain relief zip tie at G469 carrier)
+        │
+   ┌────┴────┐
+   │ Dupont  │  Dupont female connectors (detachable)
+   │ female  │
+   └────┬────┘
         │
    ┌────┴────┐
    │  Button │  IP67 momentary (normally open)
@@ -1123,8 +1146,10 @@ service is needed.
    Pi 5's dedicated J2 power button header (2-pin, near USB-C port). This is NOT
    a GPIO pin — it's a hardware power control. Brief press = power on or clean
    shutdown. Long press (3s) = enter maintenance mode. 10-second hold = force
-   power off. The J2 wires route through the G469 stack but do not use the G469
-   screw terminals.
+   power off. The Sukabumi build uses bare wires soldered to J2, terminating in
+   Dupont female connectors for a detachable connection to the switch. A strain
+   relief zip tie on the back of the G469 carrier prevents cable tension from
+   reaching the solder joints.
 
 6. **Relay click noise:** You will hear an audible click each time a relay channel
    turns on or off. This is normal — it's the mechanical contact inside the relay

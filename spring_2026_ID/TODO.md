@@ -82,8 +82,8 @@
 - [ ] Molex KK 254 housings, 6-pin (Molex 22-01-3067 or equiv) — qty 2
 - [ ] Molex KK 254 crimp pins (Molex 08-55-0131 or equiv) — qty 10+
 - [ ] SD16 4-pin IP68 aviation connector pairs (plug + panel socket) — qty 2
-- [ ] M1.6 or #0-80 bolts, nuts, washers (for J2 power button) — qty 4+ each (bring Pi to test-fit)
-- [ ] O-ring crimp terminals for M1.6/#0 bolt, 18 AWG wire — qty 4+
+- [x] ~~M1.6 or #0-80 bolts, nuts, washers (for J2 power button)~~ — not needed, used soldered pigtail approach instead
+- [x] ~~O-ring crimp terminals for M1.6/#0 bolt, 18 AWG wire~~ — not needed, used soldered pigtail approach instead
 - [ ] Green/yellow 12 AWG stranded wire — a few feet (Jakarta PE ground)
 
 ---
@@ -93,7 +93,7 @@
 ### Sukabumi — finish integration
 
 - [ ] Implement rain gauge capture script (TODO-001)
-- [ ] Wire and test J2 power button (bolt-through + O-ring terminals, once parts arrive)
+- [x] Wire and test J2 power button (soldered pigtail + Dupont female, strain relief zip tie)
 - [ ] Wire rain gauge external side (SD16 bulkhead + 18/4 cable, once parts arrive)
 - [ ] Wire LEDs through relay CH2-4 (if time permits)
 - [ ] Full end-to-end soak test (leave running overnight on capture schedule)
@@ -122,6 +122,7 @@
 ### Both sites
 
 - [ ] Conformal coating (MG 422C) — test first, coat, 24hr cure, reassemble, verify
+  - [ ] Hot glue Dupont connector on power switch pigtail (secure detachable fitting)
 - [ ] Final integration test (both stations running full capture cycle)
 - [ ] Wire rain gauge external side (SD16 bulkhead + 18/4 cable)
 - [ ] Print and laminate door sheets
@@ -393,6 +394,7 @@ already covered by ordered quantities vs. what needs separate ordering.
 | — | Jakarta DIN rails mounted | 2026-03-25 |
 | — | Jakarta AC distribution wired (L/N/PE terminal blocks) | 2026-03-25 |
 | — | Build photos cataloged and tagged (97 photos) | 2026-03-22 |
+| — | Sukabumi J2 power button wired and tested (soldered pigtail + Dupont female) | 2026-04-01 |
 | — | GPIO_WIRING.md comprehensive update (Rev C) | 2026-03-20 |
 | — | ASSEMBLY_SUKABUMI.md restructured (v3.2) | 2026-03-21 |
 | — | ASSEMBLY_JAKARTA.md + WIRING_JAKARTA.md updated (v3.0) | 2026-03-25 |

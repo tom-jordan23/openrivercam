@@ -106,7 +106,7 @@ that are difficult to diagnose in the field.
 - Ethernet port
 - MicroSD card slot
 - J5 (BAT) RTC battery connector
-- J2 power button through-holes (or bolt terminals if installed)
+- J2 power button pigtail Dupont connectors (mask connectors; coat solder joints)
 - Heat sink mounting holes / thermal pad contact area
 - Any other connector or contact point used during testing
 
@@ -441,11 +441,12 @@ coating (Pre-Assembly Checklist Step 3), then enclosure preparation.**
    - WS2812B DIN (data in) → GPIO pin (TBD — any free GPIO)
 
 4. **Install power button:**
-   - Install power button, secure with nut
+   - Install power button in panel, secure with nut
+   - Connect Dupont female pigtail from J2 to button's male header pins
+   - Verify strain relief zip tie on pigtail is secure at G469 carrier back
    - Label power button clearly as "POWER"
 
-   See **GPIO_WIRING.md** for detailed wiring instructions:
-   - **Step 5** — Power button (Pi 5 J2 header)
+   See **GPIO_WIRING.md Step 5** for detailed wiring and build notes.
 
 ### Step 9: Install Mounting Plate and Connect External Peripherals
 
@@ -954,7 +955,7 @@ See `TROUBLESHOOTING.md` for detailed diagnostics.
 
 | Symptom | Check |
 |---------|-------|
-| No boot | Battery voltage, fuses, DDR-60G-5 output, 5V/GND wiring to Pi GPIO, power button pressed? J2 header wiring secure? |
+| No boot | Battery voltage, fuses, DDR-60G-5 output, 5V/GND wiring to Pi GPIO, power button pressed? J2 pigtail Dupont connectors seated? Strain relief intact? |
 | No camera | PoE switch powered? GPIO 24 driving relay? Camera IP reachable? Ethernet cables? |
 | No IR | Cover lens to trigger. Check camera IR settings in web UI. |
 | No LTE | Antenna tight? SIM inserted? IMEI registered? |
