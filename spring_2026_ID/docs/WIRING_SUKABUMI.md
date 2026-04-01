@@ -123,11 +123,10 @@ SOLAR CONTROLLER 12V OUTPUT
 
 5V POWER PATH:
 ┌────────────────┐      ┌─────────────┐      ┌─────────────┐
-│ 12V Terminal   │──►   │ DDR-60G-5   │──►   │ Raspberry   │
-│ Block (TB1)    │      │ DC-DC Conv  │      │ Pi 5        │
-│                │      │ 12V → 5V    │      │ (hardwired  │
-└────────────────┘      └─────────────┘      │  5V/GND)    │
-                                             └─────────────┘
+│ 12V Terminal   │──►   │ DDR-60G-5   │──►   │ 5V Terminal │──► Pi 5 (Pin 2)
+│ Block (TB1)    │      │ DC-DC Conv  │      │ Block       │──► Relay VCC (Pin 4)
+│                │      │ 12V → 5V    │      │ (fused)     │──► WS2812B VCC
+└────────────────┘      └─────────────┘      └─────────────┘
 
 Pi 5 built-in RTC (ML-2020 coin cell) handles scheduling.
 
@@ -251,23 +250,27 @@ Additional GPIO connections (active on G469 but not shown in header above):
   GP4  (Pin 7)  ──► DS18B20 1-Wire data (with 4.7kΩ pull-up to 3V3)
   GP18 (Pin 12) ──► WS2812B NeoPixel data (RGB status LED)
   GP24 (Pin 18) ──► RELAY IN1 (PoE switch power)
-  5V   (Pin 2)  ──► Relay module VCC + WS2812B VCC
+  5V   (Pin 2)  ──► Relay module VCC
   GND  (Pin 6)  ──► Relay module GND + WS2812B GND
 
 
 STATUS LED WIRING (WS2812B NeoPixel, single addressable RGB LED):
 ┌────────────────────────────────────────────────────────────────────────────┐
 │                                                                            │
-│   Geekworm G469                  WS2812B NeoPixel                         │
+│   5V terminal block              WS2812B NeoPixel                         │
+│   (after DDR-60G-5 fuse)        (on removable bottom plate)              │
 │   ┌─────────────┐               ┌──────────────┐                          │
-│   │  5V  (Pin 2)│───────────────│  VCC (5V)    │                          │
-│   │  GND (Pin 6)│───────────────│  GND         │                          │
-│   │  GPIO 18    │───────────────│  DIN (data)  │                          │
+│   │  5V output  │──── yellow ───│  VCC (5V)    │  ┐                       │
+│   └─────────────┘               │              │  │ Dupont female         │
+│   Geekworm G469                 │              │  │ connectors            │
+│   ┌─────────────┐               │              │  │ (detachable)          │
+│   │  GND (free) │──── black ────│  GND         │  │                       │
+│   │  GPIO 18    │──── green ────│  DIN (data)  │  ┘                       │
 │   └─────────────┘               └──────────────┘                          │
 │                                                                            │
-│   Single RGB LED replaces 3 separate panel-mount LEDs.                    │
-│   Colors driven via PWM on GPIO 18 (no relay channels needed).            │
-│   Powered from Pi 5V rail. See docs/LED_STATUS_SPEC.md for color codes.  │
+│   5V from terminal block (not G469) — G469 Pin 2/4 are occupied.         │
+│   All wires terminate in Dupont female for plate removal.                 │
+│   See docs/LED_STATUS_SPEC.md for color codes and config.                │
 │                                                                            │
 └────────────────────────────────────────────────────────────────────────────┘
 

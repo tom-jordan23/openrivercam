@@ -113,7 +113,7 @@ Use consistent colors to reduce mistakes. Suggested scheme:
 | **Yellow** | 5V power (DDR-60G-5 → Pi, and Pi → relay VCC) |
 | | *(same color for both — shared 5V rail)* |
 | **Blue** | GPIO signal — relay IN1 (PoE switch) |
-| **White** | GPIO signal — WS2812B data (GPIO 18) |
+| **Green** | GPIO signal — WS2812B data (GPIO 18) |
 
 If you don't have colored wire, **label both ends** of every wire with tape
 and a marker before connecting.
@@ -471,28 +471,34 @@ data wire carries color and brightness commands using a timed digital protocol
 **Cut 3 wires** to appropriate length (measure from the G469 breakout to the LED
 mounting location, add 3cm slack on each end). Use **22 AWG solid** wire.
 
-| Wire # | From (G469 Terminal) | To (WS2812B) | Label | Color | Gauge |
-|--------|---------------------|--------------|-------|-------|-------|
-| 10 | Pin 2 or Pin 4 — 5V | VCC | "LED 5V" | Yellow | 22 AWG |
-| 11 | Pin 6, 14, or 20 — GND | GND | "LED GND" | Black | 22 AWG |
-| 12 | Pin 12 — GPIO 18 | DIN (data in) | "LED data" | White | 22 AWG |
+| Wire # | From | To (WS2812B) | Label | Color | Gauge |
+|--------|------|--------------|-------|-------|-------|
+| 10 | 5V terminal block (after DDR-60G-5 fuse) | VCC | "LED 5V" | Yellow | 18 AWG solid |
+| 11 | G469 GND (any free pin) | GND | "LED GND" | Black | 18 AWG solid |
+| 12 | G469 Pin 12 — GPIO 18 | DIN (data in) | "LED data" | Green | 18 AWG solid |
 
-**Note:** Pin 2 and Pin 4 share the same 5V rail. Use whichever has a free
-screw terminal position. If Pin 2 is occupied by the DDR-60G-5 power wire and
-Pin 4 is occupied by the relay VCC wire, use Pin 2 — the DDR-60G-5 power wire
-and the WS2812B 5V wire can share the terminal (both are low gauge and the
-combined current draw is well within the terminal's rating). Similarly, use any
-available GND pin.
+**5V source:** The LED 5V wire runs from the 5V distribution terminal block
+(downstream of the DDR-60G-5 fuse), NOT from the G469 GPIO header. G469 Pin 2
+and Pin 4 are already occupied by the Pi power input and relay VCC. The
+terminal block provides a clean tap without doubling up wires in a screw
+terminal.
+
+**Detachable connection:** All three wires terminate in Dupont female
+connectors at the LED end (WS2812B is on the removable bottom plate). This
+allows the plate to detach for service without desoldering.
 
 ```
 WS2812B STATUS LED WIRING (single addressable RGB, 5V):
 ┌────────────────────────────────────────────────────────────────────────────┐
 │                                                                            │
-│   G469 5V (Pin 2 or Pin 4) ──► WS2812B VCC                               │
-│   G469 GND (any)            ──► WS2812B GND                               │
-│   G469 GPIO 18 (Pin 12)    ──► WS2812B DIN (data in)                     │
+│   5V terminal block ─────────────► WS2812B VCC (via Dupont female)        │
+│   (after DDR-60G-5 fuse)                                                  │
 │                                                                            │
-│   Single LED behind sealed acrylic light window.                          │
+│   G469 GND (free pin) ──────────► WS2812B GND (via Dupont female)        │
+│                                                                            │
+│   G469 GPIO 18 (Pin 12) ────────► WS2812B DIN (via Dupont female)        │
+│                                                                            │
+│   LED on removable bottom plate — Dupont connectors for detach/service.  │
 │   Config-driven colors/patterns: /etc/orc/led-status.yaml                │
 │   See docs/LED_STATUS_SPEC.md for full status table.                      │
 │                                                                            │

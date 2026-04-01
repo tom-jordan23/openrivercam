@@ -436,9 +436,11 @@ coating (Pre-Assembly Checklist Step 3), then enclosure preparation.**
    air cavity entirely — no condensation surface, no fogging.
 
    **Wiring (1 GPIO data pin + 5V power):**
-   - WS2812B VCC → G469 5V (Pin 2 or Pin 4)
-   - WS2812B GND → G469 GND (any available)
+   - WS2812B VCC → 5V terminal block (after DDR-60G-5 fuse, NOT G469)
+   - WS2812B GND → G469 GND (any free pin)
    - WS2812B DIN (data in) → G469 GPIO 18 (Pin 12)
+   - All three wires terminate in Dupont female at the LED end (detachable
+     for bottom plate removal)
 
    See **GPIO_WIRING.md Step 4** for full wiring details and verification.
    See **docs/LED_STATUS_SPEC.md** for color/pattern meanings and config.
