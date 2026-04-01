@@ -8,7 +8,7 @@ ExecStart=/usr/local/bin/orc-led-status
 Restart=on-failure
 RestartSec=5
 
-# WS2812B requires root for PWM/DMA access
+# WS2812B requires root for RP1 PIO access (/dev/pio0)
 User=root
 
 # Hardening — limit root's scope

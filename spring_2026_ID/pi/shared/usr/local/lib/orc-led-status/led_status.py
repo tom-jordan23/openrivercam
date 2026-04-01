@@ -7,8 +7,12 @@ NeoPixel LED color/pattern accordingly. Designed for Raspberry Pi 5.
 Configuration: /etc/orc/led-status.yaml (or ORC_LED_STATUS_CONF env var)
 Spec:          docs/LED_STATUS_SPEC.md
 
-Requires: rpi-ws281x (pip install rpi-ws281x), PyYAML
-Must run as root (WS2812B needs PWM hardware access).
+Requires: adafruit-blinka, adafruit-circuitpython-neopixel (import neopixel),
+          adafruit-blinka-raspberry-pi5-neopixel (auto-loaded Pi 5 backend),
+          PyYAML
+Must run as root (RP1 PIO access via /dev/pio0).
+
+NOTE: rpi-ws281x does NOT work on Pi 5 — see ISSUE_LOG.md ISS-007.
 """
 
 import argparse
@@ -101,31 +105,32 @@ def parse_orc_capture_conf(path=ORC_CAPTURE_CONF):
 # ---------------------------------------------------------------------------
 
 class LedDriver:
-    """Thin wrapper around rpi_ws281x.PixelStrip for a single WS2812B."""
+    """Thin wrapper around Adafruit Blinka Pi5 NeoPixel for a single WS2812B.
+
+    Uses the RP1 PIO peripheral on Raspberry Pi 5 via /dev/pio0.
+    The rpi_ws281x library does NOT work on Pi 5 (error -3:
+    "Hardware revision is not supported") because the Pi 5's RP1 chip
+    replaced the BCM2711 DMA/PWM peripherals that rpi_ws281x relied on.
+    """
 
     def __init__(self, gpio_pin, brightness):
-        from rpi_ws281x import PixelStrip, Color  # noqa: F401
-        self._Color = Color
-        self._strip = PixelStrip(
-            num=1,
-            pin=gpio_pin,
-            freq_hz=800000,
-            dma=10,
-            invert=False,
-            brightness=brightness,
-            channel=0,
+        import board
+        import neopixel
+
+        pin = getattr(board, f"D{gpio_pin}")
+        self._strip = neopixel.NeoPixel(
+            pin, 1, auto_write=False, brightness=brightness / 255.0,
         )
-        self._strip.begin()
         self._current = (0, 0, 0)
 
     def set_color(self, r, g, b):
         if (r, g, b) != self._current:
-            self._strip.setPixelColor(0, self._Color(r, g, b))
+            self._strip[0] = (r, g, b)
             self._strip.show()
             self._current = (r, g, b)
 
     def set_brightness(self, brightness):
-        self._strip.setBrightness(brightness)
+        self._strip.brightness = brightness / 255.0
         self._strip.show()
 
     def off(self):
@@ -437,7 +442,8 @@ def log(msg):
 # ---------------------------------------------------------------------------
 
 def test_color(args, config):
-    """Set a static color for 5 seconds, then turn off. For wiring tests."""
+    """Set a static color for 5 seconds, then turn off. For wiring tests.
+    Prefer orc-led-test for comprehensive testing."""
     r, g, b = args.test_color
     led_cfg = config.get("led", {})
     led = LedDriver(led_cfg.get("gpio_pin", 18),

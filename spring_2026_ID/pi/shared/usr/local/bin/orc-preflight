@@ -69,7 +69,7 @@ fi
 echo ""
 echo "=== Python Packages ==="
 
-REQUIRED_PY="requests smbus2 rpi_ws281x yaml"
+REQUIRED_PY="requests smbus2 neopixel yaml"
 OPTIONAL_PY="pyserial"
 
 for pkg in $REQUIRED_PY; do

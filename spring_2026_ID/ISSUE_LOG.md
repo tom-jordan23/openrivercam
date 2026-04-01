@@ -222,6 +222,71 @@ See assembly docs for installation procedure.
 
 ---
 
+### ISS-007: rpi-ws281x library does NOT work on Raspberry Pi 5
+
+| Field | Value |
+|-------|-------|
+| **Date opened** | 2026-04-01 |
+| **Site** | Both |
+| **Risk** | High (blocks LED functionality entirely) |
+| **Impact** | High |
+| **Status** | RESOLVED |
+
+**Problem:**
+The `rpi-ws281x` Python library (v5.0.0), which is the most commonly
+referenced WS2812B/NeoPixel driver for Raspberry Pi, fails immediately on
+Pi 5 with error code -3: "Hardware revision is not supported", followed by
+a segfault. This is because the Pi 5 uses an RP1 southbridge chip for GPIO
+that does not expose the BCM2711 DMA/PWM peripherals that rpi_ws281x relied
+on. This is a hard incompatibility — no pin change or config.txt tweak fixes it.
+
+**How we discovered it:**
+First attempt to run `orc-led-test` after wiring the WS2812B to GPIO 18 hit
+the error immediately. The library initializes, queries `/proc/device-tree`
+for the hardware revision, and bails out when it finds a Pi 5.
+
+**Resolution:**
+Replaced `rpi-ws281x` with three Adafruit packages:
+- `adafruit-blinka` (hardware abstraction layer)
+- `adafruit-circuitpython-neopixel` (high-level NeoPixel API)
+- `adafruit-blinka-raspberry-pi5-neopixel` (Pi 5 RP1 PIO driver)
+
+These drive the WS2812B protocol through the RP1's **PIO** (Programmable I/O)
+block via `/dev/pio0`, which is present in Raspberry Pi OS since mid-2024.
+No hardware changes required — GPIO 18 wiring stays the same.
+
+The code imports `neopixel` (from `adafruit-circuitpython-neopixel`). Blinka
+auto-detects the Pi 5 and routes through the PIO backend — no Pi5-specific
+import needed in application code.
+
+Install:
+```bash
+sudo pip install --break-system-packages adafruit-blinka \
+    adafruit-circuitpython-neopixel \
+    adafruit-blinka-raspberry-pi5-neopixel
+```
+
+Also deploy the config file:
+```bash
+sudo mkdir -p /etc/orc
+sudo cp pi/shared/etc/orc/led-status.yaml /etc/orc/led-status.yaml
+```
+
+**Files changed:**
+- `pi/shared/usr/local/lib/orc-led-status/led_status.py` — LedDriver class rewritten
+- `pi/shared/usr/local/bin/orc-led-test` — LedDriver class rewritten
+- `pi/shared/usr/local/bin/orc-preflight` — Python package check updated
+- `pi/shared/etc/systemd/system/orc-led-status.service` — comment updated
+- `pi/PACKAGES.md` — rpi-ws281x replaced with Adafruit packages
+- `docs/LED_STATUS_SPEC.md` — compatibility note added
+- `diagrams/sukabumi/GPIO_WIRING.md` — software section updated with warning
+
+**Note for future builders:** If you search online for "WS2812B Raspberry Pi
+Python", almost every result will point you to `rpi-ws281x`. It does not work
+on Pi 5. Use the Adafruit Blinka path instead.
+
+---
+
 ### ISS-006: Minor solder contact on TP11 test pad (Jakarta Pi)
 
 | Field | Value |

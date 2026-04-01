@@ -511,9 +511,14 @@ window. No panel hole or cable gland is needed for the LED itself — only the
 3 signal/power wires route internally from the G469 to the LED.
 
 **Software:** The `led-status.service` drives the WS2812B via GPIO 18 using
-the rpi_ws281x library. Color meanings and blink patterns are defined in
-`/etc/orc/led-status.yaml`. See `docs/LED_STATUS_SPEC.md` for the full
-status table.
+the Adafruit Blinka Pi5 NeoPixel library (RP1 PIO). Color meanings and blink
+patterns are defined in `/etc/orc/led-status.yaml`. See
+`docs/LED_STATUS_SPEC.md` for the full status table.
+
+> **Pi 5 gotcha:** The widely-referenced `rpi-ws281x` library does NOT work
+> on Pi 5 — it fails with error -3 ("Hardware revision is not supported")
+> because the Pi 5 RP1 chip replaced the BCM2711 DMA/PWM peripherals.
+> Use `adafruit-blinka-raspberry-pi5-neopixel` instead. See `pi/PACKAGES.md`.
 
 ### Step 4 Verification
 
@@ -1109,7 +1114,7 @@ Each GPIO function will have a corresponding systemd service:
 | Service | GPIO | Type | Description |
 |---------|------|------|-------------|
 | `relay-poe.service` | GPIO 24 | oneshot, RemainAfterExit | Assert HIGH at boot to energize PoE relay (active-high) |
-| `led-status.service` | GPIO 18 | simple (long-running) | Drive WS2812B status LED via rpi_ws281x; config in `/etc/orc/led-status.yaml` |
+| `led-status.service` | GPIO 18 | simple (long-running) | Drive WS2812B status LED via Adafruit Blinka NeoPixel (RP1 PIO); config in `/etc/orc/led-status.yaml` |
 | `rain-gauge.service` | GPIO 14, 15 | simple (long-running) | Read UART data from Hydreon RG-15 |
 | `climate-monitor.service` | GPIO 2, 3 | simple (long-running) | Read SHT40 (I2C) temperature and humidity |
 

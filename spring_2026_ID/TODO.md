@@ -95,7 +95,9 @@
 - [ ] Implement rain gauge capture script (TODO-001)
 - [x] Wire and test J2 power button (soldered pigtail + Dupont female, strain relief zip tie)
 - [ ] Wire rain gauge external side (SD16 bulkhead + 18/4 cable, once parts arrive)
-- [ ] Wire WS2812B LED (GPIO 18 data, 5V/GND from G469) and install light window
+- [x] Wire WS2812B LED (GPIO 18 data, 5V/GND from G469) — wired and tested 2026-04-01
+- [ ] Install LED light window (acrylic sandwich)
+- [ ] LED integration test: start orc-led-status daemon, verify correct colors for each subsystem state (camera on/off, network up/down, storage, power). Test error cycling with multiple errors active. Test suppression via config.
 - [ ] Full end-to-end soak test (leave running overnight on capture schedule)
 
 ### Jakarta — software + testing
@@ -395,6 +397,8 @@ already covered by ordered quantities vs. what needs separate ordering.
 | — | Jakarta AC distribution wired (L/N/PE terminal blocks) | 2026-03-25 |
 | — | Build photos cataloged and tagged (97 photos) | 2026-03-22 |
 | — | Sukabumi J2 power button wired and tested (soldered pigtail + Dupont female) | 2026-04-01 |
+| — | Sukabumi WS2812B LED wired, tested R/G/B + all status colors (orc-led-test) | 2026-04-01 |
+| — | LED driver migrated from rpi-ws281x to Adafruit Blinka (Pi 5 PIO) — see ISS-007 | 2026-04-01 |
 | — | GPIO_WIRING.md comprehensive update (Rev C) | 2026-03-20 |
 | — | ASSEMBLY_SUKABUMI.md restructured (v3.2) | 2026-03-21 |
 | — | ASSEMBLY_JAKARTA.md + WIRING_JAKARTA.md updated (v3.0) | 2026-03-25 |

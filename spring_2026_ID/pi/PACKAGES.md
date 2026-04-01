@@ -25,7 +25,9 @@ that the base image does not provide.
 | `requests` | HTTP client for camera ISAPI configuration | `camera/camtool.py` | May already be in base image |
 | `pyserial` | Serial port access for modem AT commands | Modem diagnostics | Optional — only for manual diagnostics |
 | `smbus2` | I2C interface for SHT40 temp/humidity sensor | Sensor readout | |
-| `rpi-ws281x` | WS2812B NeoPixel LED driver (PWM/DMA) | `orc-led-status` | Requires root. Pi 5 support in v5.0.0+ |
+| `adafruit-blinka` | Hardware abstraction layer for Pi GPIO | `orc-led-status` | Dependency of NeoPixel library |
+| `adafruit-circuitpython-neopixel` | NeoPixel high-level API (`import neopixel`) | `orc-led-status` | The API code imports. Blinka auto-detects Pi 5 |
+| `adafruit-blinka-raspberry-pi5-neopixel` | Pi 5 RP1 PIO backend for NeoPixel | `orc-led-status` | Auto-loaded by Blinka on Pi 5 via /dev/pio0. Replaces rpi-ws281x which does NOT work on Pi 5 |
 | `pyyaml` | YAML config parser | `orc-led-status` | May already be in base image |
 
 ## Install Script
@@ -38,8 +40,11 @@ sudo apt install -y dnsmasq modemmanager gpiod minicom chrony
 # Python packages
 pip install requests pyserial smbus2 pyyaml
 
-# LED status service (requires sudo for PWM access)
-sudo pip install rpi-ws281x
+# LED status service (requires sudo for RP1 PIO access)
+# NOTE: rpi-ws281x does NOT work on Pi 5 (error -3: "Hardware revision
+# is not supported"). The Pi 5 RP1 chip replaced BCM2711 DMA/PWM.
+# Use the Adafruit Blinka Pi5 NeoPixel library instead.
+sudo pip install --break-system-packages adafruit-blinka adafruit-circuitpython-neopixel adafruit-blinka-raspberry-pi5-neopixel
 ```
 
 ## User/Group Setup

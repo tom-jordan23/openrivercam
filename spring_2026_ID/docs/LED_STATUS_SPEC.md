@@ -136,9 +136,14 @@ G469 GPIO 18      ──► WS2812B DIN (data in)
 One LED draws ~60 mA max (all white, full brightness). Typical draw during
 normal operation (single color) is ~20 mA.
 
-**Note:** GPIO 18 is PWM0, which the NeoPixel library uses for timing.
-If GPIO 18 conflicts with another peripheral, any free GPIO pin works —
+**Note:** On Pi 5, the LED is driven via the RP1 PIO peripheral
+(`/dev/pio0`), not PWM/DMA as on earlier Pis. Any free GPIO pin works —
 just update `gpio_pin` in the config.
+
+**Pi 5 compatibility:** The commonly-referenced `rpi-ws281x` library does
+NOT work on Pi 5 (error -3: "Hardware revision is not supported"). This
+build uses `adafruit-blinka-raspberry-pi5-neopixel` instead, which drives
+the WS2812B protocol through the RP1's PIO block. See `pi/PACKAGES.md`.
 
 ---
 

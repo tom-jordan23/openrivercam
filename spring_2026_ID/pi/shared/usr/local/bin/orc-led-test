@@ -1,0 +1,207 @@
+#!/usr/bin/env python3
+"""orc-led-test — visual hardware test for the WS2812B status LED.
+
+Cycles through every color and pattern from the LED status spec so the
+operator can confirm wiring, brightness, and color accuracy. Each state
+is held for a few seconds with a label printed to the terminal.
+
+Must run as root (RP1 PIO access on GPIO 18).
+
+Usage:
+    sudo orc-led-test              # full cycle (all states + errors)
+    sudo orc-led-test --quick      # red/green/blue only (~6 seconds)
+    sudo orc-led-test --bright 50  # run at 50% brightness (0-100)
+"""
+
+import argparse
+import math
+import os
+import sys
+import time
+
+import yaml
+
+# ---------------------------------------------------------------------------
+# Defaults (used if config file is missing)
+# ---------------------------------------------------------------------------
+
+DEFAULT_CONF = "/etc/orc/led-status.yaml"
+DEFAULT_GPIO = 18
+DEFAULT_BRIGHTNESS = 200
+
+# ---------------------------------------------------------------------------
+# LED driver (same as led_status.py)
+# ---------------------------------------------------------------------------
+
+class LedDriver:
+    def __init__(self, gpio_pin, brightness):
+        import board
+        import neopixel
+
+        pin = getattr(board, f"D{gpio_pin}")
+        self._strip = neopixel.NeoPixel(
+            pin, 1, auto_write=False, brightness=brightness / 255.0,
+        )
+        self._current = (0, 0, 0)
+
+    def set_color(self, r, g, b):
+        if (r, g, b) != self._current:
+            self._strip[0] = (r, g, b)
+            self._strip.show()
+            self._current = (r, g, b)
+
+    def off(self):
+        self.set_color(0, 0, 0)
+
+
+# ---------------------------------------------------------------------------
+# Pattern helpers
+# ---------------------------------------------------------------------------
+
+def show_solid(led, r, g, b, duration):
+    """Solid color for duration seconds."""
+    led.set_color(r, g, b)
+    time.sleep(duration)
+
+
+def show_flash(led, r, g, b, hz, duration):
+    """Flash on/off at hz for duration seconds."""
+    period = 1.0 / hz
+    end = time.monotonic() + duration
+    while time.monotonic() < end:
+        phase = (time.monotonic() % period) / period
+        if phase < 0.5:
+            led.set_color(r, g, b)
+        else:
+            led.set_color(0, 0, 0)
+        time.sleep(0.02)
+
+
+def show_pulse(led, r, g, b, duration):
+    """Sinusoidal pulse for duration seconds."""
+    end = time.monotonic() + duration
+    while time.monotonic() < end:
+        bright = (math.sin(time.monotonic() * 2 * math.pi * 0.5) + 1) / 2
+        led.set_color(int(r * bright), int(g * bright), int(b * bright))
+        time.sleep(0.02)
+
+
+# ---------------------------------------------------------------------------
+# Test sequences
+# ---------------------------------------------------------------------------
+
+def run_quick(led):
+    """Red, green, blue — bare minimum wiring check."""
+    steps = [
+        ("RED",   255, 0,   0),
+        ("GREEN", 0,   255, 0),
+        ("BLUE",  0,   0,   255),
+    ]
+    for label, r, g, b in steps:
+        print(f"  {label:12s}  ({r:3d}, {g:3d}, {b:3d})", flush=True)
+        show_solid(led, r, g, b, 2)
+
+
+def run_full(led, cfg):
+    """Cycle through every state and error from the spec."""
+    states = cfg.get("states", {})
+    errors = cfg.get("errors", {})
+    err_disp = cfg.get("error_display", {})
+    blink_hz = err_disp.get("blink_hz", 4)
+
+    # Normal states
+    print("\n  --- Normal states ---", flush=True)
+    state_order = [
+        ("boot",        "solid", 2),
+        ("idle",        "solid", 2),
+        ("capture",     "flash", 3),
+        ("maintenance", "solid", 2),
+        ("shutdown",    "pulse", 3),
+    ]
+    for name, pattern, duration in state_order:
+        s = states.get(name, {})
+        c = s.get("color", [128, 128, 128])
+        hz = s.get("flash_hz", 2)
+        label = f"{name} ({pattern})"
+        print(f"  {label:24s}  ({c[0]:3d}, {c[1]:3d}, {c[2]:3d})", flush=True)
+        if pattern == "flash":
+            show_flash(led, c[0], c[1], c[2], hz, duration)
+        elif pattern == "pulse":
+            show_pulse(led, c[0], c[1], c[2], duration)
+        else:
+            show_solid(led, c[0], c[1], c[2], duration)
+
+    # Error states
+    print("\n  --- Error states (steady = HW, blinking = SW) ---", flush=True)
+    for name in ["camera", "network", "storage", "power"]:
+        ecfg = errors.get(name, {})
+        c = ecfg.get("color", [255, 0, 0])
+
+        label = f"{name} steady"
+        print(f"  {label:24s}  ({c[0]:3d}, {c[1]:3d}, {c[2]:3d})", flush=True)
+        show_solid(led, c[0], c[1], c[2], 2)
+
+        label = f"{name} blink ({blink_hz} Hz)"
+        print(f"  {label:24s}  ({c[0]:3d}, {c[1]:3d}, {c[2]:3d})", flush=True)
+        show_flash(led, c[0], c[1], c[2], blink_hz, 2)
+
+
+# ---------------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------------
+
+def main():
+    parser = argparse.ArgumentParser(description="WS2812B LED hardware test")
+    parser.add_argument("--quick", action="store_true",
+                        help="Red/green/blue only (~6 seconds)")
+    parser.add_argument("--bright", type=int, default=None, metavar="0-100",
+                        help="Brightness 0-100 (overrides config; default: from config)")
+    parser.add_argument("--config", default=os.environ.get(
+        "ORC_LED_STATUS_CONF", DEFAULT_CONF),
+        help="Path to led-status.yaml")
+    args = parser.parse_args()
+
+    if os.geteuid() != 0:
+        print("ERROR: must run as root (sudo orc-led-test)", file=sys.stderr)
+        sys.exit(1)
+
+    # Load config for GPIO pin / brightness
+    cfg = {}
+    if os.path.isfile(args.config):
+        with open(args.config) as f:
+            cfg = yaml.safe_load(f) or {}
+
+    led_cfg = cfg.get("led", {})
+    gpio = led_cfg.get("gpio_pin", DEFAULT_GPIO)
+
+    if args.bright is not None:
+        pct = max(0, min(100, args.bright))
+        brightness = int(pct * 255 / 100)
+    else:
+        brightness = led_cfg.get("brightness", DEFAULT_BRIGHTNESS)
+
+    print(f"orc-led-test: GPIO {gpio}, brightness {brightness}/255 ({brightness * 100 // 255}%)")
+    print(f"Config: {args.config}")
+
+    try:
+        led = LedDriver(gpio, brightness)
+    except Exception as e:
+        print(f"ERROR: failed to initialise LED driver: {e}", file=sys.stderr)
+        print("Check wiring: DIN → GPIO 18, VCC → 5V, GND → GND",
+              file=sys.stderr)
+        sys.exit(1)
+
+    try:
+        if args.quick:
+            run_quick(led)
+        else:
+            run_full(led, cfg)
+    except KeyboardInterrupt:
+        print("\n  interrupted")
+    finally:
+        led.off()
+        print("\n  LED off. Test complete.")
+
+
+if __name__ == "__main__":
+    main()
