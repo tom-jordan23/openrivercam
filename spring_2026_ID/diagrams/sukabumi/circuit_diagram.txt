@@ -220,8 +220,8 @@
       ├── TX  → GPIO 15 (Pi UART RX)     RS232 TTL 3.3V
       └── RX  ← GPIO 14 (Pi UART TX)     (through PG9 cable gland)
 
-    NOTE: RG-15 powered at 12V (7-24V range), signal at 3.3V TTL.
-    No level shifter needed. Resolution: 0.2mm (configurable).
+    NOTE: RG-15 powered at 12V (5-35V range per manufacturer), signal
+    at 3.3V TTL. No level shifter needed. Resolution: 0.2mm (configurable).
     Self-cleaning lens, no moving parts.
     Mounted outside on pole arm, built-in mounting holes.
 
@@ -265,7 +265,7 @@
     Camera (PoE):   48V              LEDs:             12V via relay CH2/3/4
     GPIO signals:   3.3V             Button GPIO:      internal pull-up
     LTE modem:      5V (USB bus)     DS18B20:          4.7k Ohm pull-up
-    Rain gauge:     12V (7-24V ok)
+    Rain gauge:     12V (5-35V ok)
     SHT40 sensor:   3.3V (I2C bus)
     DS18B20 probe:  3.3V (1-Wire)
 ================================================================================

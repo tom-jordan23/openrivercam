@@ -212,8 +212,8 @@
 - **Dual output:** RS232 TTL at 3.3V (connects directly to Pi UART via EzConnect terminals) + open-collector pulse output emulating tipping bucket
 - Serial interface provides real-time rainfall rate, accumulated total, and configurable resolution (0.2mm or 0.02mm)
 - DIP switches for configuration (units, resolution, operating mode); also configurable via serial commands
-- Very low power: ~150µA sleep, 15mA active; well-suited to solar applications
-- Powered from 12V system supply (5-15V input range)
+- Very low power: ~110µA idle (dry), under 2mA active (raining); well-suited to solar applications
+- Powered from 12V system supply (5-35V input range per manufacturer)
 - Built-in mounting holes — no separate bracket needed
 - Operating temp: -40°C to +60°C
 - Mount in open area away from structures (>2m from walls/trees)
@@ -228,11 +228,13 @@ collect rainfall continuously, including while the Pi sleeps.
   a relay-switched circuit. It draws ~150µA idle — negligible impact on solar budget
   (~0.04 Wh/day). The RG-15 stays powered 24/7 and accumulates rainfall internally.
 - **Software requirement:** On each wake cycle, the capture script must:
-  1. Open UART (`/dev/ttyAMA0`, 9600 baud)
-  2. Send `R` command to read the RG-15 accumulated rainfall (`Acc` field)
+  1. Open UART (`/dev/ttyAMA0`, 9600 baud, 8N1)
+  2. Send `A\n` command to read accumulated rainfall since last `A` poll
+     (returns e.g. `Acc 0.000 in`). Note: `R\n` returns a full data dump
+     (Acc + EventAcc + TotalAcc + RInt) — either works, `A` is simpler to parse
   3. Compare to the previous reading (stored on disk) to compute interval rainfall
   4. Log the interval rainfall with timestamp
-  5. Optionally send `O` command to reset the accumulator (or just track deltas)
+  5. Optionally send `O\n` to reset TotalAcc counter (or just track deltas)
 - **Why not reset each cycle?** Tracking deltas (rather than resetting) is safer — if a
   read fails or the Pi crashes mid-cycle, no rainfall data is lost. The accumulator
   persists as long as the RG-15 has power.
