@@ -800,11 +800,14 @@ them so the correct signal reaches the correct GPIO pin.
 ```
   Outside enclosure (cable gland → inline connector → RG-15):
 
-  Orange wire       (12V)   ── connector ── RG-15 J1 V+  (screw terminal)
-  White/Orange wire (GND)   ── connector ── RG-15 J1 GND (screw terminal)
-  Green wire        (TX→RX) ── connector ── RG-15 J2 Pin 5 (SI)  [Dupont female]
-  White/Green wire  (RX→TX) ── connector ── RG-15 J2 Pin 4 (SO)  [Dupont female]
+  Gland Pin 1 ── Orange       (12V)   ── connector ── RG-15 J1 V+  (screw terminal)
+  Gland Pin 2 ── White/Orange (GND)   ── connector ── RG-15 J1 GND (screw terminal)
+  Gland Pin 3 ── Green        (TX→RX) ── connector ── RG-15 J2 Pin 5 (SI)  [Dupont female]
+  Gland Pin 4 ── White/Green  (RX→TX) ── connector ── RG-15 J2 Pin 4 (SO)  [Dupont female]
   Shield, blue pair, brown pair ── cut back, not connected
+
+  ✅ RG-15 side wired and terminated (2026-04-03).
+  Box side of cable and internal wiring still pending.
 ```
 
 **UART config required on the Pi (do this during software setup):**
