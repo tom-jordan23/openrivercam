@@ -249,6 +249,7 @@ POWER PATH LOGIC:
             |    |                      (see PoE Camera System section)
             |    |
             |    +--[FUSE 5A]---> DDR-60G-5 (12V->5V) -> hardwired 5V/GND -> PI 5 GPIO
+            |                                                          +-> WS2812B LED (doubled at DDR output)
             |
             +--[FUSE 5A]---> PTC HEATER (via hygrostat) + FANS
 
@@ -258,7 +259,7 @@ FUSE SPECIFICATIONS (3 fuse holders):
 |  FUSE        |  RATING  |  PROTECTS                                        |
 +--------------+----------+----------------------------------------------------+
 |  F2 (PoE)    |  5A      |  Relay + PoE switch (1 camera, ~20W max)         |
-|  F3 (Pi)     |  5A      |  DDR-60G-5 + Pi (25W max = 2A, plus margin)     |
+|  F3 (Pi)     |  5A      |  DDR-60G-5 + Pi + LED (25W max = 2A, plus margin)|
 |  F4 (Heater) |  5A      |  PTC heater + fans (25W max, plus margin)       |
 +-----------------------------------------------------------------------------+
 F1 (15A main bus fuse) removed — redundant with 3 branches all at 5A.
@@ -399,10 +400,11 @@ RELAY MODULE INPUT WIRING:
 STATUS LED WIRING (WS2812B NeoPixel, directly driven by Pi GPIO):
 +----------------------------------------------------------------------------+
 |                                                                            |
-|   G469 Pin 2  (5V)      ---> WS2812B VDD (power)                         |
-|   G469 Pin 14 (GND)     ---> WS2812B GND                                 |
+|   DDR-60G-5 V+ output   ---> WS2812B VDD (power)                         |
+|   DDR-60G-5 V- output   ---> WS2812B GND                                 |
 |   G469 Pin 12 (GPIO 18) ---> WS2812B DIN (data in)                       |
 |                                                                            |
+|   5V/GND doubled up at DDR-60G-5 output terminals with Pi power wires.   |
 |   Single addressable RGB LED. Color and pattern set by software           |
 |   via /etc/orc/led-status.yaml. No relay channels used for LEDs.         |
 |   Relay channels CH2/CH3/CH4 remain free for future use.                 |
@@ -686,7 +688,7 @@ Do not use wire thinner than 1.5 mm² (16 AWG) for any AC connection.
 | **Green/Yellow** | Earth Ground (PE) |
 | **Red** | DC 12V positive (+) |
 | **Black** | DC Ground / 12V negative (-) |
-| **Yellow** | 5V power (DDR-60G-5 -> Pi, and Pi -> relay VCC) |
+| **Yellow** | 5V power (DDR-60G-5 -> Pi + LED, and Pi -> relay VCC) |
 | **Blue (thin)** | Signal (I2C SDA) |
 | **White** | Signal (alternate) |
 | **White (22 AWG pair)** | Power button (J2 header to panel switch) |
