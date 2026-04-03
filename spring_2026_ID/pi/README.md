@@ -65,6 +65,9 @@ contains a real file.
 | `shared/etc/orc-capture.conf` | `/etc/orc-capture.conf` | Capture settings template with all options documented (overridden by site-specific versions) | Shared (template) | No | No |
 | `sukabumi/etc/orc-capture.conf` | `/etc/orc-capture.conf` | Sukabumi capture config: RELAY_MODE=cycle, CAMERA_IP=192.168.50.139 | Sukabumi | No | No |
 | `jakarta/etc/orc-capture.conf` | `/etc/orc-capture.conf` | Jakarta capture config: RELAY_MODE=always, CAMERA_IP=192.168.50.101 | Jakarta | No | No |
+| `jakarta/etc/NetworkManager/system-connections/camera-net.nmconnection` | `/etc/NetworkManager/system-connections/camera-net.nmconnection` | Static IP (192.168.50.1) for eth0 camera network | Jakarta | No | No |
+| `jakarta/etc/cloud/templates/hosts.debian.tmpl` | `/etc/cloud/templates/hosts.debian.tmpl` | Hosts file template with camera hostname | Jakarta | No | No |
+| `jakarta/etc/dnsmasq.d/cameras.conf` | `/etc/dnsmasq.d/cameras.conf` | Jakarta camera DHCP reservation (MAC placeholder) | Jakarta | Yes (MAC) | No |
 | `shared/usr/local/bin/orc-led-status` | `/usr/local/bin/orc-led-status` | Bash wrapper for LED status daemon (validates config, execs Python) | Shared | No | Yes |
 | `shared/usr/local/lib/orc-led-status/led_status.py` | `/usr/local/lib/orc-led-status/led_status.py` | LED status daemon: polls health, drives WS2812B on GPIO 18 via RP1 PIO | Shared | No | Yes |
 | `shared/usr/local/bin/orc-led-test` | `/usr/local/bin/orc-led-test` | LED hardware test: cycles all status colors/patterns for visual verification | Shared | No | Yes |
@@ -82,27 +85,54 @@ contains a real file.
 
 ## How to Apply
 
-Copy files to a Pi over SSH. Shared files first, then site-specific:
+### Automated (recommended): deploy.sh
+
+The `deploy.sh` script automates the full setup after flashing a fresh ORC-OS
+image. It installs packages, copies all overlay files, configures config.txt,
+enables services, and runs verification.
+
+**Workflow:**
+
+1. Flash ORC-OS image with Pi Imager:
+   - Device: Raspberry Pi 5
+   - OS: Use custom → select the ORC-OS `.img.gz` file
+   - Click the gear icon (OS customisation) and set:
+     - **Hostname:** `orc-sukabumi` or `orc-jakarta`
+     - **Username:** `pi` (do NOT change — ORC-OS requires this)
+     - **Enable SSH:** Yes (password authentication or public key)
+     - **Configure WiFi:** Yes — enter your SSID and password
+       (needed for initial setup; field deployment uses LTE)
+   - Flash to SD card
+2. Insert SD card into Pi, power on
+3. First boot — wait 2-3 minutes for ORC-OS init (filesystem expand, auto-reboot)
+4. SSH into the Pi: `ssh pi@orc-jakarta.local` (or use IP from router)
+5. Clone or copy this repo to the Pi
+6. Run deploy.sh:
+
+```bash
+cd spring_2026_ID/pi
+./deploy.sh sukabumi      # or: ./deploy.sh jakarta
+```
+
+**Options:**
+```
+./deploy.sh <site> --skip-packages    # offline/air-gapped (packages pre-installed)
+./deploy.sh <site> --skip-config-txt  # don't modify config.txt
+./deploy.sh <site> --dry-run          # show what would happen without doing it
+```
+
+The script creates a backup of all files it overwrites at
+`/tmp/orc-deploy-backup-<timestamp>/` and generates a report at
+`/tmp/orc-deploy-report-<timestamp>.txt`.
+
+### Manual (single file updates)
+
+For updating individual files after the initial deploy:
 
 ```bash
 # From the repo root — replace PI_HOST with the Pi's IP or hostname
-
-# Shared files (all sites)
-scp -r spring_2026_ID/pi/shared/etc/ PI_HOST:/tmp/shared-etc/
-ssh PI_HOST 'sudo cp -r /tmp/shared-etc/* /etc/ && rm -rf /tmp/shared-etc'
-
-# Site-specific files (example: sukabumi)
-scp -r spring_2026_ID/pi/sukabumi/etc/ PI_HOST:/tmp/site-etc/
-ssh PI_HOST 'sudo cp -r /tmp/site-etc/* /etc/ && rm -rf /tmp/site-etc'
-```
-
-Then restart the relevant services (e.g. `sudo systemctl restart dnsmasq`).
-
-For a single file, direct scp is simpler:
-
-```bash
-scp spring_2026_ID/pi/sukabumi/etc/dnsmasq.d/cameras.conf PI_HOST:/tmp/
-ssh PI_HOST 'sudo cp /tmp/cameras.conf /etc/dnsmasq.d/ && rm /tmp/cameras.conf'
+scp spring_2026_ID/pi/shared/usr/local/bin/orc-capture PI_HOST:/tmp/
+ssh PI_HOST 'sudo cp /tmp/orc-capture /usr/local/bin/ && sudo chmod +x /usr/local/bin/orc-capture && rm /tmp/orc-capture'
 ```
 
 ## How to Add a New File

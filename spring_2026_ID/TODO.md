@@ -1,7 +1,7 @@
 # TODO List - Indonesia Spring 2026 Deployment
 
-**Last updated:** 2026-03-25
-**Departure:** ~April 15, 2026 (3 weeks)
+**Last updated:** 2026-04-03
+**Departure:** April 12, 2026 (9 days)
 
 ---
 
@@ -22,116 +22,112 @@
 
 ---
 
-## This Week (March 25–31)
+## Completed (weeks 1-2)
 
-### Sukabumi — ORC-OS config + power cycling + video capture
+Moved to Completed table at bottom of file.
 
-**Software first — gives maximum time to absorb problems:**
-- [ ] Verify ORC-OS manages GPIO 24 (relay/PoE switch control)
-- [ ] If ORC-OS doesn't manage GPIO 24, create systemd service as fallback
-- [ ] Configure ORC-OS capture schedule (15-minute wake cycle)
-- [ ] Camera ISAPI config (streaming, image, NTP via camtool.py)
-- [ ] Rain gauge serial test (UART, 9600 baud, send `R` command)
-- [ ] Pangolin/Newt remote access setup (TODO-008)
+---
 
-**Hardware verification (dependent on software above):**
-- [x] Install 5x20mm fuses
-- [x] Run full continuity checklist
-- [x] First power-on (Pi boots from 12V bench supply)
-- [x] Fix relay CH1 NC→NO error
+## Today (April 3) — Hardware finish day
+
+**Goal: Finish rain gauge wiring for both stations, boot Jakarta, box everything this weekend.**
+
+### Sukabumi — rain gauge completion
+- [ ] Complete rain gauge external wiring (SD16 bulkhead + Molex/Dupont to RG-15 J2)
+- [ ] End-to-end rain gauge continuity test (Pi → bulkhead → cable → RG-15)
+- [ ] Rain gauge serial test if time permits (UART, 9600 baud, `R` command)
+
+### Jakarta — catch up to Sukabumi
+- [x] AC wiring complete and tested (12.11V at PSU output)
+- [x] 12V distribution wired (PSU → TB1)
+- [x] DDR-60G-5 trimmed to 5.10V, wired to G469 Pin 2/Pin 25
+- [x] Relay 5V side wired (G469 → relay VCC/GND/IN1-4)
+- [x] Relay CH1 → fuse → PoE switch wired
+- [x] J2 power button header soldered
+- [ ] Wire rain gauge internal side (bulkhead end loose, labeled)
+- [ ] Wire rain gauge external side (SD16 bulkhead + Molex/Dupont to RG-15 J2)
 - [x] Wire SHT40 sensor
-- [x] Install RTC battery
-- [x] Wire rain gauge internal side (bulkhead end loose, labeled)
-- [ ] Power cycle test: Pi boots → GPIO 24 HIGH → PoE switch on → camera boots
-- [ ] End-to-end: Pi wakes, orc-capture pulls RTSP, video delivered to ORC-OS
-- [ ] Verify RTC keeps time after power off (5 minute test)
-- [ ] Verify SHT40 readable (`i2cdetect -y 1` shows 0x44)
-
-### Jakarta — complete wiring
-
-- [x] Drill mounting plate, mount DIN rails
-- [x] Mount surge suppressor, AC terminal blocks, Mean Well PSU
-- [x] Wire AC distribution (L/N/PE terminal blocks)
-- [ ] AC continuity checks (pre-power)
-- [ ] First AC power-on — verify Mean Well 12V output
-- [ ] Mount DDR-60G-5, relay, PoE switch, Pi stack, TB1, fuse holders on top rail
-- [ ] Wire 12V distribution (TB1, fuses, DDR-60G-5 → Pi)
-- [ ] Wire relay inputs (G469 → relay)
-- [ ] Wire relay CH1 → fuse → PoE switch
-- [ ] Wire SHT40 and DS18B20 sensors
-- [ ] Install RTC battery
-- [ ] Wire rain gauge internal side
-- [ ] Full continuity and isolation checks
-- [ ] Power-on test: AC → 12V → Pi boots
-
-### Parts to arrive this week
-
-- [x] SOMELINE crimp tool kit (Amazon, arrived — missing correct Molex KK fittings)
-- [ ] SD16 4-pin bulkhead connectors ×2 (need to order)
-
-### Before Chester's trip
-
-- [x] Finalize LED choice — WS2812B NeoPixel RGB, config-driven status (see `docs/LED_STATUS_SPEC.md`)
-
-### New tasks
-
-- [ ] Power status MOTD script — Pi 5 reports undervoltage warnings when powered via GPIO instead of USB-C (expected, since PMIC doesn't see a USB-C negotiation). Write a simple script that checks `vcgencmd get_throttled` and reports recent power issues in the MOTD. Suppress or contextualize the false positive from GPIO power.
-
-### Chester's Electronics trip (3/30)
-
-- [ ] Molex KK 254 housings, 6-pin (Molex 22-01-3067 or equiv) — qty 2
-- [ ] Molex KK 254 crimp pins (Molex 08-55-0131 or equiv) — qty 10+
-- [ ] SD16 4-pin IP68 aviation connector pairs (plug + panel socket) — qty 2
-- [x] ~~M1.6 or #0-80 bolts, nuts, washers (for J2 power button)~~ — not needed, used soldered pigtail approach instead
-- [x] ~~O-ring crimp terminals for M1.6/#0 bolt, 18 AWG wire~~ — not needed, used soldered pigtail approach instead
-- [ ] Green/yellow 12 AWG stranded wire — a few feet (Jakarta PE ground)
+- [ ] Wire DS18B20 external temp probe
+- [x] Install RTC battery + enable charging in config.txt
+- [ ] Wire WS2812B LED (GPIO 18)
+- [x] Wire J2 power button (Dupont female to header → external button) — wired, not yet tested
+- [ ] Full continuity and isolation checks (use Jakarta checklist)
+- [ ] First boot on Jakarta — verify Pi boots from AC mains
 
 ---
 
-## Week 2 (March 31 – April 7)
+## This Weekend (April 4-6) — Coating, curing, and final hardware
 
-### Sukabumi — finish integration
+### Saturday (April 4)
+- [ ] Disassemble both Pi stacks (remove G469 from Pi)
+- [ ] Mask all contact points (GPIO pins, USB, HDMI, ethernet, SD slot, J5, J2 header, heatsink pads)
+- [ ] Apply MG 422C silicone conformal coat to all PCBs (both sites)
+- [ ] Set aside to cure (24 hours minimum)
+- [ ] Install LED light windows (acrylic sandwich + neutral-cure silicone — also needs 24hr cure)
 
+### Sunday (April 5)
+- [ ] Remove masking tape after cure
+- [ ] Inspect coating coverage, recoat bare spots if needed
+- [ ] Reassemble Pi stacks
+- [ ] Hot glue Dupont connectors (power button pigtails, LED connectors)
+- [ ] Final continuity checks on both stations
+- [ ] Power-on test both stations
+- [ ] Verify relay/PoE/camera works on both
+- [ ] Box hardware — all wiring done, ready for software week
+
+---
+
+## Mon–Wed (April 7–9) — Software integration
+
+**All hardware must be complete. No more wiring.**
+
+### Both stations
+- [ ] Flash new ORC-OS image from Hessel (when available)
+- [ ] Run deploy.sh (once written) or manual overlay re-application
+- [ ] Configure ORC-OS capture schedule
+- [ ] Camera ISAPI config via camtool.py
+- [ ] orc-capture end-to-end test (relay → camera boot → RTSP → quality gate)
+- [ ] Rain gauge serial communication test
+- [ ] SHT40/DS18B20 sensor verification
+- [ ] LED status daemon test
+- [ ] Tailscale remote access setup
 - [ ] Implement rain gauge capture script (TODO-001)
-- [x] Wire and test J2 power button (soldered pigtail + Dupont female, strain relief zip tie)
-- [ ] Wire rain gauge external side (SD16 bulkhead + 18/4 cable, once parts arrive)
-- [x] Wire WS2812B LED (GPIO 18 data, 5V/GND from G469) — wired and tested 2026-04-01
-- [ ] Install LED light window (acrylic sandwich)
-- [ ] LED integration test: start orc-led-status daemon, verify correct colors for each subsystem state (camera on/off, network up/down, storage, power). Test error cycling with multiple errors active. Test suppression via config.
-- [ ] Full end-to-end soak test (leave running overnight on capture schedule)
+- [ ] Power status MOTD script (undervoltage false positive)
+- [ ] Full end-to-end soak test (leave running overnight Tue→Wed)
 
-### Jakarta — software + testing
-
-- [ ] ORC-OS config (GPIO 24, capture schedule, RTSP capture)
-- [ ] Pangolin/Newt remote access
-- [ ] Power cycle test: Pi → relay → PoE switch → camera
-- [ ] Test RTSP capture with orc-capture
-- [ ] Wire and test J2 power button
-- [ ] Wire PTC heater and fans
-- [ ] Wire WS2812B NeoPixel LED (GPIO 18 data, 5V/GND from G469)
-- [ ] Rain gauge serial test
-- [ ] Full continuity and isolation checks
-
-### Both sites
-
-- [ ] Finalize SIM card strategy (TODO-010)
-- [ ] Send Jakarta battery/charger specs to local team for sourcing
+### Jakarta-specific
+- [ ] Wire PTC heater and fans (if not done this weekend)
+- [ ] Verify AC → 12V → relay → PoE → camera full chain
 
 ---
 
-## Week 3 (April 7–14) — Final prep
+## Thu–Fri (April 10–11) — Final prep and pack
 
-### Both sites
+**Must be packed and ready by end of day Friday April 11.**
 
-- [ ] Conformal coating (MG 422C) — test first, coat, 24hr cure, reassemble, verify
-  - [ ] Hot glue Dupont connector on power switch pigtail (secure detachable fitting)
-- [ ] Final integration test (both stations running full capture cycle)
-- [ ] Wire rain gauge external side (SD16 bulkhead + 18/4 cable)
+- [ ] Network convention migration (.139 → .100) if new ORC-OS image is deployed
 - [ ] Print and laminate door sheets
 - [ ] Print exterior placards (English + Bahasa Indonesia)
 - [ ] Print continuity checklists (blank, for field use)
+- [ ] Final integration test (both stations complete capture cycle)
 - [ ] Pack equipment per TRAVEL_AND_IMPORT.md
-- [ ] Humanitarian letter from sponsoring organization (TODO still open?)
+- [ ] Humanitarian letter from sponsoring organization
+- [ ] Verify passport, visa, travel docs
+
+### Deferred to in-country
+- [ ] Jakarta battery + charger (sourced locally by PMI team)
+- [ ] Jakarta mounting hardware (pending site survey)
+- [ ] SIM cards (purchase in-country)
+
+---
+
+## Outstanding tasks (not yet scheduled)
+
+- [ ] Power status MOTD script (TODO — undervoltage false positive from GPIO power)
+- [ ] deploy.sh script for OS image re-application (see pi/NETWORK_CONVENTION.md)
+- [ ] Jakarta-specific overlay files (NM connection, hosts template, dnsmasq per-site)
+- [ ] Move update-motd.d/ into etc/update-motd.d/ for consistent overlay path mapping
+- [ ] Fix 30-camera-status to read camera IP from config instead of hardcoding
 
 ---
 
@@ -395,6 +391,17 @@ already covered by ordered quantities vs. what needs separate ordering.
 | — | Sukabumi relay NC→NO fix | 2026-03-25 |
 | — | Jakarta DIN rails mounted | 2026-03-25 |
 | — | Jakarta AC distribution wired (L/N/PE terminal blocks) | 2026-03-25 |
+| — | Jakarta AC power-on test (12.11V at PSU output) | 2026-03-26 |
+| — | Jakarta 12V distribution wired (PSU → TB1) | 2026-03-26 |
+| — | Jakarta DDR-60G-5 trimmed to 5.10V, wired to Pi | 2026-03-28 |
+| — | Jakarta relay 5V side wired | 2026-03-28 |
+| — | Jakarta relay CH1 → fuse → PoE switch wired | 2026-03-28 |
+| — | Jakarta J2 power button header soldered | 2026-03-30 |
+| — | ISS-005 resolved: LED design — WS2812B NeoPixel + acrylic sandwich | 2026-03-30 |
+| — | Maintenance button removed, single power button (ISS-005/J2) | 2026-03-30 |
+| — | Network convention documented (pi/NETWORK_CONVENTION.md) | 2026-04-02 |
+| — | OS image management strategy planned | 2026-04-02 |
+| — | orc-capture RELAY_MODE config (cycle vs always) | 2026-03-29 |
 | — | Build photos cataloged and tagged (97 photos) | 2026-03-22 |
 | — | Sukabumi J2 power button wired and tested (soldered pigtail + Dupont female) | 2026-04-01 |
 | — | Sukabumi WS2812B LED wired, tested R/G/B + all status colors (orc-led-test) | 2026-04-01 |
