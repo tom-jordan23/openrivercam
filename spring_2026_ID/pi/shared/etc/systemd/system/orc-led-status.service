@@ -17,6 +17,8 @@ ProtectSystem=strict
 ReadWritePaths=/sys /dev
 NoNewPrivileges=yes
 PrivateTmp=yes
+RuntimeDirectory=orc-led-status
+WorkingDirectory=/run/orc-led-status
 
 Environment="PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 Environment="ORC_LED_STATUS_CONF=/etc/orc/led-status.yaml"

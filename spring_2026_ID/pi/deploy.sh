@@ -177,6 +177,9 @@ deploy_file() {
             /etc/update-motd.d/*)
                 sudo chmod +x "$dest"
                 ;;
+            /etc/profile.d/*.sh)
+                sudo chmod +x "$dest"
+                ;;
             /etc/NetworkManager/system-connections/*.nmconnection)
                 sudo chmod 600 "$dest"
                 sudo chown root:root "$dest"
@@ -312,6 +315,18 @@ if [ -f /etc/fstab ]; then
         log "Adding nofail to /boot/firmware fstab entry"
         if [ "$DRY_RUN" -eq 0 ]; then
             sudo sed -i '/\/boot\/firmware/ s/defaults/defaults,nofail/' /etc/fstab
+        fi
+    fi
+fi
+
+# Source ORC MOTD from bash.bashrc (runs on all interactive shells, not just login)
+if [ -f /etc/profile.d/orc-motd.sh ]; then
+    if ! grep -q "orc-motd.sh" /etc/bash.bashrc 2>/dev/null; then
+        log "Adding ORC MOTD source to /etc/bash.bashrc"
+        if [ "$DRY_RUN" -eq 0 ]; then
+            echo "" | sudo tee -a /etc/bash.bashrc > /dev/null
+            echo "# ORC station MOTD on every interactive shell" | sudo tee -a /etc/bash.bashrc > /dev/null
+            echo ". /etc/profile.d/orc-motd.sh" | sudo tee -a /etc/bash.bashrc > /dev/null
         fi
     fi
 fi

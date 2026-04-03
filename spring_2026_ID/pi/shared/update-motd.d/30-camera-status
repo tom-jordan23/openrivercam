@@ -1,7 +1,6 @@
 #!/bin/bash
-CAM_HOST="camera"
-CAM_IP="192.168.50.139"
 GPIO_PIN=24
+LEASE_FILE="/var/lib/misc/dnsmasq.leases"
 
 echo ""
 echo "=== OpenRiverCam Camera Network ==="
@@ -14,7 +13,6 @@ echo "=== OpenRiverCam Camera Network ==="
 # relay — the relay board's optocoupler holds its state independently.
 gpio_line=$(pinctrl get "$GPIO_PIN" 2>/dev/null)
 if echo "$gpio_line" | grep -q "| --"; then
-    # Pin not yet configured — read as input to get actual level
     pinctrl set "$GPIO_PIN" ip 2>/dev/null
     gpio_line=$(pinctrl get "$GPIO_PIN" 2>/dev/null)
 fi
@@ -50,14 +48,22 @@ else
     echo "  Pi (eth0):  no IP configured"
 fi
 
-# Check if camera is reachable (TCP port 80, 1s timeout)
-if timeout 1 bash -c "echo >/dev/tcp/$CAM_IP/80" 2>/dev/null; then
-    echo "  Camera:     $CAM_IP ($CAM_HOST) - reachable"
-else
-    # Fall back to ARP check — camera may block ping/HTTP but still be on the network
-    if ip neigh show dev eth0 2>/dev/null | grep -q "$CAM_IP"; then
-        echo "  Camera:     $CAM_IP ($CAM_HOST) - on network (not responding on port 80)"
-    else
-        echo "  Camera:     $CAM_IP ($CAM_HOST) - not detected"
-    fi
+# Camera detection — read from dnsmasq DHCP leases (actual devices on the
+# network) rather than hardcoded IPs. Only report what's really there.
+FOUND_CAMERA=0
+if [ -f "$LEASE_FILE" ]; then
+    while read -r _ts mac ip hostname _id; do
+        # Skip the Pi's own address
+        [ "$ip" = "192.168.50.1" ] && continue
+        if timeout 1 bash -c "echo >/dev/tcp/$ip/80" 2>/dev/null; then
+            echo "  Camera:     http://$ip (${hostname:-unknown}, $mac)"
+            echo "  RTSP:       rtsp://admin:PASSWORD@$ip:554/Streaming/Channels/101"
+        else
+            echo "  Camera:     $ip (${hostname:-unknown}, $mac) - lease active, not responding"
+        fi
+        FOUND_CAMERA=1
+    done < "$LEASE_FILE"
+fi
+if [ "$FOUND_CAMERA" -eq 0 ]; then
+    echo "  Camera:     no DHCP leases (camera may need MAC added to dnsmasq)"
 fi
