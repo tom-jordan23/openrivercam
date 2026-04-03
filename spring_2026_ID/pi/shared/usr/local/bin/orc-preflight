@@ -405,6 +405,13 @@ else
     warn "RTC battery charging not configured (dtparam=rtc_bbat_vchg missing from config.txt)"
 fi
 
+# USB max current (required when powering Pi via 5V GPIO rail — no USB-C PD negotiation)
+if grep -q "^usb_max_current_enable=1" /boot/firmware/config.txt 2>/dev/null; then
+    pass "USB max current enabled (usb_max_current_enable=1)"
+else
+    fail "usb_max_current_enable=1 missing from config.txt (modem will trigger USB over-current)"
+fi
+
 # 1-Wire (DS18B20 sensor)
 if ls /sys/bus/w1/devices/28-* >/dev/null 2>&1; then
     pass "DS18B20 temperature probe detected on 1-Wire bus"

@@ -281,6 +281,7 @@ else
         append_if_missing "dtparam=rtc_bbat_vchg=3000000" "RTC battery charging (ML-2020)"
         append_if_missing "enable_uart=1" "UART for rain gauge"
         append_if_missing "dtparam=i2c_arm=on" "I2C for SHT40 sensor"
+        append_if_missing "usb_max_current_enable=1" "USB current limit for Quectel modem (GPIO 5V rail has no PD negotiation)"
     else
         warn "config.txt not found — skipping. Add RTC/UART/I2C settings manually."
     fi

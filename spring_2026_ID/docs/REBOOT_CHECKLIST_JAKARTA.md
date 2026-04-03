@@ -45,7 +45,7 @@ mount | grep boot/firmware       # should be mounted (unlike Sukabumi)
 ### 2. config.txt Changes (applied by deploy.sh, need reboot)
 
 ```bash
-grep -E "i2c_arm|bbat|enable_uart" /boot/firmware/config.txt
+grep -E "i2c_arm|bbat|enable_uart|usb_max_current" /boot/firmware/config.txt
 ```
 
 Expected (uncommented, at end of file):
@@ -53,6 +53,7 @@ Expected (uncommented, at end of file):
 dtparam=rtc_bbat_vchg=3000000
 enable_uart=1
 dtparam=i2c_arm=on
+usb_max_current_enable=1
 ```
 
 ```bash
@@ -63,6 +64,7 @@ ls /dev/ttyAMA0                  # UART enabled for rain gauge
 - [ ] `dtparam=i2c_arm=on` present (uncommented)
 - [ ] `dtparam=rtc_bbat_vchg=3000000` present
 - [ ] `enable_uart=1` present
+- [ ] `usb_max_current_enable=1` present (required — Pi powered via 5V GPIO rail, no USB-C PD)
 - [ ] `/dev/i2c-1` exists
 - [ ] `/dev/ttyAMA0` exists
 
