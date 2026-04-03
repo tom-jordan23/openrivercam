@@ -129,7 +129,7 @@ else
     run sudo apt install -y -qq dnsmasq modemmanager gpiod minicom chrony ffmpeg
 
     log "Installing Python packages..."
-    run pip install --quiet requests pyserial smbus2 pyyaml
+    run pip install --break-system-packages --quiet requests pyserial smbus2 pyyaml
 
     log "Installing LED status packages (sudo, Pi 5 PIO)..."
     run sudo pip install --break-system-packages --quiet \
@@ -268,7 +268,7 @@ else
         append_if_missing() {
             local line="$1"
             local desc="$2"
-            if ! grep -qF "$line" "$CONFIG_TXT"; then
+            if ! grep -q "^${line}$" "$CONFIG_TXT"; then
                 log "  Adding: $line ($desc)"
                 if [ "$DRY_RUN" -eq 0 ]; then
                     echo "$line" | sudo tee -a "$CONFIG_TXT" > /dev/null
