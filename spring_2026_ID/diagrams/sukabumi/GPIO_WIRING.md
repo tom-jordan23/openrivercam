@@ -694,12 +694,19 @@ IR reflections and accumulates rainfall totals internally. If it loses power
 between Pi wake cycles, the rainfall count for that period is lost. The
 RG-15 is powered from TB1 (always-on 12V), NOT through the relay.
 
-The rain gauge mounts **outside** the enclosure and connects through the
-enclosure wall via **two cable glands** — one in the enclosure wall, one at
-the rain gauge end. A removable 18/4 cable runs between them. This allows:
-- The base plate to detach (disconnect at the interior gland)
-- The rain gauge to swap without opening the box (disconnect at the exterior gland)
-Leave a service loop of slack inside the enclosure.
+The rain gauge mounts **outside** the enclosure. The cable path is:
+
+1. **RG-15** → short pigtail to **4-pin inline connector** (solder termination)
+2. **Outdoor shielded Cat5 cable** through **cable gland** in enclosure base plate
+3. Inside the box, join to internal wiring (Wago lever nuts, butt splices,
+   or automotive pigtail connectors — builder's choice) to reach G469 and TB1
+
+Power (orange pair) and data (green pair) use **separate inline connectors**
+to keep 12V isolated from signal wires. The TX/RX crossover happens on the
+internal pigtail between the join point and the G469.
+
+**Cable:** Outdoor shielded Cat5 (23 AWG). Shield left floating — do not
+connect to ground on either end. Unused pairs (blue, brown) cut back.
 
 **CRITICAL: The data wires (TX/RX) are 3.3V logic. The power wire is 12V.
 Do not mix them up. If 12V reaches a GPIO pin, the Pi is destroyed.**
@@ -720,29 +727,39 @@ Do not mix them up. If 12V reaches a GPIO pin, the Pi is destroyed.**
 - The green and yellow wires are **crossed**: Pi TX connects to rain gauge RX, and
   Pi RX connects to rain gauge TX (this is normal for serial communication)
 
-### Cable Glands and Cable
+### Cable and Connectors
 
-The RG-15 connects through **two weatherproof cable glands** — one in the
-enclosure wall, one at the rain gauge end. A removable 18/4 cable runs
-between them. This keeps both the enclosure and rain gauge sealed, while
-allowing either end to disconnect independently:
-- Disconnect at the interior gland → base plate detaches for service
-- Disconnect at the exterior gland → rain gauge swaps without opening the box
+**Cable:** Outdoor shielded Cat5 (23 AWG, 4 twisted pairs). Using 2 of the 4
+pairs. Shield left floating (not connected to ground on either end — avoids
+ground loops). Unused pairs (blue, brown) and shield cut back at both ends.
 
-**Cable:** 18/4 stranded jacketed wire (4-conductor, 18 AWG, common outer
-jacket). Sold by the foot at most hardware stores as thermostat wire or
-irrigation wire. The outer jacket provides a good seal in the cable gland.
-Cut to length — measure from the rain gauge mounting location to the
-enclosure, add 30cm slack on each end plus a service loop inside the box.
+**Wire mapping through the Cat5 cable:**
 
-**Wire mapping through the cable:**
+| Cat5 Pair | Wire | Function | Outside (to RG-15) | Inside (to G469/TB1) |
+|-----------|------|----------|--------------------|-----------------------|
+| Orange | **Orange** | 12V | RG-15 J1 V+ (screw terminal) | TB1 12V output |
+| Orange | **White/Orange** | GND | RG-15 J1 GND (screw terminal) | G469 Pin 9 (GND) |
+| Green | **Green** | TX→RX | RG-15 J2 Pin 5 (SI) | G469 Pin 8 (GPIO 14 / TXD) |
+| Green | **White/Green** | RX→TX | RG-15 J2 Pin 4 (SO) | G469 Pin 10 (GPIO 15 / RXD) |
+| Blue | — | Unused | Cut back | — |
+| Brown | — | Unused | Cut back | — |
 
-| Wire | Function | Outside (to RG-15) | Inside (to G469/TB1) |
-|------|----------|--------------------|-----------------------|
-| Red | 12V | RG-15 J1 V+ (screw terminal) | TB1 12V output |
-| Black | GND | RG-15 J1 GND (screw terminal) | G469 Pin 9 (GND) |
-| Green | TX→RX | RG-15 J2 Pin 5 (SI) | G469 Pin 8 (GPIO 14 / TXD) |
-| Yellow | RX→TX | RG-15 J2 Pin 4 (SO) | G469 Pin 10 (GPIO 15 / RXD) |
+**External connection (RG-15 end):**
+- Cat5 terminates at a **4-pin inline waterproof connector** (2 connectors:
+  one for power pair, one for data pair — keeps 12V isolated from signal)
+- Short pigtail from inline connector to RG-15:
+  - J1 screw terminal: V+ and GND (power pair)
+  - J2 header pins 4 and 5: Dupont female jumpers (data pair)
+
+**Enclosure entry:**
+- Cat5 passes through a **cable gland** in the enclosure base plate
+
+**Internal connection (inside enclosure):**
+- Cat5 joins to internal wiring via Wago lever nuts, butt splices, or
+  automotive pigtail connectors (builder's choice)
+- **TX/RX crossover happens here** — on the short pigtail from the join
+  point to the G469 header
+- Internal pigtail uses Cat5 riser (23 AWG) for the short run to G469/TB1
 
 **RG-15 connector detail:**
 - **J1** (3-pin screw terminal): Power only — V+, GND, OUT. Use V+ and GND
@@ -754,33 +771,40 @@ enclosure, add 30cm slack on each end plus a service loop inside the box.
 
 ### Internal Wiring (mounting plate side)
 
-These wires run from the interior cable gland to G469 and TB1 on the
-mounting plate. Use solid core 22 AWG wire for these short internal runs.
-Leave a service loop so the base plate can separate from the enclosure.
+Internal pigtails run from the join point (Wago/butt splice/automotive
+connector) to G469 and TB1. Use Cat5 riser (23 AWG) for these short runs.
 
-| Wire # | From (18/4 cable) | To | Label | Gauge |
-|--------|-------------------|----|-------|-------|
-| 21 | Red (12V) | TB1 12V output | "RG15 12V" | 22 AWG |
-| 22 | Black (GND) | G469 Pin 9 (GND) | "RG15 GND" | 22 AWG |
-| 23 | Green (TX→RX) | G469 Pin 8 (GPIO 14 / TXD) | "RG15 data" | 22 AWG |
-| 24 | Yellow (RX→TX) | G469 Pin 10 (GPIO 15 / RXD) | "RG15 data" | 22 AWG |
+**The TX/RX crossover happens here.** The Cat5 cable carries green = TX→RX
+and white/green = RX→TX straight through. On the internal pigtail, swap
+them so the correct signal reaches the correct GPIO pin.
 
-```
-  Inside enclosure (cable gland → G469/TB1):
-
-  Red wire    (12V)   ────── TB1 12V          ← 12V POWER (NOT GPIO!)
-  Black wire  (GND)   ────── G469 Pin 9  (GND)
-  Green wire  (TX→RX) ────── G469 Pin 8  (GPIO 14 TXD) ← Pi talks, gauge listens
-  Yellow wire (RX→TX) ────── G469 Pin 10 (GPIO 15 RXD) ← gauge talks, Pi listens
-```
+| Wire # | From (Cat5 via join) | To | Label | Crossover? |
+|--------|---------------------|----|-------|------------|
+| 21 | Orange (12V) | TB1 12V output | "RG15 12V" | No |
+| 22 | White/Orange (GND) | G469 Pin 9 (GND) | "RG15 GND" | No |
+| 23 | Green (TX→RX) | G469 Pin 8 (GPIO 14 / TXD) | "RG15 TX" | **Yes — crossed** |
+| 24 | White/Green (RX→TX) | G469 Pin 10 (GPIO 15 / RXD) | "RG15 RX" | **Yes — crossed** |
 
 ```
-  Outside enclosure (cable gland → RG-15 via 18/4 cable):
+  Inside enclosure (cable gland → join → G469/TB1):
 
-  Red wire    (12V)   ────── RG-15 J1 V+  (screw terminal)
-  Black wire  (GND)   ────── RG-15 J1 GND (screw terminal)
-  Green wire  (TX→RX) ────── RG-15 J2 Pin 5 (SI — Serial In)   [Dupont female]
-  Yellow wire (RX→TX) ────── RG-15 J2 Pin 4 (SO — Serial Out)  [Dupont female]
+  Orange wire       (12V)   ── join ── TB1 12V       ← 12V POWER (NOT GPIO!)
+  White/Orange wire (GND)   ── join ── G469 Pin 9    (GND)
+  Green wire        (TX→RX) ── join ─╮
+  White/Green wire  (RX→TX) ── join ─┤ CROSSOVER HERE
+                                      ├── G469 Pin 8  (GPIO 14 TXD) ← Pi talks
+                                      └── G469 Pin 10 (GPIO 15 RXD) ← gauge talks
+  Shield, blue pair, brown pair ── cut back, not connected
+```
+
+```
+  Outside enclosure (cable gland → inline connector → RG-15):
+
+  Orange wire       (12V)   ── connector ── RG-15 J1 V+  (screw terminal)
+  White/Orange wire (GND)   ── connector ── RG-15 J1 GND (screw terminal)
+  Green wire        (TX→RX) ── connector ── RG-15 J2 Pin 5 (SI)  [Dupont female]
+  White/Green wire  (RX→TX) ── connector ── RG-15 J2 Pin 4 (SO)  [Dupont female]
+  Shield, blue pair, brown pair ── cut back, not connected
 ```
 
 **UART config required on the Pi (do this during software setup):**
@@ -792,12 +816,12 @@ dtoverlay=disable-bt
 
 ### Step 6 Verification
 
-**Internal wiring (cable gland to G469/TB1):**
+**Internal wiring (join point to G469/TB1):**
 
-- [ ] Continuity: Red wire (12V) ↔ TB1 12V terminal — beep
-- [ ] Continuity: Black wire (GND) ↔ G469 Pin 9 (GND) — beep
-- [ ] Continuity: Green wire (TX→RX) ↔ G469 Pin 8 (GPIO 14) — beep
-- [ ] Continuity: Yellow wire (RX→TX) ↔ G469 Pin 10 (GPIO 15) — beep
+- [ ] Continuity: Orange (12V) ↔ TB1 12V terminal — beep
+- [ ] Continuity: White/Orange (GND) ↔ G469 Pin 9 (GND) — beep
+- [ ] Continuity: Green (TX→RX) ↔ G469 Pin 8 (GPIO 14) — beep (after crossover)
+- [ ] Continuity: White/Green (RX→TX) ↔ G469 Pin 10 (GPIO 15) — beep (after crossover)
 
 **End-to-end (with external cable and RG-15 connected):**
 
@@ -808,10 +832,10 @@ dtoverlay=disable-bt
 
 **CRITICAL safety check — none of these should beep:**
 
-- [ ] Red wire (12V) ↔ G469 Pin 8 (GPIO 14) — **NO beep**
-- [ ] Red wire (12V) ↔ G469 Pin 10 (GPIO 15) — **NO beep**
-- [ ] Red wire (12V) ↔ G469 Pin 9 (GND) — **NO beep**
-- [ ] Red wire (12V) ↔ any other G469 pin — **NO beep**
+- [ ] Orange wire (12V) ↔ G469 Pin 8 (GPIO 14) — **NO beep**
+- [ ] Orange wire (12V) ↔ G469 Pin 10 (GPIO 15) — **NO beep**
+- [ ] Orange wire (12V) ↔ G469 Pin 9 (GND) — **NO beep**
+- [ ] Orange wire (12V) ↔ any other G469 pin — **NO beep**
 
 **If any of the safety checks beep, STOP. You have a wiring error that will
 destroy the Pi. Trace the wires and fix it before proceeding.**
