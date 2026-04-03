@@ -44,6 +44,7 @@
     <ns0:videoQualityControlType>CBR</ns0:videoQualityControlType>
     <ns0:constantBitRate>16384</ns0:constantBitRate>
     <ns0:fixedQuality>60</ns0:fixedQuality>
+
     <ns0:maxFrameRate>1250</ns0:maxFrameRate>
     <ns0:keyFrameInterval>4000</ns0:keyFrameInterval>
     <ns0:snapShotImageType>JPEG</ns0:snapShotImageType>

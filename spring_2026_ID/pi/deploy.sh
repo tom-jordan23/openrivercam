@@ -206,6 +206,20 @@ done < <(find "$SITE_DIR" -type f -print0 | sort -z)
 
 log "Deployed $deploy_count files"
 
+# Deploy camtool.py from camera/ directory (source of truth lives outside pi/shared/)
+CAMTOOL_SRC="$REPO_ROOT/camera/camtool.py"
+if [ -f "$CAMTOOL_SRC" ]; then
+    backup_file /usr/local/bin/camtool.py
+    log "  /usr/local/bin/camtool.py (from camera/camtool.py)"
+    if [ "$DRY_RUN" -eq 0 ]; then
+        sudo cp "$CAMTOOL_SRC" /usr/local/bin/camtool.py
+        sudo chmod +x /usr/local/bin/camtool.py
+    fi
+    deploy_count=$((deploy_count + 1))
+else
+    warn "camtool.py not found at $CAMTOOL_SRC — camera config management unavailable"
+fi
+
 # ─── Phase 4: Create directories ─────────────────────────────────
 log ""
 log "--- Phase 4: Directories ---"
@@ -219,6 +233,7 @@ run sudo mkdir -p /usr/local/lib/orc-sensors
 run sudo mkdir -p /usr/local/lib/orc-led-status
 run sudo mkdir -p /etc/chrony/conf.d
 run sudo mkdir -p /etc/systemd/system/dnsmasq.service.d
+run mkdir -p /home/pi/camera_profiles
 
 # Create Videos directory or symlink
 if [ -b /dev/sda1 ]; then

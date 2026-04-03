@@ -184,6 +184,29 @@ else
     fail "poe-relay not found in PATH"
 fi
 
+# camtool.py — camera ISAPI configuration management
+if command -v camtool.py >/dev/null 2>&1; then
+    pass "camtool.py found at $(command -v camtool.py)"
+else
+    fail "camtool.py not found in PATH"
+fi
+
+# camera_profiles directory
+if [ -d /home/pi/camera_profiles ]; then
+    PROFILE_COUNT=$(find /home/pi/camera_profiles -name "*.xml" 2>/dev/null | wc -l)
+    if [ "$PROFILE_COUNT" -gt 0 ]; then
+        pass "~/camera_profiles/ exists ($PROFILE_COUNT XML profiles)"
+    else
+        warn "~/camera_profiles/ exists but has no XML profiles (run: camtool.py pull <camera>)"
+    fi
+else
+    fail "~/camera_profiles/ not found"
+    if [ "$FIX" -eq 1 ]; then
+        echo "  ... creating ~/camera_profiles/"
+        mkdir -p /home/pi/camera_profiles && pass "  fixed"
+    fi
+fi
+
 # QEMU udev rules — required for boot on Rainbow Sensing images.
 # These rules symlink sda → mmcblk0 so the OS finds its root partition.
 # Removing this file causes a boot partition enumeration failure that drops
