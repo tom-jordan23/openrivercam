@@ -319,14 +319,16 @@ if [ -f /etc/fstab ]; then
     fi
 fi
 
-# Source ORC MOTD from bash.bashrc (runs on all interactive shells, not just login)
-if [ -f /etc/profile.d/orc-motd.sh ]; then
-    if ! grep -q "orc-motd.sh" /etc/bash.bashrc 2>/dev/null; then
-        log "Adding ORC MOTD source to /etc/bash.bashrc"
+# Show ORC station status on every new terminal (appended to pi user's .bashrc)
+BASHRC="/home/pi/.bashrc"
+if [ -f "$BASHRC" ]; then
+    if ! grep -q "run-parts /etc/update-motd.d/" "$BASHRC" 2>/dev/null; then
+        log "Adding ORC MOTD to $BASHRC"
         if [ "$DRY_RUN" -eq 0 ]; then
-            echo "" | sudo tee -a /etc/bash.bashrc > /dev/null
-            echo "# ORC station MOTD on every interactive shell" | sudo tee -a /etc/bash.bashrc > /dev/null
-            echo ". /etc/profile.d/orc-motd.sh" | sudo tee -a /etc/bash.bashrc > /dev/null
+            echo "" >> "$BASHRC"
+            echo "# ORC station status on every new terminal" >> "$BASHRC"
+            echo "cat /etc/motd 2>/dev/null" >> "$BASHRC"
+            echo "run-parts /etc/update-motd.d/ 2>/dev/null" >> "$BASHRC"
         fi
     fi
 fi

@@ -244,11 +244,10 @@ else
     fi
 fi
 
-# hosts file camera entry
-if grep -q "192.168.50.139.*camera\|camera.*192.168.50.139" /etc/hosts 2>/dev/null; then
-    pass "/etc/hosts has camera entry"
-elif grep -q "192.168.50.10[12].*camera\|camera.*192.168.50.10[12]" /etc/hosts 2>/dev/null; then
-    pass "/etc/hosts has camera entry (Jakarta)"
+# hosts file camera entry — check for any camera hostname in the 192.168.50.x range
+if grep -q "192\.168\.50\.[0-9].*camera\|camera.*192\.168\.50\.[0-9]" /etc/hosts 2>/dev/null; then
+    CAM_HOST_LINE=$(grep "192\.168\.50\.[0-9].*camera" /etc/hosts 2>/dev/null | head -1)
+    pass "/etc/hosts has camera entry ($CAM_HOST_LINE)"
 else
     warn "/etc/hosts missing camera hostname entry"
 fi
@@ -451,15 +450,25 @@ else
 fi
 
 # Camera reachability (only if eth0 is up)
+# Uses DHCP leases (actual devices on the network) rather than dhcp-host
+# reservations, which may not match if the camera MAC hasn't been configured.
+LEASE_FILE="/var/lib/misc/dnsmasq.leases"
 if [ -n "$ETH0_IP" ]; then
-    DNSMASQ_HOSTS=$(grep "^dhcp-host=" /etc/dnsmasq.d/maintenance.conf 2>/dev/null | sed 's/dhcp-host=.*,//')
-    for cam_ip in $DNSMASQ_HOSTS; do
-        if ping -c 1 -W 2 "$cam_ip" >/dev/null 2>&1; then
-            pass "Camera at $cam_ip: reachable"
-        else
-            warn "Camera at $cam_ip: not reachable (may still be booting)"
-        fi
-    done
+    FOUND_CAMERA=0
+    if [ -f "$LEASE_FILE" ]; then
+        while read -r _ts mac cam_ip hostname _id; do
+            [ "$cam_ip" = "192.168.50.1" ] && continue
+            if ping -c 1 -W 2 "$cam_ip" >/dev/null 2>&1; then
+                pass "Camera at $cam_ip ($mac): reachable"
+            else
+                warn "Camera at $cam_ip ($mac): lease active, not responding"
+            fi
+            FOUND_CAMERA=1
+        done < "$LEASE_FILE"
+    fi
+    if [ "$FOUND_CAMERA" -eq 0 ]; then
+        warn "No DHCP leases — no cameras detected on eth0"
+    fi
 
     # Camera supplement light check (only if camera is reachable)
     # The ANNKE C1200 reverts supplementLightMode to eventIntelligence on
@@ -472,8 +481,9 @@ if [ -n "$ETH0_IP" ]; then
             break
         fi
     done
-    if [ -n "$CAM_PASS" ]; then
-        for cam_ip in $DNSMASQ_HOSTS; do
+    if [ -n "$CAM_PASS" ] && [ -f "$LEASE_FILE" ]; then
+        while read -r _ts _mac cam_ip _hostname _id; do
+            [ "$cam_ip" = "192.168.50.1" ] && continue
             if ping -c 1 -W 1 "$cam_ip" >/dev/null 2>&1; then
                 LIGHT_MODE=$(curl -s --digest -u "admin:${CAM_PASS}" \
                     "http://${cam_ip}/ISAPI/Image/channels/1" 2>/dev/null \
@@ -489,7 +499,7 @@ if [ -n "$ETH0_IP" ]; then
                     fi
                 fi
             fi
-        done
+        done < "$LEASE_FILE"
     fi
 fi
 
