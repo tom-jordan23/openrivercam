@@ -44,14 +44,15 @@ Moved to Completed table at bottom of file.
 - [x] Relay 5V side wired (G469 → relay VCC/GND/IN1-4)
 - [x] Relay CH1 → fuse → PoE switch wired
 - [x] J2 power button header soldered
-- [ ] Wire rain gauge internal side (bulkhead end loose, labeled)
-- [ ] Wire rain gauge external side (SD16 bulkhead + Molex/Dupont to RG-15 J2)
+- [x] Wire rain gauge internal side (bulkhead end loose, labeled)
+- [x] Wire rain gauge external side (SD16 bulkhead + Molex/Dupont to RG-15 J2)
 - [x] Wire SHT40 sensor
 - [ ] Wire DS18B20 external temp probe
 - [x] Install RTC battery + enable charging in config.txt
 - [ ] Wire WS2812B LED (GPIO 18)
 - [x] Wire J2 power button (Dupont female to header → external button) — wired, not yet tested
-- [ ] Full continuity and isolation checks (use Jakarta checklist)
+- [x] Full continuity and isolation checks (use Jakarta checklist)
+- [ ] Quick 12V rail → GPIO isolation recheck (post SHT40/RTC additions)
 - [ ] First boot on Jakarta — verify Pi boots from AC mains
 
 ---
@@ -109,6 +110,8 @@ Moved to Completed table at bottom of file.
 - [ ] Print and laminate door sheets
 - [ ] Print exterior placards (English + Bahasa Indonesia)
 - [ ] Print continuity checklists (blank, for field use)
+- [ ] Generate USB sticks for local team (see USB_DRIVE_CONTENTS.md)
+- [ ] Assemble small parts tackle box for local team (see USB_DRIVE_CONTENTS.md spare parts section)
 - [ ] Final integration test (both stations complete capture cycle)
 - [ ] Pack equipment per TRAVEL_AND_IMPORT.md
 - [ ] Humanitarian letter from sponsoring organization
