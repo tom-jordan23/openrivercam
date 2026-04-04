@@ -436,27 +436,40 @@ EXTERNAL POWER BUTTON WIRING (Pi 5 J2 Header):
 +----------------------------------------------------------------------------+
 
 
-RAIN GAUGE WIRING (UART via SD16 4-pin bulkhead connector):
+RAIN GAUGE WIRING (UART, 3 disconnect points):
 +----------------------------------------------------------------------------+
 |                                                                            |
-|   OUTSIDE (18/4 stranded jacketed cable, bulkhead plug to RG-15):        |
+|   FULL CABLE PATH:                                                        |
+|   RG-15 → pigtail → SD16 → Cat5 → cable gland → RJ45 ⟷ jack → levers   |
+|                      ^^^^                         ^^^^^^^^^^^^   ^^^^^^   |
+|                   field service                  base plate     build     |
+|                   disconnect                     disconnect     only      |
+|                   (keyed, IP68)                  (keyed)        (labeled) |
 |                                                                            |
-|   SD16 Pin 1 (12V)   <--- 18/4 cable ---> RG-15 red    (VIN)            |
-|   SD16 Pin 2 (GND)   <--- 18/4 cable ---> RG-15 black  (GND)            |
-|   SD16 Pin 3 (TX>RX) <--- 18/4 cable ---> RG-15 green  (RX)             |
-|   SD16 Pin 4 (RX>TX) <--- 18/4 cable ---> RG-15 yellow (TX)             |
+|   OUTSIDE (Cat5 shielded outdoor, SD16 plug to RG-15 pigtail):           |
 |                                                                            |
-|   INSIDE (solid core 22 AWG, bulkhead socket to G469/TB1):              |
+|   SD16 Pin 1 (12V)   <--- Cat5 ---> RG-15 J1 V+  (screw terminal)       |
+|   SD16 Pin 2 (GND)   <--- Cat5 ---> RG-15 J1 GND (screw terminal)       |
+|   SD16 Pin 3 (TX>RX) <--- Cat5 ---> RG-15 J2 Pin 5 (SI) [Dupont]       |
+|   SD16 Pin 4 (RX>TX) <--- Cat5 ---> RG-15 J2 Pin 4 (SO) [Dupont]       |
 |                                                                            |
-|   SD16 Pin 1 (12V)   ---> TB1 12V output                                 |
-|   SD16 Pin 2 (GND)   ---> G469 Pin 9  (GND)                             |
-|   SD16 Pin 3 (TX>RX) ---> G469 Pin 8  (GPIO 14 / TXD)                   |
-|   SD16 Pin 4 (RX>TX) ---> G469 Pin 10 (GPIO 15 / RXD)                   |
+|   ENCLOSURE ENTRY:                                                        |
+|   Cat5 passes through cable gland in base plate, terminates with RJ45    |
+|   plug. RJ45 mates to jack inside enclosure (toolless base plate removal) |
+|                                                                            |
+|   INSIDE (RJ45 jack → lever connectors → G469/TB1):                      |
+|                                                                            |
+|   12V ZONE (lever connectors labeled "12V"):                              |
+|   Orange       (12V)   → lever → TB1 12V+                                |
+|   White/Orange (GND)   → lever → TB1 GND                                 |
+|                                                                            |
+|   SIGNAL ZONE (lever connectors labeled "SIGNAL"):                        |
+|   Green        (TX>RX) → lever → G469 Pin 8  (GPIO 14 / TXD) CROSSED    |
+|   White/Green  (RX>TX) → lever → G469 Pin 10 (GPIO 15 / RXD) CROSSED    |
 |                                                                            |
 |   No level shifter needed. RG-15 signal is 3.3V TTL.                     |
-|   SD16 contacts require solder termination.                               |
-|   No-solder alternative: PG9 cable gland (pigtail passes through         |
-|   directly, but requires opening enclosure to disconnect gauge).          |
+|   SD16 and RJ45 are both keyed — cannot be connected wrong.              |
+|   Lever connectors are set during build and not touched in field service. |
 |                                                                            |
 +----------------------------------------------------------------------------+
 

@@ -52,29 +52,41 @@ Moved to Completed table at bottom of file.
 - [ ] Wire WS2812B LED (GPIO 18)
 - [x] Wire J2 power button (Dupont female to header → external button) — wired, not yet tested
 - [x] Full continuity and isolation checks (use Jakarta checklist)
-- [ ] Quick 12V rail → GPIO isolation recheck (post SHT40/RTC additions)
-- [ ] First boot on Jakarta — verify Pi boots from AC mains
+- [x] Quick 12V rail → GPIO isolation recheck (post SHT40/RTC additions)
+- [x] First boot on Jakarta — verify Pi boots from AC mains
 
 ---
 
-## This Weekend (April 4-6) — Coating, curing, and final hardware
+## This Weekend (April 4-6) — Box, coat, cure, close
 
 ### Saturday (April 4)
-- [ ] Disassemble both Pi stacks (remove G469 from Pi)
-- [ ] Mask all contact points (GPIO pins, USB, HDMI, ethernet, SD slot, J5, J2 header, heatsink pads)
-- [ ] Apply MG 422C silicone conformal coat to all PCBs (both sites)
+**Goals: Fix Jakarta power switch, build wiring harnesses, mount devices in boxes.**
+- [ ] Fix Jakarta J2 power button (not working)
+- [ ] Build inside wiring harnesses — rain gauge (both stations)
+- [ ] Build inside wiring harnesses — DS18B20 temp probe (both stations)
+- [ ] Zip tie and strain relief all internal wiring (both stations)
+- [ ] Install both stations into enclosures (DIN rail, cable routing, glands)
+- **Stretch:** Finish bottom plates (LED light windows, power button, external connectors)
+
+**Coating (push to after boxing is done, or Sunday):**
+- [ ] Remove Pi from both enclosures (detach G469 header, lift Pi out)
+- [ ] Mask in-place: G469 header pins + screw terminal faces, relay module screw terminals
+- [ ] Mask Pi on bench: GPIO pins, USB, HDMI, ethernet, SD slot, J5, J2 header, heatsink pads
+- [ ] Apply MG 422C silicone conformal coat:
+  - Pi PCBs (on bench)
+  - G469 breakout + relay module (in-place in enclosure)
 - [ ] Set aside to cure (24 hours minimum)
 - [ ] Install LED light windows (acrylic sandwich + neutral-cure silicone — also needs 24hr cure)
 
 ### Sunday (April 5)
 - [ ] Remove masking tape after cure
 - [ ] Inspect coating coverage, recoat bare spots if needed
-- [ ] Reassemble Pi stacks
+- [ ] Reinstall Pis (seat onto G469 headers)
 - [ ] Hot glue Dupont connectors (power button pigtails, LED connectors)
 - [ ] Final continuity checks on both stations
 - [ ] Power-on test both stations
 - [ ] Verify relay/PoE/camera works on both
-- [ ] Box hardware — all wiring done, ready for software week
+- [ ] Close up enclosures — ready for software week
 
 ---
 
