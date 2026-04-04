@@ -134,6 +134,7 @@ Moved to Completed table at bottom of file.
 - [ ] Jakarta battery + charger (sourced locally by PMI team)
 - [ ] Jakarta mounting hardware (pending site survey)
 - [ ] SIM cards (purchase in-country)
+- [ ] Coordinate with PMI: RTK gear, ground control points, and survey poles last used at Sukabumi — need them at Jakarta site first
 
 ---
 

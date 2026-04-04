@@ -788,8 +788,10 @@ at both ends.
 
 ### Internal Wiring (mounting plate side)
 
-Internal pigtails run from the join point (lever connectors) to G469 and TB1.
-Use Cat5 riser (23 AWG) for these short runs.
+Internal pigtails run from the lever connectors to G469 and TB1.
+GPIO-side wires use pre-made Dupont male jumpers into G469 screw terminals.
+TB1-side wires terminate directly into TB1 screw terminals.
+Lever connector end uses the wire as-is (lever connectors accept the gauge).
 
 **Lever connectors are split by voltage domain:** 12V power connectors on one
 side of the box, signal connectors on the other. This prevents accidental

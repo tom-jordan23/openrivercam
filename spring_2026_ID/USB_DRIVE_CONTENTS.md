@@ -65,9 +65,11 @@ Leave behind with the PMI team for field service. Organized in a small compartme
 - [ ] Nano SIM card carriers / adapters (nano → micro, nano → full)
 - [ ] Spare SIM ejector pins
 - [ ] IP68 RJ45 waterproof couplers (spare)
-- [ ] RJ45 connectors + boots (10x)
+- [ ] RJ45 connectors + boots (10x) — crimper not included, source locally
 - [ ] Cable glands — M12, M16, M20 (2-3 each)
 - [ ] Dupont connector kit (male/female headers + housings)
+- [ ] Ferrules — assorted sizes (match wire gauges used: 18, 22, 23 AWG)
+- [ ] Ferrule crimper
 
 ### Fasteners & Hardware
 - [ ] Stainless steel screws — M2.5, M3 assorted lengths

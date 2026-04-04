@@ -464,6 +464,8 @@ RAIN GAUGE WIRING (UART, 3 disconnect points):
 |   plug. RJ45 mates to jack inside enclosure (toolless base plate removal) |
 |                                                                            |
 |   INSIDE (RJ45 jack → lever connectors → G469/TB1):                      |
+|   GPIO stubs: pre-made Dupont male jumpers into G469 screw terminals.    |
+|   TB1 stubs: wire directly into TB1 screw terminals.                      |
 |                                                                            |
 |   12V ZONE (lever connectors labeled "12V"):                              |
 |   Orange       (12V)   → lever → TB1 12V+                                |

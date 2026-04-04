@@ -94,6 +94,7 @@ Tools to keep at PMI office for field service.
 | Ethernet cable tester | RJ45 continuity | 1 | $18.00 | $18.00 | Amazon |
 | USB cable tester | Basic continuity | 1 | $12.00 | $12.00 | Amazon |
 | RJ45 crimp tool | With cable stripper | 1 | $25.00 | $25.00 | Amazon |
+| Ferrule crimper | For lever connector/terminal prep | 1 | $25.00 | $25.00 | Amazon |
 | Headlamp | LED, rechargeable | 1 | $15.00 | $15.00 | Amazon |
 | Allen key set | Metric | 1 | $10.00 | $10.00 | Local/Amazon |
 | | | | **Subtotal** | **$157.00** | |
