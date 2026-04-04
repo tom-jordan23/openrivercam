@@ -448,10 +448,16 @@ RAIN GAUGE WIRING (UART, 3 disconnect points):
 |                                                                            |
 |   OUTSIDE (Cat5 shielded outdoor, SD16 plug to RG-15 pigtail):           |
 |                                                                            |
+|   ⚠ SD16 pin numbering is non-intuitive (NOT clockwise). Continuity    |
+|   test each cable — do not trust pin numbers alone. 12V on pins 1-2    |
+|   believed consistent; data pins 3-4 may be swapped.                    |
+|                                                                            |
 |   SD16 Pin 1 (12V)   <--- Cat5 ---> RG-15 J1 V+  (screw terminal)       |
 |   SD16 Pin 2 (GND)   <--- Cat5 ---> RG-15 J1 GND (screw terminal)       |
 |   SD16 Pin 3 (TX>RX) <--- Cat5 ---> RG-15 J2 Pin 5 (SI) [Dupont]       |
 |   SD16 Pin 4 (RX>TX) <--- Cat5 ---> RG-15 J2 Pin 4 (SO) [Dupont]       |
+|   Pins 3/4 may be reversed — doesn't matter as long as both ends match. |
+|   Crossover happens at lever connectors, not at SD16.                    |
 |                                                                            |
 |   ENCLOSURE ENTRY:                                                        |
 |   Cat5 passes through cable gland in base plate, terminates with RJ45    |

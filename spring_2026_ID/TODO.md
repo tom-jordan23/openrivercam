@@ -63,6 +63,7 @@ Moved to Completed table at bottom of file.
 **Goals: Fix Jakarta power switch, build wiring harnesses, mount devices in boxes.**
 - [ ] Fix Jakarta J2 power button (not working)
 - [ ] Build inside wiring harnesses — rain gauge (both stations)
+  - [ ] Continuity test each SD16 cable end-to-end before connecting levers — SD16 pin numbering may have introduced accidental TX/RX crossover. Correct at lever connectors if needed.
 - [ ] Build inside wiring harnesses — DS18B20 temp probe (both stations)
 - [ ] Zip tie and strain relief all internal wiring (both stations)
 - [ ] Install both stations into enclosures (DIN rail, cable routing, glands)

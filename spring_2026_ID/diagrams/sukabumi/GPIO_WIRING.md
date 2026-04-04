@@ -832,11 +832,22 @@ them so the correct signal reaches the correct GPIO pin.
 
   Outside enclosure (SD16 → pigtail → RG-15):
 
+  ⚠ SD16 PIN NUMBERING IS NON-INTUITIVE — pins do NOT go around the
+  clock as you'd expect. The pin-to-color mapping below is the DESIGN
+  INTENT but may not match what was actually soldered. CONTINUITY TEST
+  EACH CABLE before trusting the mapping. 12V on pins 1-2 is believed
+  consistent; data pins 3-4 may be swapped.
+
   SD16 Pin 1 ── Orange       (12V)   ── pigtail ── RG-15 J1 V+  (screw terminal)
   SD16 Pin 2 ── White/Orange (GND)   ── pigtail ── RG-15 J1 GND (screw terminal)
   SD16 Pin 3 ── Green        (TX→RX) ── pigtail ── RG-15 J2 Pin 5 (SI)  [Dupont female]
   SD16 Pin 4 ── White/Green  (RX→TX) ── pigtail ── RG-15 J2 Pin 4 (SO)  [Dupont female]
   Shield, blue pair, brown pair ── cut back, not connected
+
+  NOTE: Pins 3/4 may actually be reversed (green on 4, white/green on 3)
+  due to SD16 numbering. This doesn't matter as long as both ends of each
+  SD16 pair match — the crossover happens at the lever connectors inside,
+  not at the SD16. Continuity test to confirm.
 ```
 
 **UART config required on the Pi (do this during software setup):**
