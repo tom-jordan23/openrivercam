@@ -1,0 +1,113 @@
+WIRING HARNESS BUILD SHEET — Both Stations
+===========================================
+Date: 2026-04-04
+Print this and work through it with both stations side by side.
+
+All GPIO stubs: pre-made Dupont male → G469 screw terminal
+All TB1 stubs: bare wire → TB1 screw terminal
+All lever connector ends: bare wire (levers accept the gauge)
+Label lever connector zones: "12V" and "SIGNAL"
+
+⚠ 12V MUST NEVER REACH A GPIO PIN — INSTANT PI DEATH ⚠
+
+
+HARNESS 1: RAIN GAUGE (Sukabumi)
+==================================
+
+  RJ45 jack → lever connectors → G469/TB1
+
+  12V ZONE levers:
+  ┌──────────────────┬─────────────┬────────────────────┐
+  │ RJ45 jack wire   │ Label       │ Terminate at       │
+  ├──────────────────┼─────────────┼────────────────────┤
+  │ Orange           │ "RG15 12V"  │ TB1 12V+           │
+  │ White/Orange     │ "RG15 GND"  │ TB1 GND            │
+  └──────────────────┴─────────────┴────────────────────┘
+
+  SIGNAL ZONE levers:
+  ┌──────────────────┬─────────────┬────────────────────┐
+  │ RJ45 jack wire   │ Label       │ G469 pin (Dupont)  │
+  ├──────────────────┼─────────────┼────────────────────┤
+  │ Green            │ "RG15 TX"   │ Pin 8  (GPIO 14)   │
+  │ White/Green      │ "RG15 RX"   │ Pin 10 (GPIO 15)   │
+  └──────────────────┴─────────────┴────────────────────┘
+
+  ⚠ TX/RX CROSSOVER: happens at levers. Green (TX→RX from gauge)
+    lands on Pin 8 (TXD). White/Green (RX→TX) lands on Pin 10 (RXD).
+    IF SD16 continuity test shows accidental crossover, wire levers
+    straight through instead.
+
+  □ Built    □ Continuity tested    □ SD16 crossover checked
+
+
+HARNESS 2: RAIN GAUGE (Jakarta)
+=================================
+
+  Identical to Sukabumi. Same pin assignments, same lever zones.
+
+  12V ZONE levers:
+  ┌──────────────────┬─────────────┬────────────────────┐
+  │ RJ45 jack wire   │ Label       │ Terminate at       │
+  ├──────────────────┼─────────────┼────────────────────┤
+  │ Orange           │ "RG15 12V"  │ TB1 12V+           │
+  │ White/Orange     │ "RG15 GND"  │ TB1 GND            │
+  └──────────────────┴─────────────┴────────────────────┘
+
+  SIGNAL ZONE levers:
+  ┌──────────────────┬─────────────┬────────────────────┐
+  │ RJ45 jack wire   │ Label       │ G469 pin (Dupont)  │
+  ├──────────────────┼─────────────┼────────────────────┤
+  │ Green            │ "RG15 TX"   │ Pin 8  (GPIO 14)   │
+  │ White/Green      │ "RG15 RX"   │ Pin 10 (GPIO 15)   │
+  └──────────────────┴─────────────┴────────────────────┘
+
+  ⚠ Same crossover note as Sukabumi. Check SD16 continuity first.
+
+  □ Built    □ Continuity tested    □ SD16 crossover checked
+
+
+HARNESS 3: DS18B20 TEMPERATURE PROBE (Jakarta only)
+=====================================================
+
+  DS18B20 probe comes through PG9 cable gland in base plate.
+  3 wires. Needs 4.7kΩ pull-up resistor between 3V3 and data.
+
+  ┌──────────────────┬─────────────┬────────────────────┐
+  │ DS18B20 wire     │ Label       │ G469 pin (Dupont)  │
+  ├──────────────────┼─────────────┼────────────────────┤
+  │ Red              │ "DS18 3V3"  │ Pin 1  (3V3)       │
+  │ Yellow (data)    │ "DS18 DATA" │ Pin 7  (GPIO 4)    │
+  │ Black            │ "DS18 GND"  │ Pin 9  (GND)       │
+  └──────────────────┴─────────────┴────────────────────┘
+
+  Pull-up resistor: 4.7kΩ between Pin 1 (3V3) and Pin 7 (GPIO 4)
+  Install on G469 screw terminals (resistor legs into adjacent terminals).
+
+  NOTE: DS18B20 is 3.3V — all wires go to G469, NOT to TB1 12V.
+
+  □ Built    □ Continuity tested    □ Pull-up resistor installed
+
+
+PIN SUMMARY — G469 screw terminals to hit
+==========================================
+
+  Sukabumi:                         Jakarta:
+  Pin 8  (GPIO 14) — RG15 TX       Pin 1  (3V3)     — DS18 3V3
+  Pin 10 (GPIO 15) — RG15 RX       Pin 7  (GPIO 4)  — DS18 DATA
+                                    Pin 8  (GPIO 14) — RG15 TX
+                                    Pin 9  (GND)     — DS18 GND
+                                    Pin 10 (GPIO 15) — RG15 RX
+
+  TB1 connections (both stations):
+  TB1 12V+  — RG15 12V (orange)
+  TB1 GND   — RG15 GND (white/orange)
+
+
+ISOLATION CHECK (both stations, after all harnesses complete)
+==============================================================
+
+  Must NOT beep:
+  □ TB1 12V+ ↔ G469 Pin 8  (GPIO 14)
+  □ TB1 12V+ ↔ G469 Pin 10 (GPIO 15)
+  □ TB1 12V+ ↔ G469 Pin 7  (GPIO 4)   [Jakarta only]
+  □ TB1 12V+ ↔ G469 Pin 1  (3V3)      [Jakarta only]
