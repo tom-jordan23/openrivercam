@@ -1,7 +1,7 @@
 # GPIO Wiring Guide — Sukabumi ORC Station
 
-**Rev E — 2026-04-01**
-**Hardware:** Raspberry Pi 5 → Stacking Headers → Geekworm G469 Breakout
+**Rev F — 2026-04-03**
+**Hardware:** Raspberry Pi 5 → Witty Pi 5 HAT+ → Geekworm G469 Breakout (3-board stack, 16mm standoffs)
 
 ---
 
@@ -21,7 +21,7 @@
   - [Step 5: Wire the External Power Button](#step-5-wire-the-external-power-button-pi-5-j2-header)
   - [Step 6: Wire the Hydreon RG-15 Rain Gauge](#step-6-wire-the-hydreon-rg-15-rain-gauge-uart)
   - [Step 7: Wire the SHT40 Sensor](#step-7-wire-the-sht40-temperaturehumidity-sensor-i2c)
-  - [Step 8: Install RTC Battery](#step-8-install-rtc-battery-ml-2020)
+  - [Step 8: Witty Pi 5 HAT+ (RTC + Scheduling)](#step-8-witty-pi-5-hat-rtc--scheduling)
 - [Final Pre-Power Verification](#final-pre-power-verification)
 - [First Power-On Procedure](#first-power-on-procedure)
 - [Channel Summary](#channel-summary)
@@ -44,6 +44,7 @@ components.
 | **DDR-60G-12** | 12V regulator — a DIN rail DC-DC converter that provides clean regulated 12V for the PoE switch | Mean Well DDR-60G-12 | Any isolated DC-DC converter with 9-36V input and 12V output |
 | **Relay module** | 4-channel SPDT relay module with DIN rail mount, Darlington transistor drivers, and screw terminals on both input and output sides | Electronics-Salon 4-SPDT 10A | Any 4-channel relay module that accepts 3.3V trigger signals and has 5V coils with built-in drivers. Verify your module's terminal layout matches the diagrams before wiring |
 | **J2 header** | Pi 5 power button header — a 2-pin header on the Raspberry Pi 5 board (near the USB-C port) used for external power button | Built into Raspberry Pi 5 | Pi 5 only — earlier Pi models do not have this header |
+| **Witty Pi 5 HAT+** | RTC + power scheduling HAT — sits between the Pi 5 and the G469 breakout in the header passthrough chain. Uses a CR2032 coin cell for RTC backup. Communicates via I2C only (address 0x51), no GPIO pins consumed | UUGear Witty Pi 5 | No direct equivalent — Witty Pi 5 is the only combined RTC + scheduling HAT for Pi 5 with header passthrough |
 
 Pin numbers (Pin 2, Pin 6, etc.) refer to the **Raspberry Pi 40-pin GPIO header
 physical pin numbering**, which is the same across all Pi models and all GPIO
@@ -291,7 +292,13 @@ Orientation: GPIO header at top-right corner of the Pi board.
 ### I2C Bus (Shared)
 
 GPIO 2 (Pin 3) and GPIO 3 (Pin 5) are the I2C1 bus. These are shared by all I2C
-devices. Currently used by the SHT40 temperature/humidity sensor at address 0x44.
+devices.
+
+| Address | Device |
+|---------|--------|
+| 0x44 | SHT40 temperature/humidity sensor |
+| 0x51 | Witty Pi 5 HAT+ (RTC + scheduling) |
+
 Additional I2C devices can be added at different addresses without conflict.
 
 ---
@@ -302,7 +309,7 @@ Additional I2C devices can be added at different addresses without conflict.
 
 ### Before You Start
 
-- [ ] Pi and G469 breakout are assembled as a stack (but NOT powered)
+- [ ] Pi 5, Witty Pi 5 HAT+, and G469 breakout are assembled as a 3-board stack with 16mm standoffs (but NOT powered)
 - [ ] 12V battery is **disconnected**
 - [ ] USB-C cable is **unplugged**
 - [ ] Relay module is snapped onto DIN rail
@@ -941,99 +948,52 @@ away from heat sources (Pi CPU, DC-DC converters) for accurate readings.
 
 ---
 
-### Step 8: Install RTC Battery (ML-2020)
+### Step 8: Witty Pi 5 HAT+ (RTC + Scheduling)
 
-The Raspberry Pi 5 has a built-in real-time clock (RTC) that keeps time when the
-Pi loses power. It needs a rechargeable coin cell battery to function.
+> **Background:** Both ORC stations originally used the Pi 5's built-in RTC with
+> an ML-2020 rechargeable coin cell connected to the J5 BAT connector. The J5
+> connector's PCB traces tore on both boards, making the built-in RTC unusable.
+> The Witty Pi 5 HAT+ replaces this functionality and adds power scheduling.
 
-**Battery:** Any rechargeable coin cell with a 2-pin JST-SH connector wired for
-the Pi 5. The official battery is a Panasonic ML-2020, but other rechargeable
-chemistries work — you **must** set the correct charge voltage for your battery.
+The Witty Pi 5 HAT+ provides a real-time clock (RTC) and programmable power
+scheduling. It sits between the Pi 5 and the G469 breakout in the 3-board
+stack, passing all 40 GPIO pins through to the G469 without consuming any.
 
-**⚠ CRITICAL: Do NOT use non-rechargeable batteries (CR2020, CR2032, etc.).**
-The Pi 5 has a built-in trickle charger. If charging is enabled with a
-non-rechargeable cell installed, the cell can leak, vent, or rupture.
+**RTC battery:** The Witty Pi 5 uses a standard **CR2032** non-rechargeable
+coin cell (not the ML-2020 used by the Pi 5's built-in RTC). The CR2032 sits
+in an on-board holder on the Witty Pi 5 — no JST connector, no wiring.
 
-### Compatible Rechargeable Battery Types
+**Communication:** I2C only, address **0x51**. No GPIO pins are consumed.
+The Witty Pi 5 is invisible to GPIO wiring — all pin assignments in this
+guide remain unchanged.
 
-| Battery | Chemistry | Nominal Voltage | Charge Voltage | `config.txt` Setting | Capacity |
-|---------|-----------|-----------------|----------------|----------------------|----------|
-| **ML-2020** | Manganese lithium | 3.0V | 3.0V | `dtparam=rtc_bbat_vchg=3000000` | ~45 mAh |
-| **ML-2032** | Manganese lithium | 3.0V | 3.0V | `dtparam=rtc_bbat_vchg=3000000` | ~65 mAh |
-| **LIR2032** | Lithium-ion | 3.6V | 4.2V | `dtparam=rtc_bbat_vchg=4200000` | ~40 mAh |
-| **LIR2020** | Lithium-ion | 3.6V | 4.2V | `dtparam=rtc_bbat_vchg=4200000` | ~20 mAh |
+### Installation
 
-**Setting the wrong charge voltage can damage the battery:**
-- ML cells charged above 3.2V can be damaged
-- LIR cells charged to only 3.0V will work but won't fully charge
+The Witty Pi 5 HAT+ should already be part of the 3-board stack assembled
+in the "Before You Start" checklist. If not:
 
-The `dtparam=rtc_bbat_vchg` value is in **microvolts**. The Pi 5's charger
-accepts values from 1,300,000 (1.3V) to 4,400,000 (4.4V). If you remove the
-line entirely, charging is disabled and the battery will slowly drain.
+1. Power off the Pi and disconnect all power (12V and USB-C)
+2. Insert a fresh CR2032 coin cell into the Witty Pi 5's battery holder
+   (positive side up)
+3. Place the Witty Pi 5 on top of the Pi 5's 40-pin header
+4. Place the G469 breakout on top of the Witty Pi 5's passthrough header
+5. Secure all three boards with 16mm standoffs
 
-The 20 vs 32 in the battery name refers to thickness (2.0mm vs 3.2mm). Either
-size works — the battery connects via a JST-SH wired cable, not a socket on
-the board, so physical cell dimensions don't matter as long as the battery
-fits in your enclosure.
+The power input from the DDR-60G-5 (Step 1) passes through the Witty Pi 5's
+header passthrough to reach the G469 breakout terminals. No additional power
+wiring is needed for the Witty Pi 5 itself.
 
-**This build uses: ML-2020** with `dtparam=rtc_bbat_vchg=3000000`
-
-<a href="../../docs/images/sukabumi/pi5-j5-bat-connector-location.png"><img src="../../docs/images/sukabumi/pi5-j5-bat-connector-location.png" alt="Close-up of Raspberry Pi 5 board showing HDMI ports and J5 BAT connector area between USB-C and HDMI" width="400"></a>
-
-**Connector:** The battery plugs into the **J5 (BAT) connector** on the Pi 5
-board — a small white 2-pin JST-SH socket located between the USB-C power port
-and the micro-HDMI ports. This is NOT on the G469 breakout — it's on the Pi
-board itself.
-
-```
-  Raspberry Pi 5 (top view, partial)
-
-  ┌──────────────────────────────────────────┐
-  │  [USB-C]   [J5 BAT]   [HDMI 0] [HDMI 1] │
-  │             ▲                              │
-  │             │                              │
-  │         Small white                        │
-  │         2-pin JST-SH                       │
-  │         socket                             │
-  └──────────────────────────────────────────┘
-```
-
-**Installation:**
-
-1. Locate J5 on the Pi 5 board (between USB-C and HDMI)
-2. Orient the ML-2020 JST connector — it only fits one way
-3. Press the connector gently into J5 until it clicks
-4. Tuck the battery and wire so they don't interfere with the G469 HAT above
-
-**Charging configuration (required — you MUST do this manually):**
-
-**The Pi 5 ships with RTC battery charging DISABLED.** The Pi has no way to
-detect whether the battery connected to J5 is rechargeable or not, so it
-defaults to not charging. If you skip this step, the battery will slowly
-drain and the RTC will eventually lose time during power outages. There is
-no warning — it just silently stops keeping time.
-
-Add the correct line to `/boot/firmware/config.txt` on the Pi's SD card based
-on your battery chemistry (see table above):
-
-```
-# For ML-2020 or ML-2032 (manganese lithium, 3.0V):
-dtparam=rtc_bbat_vchg=3000000
-
-# For LIR2032 or LIR2020 (lithium-ion, 4.2V):
-# dtparam=rtc_bbat_vchg=4200000
-```
-
-**Use only ONE of these lines (uncommented).** This enables the Pi 5's built-in
-constant-current (3mA) trickle charger at the specified voltage.
+**Pi 5 built-in RTC:** With the Witty Pi 5 handling timekeeping, the Pi 5's
+J5 BAT connector is left empty. No `dtparam=rtc_bbat_vchg` line is needed in
+`/boot/firmware/config.txt`. If one exists from a previous configuration,
+it can be removed or commented out.
 
 **Verification (after first boot):**
 
-Check that the battery is detected and charging:
-
 ```bash
-# Read current battery voltage (should be > 0)
-cat /sys/devices/platform/soc/soc:rpi_rtc/power_supply/rpi-bat/voltage_now
+# Confirm the Witty Pi 5 RTC is detected on the I2C bus
+i2cdetect -y 1
+# Look for address 0x51 in the output grid
 
 # Verify RTC has correct time
 timedatectl
@@ -1048,11 +1008,11 @@ To test RTC backup:
 
 ### Step 8 Notes
 
-- The ML-2020 charges slowly (3mA). Allow several hours of powered-on time for
-  a full charge on a new battery.
-- A fully charged ML-2020 maintains the RTC for months without external power.
-- If the RTC time is wrong after a power outage, check that the `dtparam` line
-  is in config.txt and that you're using an ML-2020 (not a CR cell).
+- The CR2032 is non-rechargeable and lasts approximately 3-5 years in
+  typical RTC backup use. Replace it during routine maintenance visits.
+- The Witty Pi 5 does NOT use the Pi 5's J5 BAT connector. Leave J5 empty.
+- If `i2cdetect` does not show address 0x51, check that the Witty Pi 5 is
+  seated firmly on the Pi 5's 40-pin header.
 
 ---
 

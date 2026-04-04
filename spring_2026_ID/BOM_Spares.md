@@ -29,6 +29,7 @@ Shared spare components that can service either site.
 |------|-------------|-----|------------|----------|--------|
 | Raspberry Pi 5 8GB | Shared compute spare | 1 | $80.00 | $80.00 | Adafruit |
 | Witty Pi 5 HAT+ | Power management spare | 1 | $46.00 | $46.00 | UUGear |
+| CR2032 Coin Cell Battery | RTC backup for Witty Pi 5 (replaces Pi 5 ML-2020) | 4 | $3.00 | $12.00 | Amazon |
 | Pi-EzConnect HAT | GPIO terminal block | 1 | $19.95 | $19.95 | Adafruit |
 | M.2 SSD 512GB + enclosure | Storage spare (pre-imaged) | 1 | $58.98 | $58.98 | Amazon |
 | MicroSD 32GB | OS boot card (×2, pre-imaged) | 2 | $14.95 | $29.90 | Adafruit |

@@ -63,12 +63,19 @@ Moved to Completed table at bottom of file.
 **Goals: Fix Jakarta power switch, build wiring harnesses, mount devices in boxes.**
 - [x] ~~Fix Jakarta J2 power button~~ — was working, false alarm
 - [x] Build inside wiring harnesses — Sukabumi (rain gauge + DS18B20) ✓ isolation passed
-- [ ] Build inside wiring harnesses — Jakarta (rain gauge + DS18B20)
-  - [ ] Continuity test each SD16 cable end-to-end before connecting levers — SD16 pin numbering may have introduced accidental TX/RX crossover. Correct at lever connectors if needed.
+- [x] Build inside wiring harnesses — Jakarta (rain gauge + DS18B20)
 - [ ] Zip tie and strain relief all internal wiring (both stations)
 - [ ] Install both stations into enclosures (DIN rail, cable routing, glands)
 - [ ] Wire fans (Jakarta) — do this once components are in the box
 - **Stretch:** Finish bottom plates (LED light windows, power button, external connectors)
+
+**⚠ PIVOT: Witty Pi 5 HAT+ reinstated (both stations)**
+Pi 5 RTC battery Molex connector broke on BOTH boards (traces tore). Switching to Witty Pi 5.
+- [ ] Install Witty Pi 5 on Jakarta (on hand) — 3-board stack: Pi 5 + Witty Pi 5 + G469
+- [ ] Verify G469 still seats properly on extended stack
+- [ ] Verify 5V power delivery through Witty Pi (DDR-60G-5 → Witty Pi → Pi)
+- [ ] Sukabumi Witty Pi ordered next-day from Adafruit — expected Tuesday April 7
+- [ ] Buy CR2032 coin cell batteries for Witty Pi 5 (need 2 + at least 2 spares)
 
 **Coating (push to after boxing is done, or Sunday):**
 - [ ] Remove Pi from both enclosures (detach G469 header, lift Pi out)
@@ -99,6 +106,7 @@ Moved to Completed table at bottom of file.
 ### Both stations
 - [ ] Flash new ORC-OS image from Hessel (when available)
 - [ ] Run deploy.sh (once written) or manual overlay re-application
+- [ ] Install Witty Pi 5 software/SDK and configure wake/sleep schedule (both stations)
 - [ ] Configure ORC-OS capture schedule
 - [ ] Camera ISAPI config via camtool.py
 - [ ] orc-capture end-to-end test (relay → camera boot → RTSP → quality gate)

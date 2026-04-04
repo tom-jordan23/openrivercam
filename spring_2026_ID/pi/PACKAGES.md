@@ -54,6 +54,19 @@ sudo pip install --break-system-packages adafruit-blinka adafruit-circuitpython-
 sudo usermod -aG dialout $USER
 ```
 
+## TODO: Witty Pi 5 HAT+ Software
+
+The Witty Pi 5 HAT+ requires UUGear's software package for RTC sync and
+wake/sleep scheduling. This is not yet integrated into the deploy workflow.
+
+- **Repository:** https://www.uugear.com/product/witty-pi-5/ (install script
+  from UUGear)
+- **Provides:** `wittypi` daemon, `schedule.wpi` scheduling DSL, RTC ↔ system
+  clock sync, safe shutdown on low voltage
+- **Action:** Add Witty Pi 5 software installation to `deploy.sh` during
+  software integration week. Requires testing wake/sleep schedule with
+  orc-capture cycle timing.
+
 ## Already in Base Image (no action needed)
 
 These are provided by Raspberry Pi OS or the ORC-OS image:

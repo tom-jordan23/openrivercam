@@ -61,6 +61,7 @@
 |------|-------------|-----|------------|------------|--------|-------|
 | **RPi5-8GB** | Raspberry Pi 5, 8GB RAM | 1 | $80.00 | $80.00 | Adafruit, CanaKit | MSRP, verify availability |
 | **WittyPi5** | Witty Pi 5 HAT+ (power mgmt, RTC, I2C-only) | 1 | $46.00 | $46.00 | UUGear | Per CLAUDE.md research |
+| **CR2032** | CR2032 Coin Cell Battery for Witty Pi 5 RTC | 1 | $3.00 | $3.00 | Amazon | Replaces Pi 5 ML-2020 (connector failed on both boards) |
 | **EZCONNECT** | Adafruit Pi-EzConnect (ID 2711, GPIO terminal block) | 1 | $19.95 | $19.95 | Adafruit | Stacks on Witty Pi 5 HAT+ |
 | **USB-DRIVE** | Samsung FIT Plus 256GB USB 3.1 flash drive (MUF-256AB) | 1 | $25.00 | $25.00 | [Amazon](https://www.amazon.com/Samsung-MUF-256AB-AM-Plus-256GB/dp/B07D7Q41PM) | IP67 waterproof; 0-60°C operating; plugs directly into Pi USB-A |
 | **MODEM** | Quectel EG25-G LTE Cat 4 module | 1 | $35.00 | $35.00 | AliExpress, Mouser | Verify Indonesian bands |

@@ -51,9 +51,9 @@
               |                    |                    |
               v                    v                    v
     +-----------------+  +-----------------+  +-----------------+
-    |  PoE SWITCH     |  |   DDR-60G-5     |  |  PTC HEATER     |
-    |  LINOVISION     |  |   (12V -> 5V)   |  |  (Enclosure)    |
-    |  + FUSE + RELAY |  |   -> Pi 5 GPIO  |  |  + FANS         |
+    |  PoE SWITCH     |  |  WITTY PI 5     |  |  PTC HEATER     |
+    |  LINOVISION     |  |  VIN (12V in)   |  |  (Enclosure)    |
+    |  + FUSE + RELAY |  |  -> 5V to Pi    |  |  + FANS         |
     +--------+--------+  +--------+--------+  +-----------------+
                                   |
                            +------+------+
@@ -248,8 +248,9 @@ POWER PATH LOGIC:
             |    |    +--[FUSE 5A]----> Relay CH1 COM ---> PoE SWITCH (12V)
             |    |                      (see PoE Camera System section)
             |    |
-            |    +--[FUSE 5A]---> DDR-60G-5 (12V->5V) -> hardwired 5V/GND -> PI 5 GPIO
-            |                                                          +-> WS2812B LED (doubled at DDR output)
+            |    +--[FUSE 5A]---> Witty Pi 5 VIN screw terminal (12V->5V onboard)
+            |                     Witty Pi delivers 5V to Pi + G469 via 40-pin header
+            |                     WS2812B LED powered from G469 5V pin (freed by DDR removal)
             |
             +--[FUSE 5A]---> PTC HEATER (via hygrostat) + FANS
 
@@ -259,7 +260,7 @@ FUSE SPECIFICATIONS (3 fuse holders):
 |  FUSE        |  RATING  |  PROTECTS                                        |
 +--------------+----------+----------------------------------------------------+
 |  F2 (PoE)    |  5A      |  Relay + PoE switch (1 camera, ~20W max)         |
-|  F3 (Pi)     |  5A      |  DDR-60G-5 + Pi + LED (25W max = 2A, plus margin)|
+|  F3 (Pi)     |  5A      |  Witty Pi 5 VIN + Pi + LED (25W max, plus margin)|
 |  F4 (Heater) |  5A      |  PTC heater + fans (25W max, plus margin)       |
 +-----------------------------------------------------------------------------+
 F1 (15A main bus fuse) removed — redundant with 3 branches all at 5A.
@@ -400,11 +401,12 @@ RELAY MODULE INPUT WIRING:
 STATUS LED WIRING (WS2812B NeoPixel, directly driven by Pi GPIO):
 +----------------------------------------------------------------------------+
 |                                                                            |
-|   DDR-60G-5 V+ output   ---> WS2812B VDD (power)                         |
-|   DDR-60G-5 V- output   ---> WS2812B GND                                 |
+|   G469 Pin 2  (5V)      ---> WS2812B VDD (power)                         |
+|   G469 Pin 14 (GND)     ---> WS2812B GND                                 |
 |   G469 Pin 12 (GPIO 18) ---> WS2812B DIN (data in)                       |
 |                                                                            |
-|   5V/GND doubled up at DDR-60G-5 output terminals with Pi power wires.   |
+|   5V sourced from G469 header (delivered by Witty Pi 5 from 12V VIN).    |
+|   DDR-60G-5 removed — Witty Pi 5 handles all 12V→5V conversion.         |
 |   Single addressable RGB LED. Color and pattern set by software           |
 |   via /etc/orc/led-status.yaml. No relay channels used for LEDs.         |
 |   Relay channels CH2/CH3/CH4 remain free for future use.                 |
@@ -580,8 +582,8 @@ NOTES:
     |  +------------------------------------------------------------------+|
     |  |                     LOWER DIN RAIL                                ||
     |  | +----------+  +-----------+  +------------+  +-----------------+ ||
-    |  | | PI STACK |  | LINOVISION|  | RELAY      |  | DDR-60G-5       | ||
-    |  | | (2 HATs) |  | PoE SWITCH|  | MODULE     |  | BUCK CONVERTER  | ||
+    |  | | PI STACK |  | LINOVISION|  | RELAY      |  |                 | ||
+    |  | | (3 HATs) |  | PoE SWITCH|  | MODULE     |  | (DDR removed)   | ||
     |  | +----------+  +-----------+  +------------+  +-----------------+ ||
     |  +------------------------------------------------------------------+|
     |                                                                       |
@@ -709,7 +711,7 @@ Do not use wire thinner than 1.5 mm² (16 AWG) for any AC connection.
 | **Green/Yellow** | Earth Ground (PE) |
 | **Red** | DC 12V positive (+) |
 | **Black** | DC Ground / 12V negative (-) |
-| **Yellow** | 5V power (DDR-60G-5 -> Pi + LED, and Pi -> relay VCC) |
+| **Yellow** | 5V power (Witty Pi 5 -> Pi via header, Pi -> relay VCC + LED) |
 | **Blue (thin)** | Signal (I2C SDA) |
 | **White** | Signal (alternate) |
 | **White (22 AWG pair)** | Power button (J2 header to panel switch) |
@@ -739,8 +741,21 @@ GROUND BAR
 
 **PRINT THIS DOCUMENT - LAMINATE FOR FIELD USE**
 
-**Document Version:** 3.2
-**Last Updated:** March 30, 2026
+**Document Version:** 3.4
+**Last Updated:** April 4, 2026
+**Changes from v3.3:**
+- DDR-60G-5 buck converter REMOVED — Witty Pi 5 VIN screw terminal accepts 12V directly (6-30V rated), converts to 5V onboard
+- F3 fuse now feeds Witty Pi 5 VIN instead of DDR-60G-5
+- LED 5V/GND moved from DDR output to G469 Pin 2 (5V) and Pin 14 (GND) — powered via Witty Pi 5V delivery through header
+- Updated power distribution diagram, fuse table, DIN rail layout, wire color code
+
+**Changes from v3.2:**
+- REINSTATED Witty Pi 5 HAT+ — Pi 5 ML-2020 RTC battery connector failed on both boards (traces tore)
+- Pi stack updated from 2-board (Pi 5 + G469) to 3-board (Pi 5 + Witty Pi 5 HAT+ + G469) with 16mm standoffs between each level
+- Witty Pi 5 taps 5V from 40-pin header passthrough; no changes to power distribution
+- Witty Pi 5 RTC uses CR2032 coin cell backup, I2C address 0x51, no GPIO pin conflicts
+- DIN rail layout updated to reflect 3-board Pi stack
+
 **Changes from v3.0:**
 - Reduced Jakarta from 2 cameras to 1 camera
 - Removed Camera 2 from all diagrams and network topology
@@ -769,7 +784,7 @@ GROUND BAR
 
 **Changes from v1.0:**
 - Removed Victron BatteryProtect (LiFePO4 BMS has built-in cutoff)
-- Removed Witty Pi 5 (Pi 5 built-in RTC sufficient for 24hr operation)
+- REINSTATED Witty Pi 5 HAT+ (Pi 5 ML-2020 RTC battery connector failed on both boards — traces tore). Witty Pi 5 uses CR2032 coin cell for RTC backup, communicates via I2C only (address 0x51), no GPIO pin conflicts. 16mm standoffs between each level of the 3-board stack.
 - Replaced Phoenix Contact surge protector with Heschen HS-40-N 2P
 - Replaced Planet IPOE-260-12V PoE injector with LINOVISION PoE Switch + Electronics-Salon relay
 - Added DDR-60G-5 buck converter (12V->5V) for Pi power
@@ -783,4 +798,4 @@ GROUND BAR
 - Removed camera PTC heaters (ANNKE C1200 is IP67 factory-sealed)
 - Added 40 CFM fans for internal air circulation
 - Removed TB2 (no separate battery bus without BatteryProtect)
-- Pi stack is 2-board (Pi 5 + G469), not 3
+- Pi stack is 3-board (Pi 5 + Witty Pi 5 HAT+ + G469), 16mm standoffs between each level

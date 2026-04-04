@@ -621,10 +621,10 @@ cat /dev/ttyAMA0
 stty -F /dev/ttyAMA0 9600 cs8 -cstopb -parenb
 ```
 
-### I2C (SHT40 sensor)
+### I2C (SHT40 sensor, Witty Pi 5 RTC)
 
 ```bash
-# Scan I2C bus (SHT40 should appear at 0x44)
+# Scan I2C bus (SHT40 should appear at 0x44, Witty Pi 5 at 0x51)
 i2cdetect -y 1
 ```
 
@@ -698,11 +698,15 @@ pinctrl set 24 op dl   # drive LOW (relay OFF — de-energized)
 pinctrl set 24 op dl && sleep 5 && pinctrl set 24 op dh
 ```
 
-### Rainbow Sensing RTC (Pi 5 Built-in RTC)
+### Witty Pi 5 HAT+ RTC (CR2032 Coin Cell)
 
 ```bash
-# The Pi 5 has a built-in RTC backed by an ML-2020 coin cell.
-# The Rainbow Sensing image handles scheduling natively — no Witty Pi needed.
+# Both sites use the Witty Pi 5 HAT+ for RTC and wake/sleep scheduling.
+# The Witty Pi 5 communicates via I2C at address 0x51.
+# It uses a standard CR2032 coin cell (non-rechargeable).
+
+# Verify Witty Pi 5 is detected on I2C bus (should show 0x51)
+i2cdetect -y 1
 
 # Check hardware clock (RTC) time
 sudo hwclock --show
@@ -713,15 +717,16 @@ sudo hwclock --systohc
 # Sync RTC time to system
 sudo hwclock --hctosys
 
-# Check RTC battery voltage (microvolts — divide by 1,000,000 for volts)
-cat /sys/devices/platform/soc@107c000000/soc@107c000000:rpi_rtc/rtc/rtc0/battery_voltage
+# Check Witty Pi 5 schedule and status
+# (refer to Witty Pi 5 documentation for schedule script commands)
 
-# Check charging target voltage (microvolts — 0 or missing = charging disabled)
-cat /sys/devices/platform/soc@107c000000/soc@107c000000:rpi_rtc/rtc/rtc0/charging_voltage_max
-
-# Verify charging is enabled in config.txt (should show dtparam=rtc_bbat_vchg=3000000 for ML-2020)
-grep rtc_bbat_vchg /boot/firmware/config.txt
+# If RTC loses time: replace the CR2032 coin cell in the Witty Pi 5 battery holder.
+# CR2032 is a standard non-rechargeable cell — no config.txt charging settings needed.
 ```
+
+**Note:** The Pi 5 built-in RTC (J5 ML-2020 connector) is NOT used. The ML-2020
+battery connector broke on both Sukabumi and Jakarta boards. The Witty Pi 5 HAT+
+replaces this function with a more robust CR2032 coin cell holder.
 
 ### Logs
 
@@ -824,8 +829,15 @@ Contact technical support if:
 
 ---
 
-**Document Version:** 3.1
-**Last Updated:** March 12, 2026
+**Document Version:** 3.2
+**Last Updated:** April 3, 2026
+**Changes from v3.1:**
+- Reinstated Witty Pi 5 HAT+ for both sites — Pi 5 ML-2020 battery connector (J5) broke on both boards
+- Replaced "Rainbow Sensing RTC (Pi 5 Built-in RTC)" section with "Witty Pi 5 HAT+ RTC (CR2032 Coin Cell)"
+- Removed ML-2020 battery voltage and charging config.txt references
+- Added Witty Pi 5 I2C address (0x51) to I2C command reference
+- Added note explaining why Pi 5 built-in RTC is not used
+
 **Changes from v3.0:**
 - Added external power button (Pi 5 J2 header) to "System Won't Power On" flowchart as first diagnostic step
 - Added "Pi Frozen / Unresponsive" flowchart with J2 power button recovery steps
@@ -833,8 +845,8 @@ Contact technical support if:
 - Added "External Power Button (Pi 5 J2 Header)" reference section in Command Reference
 
 **Changes from v2.0:**
-- Removed Witty Pi references from both sites; scheduling handled by Pi 5 built-in RTC (ML-2020 coin cell) via Rainbow Sensing image
-- Replaced "Witty Pi (Sukabumi Only)" section with "Rainbow Sensing RTC (Pi 5 Built-in RTC)"
+- Removed Witty Pi references from both sites; scheduling handled by Pi 5 built-in RTC (ML-2020 coin cell) via Rainbow Sensing image (subsequently reinstated in v3.2)
+- Replaced "Witty Pi (Sukabumi Only)" section with "Rainbow Sensing RTC (Pi 5 Built-in RTC)" (subsequently replaced in v3.2)
 - Updated relay control from USB-powered to GPIO-triggered (Electronics-Salon 4-ch SPDT via G469 breakout: GPIO 24→IN1, GPIO 17→IN2, GPIO 27→IN3, GPIO 22→IN4)
 - Replaced all "Check relay USB cable" references with "Check relay GPIO wiring (VCC, GND, IN1-IN4)"
 - Updated power-on flow diagram: removed Witty Pi box, DDR-60G-5 powers Pi 5 directly at both sites

@@ -93,7 +93,7 @@ Leave behind with the PMI team for field service. Organized in a small compartme
 - [ ] SD cards (32GB) with OS image pre-flashed (2x)
 - [ ] USB flash drive (Samsung FIT Plus 256GB) pre-imaged if possible
 - [ ] LTE antenna (spare)
-- [ ] ML-2020 RTC battery (spare)
+- [ ] CR2032 coin cell batteries for Witty Pi 5 RTC (2x spare)
 
 ---
 

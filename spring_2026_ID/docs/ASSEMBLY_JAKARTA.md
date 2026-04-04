@@ -53,7 +53,7 @@ Complete these steps BEFORE traveling to Indonesia:
   - First boot takes 2-3 minutes (services compile, filesystem expands, then auto-reboots)
   - After reboot, navigate to `http://<hostname>.local` to verify the ORC-OS web dashboard loads
   - Set the ORC-OS web dashboard password when prompted
-- [ ] **Enable RTC battery charging** in `/boot/firmware/config.txt` — this is OFF by default because the Pi cannot detect whether the battery is rechargeable. Without this line, the RTC battery will silently drain and the clock will lose time. Set `dtparam=rtc_bbat_vchg=3000000` for ML cells or `dtparam=rtc_bbat_vchg=4200000` for LIR cells. See the RTC battery section in Step 4 for chemistry options and charge voltage settings.
+- [ ] Configure Witty Pi 5 HAT+ wake/sleep schedule (CR2032 coin cell provides RTC)
 - [ ] **Do NOT change timezone from UTC** — ORC-OS requires UTC (see REBOOT_CHECKLIST.md)
 - [ ] Install and configure chrony as NTP server for camera network
 - [ ] Format USB drive as ext4, mount at /mnt/usb, add to fstab
@@ -73,7 +73,7 @@ Assemble, wire, and test the complete system **before** conformal coating.
 You need to verify all connections work and identify every contact point
 that must be masked during coating.
 
-- [ ] Test Pi 5 + Geekworm G469 stack boots correctly (2-board stack)
+- [ ] Test Pi 5 + Witty Pi 5 HAT+ + Geekworm G469 stack boots correctly (3-board stack)
 - [ ] Verify USB flash drive is recognized
 - [ ] Test LTE modem connects (with test SIM)
 - [ ] Test PoE switch powers camera
@@ -92,15 +92,16 @@ that are difficult to diagnose in the field.
 
 **Boards to Coat:**
 - [ ] Raspberry Pi 5
+- [ ] Witty Pi 5 HAT+ PCB
 - [ ] Geekworm G469 terminal block HAT
 
 **Masking (Use Kapton tape on all contact points):**
-- GPIO header pins (all 40 pins)
+- GPIO header pins (all 40 pins — Pi 5, Witty Pi 5, and G469)
 - USB-A and USB-C ports
 - HDMI ports
 - Ethernet port
 - MicroSD card slot
-- J5 (BAT) RTC battery connector
+- Witty Pi 5 CR2032 battery holder
 - J2 power button through-holes (or bolt terminals if installed)
 - Heat sink mounting holes / thermal pad contact area
 - Any other connector or contact point used during testing
@@ -317,11 +318,13 @@ sudo systemctl start orc-sensors.timer
 
 ### Compute Stack
 - [ ] Raspberry Pi 5 8GB (coated)
+- [ ] Witty Pi 5 HAT+ (coated) — RTC with CR2032 coin cell, I2C (0x51), passes through all 40 GPIO pins
 - [ ] Geekworm G469 terminal block HAT (coated)
 - [ ] SanDisk 256GB USB flash drive
 - [ ] MicroSD card 64GB (with OS)
 - [ ] Active cooler for Pi 5
-- [ ] Rechargeable RTC battery for Pi 5 with 2-pin JST-SH connector (ML-2020, ML-2032, LIR2032, or LIR2020 — see Step 4 for chemistry options and charge voltage settings)
+- [ ] CR2032 coin cell for Witty Pi 5 HAT+ RTC
+- [ ] 16mm standoffs (for 3-board stack: Pi 5 bottom, Witty Pi 5 middle, G469 top)
 
 ### Connectivity
 - [ ] Quectel EG25-G modem + EXVIST Mini PCIe-USB adapter
@@ -447,44 +450,32 @@ bulkheads, LEDs, and buttons once you know the layout works.
 
 1. **Stack order (bottom to top):**
    ```
-   [Raspberry Pi 5]
+   [Raspberry Pi 5]         (bottom)
         |
-   [Geekworm G469 HAT]
+   [Witty Pi 5 HAT+]       (middle — RTC, CR2032, I2C 0x51)
+        |
+   [Geekworm G469 HAT]     (top — screw terminals)
    ```
-   2-board stack. Pi 5 built-in RTC with rechargeable coin cell provides timekeeping.
+   3-board stack with 16mm standoffs. The Witty Pi 5 HAT+ passes through all
+   40 GPIO pins, so the G469 terminal block HAT works unchanged on top.
+
+   **Why Witty Pi 5 instead of Pi 5 built-in RTC:** The Pi 5 ML-2020 battery
+   connector (J5) broke on both Sukabumi and Jakarta boards — the Molex
+   connector cannot handle any mechanical stress. The Witty Pi 5 uses a
+   standard CR2032 coin cell holder, which is far more robust.
 
 2. Install active cooler on Pi 5
 
-3. **Install rechargeable RTC battery:**
-   Install the rechargeable coin cell in the Pi 5 J5 (BAT) connector — a small
-   white 2-pin JST-SH socket between the USB-C and HDMI ports. Clicks in one
-   way only.
+3. **Install RTC battery:**
+   Insert a CR2032 coin cell into the Witty Pi 5 HAT+ battery holder.
+   Standard non-rechargeable CR2032 — the Witty Pi 5 does not trickle-charge
+   the battery. No `config.txt` changes needed for the RTC battery.
 
-   **Must be a rechargeable cell — NEVER a non-rechargeable CR cell.** The Pi 5
-   has a built-in trickle charger. If charging is enabled with a non-rechargeable
-   cell installed, the cell can leak, vent, or rupture.
+4. Seat Witty Pi 5 HAT+ onto Pi 5 GPIO header, secure with 16mm standoffs
 
-   **Compatible rechargeable battery types:**
+5. Seat Geekworm G469 onto Witty Pi 5 header, press down firmly, secure with standoffs
 
-   | Battery | Chemistry | Nominal V | Charge V | `config.txt` Setting | Capacity |
-   |---------|-----------|-----------|----------|----------------------|----------|
-   | **ML-2020** | Manganese lithium | 3.0V | 3.0V | `dtparam=rtc_bbat_vchg=3000000` | ~45 mAh |
-   | **ML-2032** | Manganese lithium | 3.0V | 3.0V | `dtparam=rtc_bbat_vchg=3000000` | ~65 mAh |
-   | **LIR2032** | Lithium-ion | 3.6V | 4.2V | `dtparam=rtc_bbat_vchg=4200000` | ~40 mAh |
-   | **LIR2020** | Lithium-ion | 3.6V | 4.2V | `dtparam=rtc_bbat_vchg=4200000` | ~20 mAh |
-
-   Setting the wrong charge voltage can damage the battery: ML cells charged
-   above 3.2V can be damaged; LIR cells charged to only 3.0V will work but
-   won't fully charge. The 20 vs 32 in the name refers to thickness (2.0mm
-   vs 3.2mm) — either size works since the battery connects via a JST-SH cable.
-
-   **The Pi 5 ships with RTC battery charging DISABLED.** The Pi has no way
-   to detect whether the battery is rechargeable, so it defaults to not
-   charging. You MUST add the correct `dtparam=rtc_bbat_vchg` line to
-   `/boot/firmware/config.txt` manually. If you skip this, the battery will
-   silently drain and the RTC will lose time during power outages.
-
-4. Mount stack on lower DIN rail using DIN rail clip
+6. Mount stack on lower DIN rail using DIN rail clip
 
 ### Step 5: Mount Components on DIN Rails (30 min)
 
@@ -1152,8 +1143,17 @@ See `TROUBLESHOOTING.md` for detailed diagnostics.
 
 ---
 
-**Document Version:** 3.1
-**Last Updated:** March 26, 2026
+**Document Version:** 3.2
+**Last Updated:** April 3, 2026
+**Changes from v3.1:**
+- Reinstated Witty Pi 5 HAT+ — Pi 5 ML-2020 battery connector (J5) broke on both boards
+- Stack reverted to 3-board: Pi 5 (bottom) + Witty Pi 5 HAT+ (middle) + G469 (top) with 16mm standoffs
+- RTC now uses Witty Pi 5 CR2032 coin cell (I2C 0x51) instead of Pi 5 built-in RTC
+- Removed Pi 5 RTC battery charging config (dtparam=rtc_bbat_vchg) — not needed with Witty Pi
+- Removed rechargeable ML/LIR battery from parts list; replaced with CR2032
+- Added Witty Pi 5 HAT+ PCB to conformal coating list
+- Updated masking list: Witty Pi CR2032 holder replaces J5 (BAT) connector
+
 **Changes from v3.0:**
 - Reduced Jakarta from 2 cameras to 1 camera (matches project decision)
 - Reduced CNLINKO ethernet bulkheads from 2 to 1

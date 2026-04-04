@@ -17,7 +17,7 @@ These decisions were made during ordering and differ from earlier BOM versions:
 
 | Change | Old | New | Rationale |
 |--------|-----|-----|-----------|
-| **Witty Pi 5 dropped** | $59.95 | $0 | Hessel's new OS image works with Pi 5 built-in RTC |
+| **Witty Pi 5 REINSTATED** | $0 | ~$50 | Pi 5 ML-2020 battery connector failed on both boards; Witty Pi 5 HAT+ uses CR2032 coin cell |
 | **Victron BatteryProtect dropped** | $53.55 | $0 | LiTime BMS has built-in low-voltage cutoff |
 | **USB-RS485 adapter dropped** | $21.95 | $0 | GPIO breakout handles rain gauge RS232 |
 | **Surge protector swapped** | Phoenix Contact $78.15 | Heschen HS-40-N $20.51 | Cheaper, single-phase (correct for site) |
@@ -62,7 +62,9 @@ These decisions were made during ordering and differ from earlier BOM versions:
 | CPU-009 | Proxicast ANT-122-S02 MIMO LTE Puck Antenna (IP67) | 1 | $64.95 | $64.95 | [Amazon](https://www.amazon.com/Proxicast-Profile-Omni-Directional-Screw-Mount-Antenna/dp/B07DDC9WV5) | |
 | CPU-006 | MicroSD Card 64G x2 Pack (SanDisk) | 1 | $26.92 | $26.92 | [Amazon](https://www.amazon.com/SanDisk-128GB-MicroSDXC-Ultra-Memory/dp/B07XDCZ9J3) | |
 | CPU-011 | Raspberry Pi 5 Active Cooler | 1 | $9.90 | $9.90 | [Amazon](https://www.amazon.com/Raspberry-Pi5-Temperature-Controlled-Aluminium-Dissipation/dp/B0CW164TCW) | |
-| CPU-012 | Raspberry Pi 5 RTC Battery (ML-2020 JST-SH) | 2 | $5.00 | $10.00 | [Amazon](https://www.amazon.com/s?k=raspberry+pi+5+RTC+battery) | 1 Jakarta + 1 Sukabumi |
+| CPU-012 | ~~Raspberry Pi 5 RTC Battery (ML-2020 JST-SH)~~ | ~~2~~ | ~~$5.00~~ | ~~$10.00~~ | | **SUPERSEDED** — Pi 5 ML-2020 connector broke on both boards |
+| CPU-013 | Witty Pi 5 HAT+ (power mgmt, RTC, CR2032) | 1 | $49.95 | $49.95 | [Adafruit](https://www.adafruit.com/product/6013) | Reinstated — Pi 5 ML-2020 battery connector failed on both boards |
+| CPU-014 | CR2032 Coin Cell Battery | 1 | $3.00 | $3.00 | Amazon | RTC backup for Witty Pi 5 |
 | **CAMERA** | | | | | | |
 | CAM-001 | ANNKE C1200 PoE IP Camera (12MP 2-pack) | 1 | $85.00 | $85.00 | [Amazon](https://www.amazon.com/ANNKE-Outdoor-Security-Surveillance-Detection/dp/B0CMTHVCV8) | 1 camera used, 1 spare from 2-pack |
 | CAM-003 | LINOVISION Industrial 12V PoE Switch (Gigabit) | 1 | $85.99 | $85.99 | [Amazon](https://www.amazon.com/LINOVISION-Industrial-Gigabit-DC12V-48V-IEEE802-3af/dp/B09HGWLZSD) | |
@@ -141,7 +143,7 @@ PWR-006 (fuse holders), PWR-007/008 (fuses), ENC-004 (cable glands), ENC-008 (ha
 
 | Item | Description | Reason |
 |------|-------------|--------|
-| CPU-002 | Witty Pi 5 HAT+ ($59.95) | Hessel's new OS image works with Pi 5 built-in RTC |
+| ~~CPU-002~~ | ~~Witty Pi 5 HAT+ ($59.95)~~ | ~~Hessel's new OS image works with Pi 5 built-in RTC~~ — **REINSTATED as CPU-013** (Pi 5 ML-2020 battery connector failed on both boards; CR2032-based Witty Pi 5 replaces built-in RTC) |
 | PWR-004 | Victron BatteryProtect ($53.55) | LiTime BMS has built-in low-voltage cutoff |
 | UI-005 | USB to RS485/232 Adapter ($21.95) | GPIO breakout handles rain gauge RS232 |
 | HUM-003 | PTC Heater 10W for Camera ($29.98) | ANNKE C1200 is factory-sealed IP67; external heater can't reach lens |
@@ -200,8 +202,8 @@ PWR-006 (fuse holders), PWR-007/008 (fuses), ENC-004 (cable glands), ENC-008 (ha
 
 ## Component Compatibility
 
-- **Pi 5 + GPIO Breakout (G469):** Direct stack, no Witty Pi in between
-- **Pi 5 built-in RTC:** Hessel's OS image handles scheduling (replaces Witty Pi 5)
+- **Pi 5 + Witty Pi 5 + GPIO Breakout (G469):** 3-board stack (Pi 5 → Witty Pi 5 HAT+ → G469)
+- **Witty Pi 5 HAT+ RTC (CR2032):** Replaces Pi 5 built-in RTC (ML-2020 connector failed on both boards)
 - **ANNKE C1200 + LINOVISION 12V PoE Switch:** 802.3af/at compatible
 - **Mean Well SDR-120-12:** 88-264VAC input (Indonesia 220V OK)
 - **DDR-60G-5:** 9-36V input, covers battery voltage range
@@ -216,6 +218,7 @@ PWR-006 (fuse holders), PWR-007/008 (fuses), ENC-004 (cable glands), ENC-008 (ha
 
 | Date | Version | Changes |
 |------|---------|---------|
+| 2026-04-04 | 5.2 | Witty Pi 5 HAT+ reinstated (CPU-013) + CR2032 battery (CPU-014). Pi 5 ML-2020 battery connector failed on both boards. ML-2020 line (CPU-012) superseded. Updated Component Compatibility for 3-board stack. |
 | 2026-03-26 | 5.1 | Reduced from 2 cameras to 1. Cat6 cables 4→2, CNLINKO bulkheads 2→1. Updated subtotals. |
 | 2026-03-09 | 5.0 | Reconciled against authoritative jakarta_order.csv. Dropped Witty Pi 5 (Pi 5 RTC), Victron BatteryProtect (BMS cutoff), USB-RS485 (GPIO handles it), camera heater (sealed camera). Swapped Phoenix Contact SPD → Heschen HS-40-N, Phoenix PTFIX → Amazon generic. Right-sized Cat6 cable. Added fans, neoprene isolation, ethernet + DC bulkhead connectors. Deferred mounting hardware. Corrected conformal coat to MG 422C. Updated all prices to actual order prices. |
 | 2026-03-06 | 4.0 | Split enclosure approach: electronics in VEVOR 16x12x8" (matched Sukabumi), battery + charger moved to external box sourced locally. |
@@ -225,6 +228,6 @@ PWR-006 (fuse holders), PWR-007/008 (fuses), ENC-004 (cable glands), ENC-008 (ha
 
 ---
 
-**Document prepared:** January 9, 2026 | **Last updated:** March 26, 2026
-**Version:** 5.1 (Updated for 1-camera configuration)
+**Document prepared:** January 9, 2026 | **Last updated:** April 4, 2026
+**Version:** 5.2 (Witty Pi 5 HAT+ reinstated — Pi 5 ML-2020 connector failure)
 **Authoritative source:** `jakarta_order.csv`
