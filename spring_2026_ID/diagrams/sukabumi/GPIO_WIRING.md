@@ -1166,7 +1166,7 @@ These verify that 12V cannot reach the Pi GPIO:
 
 | GPIO | Pin | Notes |
 |------|-----|-------|
-| GPIO 4 | 7 | General purpose (1-Wire capable) |
+| GPIO 4 | 7 | DS18B20 temperature probe (1-Wire data) |
 | GPIO 5 | 29 | General purpose |
 | GPIO 6 | 31 | General purpose |
 | GPIO 7 | 26 | SPI CE1 |

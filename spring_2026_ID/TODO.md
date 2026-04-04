@@ -61,12 +61,13 @@ Moved to Completed table at bottom of file.
 
 ### Saturday (April 4)
 **Goals: Fix Jakarta power switch, build wiring harnesses, mount devices in boxes.**
-- [ ] Fix Jakarta J2 power button (not working)
-- [ ] Build inside wiring harnesses — rain gauge (both stations)
+- [x] ~~Fix Jakarta J2 power button~~ — was working, false alarm
+- [x] Build inside wiring harnesses — Sukabumi (rain gauge + DS18B20) ✓ isolation passed
+- [ ] Build inside wiring harnesses — Jakarta (rain gauge + DS18B20)
   - [ ] Continuity test each SD16 cable end-to-end before connecting levers — SD16 pin numbering may have introduced accidental TX/RX crossover. Correct at lever connectors if needed.
-- [ ] Build inside wiring harnesses — DS18B20 temp probe (both stations)
 - [ ] Zip tie and strain relief all internal wiring (both stations)
 - [ ] Install both stations into enclosures (DIN rail, cable routing, glands)
+- [ ] Wire fans (Jakarta) — do this once components are in the box
 - **Stretch:** Finish bottom plates (LED light windows, power button, external connectors)
 
 **Coating (push to after boxing is done, or Sunday):**

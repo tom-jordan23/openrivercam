@@ -66,8 +66,8 @@ HARNESS 2: RAIN GAUGE (Jakarta)
   □ Built    □ Continuity tested    □ SD16 crossover checked
 
 
-HARNESS 3: DS18B20 TEMPERATURE PROBE (Jakarta only)
-=====================================================
+HARNESS 3: DS18B20 TEMPERATURE PROBE (Sukabumi)
+==================================================
 
   DS18B20 probe comes through PG9 cable gland in base plate.
   3 wires. Needs 4.7kΩ pull-up resistor between 3V3 and data.
@@ -75,12 +75,34 @@ HARNESS 3: DS18B20 TEMPERATURE PROBE (Jakarta only)
   ┌──────────────────┬─────────────┬────────────────────┐
   │ DS18B20 wire     │ Label       │ G469 pin (Dupont)  │
   ├──────────────────┼─────────────┼────────────────────┤
-  │ Red              │ "DS18 3V3"  │ Pin 1  (3V3)       │
+  │ Red              │ "DS18 3V3"  │ Pin 17 (3V3)       │
   │ Yellow (data)    │ "DS18 DATA" │ Pin 7  (GPIO 4)    │
-  │ Black            │ "DS18 GND"  │ Pin 9  (GND)       │
+  │ Black            │ "DS18 GND"  │ Pin 39 (GND)       │
   └──────────────────┴─────────────┴────────────────────┘
 
-  Pull-up resistor: 4.7kΩ between Pin 1 (3V3) and Pin 7 (GPIO 4)
+  Pull-up resistor: 4.7kΩ between Pin 17 (3V3) and Pin 7 (GPIO 4)
+  Install on G469 screw terminals (resistor legs into adjacent terminals).
+
+  NOTE: DS18B20 is 3.3V — all wires go to G469, NOT to TB1 12V.
+  NOTE: Pin 1 (3V3) and Pin 9 (GND) already used by SHT40.
+
+  □ Built    □ Continuity tested    □ Pull-up resistor installed
+
+
+HARNESS 4: DS18B20 TEMPERATURE PROBE (Jakarta)
+=================================================
+
+  Identical to Sukabumi. Same pin assignments.
+
+  ┌──────────────────┬─────────────┬────────────────────┐
+  │ DS18B20 wire     │ Label       │ G469 pin (Dupont)  │
+  ├──────────────────┼─────────────┼────────────────────┤
+  │ Red              │ "DS18 3V3"  │ Pin 17 (3V3)       │
+  │ Yellow (data)    │ "DS18 DATA" │ Pin 7  (GPIO 4)    │
+  │ Black            │ "DS18 GND"  │ Pin 39 (GND)       │
+  └──────────────────┴─────────────┴────────────────────┘
+
+  Pull-up resistor: 4.7kΩ between Pin 17 (3V3) and Pin 7 (GPIO 4)
   Install on G469 screw terminals (resistor legs into adjacent terminals).
 
   NOTE: DS18B20 is 3.3V — all wires go to G469, NOT to TB1 12V.
@@ -91,12 +113,12 @@ HARNESS 3: DS18B20 TEMPERATURE PROBE (Jakarta only)
 PIN SUMMARY — G469 screw terminals to hit
 ==========================================
 
-  Sukabumi:                         Jakarta:
-  Pin 8  (GPIO 14) — RG15 TX       Pin 1  (3V3)     — DS18 3V3
-  Pin 10 (GPIO 15) — RG15 RX       Pin 7  (GPIO 4)  — DS18 DATA
-                                    Pin 8  (GPIO 14) — RG15 TX
-                                    Pin 9  (GND)     — DS18 GND
-                                    Pin 10 (GPIO 15) — RG15 RX
+  Both stations:
+  Pin 7  (GPIO 4)  — DS18 DATA
+  Pin 8  (GPIO 14) — RG15 TX
+  Pin 10 (GPIO 15) — RG15 RX
+  Pin 17 (3V3)     — DS18 3V3
+  Pin 39 (GND)     — DS18 GND
 
   TB1 connections (both stations):
   TB1 12V+  — RG15 12V (orange)
@@ -107,7 +129,8 @@ ISOLATION CHECK (both stations, after all harnesses complete)
 ==============================================================
 
   Must NOT beep:
+  □ TB1 12V+ ↔ G469 Pin 7  (GPIO 4)
   □ TB1 12V+ ↔ G469 Pin 8  (GPIO 14)
   □ TB1 12V+ ↔ G469 Pin 10 (GPIO 15)
-  □ TB1 12V+ ↔ G469 Pin 7  (GPIO 4)   [Jakarta only]
-  □ TB1 12V+ ↔ G469 Pin 1  (3V3)      [Jakarta only]
+  □ TB1 12V+ ↔ G469 Pin 17 (3V3)
+  □ TB1 12V+ ↔ G469 Pin 39 (GND)
