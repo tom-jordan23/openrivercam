@@ -609,32 +609,45 @@ bolt diameter (M1.6 or #0) and rated for 18 AWG wire.
    and crack the PCB)
 5. Route the wires to the external power button's screw terminals
 
-**Alternative — soldered pigtail with Dupont female connectors
-(Sukabumi method):** Solder two bare wires directly to the J2
-through-holes, then terminate the other end with Dupont female connectors.
-This creates a detachable connection to the switch's male header pins.
-Add a strain relief zip tie where the pigtail exits the back of the Pi
-carrier board (Geekworm G469) to prevent mechanical stress on the solder
-joints.
+**Alternative — soldered pigtail with Dupont female connectors:**
+Solder two bare wires directly to the J2 through-holes, then terminate
+the other end with Dupont female connectors. This creates a detachable
+connection to the switch's male header pins. Add a strain relief zip tie
+where the pigtail exits the back of the Pi carrier board (Geekworm G469)
+to prevent mechanical stress on the solder joints.
+
+**Alternative — Wago lever-nut splice (Sukabumi final method):**
+Use Wago 221-series lever-nut connectors to join the J2 pigtail wires to
+the power button leads. This eliminates the Dupont male/female interface
+and provides a tool-free, vibration-resistant connection. Any solid or
+stranded 20-24 AWG wire works. The Wagos sit loose inside the enclosure
+(no mounting needed — they're light and the wires hold them in place).
 
 > **Sukabumi build note (2026-04-01):** We first tried soldering a 2-pin
 > 2.54mm header into J2, but the header pin broke loose under pressure from
 > the Dupont connector — a bad solder joint on the small through-hole
 > couldn't withstand lateral force. The fix was to solder bare wires
 > directly to J2 (more surface contact, less leverage) and terminate with
-> Dupont female connectors for a detachable fitting. A zip tie on the back
-> of the G469 carrier provides strain relief so the solder joints never see
-> cable tension. This approach works well but does require soldering — the
-> bolt-through method remains the recommended no-solder approach for future
-> builds.
+> Dupont female connectors for a detachable fitting.
+>
+> **Update (2026-04-05):** The Dupont connection to the button was
+> intermittent — the contact wasn't reliable enough for the power switch.
+> Replaced with Wago 221 lever-nut connectors splicing the J2 pigtail
+> directly to the button leads. Tests passed. Wagos are quick, tool-free,
+> and hold up well to vibration.
+>
+> **Bottom line:** There's no single "right" method for J2. The bolt-through
+> approach is the recommended no-solder option. Soldered pigtails + Wagos
+> worked for Sukabumi. Use whatever gets the job done and matches your
+> team's skills and available tools.
 
 The J2 wires must route through or around the G469 HAT stack to reach the
 external button. Leave enough slack to separate the stack for service.
 
 | Wire # | From | To | Label | Color | Gauge |
 |--------|------|----|-------|-------|-------|
-| 32 | Pi 5 J2 pin 1 | Power button terminal 1 | "PWR BTN" | — | Bare wire, soldered pigtail w/ Dupont female |
-| 33 | Pi 5 J2 pin 2 | Power button terminal 2 | "PWR BTN" | — | Bare wire, soldered pigtail w/ Dupont female |
+| 32 | Pi 5 J2 pin 1 | Power button terminal 1 | "PWR BTN" | — | Soldered pigtail → Wago 221 → button lead |
+| 33 | Pi 5 J2 pin 2 | Power button terminal 2 | "PWR BTN" | — | Soldered pigtail → Wago 221 → button lead |
 
 The power button is a simple momentary switch (normally open). It does not
 matter which terminal gets which wire (not polarized). It also does not matter
@@ -648,8 +661,7 @@ which J2 pin goes to which button terminal — either orientation works.
         │ (pigtail, strain relief zip tie at G469 carrier)
         │
    ┌────┴────┐
-   │ Dupont  │  Dupont female connectors (detachable)
-   │ female  │
+   │ Wago 221│  lever-nut splice (tool-free, detachable)
    └────┬────┘
         │
    ┌────┴────┐

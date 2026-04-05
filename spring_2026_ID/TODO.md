@@ -250,11 +250,10 @@ Remaining camera config:
 
 | Field | Value |
 |-------|-------|
-| **Status** | OPEN |
+| **Status** | DONE (2026-04-05) |
 | **Site** | Sukabumi |
 
-`BOM_Sukabumi.md` success criteria says "Power consumption <50 Wh/day" but the
-corrected power budget is ~118 Wh/day. Update to reflect current PoE camera architecture.
+`BOM_Sukabumi.md` success criteria updated from <50 Wh/day to <120 Wh/day per ISS-001.
 
 ---
 
@@ -439,6 +438,8 @@ already covered by ordered quantities vs. what needs separate ordering.
 | — | orc-capture RELAY_MODE config (cycle vs always) | 2026-03-29 |
 | — | Build photos cataloged and tagged (97 photos) | 2026-03-22 |
 | — | Sukabumi J2 power button wired and tested (soldered pigtail + Dupont female) | 2026-04-01 |
+| — | Sukabumi J2 power button: replaced dodgy Dupont connection with Wago 221 lever-nuts — tests passed | 2026-04-05 |
+| — | Doc cleanup: RTC refs (ML-2020 → Witty Pi 5), Samsung FIT removal, power budget fix, J2 wiring methods | 2026-04-05 |
 | — | Sukabumi WS2812B LED wired, tested R/G/B + all status colors (orc-led-test) | 2026-04-01 |
 | — | LED driver migrated from rpi-ws281x to Adafruit Blinka (Pi 5 PIO) — see ISS-007 | 2026-04-01 |
 | — | GPIO_WIRING.md comprehensive update (Rev C) | 2026-03-20 |

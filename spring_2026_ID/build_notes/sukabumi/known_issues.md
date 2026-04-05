@@ -50,8 +50,9 @@ first boot, or select a USB drive that does not use UAS.
 
 #### Impact
 
-Not currently blocking — no I2C peripherals in this build. Will need
-enabling if I2C sensors (e.g., SHT40 temp/humidity) are added later.
+Not currently blocking capture pipeline, but SHT40 temp/humidity sensor is
+in the BOM (item SENSOR-TH) and requires I2C bus 1. Enable before deployment
+or SHT40 will not be detected.
 
 ---
 

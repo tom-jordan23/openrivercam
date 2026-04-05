@@ -1,6 +1,6 @@
 ================================================================================
     SUKABUMI ORC STATION - ELECTRICAL CIRCUIT DIAGRAM
-    Site: Sukabumi, Indonesia  |  Rev: 3.0  |  Date: 2026-03-10
+    Site: Sukabumi, Indonesia  |  Rev: 3.1  |  Date: 2026-04-05
 ================================================================================
 
     EXTERNAL POWER SYSTEM (existing at site)
@@ -90,15 +90,15 @@
         │                                      │  │  IN: 12V DC         │
         │                                      │  │  OUT: 802.3af/at    │
         │                                      │  │  (Gigabit)          │
-        │  RTC: ML-2020 rechargeable coin cell │  │                     │
-        │       (primary RTC for Rainbow       │  │  Port 1: PoE+Data ──┼──►
-        │        Sensing image)                │  │  Uplink: Data only  │
+        │  RTC: Witty Pi 5 HAT+ (CR2032 cell)  │  │                     │
+        │       (scheduling + RTC; replaces    │  │  Port 1: PoE+Data ──┼──►
+        │        failed ML-2020 connector)     │  │  Uplink: Data only  │
         │                                      │  └──────────┬──────────┘
         │  USB 2.0 ──► Quectel EG25-G Modem   │             │
         │              (EXVIST Mini PCIe-USB)  │             │  Cat6 outdoor
         │                                      │             │  shielded cable
-        │  USB 3.0 ──► Samsung FIT Plus 256GB  │             │  (through M12 gland
-        │              (video/data storage)    │             │   + IP68 RJ45 coupler)
+        │  USB 3.0 ──► (reserved — see note 9)  │             │  (through M12 gland
+        │                                      │             │   + IP68 RJ45 coupler)
         │                                      │             │
         │  ETH ◄──── LINOVISION uplink port   │             │
         │            (data only, no PoE)      │◄────────────┘
@@ -311,10 +311,12 @@
     5. Dielectric grease on all outdoor electrical connections.
     6. Gore M12 vent on enclosure for pressure equalization.
     7. Carrier: Telkomsel (Indonesia, best rural coverage).
-    8. Pi 5 built-in RTC with ML-2020 coin cell provides
-       scheduling via Rainbow Sensing image.
-    9. Samsung FIT Plus USB drive is IP67 waterproof, plugs
-       directly into Pi USB-A 3.0 port.
+    8. Witty Pi 5 HAT+ provides scheduling and RTC (CR2032
+       coin cell). ML-2020 connector failed on both boards.
+    9. Samsung FIT Plus USB drive removed from build due to
+       UAS boot storm (see known_issues.md). Captures stored
+       on SD card rootfs (~43GB free). USB 3.0 port reserved
+       for future use if cmdline.txt quirk is applied.
    10. SHT40 mounted inside enclosure for climate monitoring.
        DS18B20 probe routed outside for ambient/dew point calc.
 

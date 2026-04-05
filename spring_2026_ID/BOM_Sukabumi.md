@@ -63,7 +63,7 @@
 | **WittyPi5** | Witty Pi 5 HAT+ (power mgmt, RTC, I2C-only) | 1 | $46.00 | $46.00 | UUGear | Per CLAUDE.md research |
 | **CR2032** | CR2032 Coin Cell Battery for Witty Pi 5 RTC | 1 | $3.00 | $3.00 | Amazon | Replaces Pi 5 ML-2020 (connector failed on both boards) |
 | **EZCONNECT** | Adafruit Pi-EzConnect (ID 2711, GPIO terminal block) | 1 | $19.95 | $19.95 | Adafruit | Stacks on Witty Pi 5 HAT+ |
-| **USB-DRIVE** | Samsung FIT Plus 256GB USB 3.1 flash drive (MUF-256AB) | 1 | $25.00 | $25.00 | [Amazon](https://www.amazon.com/Samsung-MUF-256AB-AM-Plus-256GB/dp/B07D7Q41PM) | IP67 waterproof; 0-60°C operating; plugs directly into Pi USB-A |
+| ~~**USB-DRIVE**~~ | ~~Samsung FIT Plus 256GB USB 3.1 flash drive (MUF-256AB)~~ | ~~1~~ | ~~$25.00~~ | ~~$0.00~~ | | **REMOVED** — UAS boot storm (see known_issues.md #1). Captures on SD card rootfs (~43GB free) |
 | **MODEM** | Quectel EG25-G LTE Cat 4 module | 1 | $35.00 | $35.00 | AliExpress, Mouser | Verify Indonesian bands |
 | **MODEM-USB** | EXVIST Mini PCIe-USB adapter (P2U52V02USB) for EG25-G | 1 | $15.00 | $15.00 | AliExpress | USB interface for modem |
 | **ANT-PUCK** | Proxicast ANT-122-S02 2x2 MIMO LTE puck antenna (IP67, screw mount) | 1 | $65.00 | $65.00 | [Amazon](https://www.amazon.com/Proxicast-Profile-Omni-Directional-Screw-Mount-Antenna/dp/B07DDC9WV5) | Main + diversity in single sealed unit; 600-6000 MHz; eliminates bulkhead connectors |
@@ -78,8 +78,7 @@
 **Notes:**
 - Pi 5 8GB preferred for ORC (4GB minimum would save ~$15)
 - Quectel EG25-G confirmed compatible with Telkomsel (B1/B3/B5/B8/B40)
-- Samsung FIT Plus 256GB: IP67 waterproof, 0-60°C operating, 5-year warranty; plugs directly into USB-A port (no enclosure needed)
-- 256GB provides storage for weeks of video buffer at 5s/15min capture rate
+- ~~Samsung FIT Plus 256GB~~ — removed from build due to UAS driver boot storm (228 USB disconnects in 12 min). See `build_notes/sukabumi/known_issues.md` for details. SD card rootfs provides ~43GB, sufficient for weeks of video buffer at 5s/15min capture rate. USB 3.0 port available if a compatible drive is added later (requires `cmdline.txt` quirk or non-UAS drive)
 - Witty Pi 5 HAT+ provides scheduling, RTC, and low-power sleep
 - Pi-EzConnect enables future sensor expansion via screw terminals
 - Proxicast ANT-122-S02 replaces basic stick antennas + bulkhead connectors; IP67 sealed screw-mount puck eliminates connector corrosion failure point; same model used at Jakarta site (see `research/lte_antenna_weatherproof_research.md`)
@@ -178,7 +177,7 @@
 - **Standalone-capable:** Can be wall/pole-mounted directly at sites without an existing outer enclosure
 - **At Sukabumi:** Sits inside existing outer aluminum box for bonus physical/weather protection
 - Components mounted with standoffs (Pi stack) and Velcro/Dual Lock (modem, PoE injector) on mounting plate
-- Samsung FIT Plus plugs directly into Pi USB-A port (no mounting needed)
+- ~~Samsung FIT Plus~~ removed — see Section 1 notes
 
 **Panel-Mount Components (drilled into enclosure lid or side):**
 - 1× 10-12mm hole for status LED light window
@@ -457,7 +456,7 @@ Equipment travels with installer under humanitarian exemption. No shipping or cu
    - Terminal blocks on enclosure wall or base
    - PoE injector (Velcro/Dual Lock mount)
    - Modem (Velcro/Dual Lock mount)
-   - Samsung FIT Plus plugs directly into Pi USB-A port
+   - ~~Samsung FIT Plus~~ removed from build (UAS issue)
 
 2. **Drill panel holes** in enclosure lid or side
    - 1× 10-12mm hole for LED light window
@@ -472,7 +471,7 @@ Equipment travels with installer under humanitarian exemption. No shipping or cu
 
 4. **Connect peripherals**
    - Modem to Pi 5 via USB
-   - Samsung FIT Plus into Pi 5 USB-A port
+   - ~~Samsung FIT Plus~~ removed from build (UAS issue)
    - Proxicast ANT-122-S02 cables to modem SMA ports (main + diversity)
    - Cat6 from PoE injector to camera (via cable gland)
    - Rain gauge serial TX/RX + 12V power to Pi-EzConnect UART terminals (via cable gland)
@@ -585,7 +584,7 @@ Deployment is successful when:
 - [ ] LTE connectivity stable (registered with Indonesian network)
 - [ ] Status LED indicates system health accurately
 - [ ] Maintenance mode accessible via pushbutton
-- [ ] Power consumption <50 Wh/day (verified with solar controller)
+- [ ] Power consumption <120 Wh/day (verified with solar controller; see ISS-001 for corrected budget ~118 Wh/day)
 - [ ] System runs for 7 days without intervention
 - [ ] All enclosures properly sealed (no water ingress after rain)
 - [ ] PMI staff trained on basic troubleshooting
@@ -596,6 +595,7 @@ Deployment is successful when:
 
 | Date | Version | Changes | Author |
 |------|---------|---------|--------|
+| 2026-04-05 | 2.6 | Samsung FIT Plus USB drive removed (UAS boot storm, known_issues.md #1); captures on SD card rootfs. Power target corrected from <50 to <120 Wh/day per ISS-001. Circuit diagram updated for Witty Pi 5 RTC and USB removal. | tjordan + Claude (Opus 4.6) |
 | 2026-04-01 | 2.5 | Replaced 3x IP67 panel-mount LEDs (Red/Yellow/Green) + resistors + relay channels with single WS2812B NeoPixel on GPIO 18 (5V Pi rail). Saves $19.60, frees relay channels, config-driven via `/etc/orc/led-status.yaml`. See `docs/LED_STATUS_SPEC.md` | Claude (Opus 4.6) |
 | 2026-01-30 | 2.4 | Replaced DFRobot SEN0575 tipping bucket rain gauge with Hydreon RG-15 solid-state optical rain gauge ($99 vs $48) — no moving parts, self-cleaning, RS232 3.3V TTL direct to Pi UART, ±10% accuracy; removed mount bracket and cable (built-in mounting, powered from 12V system) | Claude (Opus 4.5) |
 | 2026-01-30 | 2.3 | Replaced M.2 SATA SSD + USB enclosure with Samsung FIT Plus 256GB USB flash drive — IP67, smaller, cheaper ($25 vs $65), no mounting needed | Claude (Opus 4.5) |
