@@ -390,7 +390,22 @@ coating (Pre-Assembly Checklist Step 3), then enclosure preparation.**
 
 <a href="images/sukabumi/enclosure-opened.png"><img src="images/sukabumi/enclosure-opened.png" alt="NEMA 4X enclosure opened showing interior with removable mounting plate, gasket seal on door, and latch" width="400"></a>
 
-**Tools needed:** Drill, step bit or hole saw, marker
+**Tools needed:** Drill, sized drill bits or hole saws, step bit (backup), marker
+
+> **Lesson learned (Sukabumi 2026-04-05):** Drill ALL enclosure holes
+> (especially the antenna hole on top) BEFORE installing the mounting
+> plate. If you drill after the plate is in, you'll need to cup the hole
+> from the inside to catch metal shavings so they don't land on your
+> wired-up components. It works, but it's easier to drill into an empty
+> box. Future builds: do this step with the plate removed.
+
+> **Drilling tip:** Use a sized drill bit or hole saw matched to each hole
+> diameter whenever possible. Step bits are convenient but it's easy to
+> overshoot by one step, and an oversized hole means a sloppy gasket seal.
+> Bulkhead connectors, Gore vents, and antenna mounts all rely on a snug
+> fit to maintain IP rating — slop is the enemy. If you have access to a
+> drill press or a drill guide, use it. A clean, right-sized hole is worth
+> the extra setup time.
 
 1. **Mark and drill enclosure holes:**
    - 2× M12 holes for Gore vents (opposite sides for airflow)

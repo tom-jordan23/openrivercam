@@ -797,8 +797,17 @@ preparation.**
 ### Step 10: Prepare Enclosure and Install Bulkheads
 
 **Do not drill the enclosure until the mounting plate assembly is tested.**
+**Drill all holes with the mounting plate removed** — avoids metal shavings
+landing on wired components. (See Sukabumi build note in ASSEMBLY_SUKABUMI.md.)
 
-**Tools needed:** Drill, step bit, marker
+**Tools needed:** Drill, sized drill bits or hole saws, step bit (backup), marker
+
+> **Drilling tip:** Use a sized drill bit or hole saw matched to each hole
+> diameter whenever possible. Step bits are convenient but it's easy to
+> overshoot by one step, and an oversized hole means a sloppy gasket seal.
+> Bulkhead connectors, Gore vents, and antenna mounts all rely on a snug
+> fit to maintain IP rating — slop is the enemy. If you have access to a
+> drill press or a drill guide, use it.
 
 1. **Mark hole positions:**
    - 2x M12 holes for Gore vents
