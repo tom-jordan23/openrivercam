@@ -272,9 +272,9 @@ For coating approximately 10 complete board sets (Raspberry Pi 5 + 2-3 HATs each
     - Mask the 4-pin JST fan connector (located between GPIO and USB ports)
     - Use Kapton tape or small latex finger cot over connector
 
-13. **RTC Battery Connector (2-pin JST):**
-    - Mask the 2-pin JST connector for RTC battery (near SD card slot)
-    - Use Kapton tape or small latex finger cot
+13. **RTC Battery Connector (2-pin JST — J5):**
+    - Pi 5 J5 BAT connector is NOT USED (ML-2020 connector failed; Witty Pi 5 provides RTC)
+    - Still mask to prevent solder-bridge risk from coating: use Kapton tape
 
 14. **Heat Sink Mounting Points:**
     - Mask the four spring-loaded push-pin mounting holes/standoffs
@@ -995,7 +995,7 @@ Before applying power to coated boards:
 - [ ] Test network connectivity and data transfer
 - [ ] Verify USB 3.0 speeds
 - [ ] Test GPIO functionality with simple LED circuit
-- [ ] Verify RTC functionality if RTC battery is installed
+- [ ] Verify Witty Pi 5 RTC functionality (`wp5` → check RTC Time)
 
 ### 10.4 Witty Pi 5 HAT+ Functional Test
 

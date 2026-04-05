@@ -349,6 +349,39 @@ if [ -f "$BASHRC" ]; then
     fi
 fi
 
+# ─── Phase 6b: Witty Pi 5 HAT+ software ─────────────────────────
+log ""
+log "--- Phase 6b: Witty Pi 5 ---"
+
+if command -v wp5 >/dev/null 2>&1; then
+    log "Witty Pi 5 software already installed (wp5)"
+else
+    log "Installing Witty Pi 5 software..."
+    WP5_DEB="/tmp/wp5_latest.deb"
+    if [ "$DRY_RUN" -eq 0 ]; then
+        wget -q https://www.uugear.com/repo/WittyPi5/wp5_latest.deb -O "$WP5_DEB" \
+            && sudo apt install -y "$WP5_DEB" \
+            && rm -f "$WP5_DEB" \
+            && log "Witty Pi 5 software installed" \
+            || warn "Witty Pi 5 software install failed — install manually"
+    fi
+fi
+
+# Sync system time to Witty Pi 5 RTC (RTC may have stale time on first install)
+if command -v wp5 >/dev/null 2>&1 && [ "$DRY_RUN" -eq 0 ]; then
+    log "Syncing system time to Witty Pi 5 RTC..."
+    echo "1" | wp5 >/dev/null 2>&1 && echo "14" | wp5 >/dev/null 2>&1
+    log "RTC sync complete"
+fi
+
+# Disable ORC-OS native RTC power management (Pi 5 ML-2020 battery failed;
+# Witty Pi 5 HAT+ now owns RTC and power scheduling)
+if systemctl list-unit-files orc-rpi5-power-management.service >/dev/null 2>&1; then
+    log "Disabling orc-rpi5-power-management.service (replaced by Witty Pi 5)"
+    run sudo systemctl disable orc-rpi5-power-management.service 2>/dev/null || true
+    run sudo systemctl stop orc-rpi5-power-management.service 2>/dev/null || true
+fi
+
 # ─── Phase 7: Service enablement ─────────────────────────────────
 log ""
 log "--- Phase 7: Services ---"

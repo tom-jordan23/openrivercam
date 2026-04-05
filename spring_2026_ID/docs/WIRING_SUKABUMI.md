@@ -40,11 +40,12 @@
 │   │  │ Geekworm    │◄── GPIO terminals for relay,        │               │ │
 │   │  │ G469        │    LED, button, sensors             │               │ │
 │   │  ├─────────────┤                                    │               │ │
+│   │  │ Witty Pi 5  │◄── RTC: CR2032 coin cell (0x51)    │               │ │
+│   │  │ HAT+        │    Power scheduling via wp5 daemon │               │ │
+│   │  ├─────────────┤                                    │               │ │
 │   │  │   Pi 5      │◄── USB: Flash Drive, Modem         │               │ │
 │   │  │   8GB       │    ETH: PoE Switch uplink          │               │ │
-│   │  │  (ML-2020   │    RTC: ML-2020 coin cell          │               │ │
-│   │  │   RTC cell) │    J2:  External power button      │               │ │
-│   │  │             │    Scheduling via built-in RTC     │               │ │
+│   │  │             │    J2:  External power button      │               │ │
 │   │  └─────────────┘                                    │               │ │
 │   └─────────────────────────────────────────────────────┘               │ │
 │                                                                            │
@@ -128,7 +129,7 @@ SOLAR CONTROLLER 12V OUTPUT
 │                │      │ 12V → 5V    │      │ (fused)     │──► WS2812B VCC
 └────────────────┘      └─────────────┘      └─────────────┘
 
-Pi 5 built-in RTC (ML-2020 coin cell) handles scheduling.
+Witty Pi 5 HAT+ (CR2032 coin cell, I2C 0x51) handles RTC and power scheduling.
 
 12V REGULATED PATH (CAMERA):
 ┌────────────────┐      ┌─────────────┐      ┌─────────────┐
@@ -193,7 +194,7 @@ GND ───────────────►│  │  12V-   │       �
                     └─────────────────────────────────────┘
 
 OPERATION:
-1. Pi 5 RTC wakes Pi (or external power button brief press) → Pi boots
+1. Witty Pi 5 wakes Pi on schedule (or button press) → Pi boots
 2. GPIO 24 set HIGH → Relay CH1 energized → NO closes → 12V to PoE switch
 3. PoE switch provides 48V PoE to camera over Ethernet
 4. Camera boots (~45-60s), establishes DHCP IP

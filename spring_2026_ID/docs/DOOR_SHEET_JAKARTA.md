@@ -192,13 +192,13 @@ Driven by 1 GPIO data pin + 5V power. No relay channels used.
 
 ---
 
-## RTC Battery
+## RTC (Witty Pi 5 HAT+)
 
-- **Type:** ML-2020 (rechargeable manganese lithium, 3.0V)
-- **Connector:** J5 (BAT) on Pi 5, between USB-C and HDMI
-- **Charging:** Enabled via `/boot/firmware/config.txt`:
-  `dtparam=rtc_bbat_vchg=3000000`
-- **NEVER use CR2020/CR2032** (non-rechargeable — will leak if charged)
+- **Type:** CR2032 coin cell (non-rechargeable, on Witty Pi 5 board)
+- **I2C address:** 0x51
+- **Software:** `wp5` CLI, `wp5d` daemon (auto-starts at boot)
+- **Pi 5 native RTC (J5):** Not used — ML-2020 connector failed on both boards
+- **No `dtparam=rtc_bbat_vchg` needed** — Witty Pi 5 has its own RTC
 
 ---
 

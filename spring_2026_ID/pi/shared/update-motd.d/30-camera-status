@@ -24,21 +24,21 @@ else
     echo "  Relay CH1:  unknown (GPIO $GPIO_PIN not readable)"
 fi
 
-# RTC battery status
-RTC_BASE="/sys/devices/platform/soc@107c000000/soc@107c000000:rpi_rtc/rtc/rtc0"
-if [ -f "$RTC_BASE/battery_voltage" ]; then
-    bat_uv=$(cat "$RTC_BASE/battery_voltage" 2>/dev/null)
-    bat_v=$(awk "BEGIN {printf \"%.2f\", $bat_uv / 1000000}")
-    chg_cfg=$(grep -o 'rtc_bbat_vchg=[0-9]*' /boot/firmware/config.txt 2>/dev/null | head -1)
-    if [ -n "$chg_cfg" ]; then
-        chg_uv=${chg_cfg#*=}
-        chg_v=$(awk "BEGIN {printf \"%.1f\", $chg_uv / 1000000}")
-        echo "  RTC battery: ${bat_v}V (charging to ${chg_v}V)"
+# Witty Pi 5 HAT+ status (RTC + power management)
+if command -v wp5 >/dev/null 2>&1; then
+    WP5_OUT=$(echo "14" | wp5 2>/dev/null)
+    WP5_RTC=$(echo "$WP5_OUT" | grep "RTC Time:" | head -1 | sed 's/.*RTC Time: //')
+    WP5_TEMP=$(echo "$WP5_OUT" | grep "Temperature:" | head -1 | sed 's/.*Temperature: //; s/ .*//')
+    WP5_VIN=$(echo "$WP5_OUT" | grep "V-IN:" | head -1 | sed 's/.*V-IN: //; s/ .*//')
+    if [ -n "$WP5_RTC" ]; then
+        echo "  Witty Pi 5: RTC ${WP5_RTC}  Temp ${WP5_TEMP}  V-IN ${WP5_VIN}"
     else
-        echo "  RTC battery: ${bat_v}V (charging DISABLED — add dtparam=rtc_bbat_vchg to config.txt)"
+        echo "  Witty Pi 5: detected but could not read status"
     fi
+elif i2cdetect -y 1 2>/dev/null | grep -q "51"; then
+    echo "  Witty Pi 5: hardware detected (0x51) but wp5 software not installed"
 else
-    echo "  RTC battery: not detected"
+    echo "  Witty Pi 5: not detected"
 fi
 
 PI_IP=$(ip -4 -o addr show eth0 2>/dev/null | awk '{print $4}')

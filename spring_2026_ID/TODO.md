@@ -71,9 +71,9 @@ Moved to Completed table at bottom of file.
 
 **⚠ PIVOT: Witty Pi 5 HAT+ reinstated (both stations)**
 Pi 5 RTC battery Molex connector broke on BOTH boards (traces tore). Switching to Witty Pi 5.
-- [ ] Install Witty Pi 5 on Jakarta (on hand) — 3-board stack: Pi 5 + Witty Pi 5 + G469
-- [ ] Verify G469 still seats properly on extended stack
-- [ ] Verify 5V power delivery through Witty Pi (DDR-60G-5 → Witty Pi → Pi)
+- [x] Install Witty Pi 5 on Jakarta (on hand) — 3-board stack: Pi 5 + Witty Pi 5 + G469
+- [x] Verify G469 still seats properly on extended stack
+- [x] Verify 5V power delivery through Witty Pi (DDR-60G-5 → Witty Pi → Pi) — V-IN 11.9V, V-OUT 5.3V, I-OUT ~1A
 - [ ] Sukabumi Witty Pi ordered next-day from Adafruit — expected Tuesday April 7
 - [ ] Buy CR2032 coin cell batteries for Witty Pi 5 (need 2 + at least 2 spares)
 
@@ -106,8 +106,17 @@ Pi 5 RTC battery Molex connector broke on BOTH boards (traces tore). Switching t
 ### Both stations
 - [ ] Flash new ORC-OS image from Hessel (when available)
 - [ ] Run deploy.sh (once written) or manual overlay re-application
-- [ ] Install Witty Pi 5 software/SDK and configure wake/sleep schedule (both stations)
-- [ ] Configure ORC-OS capture schedule
+- [x] Install Witty Pi 5 software (wp5 v5.0.0 deb) — Jakarta done 2026-04-05
+- [x] Sync Witty Pi 5 RTC to system clock — Jakarta done 2026-04-05
+- [x] Disable orc-rpi5-power-management.service — Jakarta done 2026-04-05
+- [ ] Set Witty Pi "Default state when powered" to ON for Jakarta (`wp5` → 11 → 1)
+- [ ] Configure Witty Pi wake/sleep schedule for Sukabumi (`wp5` → 6)
+- [ ] Test Witty Pi schedule: short cycle (1m on / 2m off, 3 cycles)
+- [ ] Test Witty Pi schedule: production cycle (5m on / 10m off, 4+ cycles)
+- [ ] ORC-OS web UI: configure daemon settings per station:
+  - Jakarta (always-on): "Shutdown after task" OFF, "Reboot after time" 3600s or disabled
+  - Sukabumi (duty-cycle): "Shutdown after task" ON, "Reboot after time" ~240s (safety net)
+- [ ] Configure ORC-OS capture schedule (video filename template, daemon runner)
 - [ ] Camera ISAPI config via camtool.py
 - [ ] orc-capture end-to-end test (relay → camera boot → RTSP → quality gate)
 - [ ] Rain gauge serial communication test

@@ -50,23 +50,28 @@ grep -E "i2c_arm|bbat|enable_uart|usb_max_current" /boot/firmware/config.txt
 
 Expected (uncommented, at end of file):
 ```
-dtparam=rtc_bbat_vchg=3000000
 enable_uart=1
 dtparam=i2c_arm=on
 usb_max_current_enable=1
 ```
 
+(Note: `dtparam=rtc_bbat_vchg` is NOT needed — Witty Pi 5 HAT+ provides RTC with CR2032 backup)
+
 ```bash
 ls /dev/i2c-1                    # I2C bus enabled
 ls /dev/ttyAMA0                  # UART enabled for rain gauge
+i2cdetect -y 1 | grep -E "44|51" # SHT40 (0x44) + Witty Pi 5 (0x51)
+systemctl is-active wp5d         # Witty Pi 5 daemon running
 ```
 
 - [ ] `dtparam=i2c_arm=on` present (uncommented)
-- [ ] `dtparam=rtc_bbat_vchg=3000000` present
 - [ ] `enable_uart=1` present
 - [ ] `usb_max_current_enable=1` present (required — Pi powered via 5V GPIO rail, no USB-C PD)
 - [ ] `/dev/i2c-1` exists
 - [ ] `/dev/ttyAMA0` exists
+- [ ] Witty Pi 5 detected at I2C 0x51
+- [ ] `wp5d` daemon active
+- [ ] Witty Pi 5 RTC time correct (check via `wp5`)
 
 ### 3. System Config
 

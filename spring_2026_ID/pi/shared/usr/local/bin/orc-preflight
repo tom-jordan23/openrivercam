@@ -238,27 +238,28 @@ else
     fi
 fi
 
-# RTC battery charging (Pi 5 ships with charging disabled — must enable for ML-2020)
-CONFIG_TXT="/boot/firmware/config.txt"
-RTC_PARAM="dtparam=rtc_bbat_vchg=3000000"
-if [ -f "$CONFIG_TXT" ]; then
-    if grep -q "^${RTC_PARAM}$" "$CONFIG_TXT"; then
-        pass "RTC battery charging enabled (ML-2020, 3.0V)"
-    elif grep -q "^dtparam=rtc_bbat_vchg=" "$CONFIG_TXT"; then
-        CURRENT=$(grep "^dtparam=rtc_bbat_vchg=" "$CONFIG_TXT")
-        warn "RTC battery charging set but not to ML-2020 value: $CURRENT"
+# Witty Pi 5 HAT+ (RTC + power management — replaces Pi 5 native ML-2020 RTC battery)
+if i2cdetect -y 1 2>/dev/null | grep -q "51"; then
+    pass "Witty Pi 5 HAT+ detected on I2C bus (0x51)"
+else
+    fail "Witty Pi 5 HAT+ NOT detected on I2C bus (expected at 0x51)"
+    echo "         Check that Witty Pi 5 is seated on GPIO header and CR2032 battery is installed."
+fi
+if command -v wp5 >/dev/null 2>&1; then
+    pass "Witty Pi 5 software installed (wp5)"
+    if systemctl is-active --quiet wp5d 2>/dev/null; then
+        pass "Witty Pi 5 daemon running (wp5d)"
     else
-        fail "RTC battery charging NOT enabled in $CONFIG_TXT"
-        echo "         RTC will lose time during power outages without this."
-        echo "         Add: $RTC_PARAM"
-        if [ "$FIX" -eq 1 ]; then
-            echo "  ... appending $RTC_PARAM to $CONFIG_TXT"
-            echo "" | sudo tee -a "$CONFIG_TXT" >/dev/null
-            echo "# RTC battery charging for ML-2020 (3.0V manganese lithium)" | sudo tee -a "$CONFIG_TXT" >/dev/null
-            echo "$RTC_PARAM" | sudo tee -a "$CONFIG_TXT" >/dev/null
-            echo "  ... done (reboot required to take effect)"
-        fi
+        warn "Witty Pi 5 daemon not running (wp5d) — start with: sudo systemctl start wp5d"
     fi
+else
+    fail "Witty Pi 5 software not installed — install wp5_latest.deb from UUGear"
+fi
+
+# (legacy check removed: ML-2020 RTC battery connector failed on both boards)
+CONFIG_TXT="/boot/firmware/config.txt"
+if [ -f "$CONFIG_TXT" ]; then
+    :  # config.txt accessible, no ML-2020 checks needed
 else
     if [ -f "$QEMU_RULES" ]; then
         warn "$CONFIG_TXT not accessible (/boot/firmware not mounted — see above)"
@@ -420,11 +421,22 @@ else
     fail "I2C bus not available (/dev/i2c-1 missing — enable with raspi-config)"
 fi
 
-# RTC battery charging
-if grep -q "^dtparam=rtc_bbat_vchg" /boot/firmware/config.txt 2>/dev/null; then
-    pass "RTC battery charging enabled in config.txt"
-else
-    warn "RTC battery charging not configured (dtparam=rtc_bbat_vchg missing from config.txt)"
+# Witty Pi 5 RTC time sanity check
+if command -v wp5 >/dev/null 2>&1; then
+    WP5_RTC=$(echo "14" | wp5 2>/dev/null | grep "RTC Time:" | head -1 | sed 's/.*RTC Time: //')
+    SYS_EPOCH=$(date -u +%s)
+    if [ -n "$WP5_RTC" ]; then
+        RTC_EPOCH=$(date -u -d "$WP5_RTC" +%s 2>/dev/null)
+        if [ -n "$RTC_EPOCH" ]; then
+            DRIFT=$(( SYS_EPOCH - RTC_EPOCH ))
+            DRIFT=${DRIFT#-}  # absolute value
+            if [ "$DRIFT" -le 5 ]; then
+                pass "Witty Pi 5 RTC in sync with system clock (${WP5_RTC})"
+            else
+                warn "Witty Pi 5 RTC drift: ${DRIFT}s (RTC: ${WP5_RTC}) — sync with: wp5 option 1"
+            fi
+        fi
+    fi
 fi
 
 # USB max current (required when powering Pi via 5V GPIO rail — no USB-C PD negotiation)

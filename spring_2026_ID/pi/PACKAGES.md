@@ -54,18 +54,22 @@ sudo pip install --break-system-packages adafruit-blinka adafruit-circuitpython-
 sudo usermod -aG dialout $USER
 ```
 
-## TODO: Witty Pi 5 HAT+ Software
+## Witty Pi 5 HAT+ Software (wp5)
 
-The Witty Pi 5 HAT+ requires UUGear's software package for RTC sync and
-wake/sleep scheduling. This is not yet integrated into the deploy workflow.
+Installed via `deploy.sh` Phase 6b. Replaces the Pi 5 native RTC (ML-2020
+battery connector failed on both boards).
 
-- **Repository:** https://www.uugear.com/product/witty-pi-5/ (install script
-  from UUGear)
-- **Provides:** `wittypi` daemon, `schedule.wpi` scheduling DSL, RTC ↔ system
-  clock sync, safe shutdown on low voltage
-- **Action:** Add Witty Pi 5 software installation to `deploy.sh` during
-  software integration week. Requires testing wake/sleep schedule with
-  orc-capture cycle timing.
+- **Package:** `wp5_latest.deb` from https://www.uugear.com/repo/WittyPi5/
+- **Command:** `wp5` (interactive CLI for RTC sync, scheduling, power config)
+- **Daemon:** `wp5d.service` (auto-starts at boot, syncs RTC → system clock)
+- **Poweroff hook:** `wp5d_poweroff.service` (informs Witty Pi when Pi halts)
+- **Reboot hook:** `wp5d_reboot.service` (informs Witty Pi on reboot)
+- **I2C address:** 0x51 (no GPIO pins consumed)
+- **RTC backup:** CR2032 coin cell on HAT board
+- **Schedule files:** Stored on Witty Pi 5 onboard flash (16MB), managed via
+  `wp5` menu option 6 (choose schedule) and Admin → option 7 (load/generate)
+- **Native RTC service:** `orc-rpi5-power-management.service` is disabled by
+  deploy.sh (Pi 5 ML-2020 RTC has no battery backup)
 
 ## Already in Base Image (no action needed)
 

@@ -90,13 +90,13 @@ cat /boot/firmware/config.txt | grep -E "i2c_arm|bbat"
 
 Expected config.txt entries:
 - `dtparam=i2c_arm=on` — enables I2C bus 1 on GPIO 2/3
-- `dtparam=rtc_bbat_vchg=3000000` — trickle-charges RTC backup battery at 3V
 - `usb_max_current_enable=1` — raises USB current limit (required when powering Pi via 5V GPIO rail)
 
 - [ ] `/dev/i2c-1` exists
-- [ ] RTC battery charging enabled (`rtc_bbat_vchg=3000000`)
+- [ ] Witty Pi 5 detected at 0x51 (`i2cdetect -y 1`)
+- [ ] `wp5d` daemon running (`systemctl is-active wp5d`)
+- [ ] Witty Pi 5 RTC time correct (`wp5` → check RTC Time line)
 - [ ] SHT40 sensor at 0x44 (if connected)
-- [ ] RTC time correct
 - [ ] If SHT40 connected: `orc-sensors` returns readings and appends to CSV
 
 ### 5. USB Storage — DEFERRED
