@@ -200,7 +200,7 @@ Keep the following at the local PMI office for field service. Covers both Sukabu
 | USB-RS485 adapter | 1 | |
 | IP67 panel-mount LEDs (Red/Yellow/Green) | 1 set | Status indication |
 | Maintenance mode button/switch | 1 | |
-| Inline fuse holders + fuses (5A, 10A) | 5 each | |
+| DIN rail fuse holders + 5x20mm glass tube fuses (5A slow blow) | 5 each | Same type used at both sites |
 | Cable glands (M12, M16, M20) | 3 each | |
 | Terminal blocks | 6 | Type TBD pending mounting research |
 | **Mounting hardware** | 1 kit | DIN rail clips, standoffs, stainless hardware |

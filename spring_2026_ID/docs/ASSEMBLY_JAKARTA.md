@@ -337,7 +337,7 @@ sudo systemctl start orc-sensors.timer
 - [ ] LiFePO4 100Ah battery (source locally)
 - [ ] 20A LiFePO4 charger (source locally or carry)
 - [ ] Power distribution blocks (12-position, DIN rail)
-- [ ] Blade fuse holders + fuses (5A, 15A)
+- [ ] DIN rail fuse holders + 5x20mm glass tube fuses (5A slow blow)
 
 ### Camera System
 - [ ] ANNKE C1200 PoE camera (x1, factory-sealed IP67)
