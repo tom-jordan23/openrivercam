@@ -325,6 +325,20 @@ else
     log "Timezone already UTC"
 fi
 
+# Enable persistent journaling (survives reboots for post-mortem debugging)
+if ! grep -q "^Storage=persistent" /etc/systemd/journald.conf 2>/dev/null; then
+    log "Enabling persistent journal (50M cap)"
+    if [ "$DRY_RUN" -eq 0 ]; then
+        sudo sed -i 's/^#\?Storage=.*/Storage=persistent/' /etc/systemd/journald.conf
+        if ! grep -q "^SystemMaxUse=" /etc/systemd/journald.conf; then
+            sudo sed -i 's/^#\?SystemMaxUse=.*/SystemMaxUse=50M/' /etc/systemd/journald.conf
+        fi
+        sudo systemctl restart systemd-journald
+    fi
+else
+    log "Persistent journal already enabled"
+fi
+
 # Add nofail to boot fstab entry (prevent boot failure if boot partition has issues)
 if [ -f /etc/fstab ]; then
     if grep -q "/boot/firmware" /etc/fstab && ! grep "/boot/firmware" /etc/fstab | grep -q "nofail"; then

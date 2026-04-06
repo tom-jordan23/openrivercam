@@ -202,6 +202,23 @@ Driven by 1 GPIO data pin + 5V power. No relay channels used.
 
 ---
 
+## ORC-OS Daemon Settings
+
+| Setting | Value | Notes |
+|---------|-------|-------|
+| Shutdown after task | OFF | Jakarta is always-on (AC power) |
+| Reboot after | 86400s (24hr) | Safety net: auto-reboots if stuck, limits data loss to ~1 cycle |
+| Capture interval | 15 min | Via orc-capture.timer (`OnCalendar=*:0/15`) |
+| Relay mode | always | PoE camera stays powered continuously |
+
+**To change:** ORC-OS web UI > Settings, or direct DB edit:
+```
+python3 -c "import sqlite3; c=sqlite3.connect('/home/pi/.ORC-OS/orc-os.db'); c.execute('UPDATE settings SET reboot_after=86400 WHERE id=1'); c.commit()"
+```
+**Note:** UI enforces minimum 300s. Setting 0 (disable) requires direct DB edit.
+
+---
+
 ## Climate Control
 
 | Component | Function | Control |
