@@ -1095,6 +1095,148 @@ from any device on your tailnet, regardless of LTE carrier NAT.
 
 ---
 
+## ORC Software Configuration
+
+All hardware verified, network up, camera reachable. Now configure ORC-OS
+for automated capture and upstream data sync.
+
+### ORC-OS Web UI Initial Setup
+
+Access at `http://orc-jakarta.local:5173/` (or use IP address).
+
+- [x] Set ORC-OS web dashboard password on first access
+- [x] **Disk Management** (`/disk_management`):
+  - Minimum free space: **5 GB**
+  - Cleanup check frequency: **300 seconds** (5 minutes)
+- [x] **LiveORC API** (`/callback_url`) — do this BEFORE daemon settings:
+  1. On **LiveORC server** (`https://openrivercam.endlessprojects.info/admin/`):
+     create a site for Jakarta with GPS coordinates. Note the **Site ID number**
+     (visible in the site detail URL or list). Jakarta = Site 3.
+  2. On **ORC-OS** (`/callback_url`):
+     - Server URL: `https://openrivercam.endlessprojects.info` (no `/admin/` or `/api` suffix)
+     - Username and password (LiveORC credentials)
+     - Submit — username/password will be replaced by access + refresh tokens
+     - Site ID: **3** (Jakarta)
+     - Retry time: set for intermittent LTE connectivity (e.g. 120 seconds)
+     - Verify green "callback URL created" banner
+- [x] **Daemon Settings** (`/settings`):
+  - Video filename template: `{%Y%m%dT%H%M%S}.mp4` (matches orc-capture output)
+  - Parse time from filename: **ON**
+  - Verify red confirmation message shows: `/home/pi/Videos/YYYYMMDDTHHMMSS.mp4`
+  - Allowed time difference (video ↔ water level): **900 seconds**
+  - "Shutdown after task": **OFF** (Jakarta is always-on)
+  - "Reboot after time": **3600 seconds** (hourly health reboot)
+  - Video configuration: select finalized config (after calibration — deferred to field)
+  - LiveORC sync: **time series + analysis images** (full video disabled to save bandwidth)
+  - Daemon runner: **OFF** until end-to-end test passes, then **ON**
+- [ ] **Water Level** (`/water_level`) — deferred to field (requires site survey):
+  - Configure retrieval script or manual entry method
+  - Set sync tolerance (seconds) between video and water level
+- [ ] **Camera config** via camtool.py:
+  - Push streaming config (1920x1080, H.264, 16 Mbps CBR, 12.5fps)
+  - Push image config (IR-only supplement, auto IR cut filter)
+  - Push NTP config (Pi as NTP server: 192.168.50.1)
+  - Verify RTSP stream: `orc-capture --skip-relay --dry-run`
+
+### Witty Pi 5 Power Schedule (Jakarta)
+
+Jakarta is always-on (AC power). The Witty Pi just needs to pass power through.
+
+- [ ] Set "Default state when powered" to **ON** (`wp5` → 11 → 1)
+- [ ] Verify Pi auto-starts when AC power is applied (no button press needed)
+
+### Pangolin Remote Access
+
+Pangolin provides remote HTTPS access to the ORC-OS web UI via a tunneled
+reverse proxy. Each station has its own Newt client credentials (ID + secret)
+issued from the Pangolin dashboard. **Do not commit credentials to version
+control** — they are stored in `/etc/newt/newt.env` on each Pi (mode 600).
+
+1. Install Newt client:
+   ```
+   curl -fsSL https://static.pangolin.net/get-newt.sh | bash
+   ```
+2. Create credentials file (`/etc/newt/newt.env`):
+   ```
+   sudo install -d -m 0755 /etc/newt
+   sudo tee /etc/newt/newt.env > /dev/null <<EOF
+   NEWT_ID=<site-id-from-pangolin>
+   NEWT_SECRET=<site-secret-from-pangolin>
+   NEWT_ENDPOINT=https://<pangolin-server>
+   EOF
+   sudo chmod 600 /etc/newt/newt.env
+   ```
+3. Create systemd service (`/etc/systemd/system/newt.service`):
+   ```
+   sudo tee /etc/systemd/system/newt.service > /dev/null <<EOF
+   [Unit]
+   Description=Newt Pangolin tunnel client
+   After=network-online.target
+   Wants=network-online.target
+
+   [Service]
+   Type=simple
+   EnvironmentFile=/etc/newt/newt.env
+   ExecStart=/usr/local/bin/newt --id ${NEWT_ID} --secret ${NEWT_SECRET} --endpoint ${NEWT_ENDPOINT}
+   Restart=on-failure
+   RestartSec=5s
+
+   [Install]
+   WantedBy=multi-user.target
+   EOF
+   ```
+4. Enable and start:
+   ```
+   sudo systemctl daemon-reload
+   sudo systemctl enable --now newt.service
+   ```
+5. Verify:
+   ```
+   sudo systemctl status newt.service
+   journalctl -u newt.service -f
+   ```
+
+- [ ] Install Newt client binary
+- [ ] Create `/etc/newt/newt.env` with site credentials (mode 600)
+- [ ] Create and enable `newt.service`
+- [ ] Verify tunnel connects (check Pangolin dashboard shows site online)
+- [ ] Verify HTTPS access proxy URL loads ORC-OS web UI from offsite
+
+**Known issue:** arm64 builds may show "WireGuard device is not initialized"
+on startup (fosrl/newt#237). If this occurs, check that issue for workarounds.
+
+### LiveORC Server Check
+
+LiveORC server: `https://openrivercam.endlessprojects.info/`
+Hosted on AWS. Startup script: `/opt/LiveORC/start-liveorc.sh`
+
+- [x] Verify AWS LiveORC instance is running
+- [x] Confirm API endpoint is reachable (HTTPS)
+- [x] Create Jakarta site in LiveORC admin (Site ID: 3)
+- [ ] Test data upload (manual or via daemon — happens during end-to-end test)
+
+**If SSL cert expires** (Let's Encrypt, auto-renews inside container):
+1. SSH into AWS instance (SSM session or SSH)
+2. Stop the stack: `cd /opt/LiveORC && sudo ./liveorc.sh stop`
+3. Restart with SSL: `sudo ./start-liveorc.sh`
+4. Verify: `curl -I https://openrivercam.endlessprojects.info/`
+5. Should return HTTP 302 with valid cert. If cert still expired, check
+   that ports 80 and 443 are open in the AWS security group (Let's Encrypt
+   HTTP-01 challenge needs port 80).
+
+**Note:** The device won't appear in LiveORC's device list until the daemon
+sends its first data sync. This is expected — it registers on first upload.
+
+### End-to-End Verification
+
+- [ ] orc-capture runs successfully (relay → camera → RTSP → quality gate → file saved)
+- [ ] Daemon picks up captured video and processes it
+- [ ] Data syncs to LiveORC server
+- [ ] LED status shows green (healthy)
+- [ ] Leave running for soak test (minimum 4 hours, ideally overnight)
+
+---
+
 ## Power Budget Verification
 
 After installation, verify actual power consumption:
@@ -1123,7 +1265,7 @@ See `TROUBLESHOOTING.md` for detailed diagnostics.
 | Symptom | Check |
 |---------|-------|
 | No power | AC voltage? Surge protector? PSU LED? |
-| No Pi boot | Fuse? 12V at terminals? DDR-60G-5 output? 5V at GPIO pins? Power button pressed? J2 wiring? |
+| No Pi boot | Fuse F3? 12V at Witty Pi VIN? 5V at GPIO pins? Power button pressed? J2 wiring? |
 | Cameras offline | PoE switch powered? Relay GPIO wiring correct? Inline fuse intact? Cable continuity? Ping test? |
 | No LTE | Antenna? SIM? IMEI registered? |
 | Battery not charging | Charger LED? Battery terminals? |

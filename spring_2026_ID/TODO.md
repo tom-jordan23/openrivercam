@@ -65,7 +65,7 @@ Moved to Completed table at bottom of file.
 - [x] Build inside wiring harnesses — Sukabumi (rain gauge + DS18B20) ✓ isolation passed
 - [x] Build inside wiring harnesses — Jakarta (rain gauge + DS18B20)
 - [ ] Zip tie and strain relief all internal wiring (both stations)
-- [ ] Install both stations into enclosures (DIN rail, cable routing, glands)
+- [x] Install Jakarta into enclosure
 - [ ] Wire fans (Jakarta) — do this once components are in the box
 - **Stretch:** Finish bottom plates (LED light windows, power button, external connectors)
 
