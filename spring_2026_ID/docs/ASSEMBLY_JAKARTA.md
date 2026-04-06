@@ -1148,62 +1148,25 @@ Jakarta is always-on (AC power). The Witty Pi just needs to pass power through.
 ### Pangolin Remote Access
 
 Pangolin provides remote HTTPS access to the ORC-OS web UI via a tunneled
-reverse proxy. Each station has its own Newt client credentials (ID + secret)
-issued from the Pangolin dashboard. **Do not commit credentials to version
-control** — they are stored in `/etc/newt/newt.env` on each Pi (mode 600).
+reverse proxy. Configuration is handled entirely through the ORC-OS web UI
+(`/pangolin` page) — no manual file editing or CLI setup required on the Pi.
 
-1. Install Newt client:
-   ```
-   curl -fsSL https://static.pangolin.net/get-newt.sh | bash
-   ```
-2. Create credentials file (`/etc/newt/newt.env`):
-   ```
-   sudo install -d -m 0755 /etc/newt
-   sudo tee /etc/newt/newt.env > /dev/null <<EOF
-   NEWT_ID=<site-id-from-pangolin>
-   NEWT_SECRET=<site-secret-from-pangolin>
-   NEWT_ENDPOINT=https://<pangolin-server>
-   EOF
-   sudo chmod 600 /etc/newt/newt.env
-   ```
-3. Create systemd service (`/etc/systemd/system/newt.service`):
-   ```
-   sudo tee /etc/systemd/system/newt.service > /dev/null <<EOF
-   [Unit]
-   Description=Newt Pangolin tunnel client
-   After=network-online.target
-   Wants=network-online.target
+**Important: the Pangolin server URL is not the same as the end-user proxy
+URL.** The server URL (e.g. `https://pangolin.openrivercam.com`) is the
+Pangolin management server where Newt authenticates. The proxy URL (e.g.
+`https://arc-00001.openrivercam.com`) is the public-facing address that
+end users visit to reach the ORC-OS dashboard. Enter the **server URL** in
+the ORC-OS configuration, not the proxy URL — using the proxy URL will
+cause token decode errors (the proxy returns HTML, not the expected JSON).
 
-   [Service]
-   Type=simple
-   EnvironmentFile=/etc/newt/newt.env
-   ExecStart=/usr/local/bin/newt --id ${NEWT_ID} --secret ${NEWT_SECRET} --endpoint ${NEWT_ENDPOINT}
-   Restart=on-failure
-   RestartSec=5s
+- [x] Coordinate with ORC team to create site credentials on the Pangolin dashboard
+- [x] Configure Pangolin connection via ORC-OS web UI (server URL, site ID, secret)
+- [x] Verify tunnel connects (check Pangolin dashboard shows site online)
+- [x] Verify HTTPS proxy URL loads ORC-OS web UI from offsite
 
-   [Install]
-   WantedBy=multi-user.target
-   EOF
-   ```
-4. Enable and start:
-   ```
-   sudo systemctl daemon-reload
-   sudo systemctl enable --now newt.service
-   ```
-5. Verify:
-   ```
-   sudo systemctl status newt.service
-   journalctl -u newt.service -f
-   ```
-
-- [ ] Install Newt client binary
-- [ ] Create `/etc/newt/newt.env` with site credentials (mode 600)
-- [ ] Create and enable `newt.service`
-- [ ] Verify tunnel connects (check Pangolin dashboard shows site online)
-- [ ] Verify HTTPS access proxy URL loads ORC-OS web UI from offsite
-
-**Known issue:** arm64 builds may show "WireGuard device is not initialized"
-on startup (fosrl/newt#237). If this occurs, check that issue for workarounds.
+**Note:** Only HTTPS proxy mode is used (for remote dashboard access).
+Tailscale handles SSH. arm64 WireGuard tunnel mode has a known issue
+(fosrl/newt#237) but this does not affect HTTPS proxy mode.
 
 ### LiveORC Server Check
 
@@ -1228,6 +1191,63 @@ Hosted on AWS. Startup script: `/opt/LiveORC/start-liveorc.sh`
 sends its first data sync. This is expected — it registers on first upload.
 
 ### End-to-End Verification
+
+#### Step 1: Confirm capture produces correctly named files
+
+Run a manual capture and verify the filename matches the ORC-OS template:
+```
+orc-capture
+ls -l /home/pi/Videos/
+```
+Files must be named `YYYYMMDDTHHMMSS.mp4` (e.g. `20260406T172012.mp4`).
+This matches the ORC-OS daemon template `{%Y%m%dT%H%M%S}.mp4`.
+
+**If files are named `video_YYYYMMDD_HHMMSS.mp4` instead:** the deployed
+`/etc/orc-capture.conf` is stale. Re-run `deploy.sh jakarta` or manually
+change `FILENAME_PREFIX=video` to `FILENAME_TEMPLATE=%Y%m%dT%H%M%S` in
+`/etc/orc-capture.conf` and update `/usr/local/bin/orc-capture` to match.
+
+#### Step 2: Verify ORC-OS daemon is active and detecting files
+
+The daemon polls `/home/pi/Videos/` every 5 seconds for new files matching
+the template. It only runs if **both** conditions are met:
+1. Daemon settings are configured in the web UI (`/settings`)
+2. Daemon runner is set to **ON**
+
+**Important:** The daemon scheduler initializes at API startup. If you
+enable the daemon in the web UI after boot, you must restart the API:
+```
+sudo systemctl restart orc-api
+```
+
+Then check the logs to confirm:
+```
+journalctl -u orc-api --no-pager -n 20 | grep -i "video_check_job\|daemon"
+```
+You should see:
+```
+Daemon settings found: setting up interval job "video_check_job" with
+path: /home/pi/Videos and file template: {%Y%m%dT%H%M%S}.mp4
+```
+
+#### Step 3: Confirm videos appear in ORC-OS web UI
+
+Run a capture while the daemon is active:
+```
+orc-capture
+```
+Within 5 seconds, the video should appear in the ORC-OS web UI video list.
+Check the API logs for confirmation:
+```
+journalctl -u orc-api --no-pager -n 10 | grep "Found file"
+```
+You should see: `Found file: /home/pi/Videos/YYYYMMDDTHHMMSS.mp4 with
+timestamp ..., adding to database.`
+
+Videos may show error status if no water level data or video config is set
+yet — this is expected during bench testing.
+
+#### Step 4: Full pipeline (deferred to field)
 
 - [ ] orc-capture runs successfully (relay → camera → RTSP → quality gate → file saved)
 - [ ] Daemon picks up captured video and processes it
@@ -1294,8 +1314,15 @@ See `TROUBLESHOOTING.md` for detailed diagnostics.
 
 ---
 
-**Document Version:** 3.2
-**Last Updated:** April 3, 2026
+**Document Version:** 3.3
+**Last Updated:** April 6, 2026
+**Changes from v3.2:**
+- Pangolin setup simplified — all config handled via ORC-OS web UI, not manual CLI
+- Added server URL vs proxy URL distinction for Pangolin (wrong URL causes token decode errors)
+- Added end-to-end verification procedure for confirming ORC-OS video intake
+- Documented filename format alignment: `orc-capture` must produce `YYYYMMDDTHHMMSS.mp4` to match ORC-OS template
+- Documented daemon restart requirement after enabling daemon in web UI
+
 **Changes from v3.1:**
 - Reinstated Witty Pi 5 HAT+ — Pi 5 ML-2020 battery connector (J5) broke on both boards
 - Stack reverted to 3-board: Pi 5 (bottom) + Witty Pi 5 HAT+ (middle) + G469 (top) with 16mm standoffs
