@@ -402,13 +402,39 @@ disable_service() {
 
 enable_service dnsmasq
 enable_service chrony
-enable_service orc-capture.service
 enable_service orc-sensors.timer
 enable_service orc-led-status.service
 enable_service orc-boot-usb-log.service
 
 # Disable conflicting ORC-OS relay service (active-low, incompatible with our hardware)
 disable_service orc-gpio-relays.service
+
+# ─── Phase 7b: ORC-OS managed services ──────────────────────────
+log ""
+log "--- Phase 7b: ORC-OS managed services ---"
+
+# orc-capture is managed by ORC-OS as a TIMER service (start/stop via web UI).
+# Remove any static service file that deploy may have placed previously.
+if [ -f /etc/systemd/system/orc-capture.service ] && [ ! -L /etc/systemd/system/orc-capture.service ]; then
+    log "Removing static orc-capture.service (replaced by ORC-OS managed timer)"
+    run sudo systemctl stop orc-capture.service 2>/dev/null || true
+    run sudo systemctl disable orc-capture.service 2>/dev/null || true
+    run sudo rm -f /etc/systemd/system/orc-capture.service
+    run sudo systemctl daemon-reload
+fi
+
+# Import orc-capture service definition into ORC-OS
+ORC_CAPTURE_JSON="$PI_DIR/shared/orc-capture-service.json"
+if [ -f "$ORC_CAPTURE_JSON" ]; then
+    log "Importing orc-capture service into ORC-OS..."
+    if [ "$DRY_RUN" -eq 0 ]; then
+        /home/pi/venv/orc-os/bin/orc service import --deploy "$ORC_CAPTURE_JSON" \
+            && log "orc-capture service imported and deployed" \
+            || warn "orc-capture service import failed — configure manually via ORC-OS web UI"
+    fi
+else
+    warn "orc-capture-service.json not found at $ORC_CAPTURE_JSON"
+fi
 
 # ─── Phase 8: Credential check ───────────────────────────────────
 log ""
@@ -461,4 +487,8 @@ log "  1. Set root password: sudo passwd root"
 log "  2. Set camera credentials: echo 'BASE_PASSWD=<password>' > ~/.orc_deploy_$SITE"
 log "  3. Verify camera network: ping 192.168.50.100 (after PoE relay on)"
 log "  4. Configure camera via camtool.py (if camera replaced)"
-log "  5. Reboot and verify: sudo reboot"
+log "  5. Open ORC-OS web UI and configure:"
+log "     - Disk management, LiveORC callback URL, daemon settings"
+log "     - Services > capture: Enable, then Start"
+log "     - Pangolin remote access (server URL, not proxy URL)"
+log "  6. Reboot and verify: sudo reboot"

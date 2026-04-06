@@ -116,9 +116,9 @@ Pi 5 RTC battery Molex connector broke on BOTH boards (traces tore). Switching t
 - [ ] ORC-OS web UI: configure daemon settings per station:
   - Jakarta (always-on): "Shutdown after task" OFF, "Reboot after time" 3600s or disabled
   - Sukabumi (duty-cycle): "Shutdown after task" ON, "Reboot after time" ~240s (safety net)
-- [ ] Configure ORC-OS capture schedule (video filename template, daemon runner)
+- [x] Configure ORC-OS capture schedule (video filename template, daemon runner, ORC-OS timer service)
 - [ ] Camera ISAPI config via camtool.py
-- [ ] orc-capture end-to-end test (relay → camera boot → RTSP → quality gate)
+- [x] orc-capture end-to-end test (relay → camera boot → RTSP → quality gate → ORC-OS pickup)
 - [ ] Rain gauge serial communication test
 - [ ] SHT40/DS18B20 sensor verification
 - [ ] LED status daemon test

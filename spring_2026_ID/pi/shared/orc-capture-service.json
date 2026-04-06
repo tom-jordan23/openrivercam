@@ -1,0 +1,23 @@
+{
+  "service_short_name": "capture",
+  "service_long_name": "ORC Video Capture",
+  "service_type": "TIMER",
+  "description": "Captures video from PoE camera via RTSP, applies quality gate, and delivers to ORC-OS incoming directory. Managed by systemd timer.",
+  "readme": "This service wraps /usr/local/bin/orc-capture, which handles relay control, camera config enforcement, RTSP capture, and quality gating.\n\n## Configuration files\n\n- **/etc/orc-capture.conf** — Camera IP, RTSP path, capture duration, video codec, quality gate thresholds, and output directory. Edit this file to change camera settings or capture behavior.\n- **~/.ORC-OS/services/orc-capture.timer** — Timer frequency (default: every 15 minutes). Edit the OnCalendar line, then run: sudo systemctl daemon-reload && sudo systemctl restart orc-capture.timer\n- **/usr/local/bin/orc-capture** — The capture script itself. Deployed via deploy.sh from the repo.\n\n## Timer frequency\n\nThe default capture interval is 15 minutes (fires at :00, :15, :30, :45). To change it, edit the timer file:\n\n    sudo nano ~/.ORC-OS/services/orc-capture.timer\n\nChange OnCalendar=*:0/15 to your desired interval (e.g. *:0/5 for every 5 minutes). Then reload:\n\n    sudo systemctl daemon-reload\n    sudo systemctl restart orc-capture.timer",
+  "version": "1.0.0",
+  "update_url": null,
+  "parameters": [
+    {
+      "parameter_short_name": "CAPTURE_ENABLED",
+      "parameter_long_name": "Capture enabled",
+      "parameter_type": "BOOLEAN",
+      "default_value": "1",
+      "nullable": false,
+      "description": "Master enable for capture. When disabled (0), the timer still fires but the script exits immediately."
+    }
+  ],
+  "script_content": "#!/bin/bash\n# ORC Video Capture — thin wrapper for ORC-OS service management\n# Actual capture logic lives in /usr/local/bin/orc-capture\n# Runtime config lives in /etc/orc-capture.conf\n\nif [ \"${CAPTURE_ENABLED}\" = \"0\" ]; then\n    echo \"$(date '+%Y-%m-%d %H:%M:%S') [orc-capture] Capture disabled via ORC-OS, skipping\"\n    exit 0\nfi\n\nexec /usr/local/bin/orc-capture\n",
+  "script_type": "bash",
+  "timer_frequency": 15,
+  "on_boot_sec": "60s"
+}

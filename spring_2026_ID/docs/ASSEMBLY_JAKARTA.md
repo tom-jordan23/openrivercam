@@ -1138,6 +1138,69 @@ Access at `http://orc-jakarta.local:5173/` (or use IP address).
   - Push NTP config (Pi as NTP server: 192.168.50.1)
   - Verify RTSP stream: `orc-capture --skip-relay --dry-run`
 
+### Capture Scheduling (ORC-OS Managed)
+
+Video capture is managed by ORC-OS as a systemd TIMER service. The timer
+fires every 15 minutes and runs `/usr/local/bin/orc-capture` via a thin
+wrapper script. This gives the ORC team start/stop/enable/disable control
+from the web UI, while all capture logic and configuration stays in
+`/etc/orc-capture.conf`.
+
+**Architecture:**
+- `orc-capture.timer` — systemd timer, fires every 15 min (`OnCalendar=*:0/15`)
+- `orc-capture.service` — runs `~/.ORC-OS/services/orc-capture.sh`
+- `orc-capture.sh` — wrapper that checks `CAPTURE_ENABLED` env var, then `exec`s `/usr/local/bin/orc-capture`
+- `/etc/orc-capture.conf` — runtime config (camera IP, duration, quality gate, etc.)
+- All service files live in `~/.ORC-OS/services/` and are symlinked to `/etc/systemd/system/`
+
+**Service definition** is stored in the repo at `pi/shared/orc-capture-service.json`
+and imported via `orc service import --deploy` during deploy.sh.
+
+#### Web UI Setup Steps
+
+1. Navigate to **Services** (`/services`) in the ORC-OS web UI
+2. Confirm **"capture"** (ORC Video Capture) appears in the service list
+   - If missing, import manually via SSH:
+     ```
+     orc service import --deploy /path/to/orc-capture-service.json
+     ```
+3. Click on the **capture** service to open the detail page (`/services/4`)
+4. Verify the **CAPTURE_ENABLED** parameter is set to **1** (enabled)
+5. Click **Enable** first -- this creates the systemd timer symlink
+6. Click **Start** -- this activates the timer
+7. Click **Log** to verify captures are running -- you should see quality gate
+   PASS messages and "Delivered:" lines every 15 minutes
+
+#### Start/Stop Behavior
+
+ORC-OS manages the capture timer through four controls. The order matters:
+
+| Action | What it does |
+|--------|-------------|
+| **Enable** | Creates timer symlink in systemd, timer starts on boot |
+| **Start** | Activates the timer now, captures fire every 15 min |
+| **Stop** | Stops the timer, no more captures until Start |
+| **Disable** | Removes timer symlink from systemd, won't start on boot |
+
+**To pause captures:** Stop, then Disable.
+**To resume captures:** Enable first (recreates symlink), then Start.
+
+Enable/Disable controls the systemd symlink -- Disable physically removes
+the timer symlink from `/etc/systemd/system/`, and Enable recreates it.
+Always **Enable before Start** when resuming from a disabled state.
+
+#### Verification
+
+After starting the service, wait for the next :00/:15/:30/:45 mark, then:
+- Check the **Log** tab on the service detail page for a successful capture
+- Check the **Videos** page to confirm the new file appears
+- On SSH: `systemctl list-timers orc-capture.timer` shows NEXT trigger time
+
+- [x] Import orc-capture service definition into ORC-OS
+- [x] Verify timer is active: `systemctl list-timers orc-capture.timer`
+- [x] Verify capture runs on timer: check logs after next :00/:15/:30/:45
+- [x] Verify start/stop/enable/disable works from ORC-OS web UI
+
 ### Witty Pi 5 Power Schedule (Jakarta)
 
 Jakarta is always-on (AC power). The Witty Pi just needs to pass power through.
@@ -1314,8 +1377,16 @@ See `TROUBLESHOOTING.md` for detailed diagnostics.
 
 ---
 
-**Document Version:** 3.3
+**Document Version:** 3.4
 **Last Updated:** April 6, 2026
+**Changes from v3.3:**
+- Capture scheduling moved from static systemd service to ORC-OS managed TIMER service
+- Added capture service setup steps for web UI (Enable before Start, stop/disable behavior)
+- Added orc-capture-service.json for import/deploy via ORC-OS CLI
+- deploy.sh updated: removes stale static service, imports JSON service definition
+- deploy.sh next steps updated with ORC-OS web UI configuration reminder
+- Removed static orc-capture.service from repo (now managed by ORC-OS)
+
 **Changes from v3.2:**
 - Pangolin setup simplified — all config handled via ORC-OS web UI, not manual CLI
 - Added server URL vs proxy URL distinction for Pangolin (wrong URL causes token decode errors)
