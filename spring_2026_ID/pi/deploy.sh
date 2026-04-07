@@ -124,21 +124,54 @@ log "--- Phase 2: Packages ---"
 if [ "$SKIP_PACKAGES" -eq 1 ]; then
     log "Skipping package installation (--skip-packages)"
 else
-    log "Installing system packages..."
-    run sudo apt update -qq
-    run sudo apt install -y -qq dnsmasq modemmanager gpiod minicom chrony ffmpeg
+    APT_PKGS="dnsmasq modemmanager gpiod minicom chrony ffmpeg"
+    NEED_APT=0
+    for pkg in $APT_PKGS; do
+        if ! dpkg -s "$pkg" >/dev/null 2>&1; then
+            NEED_APT=1
+            break
+        fi
+    done
+    if [ "$NEED_APT" -eq 1 ]; then
+        log "Installing system packages..."
+        run sudo apt update -qq
+        run sudo apt install -y -qq $APT_PKGS
+    else
+        log "System packages already installed"
+    fi
 
-    log "Installing Python packages..."
-    run pip install --break-system-packages --quiet requests pyserial smbus2 pyyaml
+    PIP_PKGS="requests pyserial smbus2 pyyaml"
+    PIP_IMPORTS="requests serial smbus2 yaml"
+    NEED_PIP=0
+    for mod in $PIP_IMPORTS; do
+        if ! python3 -c "import $mod" 2>/dev/null; then
+            NEED_PIP=1
+            break
+        fi
+    done
+    if [ "$NEED_PIP" -eq 1 ]; then
+        log "Installing Python packages..."
+        run pip install --break-system-packages --quiet $PIP_PKGS
+    else
+        log "Python packages already installed"
+    fi
 
-    log "Installing LED status packages (sudo, Pi 5 PIO)..."
-    run sudo pip install --break-system-packages --quiet \
-        adafruit-blinka \
-        adafruit-circuitpython-neopixel \
-        adafruit-blinka-raspberry-pi5-neopixel
+    if ! python3 -c "import neopixel" 2>/dev/null; then
+        log "Installing LED status packages (sudo, Pi 5 PIO)..."
+        run sudo pip install --break-system-packages --quiet \
+            adafruit-blinka \
+            adafruit-circuitpython-neopixel \
+            adafruit-blinka-raspberry-pi5-neopixel
+    else
+        log "LED status packages already installed"
+    fi
 
-    log "Adding pi user to dialout group..."
-    run sudo usermod -aG dialout pi
+    if ! id -nG pi | grep -qw dialout; then
+        log "Adding pi user to dialout group..."
+        run sudo usermod -aG dialout pi
+    else
+        log "pi already in dialout group"
+    fi
 fi
 
 # ─── Phase 3: Deploy overlay files ───────────────────────────────
@@ -146,6 +179,7 @@ log ""
 log "--- Phase 3: Overlay files ---"
 
 deploy_count=0
+skip_count=0
 
 deploy_file() {
     local src="$1"
@@ -159,6 +193,12 @@ deploy_file() {
 
     local dest="/$relative"
     local dest_dir="$(dirname "$dest")"
+
+    # Skip if file is identical
+    if [ -f "$dest" ] && cmp -s "$src" "$dest"; then
+        skip_count=$((skip_count + 1))
+        return
+    fi
 
     # Backup existing file
     backup_file "$dest"
@@ -204,18 +244,22 @@ while IFS= read -r -d '' file; do
     deploy_file "$file" "$SITE_DIR"
 done < <(find "$SITE_DIR" -type f -print0 | sort -z)
 
-log "Deployed $deploy_count files"
+log "Deployed $deploy_count files ($skip_count unchanged, skipped)"
 
 # Deploy camtool.py from camera/ directory (source of truth lives outside pi/shared/)
 CAMTOOL_SRC="$REPO_ROOT/camera/camtool.py"
 if [ -f "$CAMTOOL_SRC" ]; then
-    backup_file /usr/local/bin/camtool.py
-    log "  /usr/local/bin/camtool.py (from camera/camtool.py)"
-    if [ "$DRY_RUN" -eq 0 ]; then
-        sudo cp "$CAMTOOL_SRC" /usr/local/bin/camtool.py
-        sudo chmod +x /usr/local/bin/camtool.py
+    if [ -f /usr/local/bin/camtool.py ] && cmp -s "$CAMTOOL_SRC" /usr/local/bin/camtool.py; then
+        skip_count=$((skip_count + 1))
+    else
+        backup_file /usr/local/bin/camtool.py
+        log "  /usr/local/bin/camtool.py (from camera/camtool.py)"
+        if [ "$DRY_RUN" -eq 0 ]; then
+            sudo cp "$CAMTOOL_SRC" /usr/local/bin/camtool.py
+            sudo chmod +x /usr/local/bin/camtool.py
+        fi
+        deploy_count=$((deploy_count + 1))
     fi
-    deploy_count=$((deploy_count + 1))
 else
     warn "camtool.py not found at $CAMTOOL_SRC — camera config management unavailable"
 fi
@@ -414,18 +458,30 @@ fi
 log ""
 log "--- Phase 7: Services ---"
 
-run sudo systemctl daemon-reload
+if [ "$deploy_count" -gt 0 ]; then
+    run sudo systemctl daemon-reload
+else
+    log "No files changed, skipping daemon-reload"
+fi
 
 enable_service() {
     local svc="$1"
-    log "  Enabling: $svc"
-    run sudo systemctl enable "$svc" 2>/dev/null || warn "Failed to enable $svc"
+    if systemctl is-enabled "$svc" >/dev/null 2>&1; then
+        log "  Already enabled: $svc"
+    else
+        log "  Enabling: $svc"
+        run sudo systemctl enable "$svc" 2>/dev/null || warn "Failed to enable $svc"
+    fi
 }
 
 disable_service() {
     local svc="$1"
-    log "  Disabling: $svc"
-    run sudo systemctl disable "$svc" 2>/dev/null || true
+    if ! systemctl is-enabled "$svc" >/dev/null 2>&1; then
+        log "  Already disabled: $svc"
+    else
+        log "  Disabling: $svc"
+        run sudo systemctl disable "$svc" 2>/dev/null || true
+    fi
 }
 
 enable_service dnsmasq
@@ -451,14 +507,22 @@ if [ -f /etc/systemd/system/orc-capture.service ] && [ ! -L /etc/systemd/system/
     run sudo systemctl daemon-reload
 fi
 
-# Import orc-capture service definition into ORC-OS
+# Import orc-capture service definition into ORC-OS (only if changed or missing)
 ORC_CAPTURE_JSON="$PI_DIR/orc-capture-service.json"
+ORC_CAPTURE_LAST="/home/pi/.ORC-OS/.orc-capture-service.json.deployed"
 if [ -f "$ORC_CAPTURE_JSON" ]; then
-    log "Importing orc-capture service into ORC-OS..."
-    if [ "$DRY_RUN" -eq 0 ]; then
-        /home/pi/venv/orc-os/bin/orc service import --deploy "$ORC_CAPTURE_JSON" \
-            && log "orc-capture service imported and deployed" \
-            || warn "orc-capture service import failed — configure manually via ORC-OS web UI"
+    if [ -f "$ORC_CAPTURE_LAST" ] && cmp -s "$ORC_CAPTURE_JSON" "$ORC_CAPTURE_LAST"; then
+        log "orc-capture service definition unchanged, skipping import"
+    else
+        log "Importing orc-capture service into ORC-OS..."
+        if [ "$DRY_RUN" -eq 0 ]; then
+            if /home/pi/venv/orc-os/bin/orc service import --preserve-env --deploy "$ORC_CAPTURE_JSON"; then
+                cp "$ORC_CAPTURE_JSON" "$ORC_CAPTURE_LAST"
+                log "orc-capture service imported and deployed"
+            else
+                warn "orc-capture service import failed — configure manually via ORC-OS web UI"
+            fi
+        fi
     fi
 else
     warn "orc-capture-service.json not found at $ORC_CAPTURE_JSON"

@@ -1,6 +1,6 @@
 # TODO List - Indonesia Spring 2026 Deployment
 
-**Last updated:** 2026-04-03
+**Last updated:** 2026-04-07
 **Departure:** April 12, 2026 (9 days)
 
 ---
@@ -105,7 +105,7 @@ Pi 5 RTC battery Molex connector broke on BOTH boards (traces tore). Switching t
 
 ### Both stations
 - [ ] Flash new ORC-OS image from Hessel (when available)
-- [ ] Run deploy.sh (once written) or manual overlay re-application
+- [x] Run deploy.sh — Jakarta done 2026-04-07 (idempotent, safe to re-run)
 - [x] Install Witty Pi 5 software (wp5 v5.0.0 deb) — Jakarta done 2026-04-05
 - [x] Sync Witty Pi 5 RTC to system clock — Jakarta done 2026-04-05
 - [x] Disable orc-rpi5-power-management.service — Jakarta done 2026-04-05
@@ -156,13 +156,23 @@ Pi 5 RTC battery Molex connector broke on BOTH boards (traces tore). Switching t
 
 ---
 
+## Jakarta Software Status
+
+**Jakarta is software-ready for deployment.** Remaining physical work
+(rain gauge wiring, DS18B20 temp probe, cable glands on baseplate) will
+be done in-country to avoid shipping damage. These are stretch goals —
+Jakarta is AC-powered and always-on, so development can continue
+post-deployment.
+
+---
+
 ## Outstanding tasks (not yet scheduled)
 
-- [ ] Power status MOTD script (TODO — undervoltage false positive from GPIO power)
-- [ ] deploy.sh script for OS image re-application (see pi/NETWORK_CONVENTION.md)
-- [ ] Jakarta-specific overlay files (NM connection, hosts template, dnsmasq per-site)
-- [ ] Move update-motd.d/ into etc/update-motd.d/ for consistent overlay path mapping
-- [ ] Fix 30-camera-status to read camera IP from config instead of hardcoding
+- [x] Power status MOTD script — done (40-power-management)
+- [x] deploy.sh script for OS image re-application — done
+- [x] Jakarta-specific overlay files — done (NM connection, hosts, dnsmasq)
+- [x] Move update-motd.d/ into etc/update-motd.d/ — done (consistent overlay paths)
+- [x] Fix 30-camera-status to read camera IP from config instead of hardcoding — done (reads from orc-capture.conf)
 
 ---
 
@@ -370,6 +380,95 @@ The drawio source was updated but the PDF was not regenerated.
 
 ---
 
+### TODO-015: USB storage — disable UAS driver via cmdline.txt
+
+| Field | Value |
+|-------|-------|
+| **Status** | DONE (2026-04-07, Jakarta) |
+| **Site** | Both |
+| **Target** | Post-deployment (Jakarta), pre-deployment (Sukabumi) |
+
+Samsung FIT Plus (0781:5583) uses UAS driver which crashes at boot,
+causing USB enumeration storms that take down the modem. Fix is to add
+`usb-storage.quirks=0781:5583:u` to `/boot/firmware/cmdline.txt`. This
+forces the stable `usb-storage` (BOT) driver instead of UAS.
+
+Both `uas` and `usb-storage` are kernel built-ins, so modprobe.d quirks
+don't work — cmdline.txt is the only option.
+
+**Jakarta — completed 2026-04-07:**
+- [x] cmdline.txt quirk added: `usb-storage.quirks=0781:5583:u`
+- [x] Verified: dmesg shows "UAS is ignored for this device, using usb-storage instead"
+- [x] No USB enumeration storms on insert
+- [x] fstab entry added (UUID, nofail), mounts at `/mnt/usb`
+- [x] `/home/pi/Videos` symlinked to `/mnt/usb/incoming`
+- [x] First capture verified landing on USB drive (20260407T163003.mp4)
+- [x] deploy.sh updated: USB section handles fstab + symlink idempotently
+- [x] Backout scripts: `~/uas-revert.sh` (cmdline), `~/usb-video-revert.sh` (fstab + symlink)
+
+**Sukabumi — still TODO:**
+- [ ] Verify `/boot/firmware` mounts (see TODO-016)
+- [ ] Apply same cmdline.txt quirk
+- [ ] Insert USB drive, verify stable enumeration
+- [ ] Run `deploy.sh sukabumi` to set up fstab + symlink
+
+---
+
+### TODO-016: Verify Sukabumi /boot/firmware matches Jakarta
+
+| Field | Value |
+|-------|-------|
+| **Status** | OPEN |
+| **Site** | Sukabumi |
+| **Target** | Next power-on |
+
+Both stations were flashed from the same image. Jakarta's `/boot/firmware`
+mounts fine. Sukabumi had issues because we removed `90-qemu.rules` during
+debugging (then restored it). Verify on next boot that Sukabumi's
+`/boot/firmware` mounts and `cmdline.txt` is accessible — this is a
+prerequisite for TODO-015.
+
+```bash
+mount | grep boot
+cat /boot/firmware/cmdline.txt
+```
+
+---
+
+### TODO-017: GCP survey and camera calibration (both sites)
+
+| Field | Value |
+|-------|-------|
+| **Status** | OPEN |
+| **Site** | Both |
+| **Target** | In-country, after camera installation |
+
+Survey 6+ ground control points at each site, calibrate cameras through
+ORC-OS web UI. See ASSEMBLY_JAKARTA.md / ASSEMBLY_SUKABUMI.md
+"Station Commissioning" section for checklist. Requires RTK GPS and
+staff gauge.
+
+---
+
+### TODO-018: Rain gauge and temp probe wiring (Jakarta, in-country)
+
+| Field | Value |
+|-------|-------|
+| **Status** | OPEN |
+| **Site** | Jakarta |
+| **Target** | In-country |
+
+Deferred to avoid cable gland damage during shipping. Stretch goal —
+Jakarta is always-on so can be done post-deployment.
+
+- [ ] Install cable glands on baseplate
+- [ ] Wire rain gauge (SD16 bulkhead → RG-15)
+- [ ] Wire DS18B20 external temp probe
+- [ ] Wire WS2812B LED (GPIO 18)
+- [ ] Test sensors via orc-sensors / orc-led-test
+
+---
+
 ## P2 — Nice to Have
 
 ### TODO-012: Verify DDR-60G quiescent power draw
@@ -440,6 +539,7 @@ already covered by ordered quantities vs. what needs separate ordering.
 | — | Sukabumi J2 power button wired and tested (soldered pigtail + Dupont female) | 2026-04-01 |
 | — | Sukabumi J2 power button: replaced dodgy Dupont connection with Wago 221 lever-nuts — tests passed | 2026-04-05 |
 | — | Doc cleanup: RTC refs (ML-2020 → Witty Pi 5), Samsung FIT removal, power budget fix, J2 wiring methods | 2026-04-05 |
+| TODO-015 | Jakarta: UAS disabled (cmdline.txt quirk), USB storage mounted, Videos symlinked, deploy.sh made idempotent | 2026-04-07 |
 | — | Sukabumi WS2812B LED wired, tested R/G/B + all status colors (orc-led-test) | 2026-04-01 |
 | — | LED driver migrated from rpi-ws281x to Adafruit Blinka (Pi 5 PIO) — see ISS-007 | 2026-04-01 |
 | — | GPIO_WIRING.md comprehensive update (Rev C) | 2026-03-20 |

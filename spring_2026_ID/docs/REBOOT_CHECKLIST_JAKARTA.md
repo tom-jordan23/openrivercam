@@ -10,7 +10,7 @@ Run after rebooting the Jakarta Pi to confirm deploy.sh changes took effect.
 - **Camera:** ANNKE C1200 at 192.168.50.101
 - **QEMU rules:** `/etc/udev/rules.d/90-qemu.rules` present (required for boot — do NOT remove)
 - **Boot partition:** `/boot/firmware` mounts normally on this image (unlike Sukabumi)
-- **USB drive:** None — captures go to SD card (~46GB free)
+- **USB drive:** SanDisk 3.2Gen1 250GB at `/mnt/usb` (UAS disabled via cmdline.txt quirk)
 
 See `REBOOT_CHECKLIST.md` for the original Sukabumi checklist and detailed
 background on QEMU rules, USB drive deferral, and timezone requirements.
@@ -22,7 +22,6 @@ orc-preflight
 ```
 
 **Target:** 0 FAILs. Expected WARNs after fresh deploy (before hardware is connected):
-- `/mnt/usb` not mounted (no USB drive — by design)
 - eth0 no IP / PoE relay OFF (if camera not yet wired)
 - DS18B20 not detected (if not connected)
 - `/etc/hosts` missing camera hostname
@@ -41,6 +40,25 @@ mount | grep boot/firmware       # should be mounted (unlike Sukabumi)
 - [ ] System booted without emergency mode
 - [ ] Root filesystem mounted
 - [ ] `/boot/firmware` mounted
+
+### 1b. USB Storage
+
+```bash
+mount | grep /mnt/usb            # ext4 on /dev/sda1
+ls -la /home/pi/Videos           # symlink -> /mnt/usb/incoming
+df -h /mnt/usb                   # ~217GB free
+dmesg | grep -i "UAS is ignored" # quirk active
+```
+
+- [ ] `/mnt/usb` mounted (SanDisk USB drive)
+- [ ] `/home/pi/Videos` is symlink to `/mnt/usb/incoming`
+- [ ] UAS disabled (using usb-storage instead)
+- [ ] No USB enumeration storms in `dmesg`
+
+> **If USB drive fails to mount:** fstab has `nofail` so boot continues.
+> Captures will fail (symlink points to nothing). Check `dmesg` for USB errors.
+> Backout: `sudo bash ~/usb-video-revert.sh` restores local SD card storage.
+> UAS backout: `sudo bash ~/uas-revert.sh` removes the cmdline.txt quirk.
 
 ### 2. config.txt Changes (applied by deploy.sh, need reboot)
 
