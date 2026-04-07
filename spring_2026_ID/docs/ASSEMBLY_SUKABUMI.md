@@ -36,6 +36,7 @@
 - [Troubleshooting](#troubleshooting)
 - [Maintenance Notes](#maintenance-notes)
 - [Site-Specific Configuration](#site-specific-configuration)
+- [Station Commissioning: Camera Survey & Calibration](#station-commissioning-camera-survey--calibration)
 
 ---
 
@@ -1035,8 +1036,100 @@ See `TROUBLESHOOTING.md` for detailed diagnostics.
 
 ---
 
-**Document Version:** 3.3
-**Last Updated:** April 3, 2026
+## Station Commissioning: Camera Survey & Calibration
+
+Once the station is physically installed and capturing video, the camera must
+be calibrated with Ground Control Points (GCPs) before ORC-OS can process
+videos into velocity/discharge measurements. This is done through the ORC-OS
+web UI.
+
+> **Reference documentation:** The authoritative guide for camera calibration
+> and GCP setup is maintained by the ORC team. Refer to the
+> [pyorc user guide](https://localdevices.github.io/pyorc/user-guide/index.html)
+> for detailed instructions on camera configuration, GCP formats, and
+> cross-section setup. The
+> [ORC-OS README](https://github.com/localdevices/ORC-OS/blob/main/README.md)
+> covers the web UI workflow.
+
+### Prerequisites
+
+- [ ] Camera is in its **final position** — do not move after this point
+- [ ] Station is capturing video successfully (end-to-end test passed)
+- [ ] Access to ORC-OS web UI (local or via Pangolin)
+- [ ] RTK GPS or high-accuracy GPS receiver for GCP survey
+- [ ] Staff gauge or pressure gauge for water level reference
+
+### Step 1: Fix Camera Position
+
+The camera must be firmly mounted and aimed at the river cross-section
+before calibration. Any movement after GCP survey invalidates the
+calibration.
+
+- [ ] Camera bracket tightened — no vibration or play
+- [ ] Field of view covers the target cross-section
+- [ ] Take a reference photo of the camera position and angle
+- [ ] Record camera GPS coordinates
+
+### Step 2: GCP Field Survey
+
+Select 6+ ground control points visible in the camera frame. Points should
+be distributed across the field of view and include both banks if possible.
+
+For each GCP, record:
+- GPS coordinates (easting, northing, elevation — projected CRS preferred)
+- Description / photo for identification in the video frame
+
+Also record:
+- Water level at time of survey (`h_ref`) — read from staff gauge or
+  pressure sensor, in the same vertical datum as the GCP elevations
+
+Save as CSV with columns `x`, `y`, `z` (projected coordinates, e.g.
+UTM zone 48S / EPSG:32748 for Sukabumi).
+
+- [ ] 6+ GCPs surveyed with GPS
+- [ ] Water level (`h_ref`) recorded
+- [ ] GCP data saved as CSV
+
+### Step 3: Camera Configuration (ORC-OS Web UI)
+
+1. **Create Camera Config** — set image dimensions (1920x1080 for ANNKE C1200)
+2. **Upload GCPs** — import your CSV via the control points interface
+3. **Match pixels to coordinates** — click each GCP location in a sample
+   video frame to assign pixel coordinates
+4. **Fit perspective** — run the camera calibration solver; check the RMS
+   reprojection error (lower is better, aim for < 5 pixels)
+5. **Set bounding box** — define the area of interest in the frame
+
+- [ ] Camera config created (1920x1080)
+- [ ] GCPs uploaded and matched to pixel locations
+- [ ] Perspective fit completed (RMS error: ___ pixels)
+
+### Step 4: Cross-Section & Recipe
+
+1. **Create cross-section** — define the river cross-section geometry
+2. **Create recipe** — set processing parameters (resolution, window size, etc.)
+3. **Create video config** — link camera config, recipe, and cross-section
+
+Refer to the [pyorc user guide](https://localdevices.github.io/pyorc/user-guide/index.html)
+for parameter guidance.
+
+- [ ] Cross-section defined
+- [ ] Recipe created
+- [ ] Video config created and linked
+
+### Step 5: Test Processing
+
+Upload a captured video and verify it processes successfully through the
+full pipeline (orthorectification, PIV, discharge calculation).
+
+- [ ] Video processed without errors
+- [ ] Results visible in ORC-OS web UI
+- [ ] Results uploaded to LiveORC (if callback URL configured)
+
+---
+
+**Document Version:** 3.4
+**Last Updated:** April 7, 2026
 **Changes from v3.2:**
 - Reinstated Witty Pi 5 HAT+ — Pi 5 ML-2020 battery connector (J5) broke on both boards
 - Stack reverted to 3-board: Pi 5 (bottom) + Witty Pi 5 HAT+ (middle) + G469 (top) with 16mm standoffs
