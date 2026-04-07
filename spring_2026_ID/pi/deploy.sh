@@ -360,13 +360,26 @@ if [ ! -f /etc/cloud/cloud-init.disabled ]; then
     run sudo touch /etc/cloud/cloud-init.disabled
 fi
 
-# Verify timezone is UTC
+# Verify timezone is UTC (both timedatectl and /etc/timezone must agree)
 TZ_CURRENT=$(timedatectl show --property=Timezone --value 2>/dev/null || echo "unknown")
 if [ "$TZ_CURRENT" != "UTC" ] && [ "$TZ_CURRENT" != "Etc/UTC" ]; then
     log "Setting timezone to UTC (was: $TZ_CURRENT)"
     run sudo timedatectl set-timezone UTC
 else
     log "Timezone already UTC"
+fi
+
+# /etc/timezone is deprecated but ORC-OS still reads it; a wrong value
+# (e.g. Asia/Jakarta from Pi Imager locale settings) causes the frontend
+# to crash with a white screen.  Force it to UTC.
+ETC_TZ=$(cat /etc/timezone 2>/dev/null || echo "")
+if [ "$ETC_TZ" != "UTC" ]; then
+    log "Fixing /etc/timezone (was: ${ETC_TZ:-empty})"
+    if [ "$DRY_RUN" -eq 0 ]; then
+        echo "UTC" | sudo tee /etc/timezone > /dev/null
+    fi
+else
+    log "/etc/timezone already UTC"
 fi
 
 # Enable persistent journaling (survives reboots for post-mortem debugging)
