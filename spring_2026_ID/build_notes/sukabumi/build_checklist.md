@@ -925,27 +925,32 @@ Pi Serial:
 |------|------|-----------|--------------|
 | | | | |
 
-### 5.2 Install Witty Pi Software
+### 5.2 Install Witty Pi 5 Software
+
+The ORC-OS base image ships with `wp5` pre-installed. If not, `deploy.sh`
+installs it automatically. Verify:
 
 ```bash
-wget https://www.uugear.com/repo/WittyPi5/install.sh
-sudo sh install.sh
-# Reboot when prompted
+command -v wp5 && echo "wp5 installed" || echo "MISSING"
+systemctl is-active wp5d
+```
+
+If manual install is needed:
+```bash
+wget -q https://www.uugear.com/repo/WittyPi5/wp5_latest.deb -O /tmp/wp5_latest.deb
+sudo apt install -y /tmp/wp5_latest.deb
 sudo reboot
 ```
 
 | Step | Completed |
 |------|-----------|
-| Download install script | [ ] |
-| Run install script | [ ] |
-| Installation completes without error | [ ] |
-| Reboot | [ ] |
+| `wp5` command available | [ ] |
+| `wp5d` daemon active | [ ] |
 
 ### 5.3 Verify Witty Pi
 
 ```bash
-cd ~/wittypi
-./wittyPi.sh
+wp5    # interactive menu — shows status header then menu
 ```
 
 | Check | Expected | Actual | Pass |
@@ -953,13 +958,13 @@ cd ~/wittypi
 | Witty Pi utility runs | Yes | | [ ] |
 | RTC time displayed | Correct | | [ ] |
 | Temperature reading | Reasonable | °C | [ ] |
-| Voltage reading | ~5V | V | [ ] |
+| V-IN reading | ~12V (12V supply) or ~5V (USB-C) | V | [ ] |
 
 ### 5.4 Sync RTC
 
 If RTC time is wrong:
 ```bash
-# In wittyPi.sh menu, select option to sync RTC with Pi time
+wp5    # select option 1 (Write system time to RTC)
 ```
 
 | Check | Pass |
@@ -967,26 +972,41 @@ If RTC time is wrong:
 | RTC synced with system time | [ ] |
 | Time persists after reboot | [ ] |
 
-### 5.5 Schedule Configuration
+### 5.5 Power Management Model
 
-**Do NOT enable schedule yet** - will enable in Phase 14 after all testing.
+**Split responsibility — do not change ORC-OS code:**
+
+| Component | Responsibility |
+|-----------|---------------|
+| **Witty Pi 5** | Owns the wake/startup schedule (configured via `wp5` interactive menu) |
+| **ORC-OS** | Owns shutdown decisions (`shutdown_after_task`, `reboot_after` watchdog) |
+| **systemd ordering** | `orc-api.service` must start after `wp5d.service` (set by `deploy.sh`) |
+
+Verify the systemd dependency (prevents time-jump reboot loop):
+```bash
+grep "wp5d" /etc/systemd/system/orc-api.service
+# Expected: After=network.target wp5d.service
+```
+
+**Do NOT enable the wake schedule yet** — will configure in Phase 14 after
+all testing.
 
 | Task | Completed |
 |------|-----------|
-| Review schedule file format | [ ] |
-| Note schedule file location | [ ] |
-| **Schedule remains DISABLED** | [ ] |
-
-**Schedule file location:** `~/wittypi/schedules/`
+| `orc-api.service` depends on `wp5d.service` | [ ] |
+| Understand power management model | [ ] |
+| **Wake schedule remains DISABLED** | [ ] |
 
 ### 5.6 Verification
 
 | Check | Pass |
 |-------|------|
-| Witty Pi software installed | [ ] |
+| Witty Pi 5 software installed (`wp5`) | [ ] |
+| `wp5d` daemon active | [ ] |
 | RTC time correct | [ ] |
 | Temperature sensor working | [ ] |
-| Schedule NOT enabled | [ ] |
+| `orc-api.service` has `wp5d.service` dependency | [ ] |
+| Wake schedule NOT enabled | [ ] |
 
 **Notes:**
 ```
@@ -2118,10 +2138,21 @@ Capture cycle total time (boot to shutdown-ready):
 
 Set temporary schedule: 1 min on, 2 min off
 
+Configure via `wp5` interactive menu:
 ```bash
-cd ~/wittypi
-./wittyPi.sh
-# Configure and enable short test schedule
+wp5    # Option 6 → Choose schedule script
+       # Or Option 4/5 → Schedule individual shutdown/startup times
+```
+
+ORC-OS handles the shutdown side. Verify `shutdown_after_task` is enabled:
+```bash
+python3 -c "
+import sqlite3
+conn = sqlite3.connect('/home/pi/.ORC-OS/orc-os.db')
+c = conn.cursor()
+c.execute('SELECT shutdown_after_task, reboot_after FROM settings')
+print('shutdown_after_task, reboot_after:', c.fetchone())
+"
 ```
 
 | Cycle | Expected Wake | Actual Wake | Expected Sleep | Actual Sleep | Pass |
@@ -2416,8 +2447,8 @@ Document any issues encountered during build.
 ### Key Commands
 
 ```bash
-# Witty Pi
-cd ~/wittypi && ./wittyPi.sh
+# Witty Pi 5
+wp5
 
 # Modem status
 mmcli -m 0

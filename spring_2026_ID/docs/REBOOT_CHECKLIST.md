@@ -228,4 +228,21 @@ Camera IP (192.168.50.139) should appear as a client if it has been powered
 on long enough to make an NTP request. If only `localhost` appears, that's
 OK — chrony is serving, camera just hasn't queried yet.
 
+### 13. Power Management (Witty Pi 5 + ORC-OS)
+
+See `REBOOT_CHECKLIST_JAKARTA.md` §12 for the full power management
+verification steps. The key points:
+
+- `orc-api.service` must have `After=... wp5d.service` to prevent time-jump
+  reboot loops
+- ORC-OS owns shutdown decisions; Witty Pi 5 owns the wake schedule
+- For duty-cycle stations, configure the Witty Pi 5 schedule via `wp5`
+  (interactive)
+
+```bash
+grep "wp5d" /etc/systemd/system/orc-api.service   # must show wp5d.service
+```
+
+- [ ] `orc-api.service` depends on `wp5d.service`
+
 - [ ] chrony is running and configured to serve 192.168.50.0/24

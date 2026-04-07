@@ -1,0 +1,52 @@
+#!/bin/bash
+# Power management status: ORC-OS shutdown settings + Witty Pi 5 wake schedule
+
+echo ""
+echo "=== Power Management ==="
+
+# ORC-OS shutdown settings (from database)
+DB="/home/pi/.ORC-OS/orc-os.db"
+if [ -f "$DB" ]; then
+    read -r reboot_after shutdown_after active < <(
+        python3 -c "
+import sqlite3
+conn = sqlite3.connect('$DB')
+c = conn.cursor()
+c.execute('SELECT reboot_after, shutdown_after_task, active FROM settings')
+row = c.fetchone()
+if row:
+    ra = int(row[0]) if row[0] else 0
+    sa = int(row[1]) if row[1] else 0
+    ac = int(row[2]) if row[2] else 0
+    print(ra, sa, ac)
+else:
+    print('0 0 0')
+" 2>/dev/null
+    )
+
+    if [ "$active" = "1" ]; then
+        if [ "$shutdown_after" = "1" ]; then
+            echo "  Shutdown:   after task (duty-cycle mode)"
+        elif [ "$reboot_after" -gt 0 ]; then
+            hours=$(( reboot_after / 3600 ))
+            echo "  Reboot:     every ${hours}h watchdog (reboot_after=${reboot_after}s)"
+        else
+            echo "  Shutdown:   disabled (always-on)"
+        fi
+    else
+        echo "  ORC-OS:     daemon inactive"
+    fi
+else
+    echo "  ORC-OS:     database not found"
+fi
+
+# Witty Pi 5 wake schedule
+if command -v wp5 >/dev/null 2>&1; then
+    echo "  Wake:       managed by Witty Pi 5 (run 'wp5' to view/change schedule)"
+else
+    echo "  Wake:       Witty Pi 5 not installed"
+fi
+
+echo ""
+echo "  To change shutdown/reboot: ORC-OS web UI > Settings > Daemon"
+echo "  To change wake schedule:   run 'wp5' (interactive, option 6)"

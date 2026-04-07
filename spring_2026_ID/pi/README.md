@@ -61,6 +61,8 @@ contains a real file.
 | `shared/etc/systemd/system/orc-sensors.service` | `/etc/systemd/system/orc-sensors.service` | Oneshot service: reads all due sensors and appends to daily CSVs | Shared | No | Yes |
 | `shared/etc/systemd/system/orc-sensors.timer` | `/etc/systemd/system/orc-sensors.timer` | Timer: ticks every 60s, per-sensor interval checked in Python | Shared | No | Yes |
 | `shared/update-motd.d/30-camera-status` | `/etc/update-motd.d/30-camera-status` | Dynamic MOTD: relay status, Witty Pi 5 RTC/temp/voltage, eth0 IP, camera reachability | Shared | No | No |
+| `shared/update-motd.d/40-power-management` | `/etc/update-motd.d/40-power-management` | Dynamic MOTD: ORC-OS shutdown/reboot settings, Witty Pi 5 wake schedule, how to change | Shared | No | No |
+| `shared/update-motd.d/50-led-status` | `/etc/update-motd.d/50-led-status` | Dynamic MOTD: LED service status, color guide for all states/errors, config location | Shared | No | No |
 | `shared/etc/chrony/conf.d/camera-net.conf` | `/etc/chrony/conf.d/camera-net.conf` | NTP server for camera network (Pi serves time to cameras) | Shared | No | Yes |
 | `shared/etc/orc-capture.conf` | `/etc/orc-capture.conf` | Capture settings template with all options documented (overridden by site-specific versions) | Shared (template) | No | No |
 | `sukabumi/etc/orc-capture.conf` | `/etc/orc-capture.conf` | Sukabumi capture config: RELAY_MODE=cycle, CAMERA_IP=192.168.50.139 | Sukabumi | No | No |

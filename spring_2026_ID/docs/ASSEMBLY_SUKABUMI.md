@@ -56,7 +56,9 @@ Complete these steps BEFORE traveling to Indonesia:
   - First boot takes 2-3 minutes (services compile, filesystem expands, then auto-reboots)
   - After reboot, navigate to `http://<hostname>.local` to verify the ORC-OS web dashboard loads
   - Set the ORC-OS web dashboard password when prompted
-- [ ] Configure Witty Pi 5 HAT+ wake schedule (15-minute wake cycle via CR2032 coin cell)
+- [ ] Configure Witty Pi 5 HAT+ wake schedule via `wp5` interactive menu (15-minute cycle)
+  - Witty Pi owns wake/startup; ORC-OS owns shutdown (`shutdown_after_task`)
+  - Verify `orc-api.service` has `After=... wp5d.service` (set by `deploy.sh`)
 - [ ] Configure Pi eth0 static IP (192.168.50.1/24) and dnsmasq DHCP for camera network
 - [ ] **Do NOT change timezone from UTC** — ORC-OS requires UTC (see REBOOT_CHECKLIST.md)
 - [ ] Install and configure chrony as NTP server for camera network

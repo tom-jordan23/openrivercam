@@ -95,8 +95,11 @@ def parse_orc_capture_conf(path=ORC_CAPTURE_CONF):
                 continue
             m = re.match(r'^([A-Z_]+)=(.*)$', line)
             if m:
-                key, val = m.group(1), m.group(2).strip('"').strip("'")
-                result[key] = val
+                val = m.group(2).strip('"').strip("'")
+                # Strip inline comments (e.g. "192.168.50.101  # comment")
+                if "#" in val:
+                    val = val[:val.index("#")].rstrip()
+                result[m.group(1)] = val
     return result
 
 

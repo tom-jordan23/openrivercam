@@ -239,7 +239,8 @@ else
 fi
 
 # Witty Pi 5 HAT+ (RTC + power management — replaces Pi 5 native ML-2020 RTC battery)
-if i2cdetect -y 1 2>/dev/null | grep -q "51"; then
+I2C_SCAN=$(i2cdetect -y 1 2>/dev/null || true)
+if echo "$I2C_SCAN" | grep -q "51"; then
     pass "Witty Pi 5 HAT+ detected on I2C bus (0x51)"
 else
     fail "Witty Pi 5 HAT+ NOT detected on I2C bus (expected at 0x51)"
@@ -411,7 +412,8 @@ fi
 if [ -e /dev/i2c-1 ]; then
     pass "I2C bus available (/dev/i2c-1)"
     if command -v i2cdetect >/dev/null 2>&1; then
-        if i2cdetect -y 1 2>/dev/null | grep -q "44"; then
+        I2C_SCAN=${I2C_SCAN:-$(i2cdetect -y 1 2>/dev/null || true)}
+        if echo "$I2C_SCAN" | grep -q "44"; then
             pass "SHT40 sensor detected on I2C bus (0x44)"
         else
             warn "I2C bus available but SHT40 (0x44) not detected"

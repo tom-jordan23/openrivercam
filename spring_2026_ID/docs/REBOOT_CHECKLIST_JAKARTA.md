@@ -194,3 +194,53 @@ enough to query NTP. If only localhost appears, chrony is serving — camera
 just hasn't queried yet.
 
 - [ ] chrony running and serving 192.168.50.0/24
+
+### 12. Power Management (Witty Pi 5 + ORC-OS)
+
+Power management uses a split responsibility model:
+
+- **Witty Pi 5** owns the wake/startup schedule (configured interactively via `wp5`)
+- **ORC-OS** owns shutdown decisions (`shutdown_after_task`, `reboot_after`)
+- **systemd ordering** ensures `wp5d` sets the system clock before ORC-OS starts,
+  preventing the `reboot_after` watchdog from triggering prematurely due to a
+  time jump
+
+```bash
+# Verify orc-api starts after wp5d (prevents time-jump reboot loop)
+grep "wp5d" /etc/systemd/system/orc-api.service
+
+# Check ORC-OS reboot_after setting (seconds; 0 or NULL = disabled)
+python3 -c "
+import sqlite3
+conn = sqlite3.connect('/home/pi/.ORC-OS/orc-os.db')
+c = conn.cursor()
+c.execute('SELECT reboot_after, shutdown_after_task, active FROM settings')
+print('reboot_after, shutdown_after_task, active:', c.fetchone())
+"
+
+# Check Witty Pi 5 status and schedule (interactive)
+wp5
+```
+
+- [ ] `orc-api.service` has `After=... wp5d.service`
+- [ ] ORC-OS `reboot_after` set appropriately (86400 = 24hr watchdog, or 0 to disable)
+- [ ] Witty Pi 5 startup schedule configured (if duty-cycling)
+
+#### Duty-Cycle Stations
+
+For stations that power-cycle (solar or battery), configure the Witty Pi 5
+wake schedule via the interactive `wp5` tool:
+
+1. Run `wp5` (interactive menu)
+2. Option 6 → Choose schedule script (for repeating on/off cycles)
+3. Or Option 5 → Schedule next startup (for one-time wake)
+
+ORC-OS handles shutdown via `shutdown_after_task=true` in daemon settings.
+The Witty Pi 5 schedule brings the Pi back at the next interval.
+
+#### AC-Powered Stations (Jakarta)
+
+For always-on stations, the Witty Pi 5 "default state when powered" should be
+ON (this is the factory default). ORC-OS `reboot_after` serves as a watchdog
+to recover from hangs. No Witty Pi schedule script is needed unless the station
+is later redeployed as a duty-cycle site.

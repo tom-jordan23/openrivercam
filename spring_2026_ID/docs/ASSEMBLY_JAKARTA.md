@@ -1201,12 +1201,31 @@ After starting the service, wait for the next :00/:15/:30/:45 mark, then:
 - [x] Verify capture runs on timer: check logs after next :00/:15/:30/:45
 - [x] Verify start/stop/enable/disable works from ORC-OS web UI
 
-### Witty Pi 5 Power Schedule (Jakarta)
+### Witty Pi 5 Power Management (Jakarta)
+
+**Power management uses a split responsibility model:**
+
+| Component | Responsibility |
+|-----------|---------------|
+| **Witty Pi 5** | Owns the wake/startup schedule (configured via `wp5` interactive menu) |
+| **ORC-OS** | Owns shutdown decisions (`shutdown_after_task`, `reboot_after` watchdog) |
+| **systemd** | `orc-api.service` starts after `wp5d.service` (prevents time-jump reboot loop) |
 
 Jakarta is always-on (AC power). The Witty Pi just needs to pass power through.
 
+```bash
+# Verify systemd ordering (set by deploy.sh)
+grep "wp5d" /etc/systemd/system/orc-api.service
+# Expected: After=network.target wp5d.service
+```
+
 - [ ] Set "Default state when powered" to **ON** (`wp5` → 11 → 1)
 - [ ] Verify Pi auto-starts when AC power is applied (no button press needed)
+- [ ] Verify `orc-api.service` has `wp5d.service` dependency
+
+**For future redeployment as a duty-cycle station:** configure a Witty Pi wake
+schedule via `wp5` (Option 6 → Choose schedule script) and enable ORC-OS
+`shutdown_after_task` in daemon settings. No software changes needed.
 
 ### Pangolin Remote Access
 

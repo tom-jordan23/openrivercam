@@ -384,8 +384,22 @@ fi
 # Sync system time to Witty Pi 5 RTC (RTC may have stale time on first install)
 if command -v wp5 >/dev/null 2>&1 && [ "$DRY_RUN" -eq 0 ]; then
     log "Syncing system time to Witty Pi 5 RTC..."
-    echo "1" | wp5 >/dev/null 2>&1 && echo "14" | wp5 >/dev/null 2>&1
+    printf '1\n14\n' | timeout 30 wp5 >/dev/null 2>&1 || true
     log "RTC sync complete"
+fi
+
+# Ensure ORC-OS API starts after Witty Pi 5 daemon sets the system clock.
+# Without this, ORC-OS may set its start_time before wp5d corrects the clock,
+# causing reboot_after to trigger immediately due to the time jump.
+if [ -f /etc/systemd/system/orc-api.service ]; then
+    if ! grep -q "wp5d.service" /etc/systemd/system/orc-api.service; then
+        log "Adding wp5d.service dependency to orc-api.service..."
+        if [ "$DRY_RUN" -eq 0 ]; then
+            sudo sed -i 's/After=network.target/After=network.target wp5d.service/' /etc/systemd/system/orc-api.service
+        fi
+    else
+        log "orc-api.service already depends on wp5d.service"
+    fi
 fi
 
 # Disable ORC-OS native RTC power management (Pi 5 ML-2020 battery failed;
@@ -438,7 +452,7 @@ if [ -f /etc/systemd/system/orc-capture.service ] && [ ! -L /etc/systemd/system/
 fi
 
 # Import orc-capture service definition into ORC-OS
-ORC_CAPTURE_JSON="$PI_DIR/shared/orc-capture-service.json"
+ORC_CAPTURE_JSON="$PI_DIR/orc-capture-service.json"
 if [ -f "$ORC_CAPTURE_JSON" ]; then
     log "Importing orc-capture service into ORC-OS..."
     if [ "$DRY_RUN" -eq 0 ]; then
