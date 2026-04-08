@@ -517,6 +517,41 @@ run_config_txt() {
             fi
         fi
     done
+
+    # cmdline.txt — Samsung FIT Plus UAS quirk
+    # The UAS driver causes boot-time USB enumeration storms when the Samsung
+    # FIT Plus (0781:5583) is plugged in alongside the Quectel modem. Both uas
+    # and usb-storage are kernel built-ins, so modprobe.d quirks don't work —
+    # cmdline.txt is the only option. This MUST be applied BEFORE inserting the
+    # USB drive. See BOOT_FAILURE_ANALYSIS.md and TODO-015.
+    local cmdline_txt=""
+    local cmdline_dir
+    cmdline_dir="$(dirname "$config_txt")"
+    if [ -f "$cmdline_dir/cmdline.txt" ]; then
+        cmdline_txt="$cmdline_dir/cmdline.txt"
+    fi
+
+    if [ -n "$cmdline_txt" ]; then
+        local uas_quirk="usb-storage.quirks=0781:5583:u"
+        if grep -q "$uas_quirk" "$cmdline_txt"; then
+            pass "$cmdline_txt: Samsung FIT UAS quirk present"
+        else
+            if [ "$FIXING" -eq 1 ]; then
+                backup_file "$cmdline_txt"
+                # cmdline.txt is a single line — append the quirk with a space
+                sudo sed -i "s/$/ ${uas_quirk}/" "$cmdline_txt"
+                fixed "$cmdline_txt: Samsung FIT UAS quirk added (reboot required)"
+            else
+                fail "$cmdline_txt: Samsung FIT UAS quirk missing ($uas_quirk) — USB drive will cause boot storms"
+            fi
+        fi
+    else
+        if [ -f /etc/udev/rules.d/90-qemu.rules ]; then
+            warn "cmdline.txt not accessible (/boot/firmware not mounted) — cannot verify UAS quirk"
+        else
+            fail "cmdline.txt not found — cannot apply Samsung FIT UAS quirk"
+        fi
+    fi
 }
 
 # ─── System config ────────────────────────────────────────────────
