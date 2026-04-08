@@ -1,0 +1,26 @@
+#!/bin/bash
+# LED status indicator: current state + compact color reference
+
+echo ""
+echo "=== LED Status ==="
+
+# Show current service state
+if systemctl is-active --quiet orc-led-status 2>/dev/null; then
+    echo "  Service: active"
+else
+    echo "  Service: INACTIVE (run: sudo systemctl start orc-led-status)"
+fi
+
+# Check for suppressed errors
+CONF="/etc/orc/led-status.yaml"
+if [ -f "$CONF" ]; then
+    suppressed=$(grep -A1 "suppressed:" "$CONF" | grep "true" | wc -l)
+    if [ "$suppressed" -gt 0 ]; then
+        echo "  Suppressed: $suppressed subsystem(s) — see $CONF"
+    fi
+fi
+
+echo ""
+echo "  Green  = OK         Red    = Camera offline   Blue    = Modem/upload"
+echo "  Yellow = Disk issue  Cyan   = Maintenance    White   = Booting"
+echo "  Magenta = Low voltage                        OFF     = Sleeping"

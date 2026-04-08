@@ -42,11 +42,7 @@ fi
 
 # Witty Pi 5 wake schedule
 if command -v wp5 >/dev/null 2>&1; then
-    echo "  Wake:       managed by Witty Pi 5 (run 'wp5' to view/change schedule)"
+    echo "  Wake:       managed by Witty Pi 5 (run 'wp5' to configure)"
 else
     echo "  Wake:       Witty Pi 5 not installed"
 fi
-
-echo ""
-echo "  To change shutdown/reboot: ORC-OS web UI > Settings > Daemon"
-echo "  To change wake schedule:   run 'wp5' (interactive, option 6)"

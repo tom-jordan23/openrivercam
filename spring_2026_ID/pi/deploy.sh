@@ -406,16 +406,31 @@ if [ -f /etc/fstab ]; then
     fi
 fi
 
-# Show ORC station status on every new terminal (appended to pi user's .bashrc)
+# Show ORC station status on every new terminal (appended to pi user's .bashrc).
+# The RS image already has a MOTD_SHOWN-guarded block; only add if completely missing.
+# Also clean up any unguarded duplicate that earlier deploy.sh versions may have added.
 BASHRC="/home/pi/.bashrc"
 if [ -f "$BASHRC" ]; then
     if ! grep -q "run-parts /etc/update-motd.d/" "$BASHRC" 2>/dev/null; then
         log "Adding ORC MOTD to $BASHRC"
         if [ "$DRY_RUN" -eq 0 ]; then
-            echo "" >> "$BASHRC"
-            echo "# ORC station status on every new terminal" >> "$BASHRC"
-            echo "cat /etc/motd 2>/dev/null" >> "$BASHRC"
-            echo "run-parts /etc/update-motd.d/ 2>/dev/null" >> "$BASHRC"
+            cat >> "$BASHRC" << 'MOTD'
+
+# Display MOTD (static + dynamic scripts from /etc/update-motd.d/)
+if [ -z "$MOTD_SHOWN" ]; then
+    [ -f /etc/motd ] && cat /etc/motd
+    [ -d /etc/update-motd.d ] && run-parts /etc/update-motd.d 2>/dev/null
+    export MOTD_SHOWN=1
+fi
+MOTD
+        fi
+    elif grep -q "^cat /etc/motd" "$BASHRC" 2>/dev/null; then
+        # Remove unguarded duplicate block added by earlier deploy.sh versions
+        log "Removing duplicate MOTD block from $BASHRC"
+        if [ "$DRY_RUN" -eq 0 ]; then
+            sed -i '/^# ORC station status on every new terminal$/d' "$BASHRC"
+            sed -i '/^cat \/etc\/motd 2>\/dev\/null$/d' "$BASHRC"
+            sed -i '/^run-parts \/etc\/update-motd.d\/ 2>\/dev\/null$/d' "$BASHRC"
         fi
     fi
 fi

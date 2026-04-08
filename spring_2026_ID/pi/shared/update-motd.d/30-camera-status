@@ -3,14 +3,9 @@ GPIO_PIN=24
 LEASE_FILE="/var/lib/misc/dnsmasq.leases"
 
 echo ""
-echo "=== OpenRiverCam Camera Network ==="
+echo "=== Camera Network ==="
 
 # Relay status — active-high (this relay board energizes when input is HIGH)
-#   GPIO HIGH = relay energized = PoE switch ON
-#   GPIO LOW  = relay de-energized = PoE switch OFF
-# After reboot, pin may be unconfigured (level "--"). If so, briefly set
-# it as input to read the actual electrical level without affecting the
-# relay — the relay board's optocoupler holds its state independently.
 gpio_line=$(pinctrl get "$GPIO_PIN" 2>/dev/null)
 if echo "$gpio_line" | grep -q "| --"; then
     pinctrl set "$GPIO_PIN" ip 2>/dev/null
@@ -24,7 +19,7 @@ else
     echo "  Relay CH1:  unknown (GPIO $GPIO_PIN not readable)"
 fi
 
-# Witty Pi 5 HAT+ status (RTC + power management)
+# Witty Pi 5 HAT+ status
 if command -v wp5 >/dev/null 2>&1; then
     WP5_OUT=$(echo "14" | wp5 2>/dev/null)
     WP5_RTC=$(echo "$WP5_OUT" | grep "RTC Time:" | head -1 | sed 's/.*RTC Time: //')
@@ -48,18 +43,15 @@ else
     echo "  Pi (eth0):  no IP configured"
 fi
 
-# Camera detection — read from dnsmasq DHCP leases (actual devices on the
-# network) rather than hardcoded IPs. Only report what's really there.
+# Camera detection from DHCP leases
 FOUND_CAMERA=0
 if [ -f "$LEASE_FILE" ]; then
     while read -r _ts mac ip hostname _id; do
-        # Skip the Pi's own address
         [ "$ip" = "192.168.50.1" ] && continue
         if timeout 1 bash -c "echo >/dev/tcp/$ip/80" 2>/dev/null; then
-            echo "  Camera:     http://$ip (${hostname:-unknown}, $mac)"
-            echo "  RTSP:       rtsp://admin:PASSWORD@$ip:554/Streaming/Channels/101"
+            echo "  Camera:     $ip (${hostname:-unknown}) - online"
         else
-            echo "  Camera:     $ip (${hostname:-unknown}, $mac) - lease active, not responding"
+            echo "  Camera:     $ip (${hostname:-unknown}) - lease active, not responding"
         fi
         FOUND_CAMERA=1
     done < "$LEASE_FILE"

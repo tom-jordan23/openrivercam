@@ -1,0 +1,36 @@
+#!/bin/bash
+# Station banner with versions
+
+STATION=$(hostname | sed 's/^orc-//' | sed 's/.*/\u&/')
+ORC_VER=$(/home/pi/venv/orc-os/bin/python3 -c "from orc_api import __version__; print(__version__)" 2>/dev/null || echo "?")
+OVERLAY_VER=$(git -C /home/pi/code/git/openrivercam describe --tags --always 2>/dev/null || echo "?")
+
+TITLE="PMI OpenRiverCam Station: $STATION"
+VERSIONS="ORC-OS v${ORC_VER} | Overlay ${OVERLAY_VER}"
+
+# Calculate box width (fit the longer of title or versions, plus padding)
+T_LEN=${#TITLE}
+V_LEN=${#VERSIONS}
+WIDTH=$(( T_LEN > V_LEN ? T_LEN : V_LEN ))
+WIDTH=$(( WIDTH + 4 ))  # 2 spaces padding each side
+
+pad() {
+    local text="$1"
+    local len=${#text}
+    local left=$(( (WIDTH - len) / 2 ))
+    local right=$(( WIDTH - len - left ))
+    printf '║%*s%s%*s║\n' "$left" "" "$text" "$right" ""
+}
+
+BAR=$(printf '═%.0s' $(seq 1 $WIDTH))
+
+echo "╔${BAR}╗"
+pad "$TITLE"
+pad "$VERSIONS"
+echo "╚${BAR}╝"
+echo ""
+echo "  ORC-OS:  https://github.com/localdevices/ORC-OS"
+echo "  Overlay: https://github.com/tom-jordan23/openrivercam"
+
+echo ""
+uname -snrvm

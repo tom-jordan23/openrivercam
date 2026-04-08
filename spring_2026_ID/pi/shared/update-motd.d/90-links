@@ -1,0 +1,29 @@
+#!/bin/bash
+# Quick reference links and URLs
+
+LEASE_FILE="/var/lib/misc/dnsmasq.leases"
+PI_IP=$(hostname -I 2>/dev/null | awk '{print $1}')
+
+echo ""
+echo "=== Quick Reference ==="
+
+# ORC-OS web UI
+if [ -n "$PI_IP" ]; then
+    echo "  ORC-OS:     http://${PI_IP}"
+fi
+
+# Camera web UI and RTSP (from DHCP leases)
+if [ -f "$LEASE_FILE" ]; then
+    while read -r _ts mac ip hostname _id; do
+        [ "$ip" = "192.168.50.1" ] && continue
+        echo "  Camera UI:  http://${ip}"
+        echo "  RTSP:       rtsp://admin:***@${ip}:554/Streaming/Channels/101"
+    done < "$LEASE_FILE"
+fi
+
+echo "  Preflight:  orc-preflight"
+echo "  LED test:   sudo orc-led-test"
+echo "  LED config: /etc/orc/led-status.yaml"
+echo "  Capture:    /etc/orc-capture.conf"
+echo "  Relay:      poe-relay on|off|status"
+echo "  Witty Pi:   wp5"
