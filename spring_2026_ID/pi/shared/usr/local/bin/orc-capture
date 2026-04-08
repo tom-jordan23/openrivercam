@@ -39,6 +39,16 @@
 
 set -o pipefail
 
+# ─── Maintenance mode check ─────────────────────────────────────────
+# When the station is in maintenance mode, skip capture entirely.
+# The flag file is created by orc-maintenance-check at boot and lives
+# on tmpfs, so it disappears on reboot back to production mode.
+
+if [ -f /run/orc-maintenance-mode ]; then
+    echo "$(date '+%Y-%m-%d %H:%M:%S') [orc-capture] MAINTENANCE MODE — skipping capture cycle"
+    exit 0
+fi
+
 # ─── Load configuration ─────────────────────────────────────────────
 # Config file is the single source of truth. To override for testing,
 # point ORC_CAPTURE_CONF to a different file.
@@ -176,37 +186,61 @@ wait_for_camera() {
 # settings via ISAPI on each boot to prevent white light flashing etc.
 
 enforce_camera_config() {
-    log "Enforcing camera config (supplement light → ${SUPPLEMENT_LIGHT_MODE})..."
+    log "Enforcing camera config..."
 
+    # --- Supplement light mode ---
     local response
     response=$(curl -s --digest -u "${CAMERA_USER}:${CAMERA_PASS}" \
         "http://${CAMERA_IP}${ISAPI_CHANNEL}" 2>/dev/null)
 
     if [ -z "$response" ]; then
         warn "Could not read camera image config — skipping enforcement"
-        return
-    fi
-
-    # Check if supplementLightMode needs fixing
-    if echo "$response" | grep -q "<supplementLightMode>${SUPPLEMENT_LIGHT_MODE}</supplementLightMode>"; then
+    elif echo "$response" | grep -q "<supplementLightMode>${SUPPLEMENT_LIGHT_MODE}</supplementLightMode>"; then
         log "  Supplement light already set to ${SUPPLEMENT_LIGHT_MODE}"
+    else
+        local fixed
+        fixed=$(echo "$response" | sed "s|<supplementLightMode>[^<]*</supplementLightMode>|<supplementLightMode>${SUPPLEMENT_LIGHT_MODE}</supplementLightMode>|")
+        local result
+        result=$(curl -s --digest -u "${CAMERA_USER}:${CAMERA_PASS}" \
+            -X PUT -H "Content-Type: application/xml" \
+            -d "$fixed" \
+            "http://${CAMERA_IP}${ISAPI_CHANNEL}" 2>/dev/null)
+        if echo "$result" | grep -q "OK"; then
+            log "  Fixed: supplementLightMode → ${SUPPLEMENT_LIGHT_MODE}"
+        else
+            warn "  Failed to set supplementLightMode"
+        fi
+    fi
+
+    # --- OSD overlays (date/time and channel name burn into video) ---
+    local overlays
+    overlays=$(curl -s --digest -u "${CAMERA_USER}:${CAMERA_PASS}" \
+        "http://${CAMERA_IP}/ISAPI/System/Video/inputs/channels/1/overlays" 2>/dev/null)
+
+    if [ -z "$overlays" ]; then
+        warn "Could not read OSD config — skipping"
         return
     fi
 
-    # Replace and push
-    local fixed
-    fixed=$(echo "$response" | sed "s|<supplementLightMode>[^<]*</supplementLightMode>|<supplementLightMode>${SUPPLEMENT_LIGHT_MODE}</supplementLightMode>|")
+    # Check if any overlay is still enabled
+    if ! echo "$overlays" | grep -q "<enabled>true</enabled>"; then
+        log "  OSD overlays already disabled"
+        return
+    fi
 
-    local result
-    result=$(curl -s --digest -u "${CAMERA_USER}:${CAMERA_PASS}" \
+    # Disable all overlays
+    local fixed_osd
+    fixed_osd=$(echo "$overlays" | sed "s|<enabled>true</enabled>|<enabled>false</enabled>|g")
+    local result_osd
+    result_osd=$(curl -s --digest -u "${CAMERA_USER}:${CAMERA_PASS}" \
         -X PUT -H "Content-Type: application/xml" \
-        -d "$fixed" \
-        "http://${CAMERA_IP}${ISAPI_CHANNEL}" 2>/dev/null)
+        -d "$fixed_osd" \
+        "http://${CAMERA_IP}/ISAPI/System/Video/inputs/channels/1/overlays" 2>/dev/null)
 
-    if echo "$result" | grep -q "OK"; then
-        log "  Fixed: supplementLightMode → ${SUPPLEMENT_LIGHT_MODE}"
+    if echo "$result_osd" | grep -q "OK"; then
+        log "  Fixed: OSD overlays disabled"
     else
-        warn "  Failed to set supplementLightMode"
+        warn "  Failed to disable OSD overlays"
     fi
 }
 

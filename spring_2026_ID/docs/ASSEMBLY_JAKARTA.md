@@ -197,6 +197,14 @@ The USB flash drive stores camera uploads and ORC data. Format as ext4 and mount
    ORC-OS watches `/home/pi/Videos` for incoming files. The symlink ensures
    video data is stored on the USB drive, not the OS SD card.
 
+   > **Known issue — cross-device link:** ORC-OS uses `os.rename()` to move
+   > incoming videos from `~/Videos` to `~/.ORC-OS/tmp/`. If these are on
+   > different filesystems (USB vs SD card), the rename fails with
+   > `OSError: [Errno 18] Invalid cross-device link` and videos never appear
+   > in the web UI. If you hit this, revert to a plain directory on the SD
+   > card: `rm ~/Videos && mkdir ~/Videos`. This is an upstream ORC-OS
+   > limitation — verify after first captures that videos appear in the UI.
+
 **Configure NTP server for camera time sync:**
 
 The camera is on an isolated network with no internet. The Pi must serve NTP.
@@ -250,11 +258,19 @@ The camera is on an isolated network with no internet. The Pi must serve NTP.
   This sets: 1920x1080 H.264 at 16 Mbps CBR, 12.5fps, audio off, IR-only
   illumination, motion detection off, NTP from Pi, UTC timezone.
 
-  > **Warning — supplement light reverts on power cycle:** The ANNKE C1200
-  > resets `supplementLightMode` from `irLight` to `eventIntelligence` after
-  > every reboot, causing bright white LED flashes. The `orc-capture` script
-  > re-applies `irLight` automatically on each wake cycle. If testing manually,
-  > verify with: `curl --digest -u admin:<password> http://<cam-ip>/ISAPI/Image/channels/1 | grep supplementLightMode`
+  > **Warning — settings revert on power cycle:** The ANNKE C1200 resets
+  > `supplementLightMode` from `irLight` to `eventIntelligence` and may
+  > re-enable OSD overlays after every reboot. The `orc-capture` script
+  > enforces both settings on every capture cycle:
+  > - `supplementLightMode` → `irLight` (prevents white LED flashes)
+  > - OSD overlays (date/time, channel name) → disabled (text in video
+  >   interferes with ORC image analysis)
+  >
+  > If testing manually, verify with:
+  > ```
+  > curl --digest -u admin:<password> http://<cam-ip>/ISAPI/Image/channels/1 | grep supplementLightMode
+  > curl --digest -u admin:<password> http://<cam-ip>/ISAPI/System/Video/inputs/channels/1/overlays | grep enabled
+  > ```
 
 - [ ] Set recording schedule to continuous (CMR):
   ```bash
@@ -1358,6 +1374,23 @@ yet — this is expected during bench testing.
 - [ ] Data syncs to LiveORC server
 - [ ] LED status shows green (healthy)
 - [ ] Leave running for soak test (minimum 4 hours, ideally overnight)
+
+### In-Country TODOs
+
+Items to verify or adjust during field deployment:
+
+- [ ] **Cross-device link check:** If `~/Videos` is symlinked to USB, verify
+  videos appear in the ORC-OS web UI Videos tab after capture. If they don't,
+  check `journalctl -u orc-api` for `Errno 18` and revert to SD card:
+  `rm ~/Videos && mkdir ~/Videos`. Compare with Sukabumi setup.
+- [ ] **OSD overlays:** Verify both cameras have OSD disabled (date/time and
+  channel name). Run `orc-capture` and confirm "OSD overlays already disabled"
+  in the log output.
+- [ ] **Capture settings review:** Review capture quality gate thresholds based
+  on deployment distance and scene. Evaluate whether resolution, framerate,
+  or codec can be traded to raise the bitrate floor to 15 Mbps or better
+  (current floor: 12 Mbps in `/etc/orc-capture.conf` `MIN_BITRATE_KBPS`).
+  Camera max is 16 Mbps CBR.
 
 ---
 

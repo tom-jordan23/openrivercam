@@ -198,6 +198,7 @@ orc-capture --skip-relay --dry-run
 ```
 
 - [ ] Camera config enforced (supplementLightMode → irLight)
+- [ ] OSD overlays disabled (or "Fixed: OSD overlays disabled")
 - [ ] RTSP capture succeeds
 - [ ] Quality gate PASSED (1920x1080, ~15 Mbps, ~5s)
 

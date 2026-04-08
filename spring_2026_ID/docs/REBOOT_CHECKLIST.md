@@ -185,18 +185,22 @@ ping -c 1 192.168.50.139
 
 ### 10. Camera Configuration (after camera is up)
 
-The ANNKE C1200 may revert `supplementLightMode` to `eventIntelligence` on
-power cycle (white LED flashes at night). `orc-capture` enforces `irLight`
-on every cycle, so this is self-healing.
+The ANNKE C1200 may revert settings on power cycle. `orc-capture` enforces
+correct config on every capture cycle, so these are self-healing:
+- `supplementLightMode` → `irLight` (prevents white LED flashes at night)
+- OSD overlays → disabled (on-screen text interferes with ORC image analysis)
 
 ```bash
 # Credentials in ~/.orc_deploy_sukabumi (BASE_PASSWD)
 source ~/.orc_deploy_sukabumi
 curl -s --digest -u "admin:${BASE_PASSWD}" \
   http://192.168.50.139/ISAPI/Image/channels/1 | grep supplementLightMode
+curl -s --digest -u "admin:${BASE_PASSWD}" \
+  http://192.168.50.139/ISAPI/System/Video/inputs/channels/1/overlays | grep enabled
 ```
 
 - [ ] supplementLightMode is `irLight` or `eventIntelligence` (orc-capture fixes this)
+- [ ] OSD overlays disabled (orc-capture fixes this)
 
 ### 11. Capture Script (end-to-end test)
 
@@ -204,11 +208,13 @@ curl -s --digest -u "admin:${BASE_PASSWD}" \
 orc-capture --skip-relay --dry-run
 ```
 
-This will: enforce irLight, capture 5s via RTSP, validate quality gate.
-Uses `--skip-relay` since relay is already on from step 8.
+This will: enforce camera config (supplement light + OSD), capture 5s via
+RTSP, validate quality gate. Uses `--skip-relay` since relay is already on
+from step 8.
 
 - [ ] `Enforcing camera config` line appears
 - [ ] `Fixed: supplementLightMode -> irLight` (or "already set")
+- [ ] `OSD overlays already disabled` (or "Fixed: OSD overlays disabled")
 - [ ] Quality gate PASSED (1920x1080, ~15 Mbps, ~5s)
 
 Then power off:

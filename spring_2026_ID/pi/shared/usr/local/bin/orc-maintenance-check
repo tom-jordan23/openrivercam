@@ -2,8 +2,9 @@
 # orc-maintenance-check — fetch station mode from GitHub on each boot
 #
 # Reads a station_mode file from a public GitHub repo. If the file
-# contains "maintenance", stops orc-api.service so the Pi stays awake
-# for the full Witty Pi ON window instead of shutting down after capture.
+# contains "maintenance", creates a flag file so orc-capture skips
+# capture cycles. The Pi stays awake for the full Witty Pi ON window
+# with the ORC-OS web UI still accessible.
 #
 # Fail-safe: if GitHub is unreachable, defaults to production mode.
 # The Witty Pi schedule is never modified — only ORC-OS behavior changes.
@@ -57,9 +58,9 @@ fi
 # --- Act on mode ---
 case "$MODE" in
     maintenance)
-        systemctl stop orc-api.service 2>/dev/null || true
+        # orc-api stays running so the web UI remains accessible
         touch "$FLAG"
-        logger -t "$TAG" "MAINTENANCE mode — orc-api stopped (source: $URL)"
+        logger -t "$TAG" "MAINTENANCE mode — capture will be skipped (source: $URL)"
         ;;
     production)
         rm -f "$FLAG"
