@@ -126,6 +126,7 @@ Pi 5 RTC battery Molex connector broke on BOTH boards (traces tore). Switching t
 - [ ] Pangolin remote access (pre-installed on RS image; configure via ORC-OS web UI)
 - [ ] Implement rain gauge capture script (TODO-001)
 - [ ] Power status MOTD script (undervoltage false positive)
+  - [ ] MOTD: add SHT40 temperature + humidity readout
 - [ ] Full end-to-end soak test (leave running overnight Tue→Wed)
 
 ### Jakarta-specific
@@ -489,6 +490,24 @@ Jakarta is always-on so can be done post-deployment.
 - [ ] Wire DS18B20 external temp probe
 - [ ] Wire WS2812B LED (GPIO 18)
 - [ ] Test sensors via orc-sensors / orc-led-test
+
+---
+
+### TODO-019: Fix getty@tty1 login loop (hcwinsemius user)
+
+| Field | Value |
+|-------|-------|
+| **Status** | OPEN |
+| **Site** | Sukabumi |
+| **Priority** | P2 |
+
+getty@tty1 is cycling every 5 seconds trying to auto-login user `hcwinsemius`,
+which doesn't exist on this system. Causes constant authentication failures in
+the journal (restart counter hits 25+ within minutes of boot). Likely a stale
+autologin config from the ORC-OS image.
+
+Check `/etc/systemd/system/getty@tty1.service.d/` or equivalent override for
+the autologin user setting.
 
 ---
 

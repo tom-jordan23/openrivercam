@@ -1,0 +1,15 @@
+# Sukabumi 30-minute duty cycle
+#
+# 25 min ON / 5 min OFF — captures every 30 minutes (48/day)
+#
+# Use this schedule to conserve battery during low-solar periods
+# or when less frequent monitoring is acceptable.
+#
+# ORC-OS handles shutdown, typically within ~3 minutes. The 25-min
+# ON window is a generous backstop. Witty Pi forces shutdown at
+# minute 25 if ORC-OS hasn't, leaving a 5-min buffer before next wake.
+
+BEGIN 2026-01-01 00:00:00
+END   2099-12-31 23:59:59
+ON    M25
+OFF   M5

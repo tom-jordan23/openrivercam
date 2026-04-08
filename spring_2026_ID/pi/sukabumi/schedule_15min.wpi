@@ -1,0 +1,22 @@
+# Sukabumi 15-minute duty cycle
+#
+# 10 min ON / 5 min OFF — captures every 15 minutes (96/day)
+#
+# ORC-OS handles shutdown ("shutdown after task" = ON), typically
+# completing within ~3 minutes. The 10-min ON window is a safety
+# backstop — if ORC-OS hasn't shut down by then, Witty Pi forces
+# graceful shutdown via wp5d, leaving a 5-min guaranteed-off buffer
+# before the next wake.
+#
+# Timeline per cycle:
+#   0:00  Witty Pi restores power, Pi boots (~25s)
+#   0:25  orc-capture starts (relay + camera boot + capture ~68s)
+#   1:33  ORC-OS processes video, uploads
+#   ~3:00 ORC-OS initiates shutdown ← normal path
+#  10:00  Witty Pi backstop shutdown (if ORC-OS didn't)
+#  15:00  Next cycle begins
+
+BEGIN 2026-01-01 00:00:00
+END   2099-12-31 23:59:59
+ON    M10
+OFF   M5
