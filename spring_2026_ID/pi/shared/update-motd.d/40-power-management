@@ -4,6 +4,15 @@
 echo ""
 echo "=== Power Management ==="
 
+# Maintenance mode check
+if [ -f /run/orc-maintenance-mode ]; then
+    echo ""
+    echo "  *** MAINTENANCE MODE ***"
+    echo "  orc-api is stopped — no captures, no auto-shutdown"
+    echo "  To resume: set station_mode to 'production' on GitHub, then reboot"
+    echo ""
+fi
+
 # ORC-OS shutdown settings (from database)
 DB="/home/pi/.ORC-OS/orc-os.db"
 if [ -f "$DB" ]; then

@@ -54,6 +54,13 @@ Complete these steps BEFORE traveling to Indonesia:
   - First boot takes 2-3 minutes (services compile, filesystem expands, then auto-reboots)
   - After reboot, navigate to `http://<hostname>.local` to verify the ORC-OS web dashboard loads
   - Set the ORC-OS web dashboard password when prompted
+- [ ] Load Witty Pi 5 schedule files via laptop USB:
+  1. Shut down the Pi (Witty Pi stays powered from external supply)
+  2. Connect laptop USB cable to Witty Pi's USB-C port
+  3. Copy `.wpi` files from `spring_2026_ID/pi/jakarta/` (or shared schedules) into `schedule/` on the emulated drive
+  4. Safely eject the drive from the laptop, disconnect cable
+  5. Boot the Pi, run `wp5` option 6 to select the active schedule (or set "Default state when powered" to ON for always-on)
+  - **Do NOT connect the Pi's USB-A to the Witty Pi USB-C** — causes reboot loop
 - [ ] Configure Witty Pi 5 HAT+ wake/sleep schedule (CR2032 coin cell provides RTC)
 - [ ] **Do NOT change timezone from UTC** — ORC-OS requires UTC (see REBOOT_CHECKLIST.md)
 - [ ] Install and configure chrony as NTP server for camera network
@@ -1223,6 +1230,14 @@ grep "wp5d" /etc/systemd/system/orc-api.service
 - [ ] Set "Default state when powered" to **ON** (`wp5` → 11 → 1)
 - [ ] Verify Pi auto-starts when AC power is applied (no button press needed)
 - [ ] Verify `orc-api.service` has `wp5d.service` dependency
+
+**Loading schedule files onto Witty Pi:**
+1. Shut down the Pi (Witty Pi stays powered from external supply)
+2. Connect laptop USB cable to Witty Pi's USB-C port — drive appears as "Witty Pi 5"
+3. Copy `.wpi` files into `schedule/` on the emulated drive
+4. Safely eject, disconnect cable, boot Pi
+5. Run `wp5` option 6 to select the active schedule
+- **Do NOT connect the Pi's USB-A to the Witty Pi USB-C** — causes power feedback reboot loop
 
 **For future redeployment as a duty-cycle station:** configure a Witty Pi wake
 schedule via `wp5` (Option 6 → Choose schedule script) and enable ORC-OS

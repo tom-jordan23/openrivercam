@@ -1,9 +1,9 @@
-# Sukabumi maintenance — always on
+# Sukabumi maintenance -- always on
 #
 # Keeps Pi powered continuously for field maintenance, debugging,
 # or software updates. Equivalent to Jakarta's always-on mode.
 #
-# The OFF S1 is the minimum allowed — Pi stays on effectively 24/7.
+# The OFF S1 is the minimum allowed -- Pi stays on effectively 24/7.
 # To exit maintenance: load schedule_15min.wpi or schedule_30min.wpi.
 
 BEGIN 2026-01-01 00:00:00

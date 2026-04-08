@@ -329,6 +329,10 @@ run_overlay_files() {
 
     while IFS= read -r -d '' file; do
         [ "$(basename "$file")" = ".gitkeep" ] && continue
+        # Skip non-overlay files that live in the site dir but aren't deployed to the Pi
+        case "$(basename "$file")" in
+            *.wpi|station_mode) continue ;;
+        esac
         _check_overlay_file "$file" "$SITE_DIR"
     done < <(find "$SITE_DIR" -type f -print0 | sort -z)
 
@@ -845,6 +849,7 @@ run_services() {
     _ensure_service_enabled orc-sensors.timer
     _ensure_service_enabled orc-led-status.service
     _ensure_service_enabled orc-boot-usb-log.service
+    _ensure_service_enabled orc-maintenance-check.service
 
     # Disable
     # orc-gpio-relays uses active-low logic incompatible with Electronics-Salon relay module

@@ -57,6 +57,13 @@ Complete these steps BEFORE traveling to Indonesia:
   - First boot takes 2-3 minutes (services compile, filesystem expands, then auto-reboots)
   - After reboot, navigate to `http://<hostname>.local` to verify the ORC-OS web dashboard loads
   - Set the ORC-OS web dashboard password when prompted
+- [ ] Load Witty Pi 5 schedule files via laptop USB:
+  1. Shut down the Pi (Witty Pi stays powered from external supply)
+  2. Connect laptop USB cable to Witty Pi's USB-C port
+  3. Copy `.wpi` files from `spring_2026_ID/pi/sukabumi/` into `schedule/` on the emulated drive
+  4. Safely eject the drive from the laptop, disconnect cable
+  5. Boot the Pi, run `wp5` option 6 to select the active schedule
+  - **Do NOT connect the Pi's USB-A to the Witty Pi USB-C** — causes reboot loop
 - [ ] Configure Witty Pi 5 HAT+ wake schedule via `wp5` interactive menu (15-minute cycle)
   - Witty Pi owns wake/startup; ORC-OS owns shutdown (`shutdown_after_task`)
   - Verify `orc-api.service` has `After=... wp5d.service` (set by `deploy.sh`)

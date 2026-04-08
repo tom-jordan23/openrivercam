@@ -1,6 +1,6 @@
 # Sukabumi 30-minute duty cycle
 #
-# 25 min ON / 5 min OFF — captures every 30 minutes (48/day)
+# 25 min ON / 5 min OFF -- captures every 30 minutes (48/day)
 #
 # Use this schedule to conserve battery during low-solar periods
 # or when less frequent monitoring is acceptable.

@@ -1,0 +1,72 @@
+#!/bin/bash
+# orc-maintenance-check — fetch station mode from GitHub on each boot
+#
+# Reads a station_mode file from a public GitHub repo. If the file
+# contains "maintenance", stops orc-api.service so the Pi stays awake
+# for the full Witty Pi ON window instead of shutting down after capture.
+#
+# Fail-safe: if GitHub is unreachable, defaults to production mode.
+# The Witty Pi schedule is never modified — only ORC-OS behavior changes.
+#
+# Config: /etc/orc-maintenance.conf (repo, branch, path prefix)
+
+set -euo pipefail
+
+CONF="/etc/orc-maintenance.conf"
+FLAG="/run/orc-maintenance-mode"
+TAG="orc-maintenance"
+
+# --- Load config ---
+if [ ! -f "$CONF" ]; then
+    logger -t "$TAG" "Config not found: $CONF — defaulting to production"
+    rm -f "$FLAG"
+    exit 0
+fi
+# shellcheck source=/dev/null
+. "$CONF"
+
+# --- Derive station name from hostname (e.g., orc-sukabumi → sukabumi) ---
+STATION=$(hostname | sed 's/^orc-//')
+if [ -z "$STATION" ]; then
+    logger -t "$TAG" "Could not determine station name from hostname — defaulting to production"
+    rm -f "$FLAG"
+    exit 0
+fi
+
+# Use GitHub API (not raw CDN) to avoid up to 5-minute cache delay
+URL="https://api.github.com/repos/${MAINTENANCE_REPO}/contents/${MAINTENANCE_PATH_PREFIX}/${STATION}/station_mode?ref=${MAINTENANCE_BRANCH}"
+
+# --- Fetch mode with retries (LTE modem may need time to connect) ---
+MODE=""
+for i in $(seq 1 12); do
+    MODE=$(curl -sf --connect-timeout 5 --max-time 10 \
+        -H "Accept: application/vnd.github.raw" \
+        "$URL" 2>/dev/null | tr -d '[:space:]') || true
+    if [ -n "$MODE" ]; then
+        break
+    fi
+    sleep 5
+done
+
+# --- Fail-safe: default to production if unreachable ---
+if [ -z "$MODE" ]; then
+    logger -t "$TAG" "GitHub unreachable after 60s — defaulting to production"
+    MODE="production"
+fi
+
+# --- Act on mode ---
+case "$MODE" in
+    maintenance)
+        systemctl stop orc-api.service 2>/dev/null || true
+        touch "$FLAG"
+        logger -t "$TAG" "MAINTENANCE mode — orc-api stopped (source: $URL)"
+        ;;
+    production)
+        rm -f "$FLAG"
+        logger -t "$TAG" "PRODUCTION mode (source: $URL)"
+        ;;
+    *)
+        rm -f "$FLAG"
+        logger -t "$TAG" "Unknown mode '${MODE}' — defaulting to production (source: $URL)"
+        ;;
+esac

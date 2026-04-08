@@ -105,7 +105,8 @@ Pi 5 RTC battery Molex connector broke on BOTH boards (traces tore). Switching t
 
 ### Both stations
 - [ ] Flash new ORC-OS image from Hessel (when available)
-- [x] Run deploy.sh — Jakarta done 2026-04-07, Sukabumi done 2026-04-08 (105 PASS, 0 FAIL)
+- [x] Run deploy.sh — Jakarta done 2026-04-07, Sukabumi done 2026-04-08 (109 PASS, 0 FAIL)
+- [x] Remote maintenance mode — GitHub-based kill switch (orc-pmi-stations repo + Actions workflow + orc-maintenance-check service)
 - [x] Install Witty Pi 5 software (wp5 v5.0.0 deb) — Jakarta done 2026-04-05
 - [x] Sync Witty Pi 5 RTC to system clock — Jakarta done 2026-04-05
 - [x] Disable orc-rpi5-power-management.service — Jakarta done 2026-04-05
@@ -164,6 +165,18 @@ Pi 5 RTC battery Molex connector broke on BOTH boards (traces tore). Switching t
 - [ ] Fix ORC-OS daemon setting: allowed_dt was set to 900, should be 3600 (NodeORC default)
 - [ ] Fix ORC-OS daemon setting: reboot_after was set to 3600, should be 86400 (daily)
 - [ ] Verify video_file_fmt is `{%Y%m%dT%H%M%S}.mp4` and parse_dates_from_file is ON
+
+### Jakarta maintenance mode deployment
+- [ ] Run `deploy.sh jakarta` to deploy orc-maintenance-check service (included in overlay)
+- [ ] Verify: `sudo /usr/local/bin/orc-maintenance-check` returns production mode
+- [ ] Test: toggle via GitHub Actions workflow, verify orc-api stops
+
+### Jakarta Witty Pi schedule loading
+- [ ] Load `.wpi` schedule files onto Jakarta's Witty Pi 5 via laptop USB during setup
+  - Shut down the Pi, connect laptop USB to Witty Pi USB-C
+  - Copy schedule files into `schedule/` on the emulated drive
+  - Eject, disconnect, boot Pi, run `wp5` option 6 to select schedule (or option 11 → 1 for always-on)
+  - **Do NOT connect Pi USB-A to Witty Pi USB-C** — causes reboot loop
 
 ---
 
