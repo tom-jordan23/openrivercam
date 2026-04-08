@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 #
-# deploy.sh — Apply ORC station overlays to a freshly flashed ORC-OS image
+# deploy.sh — ORC station configuration management
+#
+# Checks configuration state, reports results, then optionally fixes failures.
+# Replaces both the old deploy.sh (fix-only) and orc-preflight (check-only).
 #
 # Usage:
 #   deploy.sh <site> [options]
@@ -9,18 +12,23 @@
 #   site:  sukabumi | jakarta
 #
 # Options:
-#   --skip-packages    Skip apt/pip install (for offline or pre-installed)
-#   --skip-config-txt  Skip /boot/firmware/config.txt modifications
-#   --dry-run          Show what would be done without executing
-#   --help             Show this help
-#
-# Prerequisites:
-#   1. Flash ORC-OS image with Pi Imager (set hostname, enable SSH, WiFi)
-#   2. First boot complete (ORC-OS init, filesystem expand, auto-reboot)
-#   3. SSH access to the Pi
-#   4. This repo cloned or copied to the Pi (or run remotely via SSH)
+#   --check            Check only, no fixes (replaces orc-preflight)
+#   --yes              Apply fixes without prompting
+#   --skip-packages    Skip apt/pip checks (for offline or pre-installed)
+#   --skip-config-txt  Skip /boot/firmware/config.txt checks
+#   -h|--help          Show this help
 #
 # Run this script ON the Pi as the pi user (it will sudo as needed).
+#
+# Flow:
+#   1. Parse args, validate site
+#   2. Run all checks with FIXING=0 — report PASS/FAIL/WARN
+#   3. Show summary (N pass, N fail, N warn)
+#   4. If no failures — done
+#   5. If --check flag — exit with status (no fixes)
+#   6. Prompt "Apply N fixes? [y/N]" (unless --yes)
+#   7. Create backup dir, run all checks again with FIXING=1
+#   8. Show final summary
 #
 
 set -euo pipefail
@@ -35,9 +43,19 @@ BACKUP_DIR="/tmp/orc-deploy-backup-${TIMESTAMP}"
 REPORT_FILE="/tmp/orc-deploy-report-${TIMESTAMP}.txt"
 
 SITE=""
+CHECK_ONLY=0
+AUTO_YES=0
 SKIP_PACKAGES=0
 SKIP_CONFIG_TXT=0
-DRY_RUN=0
+
+# Runtime state
+FIXING=0
+PASS=0
+FAIL=0
+WARN=0
+FIXED=0
+FAILURES=()   # descriptions of failures, for the "Fixes needed:" list
+BACKUP_CREATED=0
 
 # ─── Parse arguments ──────────────────────────────────────────────
 usage() {
@@ -47,11 +65,12 @@ usage() {
 
 for arg in "$@"; do
     case "$arg" in
-        sukabumi|jakarta) SITE="$arg" ;;
-        --skip-packages)  SKIP_PACKAGES=1 ;;
-        --skip-config-txt) SKIP_CONFIG_TXT=1 ;;
-        --dry-run)        DRY_RUN=1 ;;
-        --help|-h)        usage ;;
+        sukabumi|jakarta)   SITE="$arg" ;;
+        --check)            CHECK_ONLY=1 ;;
+        --yes)              AUTO_YES=1 ;;
+        --skip-packages)    SKIP_PACKAGES=1 ;;
+        --skip-config-txt)  SKIP_CONFIG_TXT=1 ;;
+        --help|-h)          usage ;;
         *) echo "Unknown argument: $arg"; usage ;;
     esac
 done
@@ -63,127 +82,189 @@ fi
 
 SITE_DIR="$PI_DIR/$SITE"
 
-# ─── Helpers ──────────────────────────────────────────────────────
-log()  { echo "$(date '+%H:%M:%S') [deploy] $1"; echo "$1" >> "$REPORT_FILE"; }
-warn() { echo "$(date '+%H:%M:%S') [deploy] WARN: $1" >&2; echo "WARN: $1" >> "$REPORT_FILE"; }
-err()  { echo "$(date '+%H:%M:%S') [deploy] ERROR: $1" >&2; echo "ERROR: $1" >> "$REPORT_FILE"; }
+# ─── Validate directories ─────────────────────────────────────────
+if [ ! -d "$SHARED_DIR" ]; then
+    echo "ERROR: Shared directory not found: $SHARED_DIR"
+    exit 1
+fi
+if [ ! -d "$SITE_DIR" ]; then
+    echo "ERROR: Site directory not found: $SITE_DIR"
+    exit 1
+fi
 
-run() {
-    if [ "$DRY_RUN" -eq 1 ]; then
-        echo "  DRY RUN: $*"
-    else
-        "$@"
-    fi
+# ─── Reporting functions ──────────────────────────────────────────
+# All output also tees to the report file.
+_tee() { echo "$1" | tee -a "$REPORT_FILE"; }
+
+pass()  {
+    local msg="  [\033[32mPASS\033[0m] $1"
+    printf "%b\n" "$msg"
+    printf "  [PASS] %s\n" "$1" >> "$REPORT_FILE"
+    PASS=$((PASS+1))
 }
 
-# ─── Validation ───────────────────────────────────────────────────
-log "=== ORC Station Deploy: $SITE ==="
-log "Timestamp: $TIMESTAMP"
-log "Repo root: $REPO_ROOT"
+fail()  {
+    local msg="  [\033[31mFAIL\033[0m] $1"
+    printf "%b\n" "$msg"
+    printf "  [FAIL] %s\n" "$1" >> "$REPORT_FILE"
+    FAIL=$((FAIL+1))
+    FAILURES+=("$1")
+}
 
-if [ ! -d "$SHARED_DIR" ]; then
-    err "Shared directory not found: $SHARED_DIR"
-    exit 1
-fi
+warn()  {
+    local msg="  [\033[33mWARN\033[0m] $1"
+    printf "%b\n" "$msg"
+    printf "  [WARN] %s\n" "$1" >> "$REPORT_FILE"
+    WARN=$((WARN+1))
+}
 
-if [ ! -d "$SITE_DIR" ]; then
-    err "Site directory not found: $SITE_DIR"
-    exit 1
-fi
+fixed() {
+    local msg="  [\033[36mFIXD\033[0m] $1"
+    printf "%b\n" "$msg"
+    printf "  [FIXD] %s\n" "$1" >> "$REPORT_FILE"
+    FIXED=$((FIXED+1))
+}
 
-# Check if running on a Pi
-if [ -f /proc/device-tree/model ]; then
-    MODEL=$(cat /proc/device-tree/model | tr -d '\0')
-    log "Hardware: $MODEL"
-else
-    warn "Not running on a Raspberry Pi (or /proc/device-tree/model not found)"
-fi
+section() {
+    printf "\n" | tee -a "$REPORT_FILE"
+    printf "=== %s ===\n" "$1" | tee -a "$REPORT_FILE"
+}
 
-# ─── Phase 1: Backup current state ───────────────────────────────
-log ""
-log "--- Phase 1: Backup ---"
+reset_counters() {
+    PASS=0; FAIL=0; WARN=0; FIXED=0
+    FAILURES=()
+}
 
-mkdir -p "$BACKUP_DIR"
-
-# Backup files that will be overwritten
+# ─── Backup helper ────────────────────────────────────────────────
 backup_file() {
     local dest="$1"
-    if [ -f "$dest" ]; then
-        local backup_path="$BACKUP_DIR$dest"
-        mkdir -p "$(dirname "$backup_path")"
-        cp "$dest" "$backup_path" 2>/dev/null || true
+    [ "$FIXING" -ne 1 ] && return
+    [ ! -f "$dest" ] && return
+
+    # Create backup dir on first use
+    if [ "$BACKUP_CREATED" -eq 0 ]; then
+        mkdir -p "$BACKUP_DIR"
+        BACKUP_CREATED=1
+    fi
+
+    local backup_path="$BACKUP_DIR$dest"
+    mkdir -p "$(dirname "$backup_path")"
+    cp "$dest" "$backup_path" 2>/dev/null || true
+}
+
+# ─── Header ───────────────────────────────────────────────────────
+{
+    echo "=== ORC Station Deploy: $SITE ==="
+    echo "Timestamp: $TIMESTAMP"
+    echo "Repo root: $REPO_ROOT"
+} | tee -a "$REPORT_FILE"
+
+if [ -f /proc/device-tree/model ]; then
+    MODEL=$(tr -d '\0' < /proc/device-tree/model)
+    echo "Hardware: $MODEL" | tee -a "$REPORT_FILE"
+fi
+
+# ══════════════════════════════════════════════════════════════════
+# SECTION FUNCTIONS
+# Each section function reads FIXING to decide whether to fix.
+# ══════════════════════════════════════════════════════════════════
+
+# ─── Packages ─────────────────────────────────────────────────────
+run_packages() {
+    [ "$SKIP_PACKAGES" -eq 1 ] && return
+
+    section "Packages"
+
+    # apt packages
+    local apt_pkgs="dnsmasq modemmanager gpiod minicom chrony ffmpeg"
+    local need_apt_update=0
+    local missing_apt=""
+    for pkg in $apt_pkgs; do
+        if dpkg -s "$pkg" >/dev/null 2>&1; then
+            pass "$pkg installed"
+        else
+            if [ "$FIXING" -eq 1 ]; then
+                [ "$need_apt_update" -eq 0 ] && { sudo apt-get update -qq 2>/dev/null; need_apt_update=1; }
+                sudo apt-get install -y -qq "$pkg" 2>/dev/null
+                if dpkg -s "$pkg" >/dev/null 2>&1; then
+                    fixed "$pkg installed"
+                else
+                    fail "$pkg not installed"
+                fi
+            else
+                fail "$pkg not installed"
+                missing_apt="$missing_apt $pkg"
+            fi
+        fi
+    done
+
+    # pip (system) packages — requests, smbus2, pyyaml are required
+    # pyserial is optional (debugging only); serial import alias tested separately
+    local pip_pkgs="requests pyserial smbus2 pyyaml"
+    local pip_imports="requests smbus2 yaml"
+    for mod in $pip_imports; do
+        if python3 -c "import $mod" 2>/dev/null; then
+            pass "python3 $mod available"
+        else
+            if [ "$FIXING" -eq 1 ]; then
+                # shellcheck disable=SC2086
+                pip install --break-system-packages --quiet $pip_pkgs 2>/dev/null
+                if python3 -c "import $mod" 2>/dev/null; then
+                    fixed "python3 $mod available"
+                else
+                    fail "python3 $mod not available"
+                fi
+            else
+                fail "python3 $mod not available"
+            fi
+        fi
+    done
+
+    # pyserial (imports as 'serial') — optional, useful for debugging
+    if python3 -c "import serial" 2>/dev/null; then
+        pass "python3 serial (pyserial) available"
+    else
+        warn "python3 serial (pyserial) not available (optional — debugging only)"
+    fi
+
+    # pip (sudo, LED) packages
+    local led_pkgs="adafruit-blinka adafruit-circuitpython-neopixel adafruit-blinka-raspberry-pi5-neopixel"
+    if python3 -c "import neopixel" 2>/dev/null; then
+        pass "python3 neopixel (LED status) available"
+    else
+        if [ "$FIXING" -eq 1 ]; then
+            # shellcheck disable=SC2086
+            sudo pip install --break-system-packages --quiet $led_pkgs 2>/dev/null
+            if python3 -c "import neopixel" 2>/dev/null; then
+                fixed "python3 neopixel (LED status) available"
+            else
+                fail "python3 neopixel (LED status) not available"
+            fi
+        else
+            fail "python3 neopixel (LED status) not available"
+        fi
+    fi
+
+    # User in dialout group
+    if id -nG pi | grep -qw dialout; then
+        pass "pi is in dialout group"
+    else
+        if [ "$FIXING" -eq 1 ]; then
+            sudo usermod -aG dialout pi
+            fixed "pi added to dialout group (re-login required)"
+        else
+            fail "pi is NOT in dialout group (needed for serial/modem access)"
+        fi
     fi
 }
 
-log "Backup directory: $BACKUP_DIR"
+# ─── Overlay files ────────────────────────────────────────────────
+# Shared state across check and fix passes for file deployment
+OVERLAY_DIFFS=()   # list of "src|dest" pairs that differ
 
-# ─── Phase 2: Package installation ───────────────────────────────
-log ""
-log "--- Phase 2: Packages ---"
-
-if [ "$SKIP_PACKAGES" -eq 1 ]; then
-    log "Skipping package installation (--skip-packages)"
-else
-    APT_PKGS="dnsmasq modemmanager gpiod minicom chrony ffmpeg"
-    NEED_APT=0
-    for pkg in $APT_PKGS; do
-        if ! dpkg -s "$pkg" >/dev/null 2>&1; then
-            NEED_APT=1
-            break
-        fi
-    done
-    if [ "$NEED_APT" -eq 1 ]; then
-        log "Installing system packages..."
-        run sudo apt update -qq
-        run sudo apt install -y -qq $APT_PKGS
-    else
-        log "System packages already installed"
-    fi
-
-    PIP_PKGS="requests pyserial smbus2 pyyaml"
-    PIP_IMPORTS="requests serial smbus2 yaml"
-    NEED_PIP=0
-    for mod in $PIP_IMPORTS; do
-        if ! python3 -c "import $mod" 2>/dev/null; then
-            NEED_PIP=1
-            break
-        fi
-    done
-    if [ "$NEED_PIP" -eq 1 ]; then
-        log "Installing Python packages..."
-        run pip install --break-system-packages --quiet $PIP_PKGS
-    else
-        log "Python packages already installed"
-    fi
-
-    if ! python3 -c "import neopixel" 2>/dev/null; then
-        log "Installing LED status packages (sudo, Pi 5 PIO)..."
-        run sudo pip install --break-system-packages --quiet \
-            adafruit-blinka \
-            adafruit-circuitpython-neopixel \
-            adafruit-blinka-raspberry-pi5-neopixel
-    else
-        log "LED status packages already installed"
-    fi
-
-    if ! id -nG pi | grep -qw dialout; then
-        log "Adding pi user to dialout group..."
-        run sudo usermod -aG dialout pi
-    else
-        log "pi already in dialout group"
-    fi
-fi
-
-# ─── Phase 3: Deploy overlay files ───────────────────────────────
-log ""
-log "--- Phase 3: Overlay files ---"
-
-deploy_count=0
-skip_count=0
-
-deploy_file() {
+_check_overlay_file() {
     local src="$1"
-    local base_dir="$2"  # shared/ or site/
+    local base_dir="$2"
     local relative="${src#$base_dir/}"
 
     # Special case: update-motd.d/ lives at top level in repo but goes to /etc/
@@ -192,229 +273,379 @@ deploy_file() {
     fi
 
     local dest="/$relative"
-    local dest_dir="$(dirname "$dest")"
 
-    # Skip if file is identical
-    if [ -f "$dest" ] && cmp -s "$src" "$dest"; then
-        skip_count=$((skip_count + 1))
+    if [ -f "$dest" ] && sudo cmp -s "$src" "$dest"; then
+        pass "$dest (up to date)"
+    else
+        if [ -f "$dest" ]; then
+            fail "$dest (differs from overlay)"
+        else
+            fail "$dest (missing)"
+        fi
+        OVERLAY_DIFFS+=("$src|$dest|$base_dir")
+    fi
+}
+
+_fix_overlay_file() {
+    local src="$1"
+    local dest="$2"
+    local dest_dir
+    dest_dir="$(dirname "$dest")"
+
+    backup_file "$dest"
+    sudo mkdir -p "$dest_dir"
+    sudo cp "$src" "$dest"
+
+    case "$dest" in
+        /usr/local/bin/*)
+            sudo chmod +x "$dest" ;;
+        /etc/update-motd.d/*)
+            sudo chmod +x "$dest" ;;
+        /etc/profile.d/*.sh)
+            sudo chmod +x "$dest" ;;
+        /etc/NetworkManager/system-connections/*.nmconnection)
+            sudo chmod 600 "$dest"
+            sudo chown root:root "$dest" ;;
+    esac
+
+    fixed "$dest"
+}
+
+run_overlay_files() {
+    section "Overlay Files"
+    OVERLAY_DIFFS=()
+
+    # Walk shared/ then site/ (site overrides shared).
+    # Skip shared files that have a site-specific override, since the site
+    # version is authoritative and the shared version will always differ.
+    while IFS= read -r -d '' file; do
+        [ "$(basename "$file")" = ".gitkeep" ] && continue
+        local relative="${file#$SHARED_DIR/}"
+        if [ -f "$SITE_DIR/$relative" ]; then
+            continue  # site override exists — skip shared version
+        fi
+        _check_overlay_file "$file" "$SHARED_DIR"
+    done < <(find "$SHARED_DIR" -type f -print0 | sort -z)
+
+    while IFS= read -r -d '' file; do
+        [ "$(basename "$file")" = ".gitkeep" ] && continue
+        _check_overlay_file "$file" "$SITE_DIR"
+    done < <(find "$SITE_DIR" -type f -print0 | sort -z)
+
+    # camtool.py — source of truth lives outside pi/shared/
+    local camtool_src="$REPO_ROOT/camera/camtool.py"
+    if [ -f "$camtool_src" ]; then
+        if [ -f /usr/local/bin/camtool.py ] && cmp -s "$camtool_src" /usr/local/bin/camtool.py; then
+            pass "/usr/local/bin/camtool.py (up to date)"
+        else
+            if [ -f /usr/local/bin/camtool.py ]; then
+                fail "/usr/local/bin/camtool.py (differs from camera/camtool.py)"
+            else
+                fail "/usr/local/bin/camtool.py (missing)"
+            fi
+            OVERLAY_DIFFS+=("$camtool_src|/usr/local/bin/camtool.py|camtool")
+        fi
+    else
+        warn "camera/camtool.py not found at $camtool_src — camera config management unavailable"
+    fi
+
+    # Fix phase: apply all diffs
+    if [ "$FIXING" -eq 1 ] && [ "${#OVERLAY_DIFFS[@]}" -gt 0 ]; then
+        for entry in "${OVERLAY_DIFFS[@]}"; do
+            local src dest base_dir
+            src="${entry%%|*}"
+            dest="${entry#*|}"
+            dest="${dest%|*}"
+            _fix_overlay_file "$src" "$dest"
+        done
+        # After file changes, reload systemd units
+        sudo systemctl daemon-reload
+    fi
+}
+
+# ─── Directories ──────────────────────────────────────────────────
+run_directories() {
+    section "Directories"
+
+    local dirs=(
+        /var/log/orc/sensors
+        /mnt/usb
+        /etc/orc-sensors
+        /etc/orc
+        /usr/local/lib/orc-sensors
+        /usr/local/lib/orc-led-status
+        /etc/chrony/conf.d
+        /etc/systemd/system/dnsmasq.service.d
+        /home/pi/camera_profiles
+    )
+
+    for d in "${dirs[@]}"; do
+        if [ -d "$d" ]; then
+            pass "$d exists"
+        else
+            if [ "$FIXING" -eq 1 ]; then
+                sudo mkdir -p "$d"
+                if [[ "$d" == /var/log/orc* ]]; then
+                    sudo chown -R pi:pi /var/log/orc
+                fi
+                fixed "$d created"
+            else
+                fail "$d missing"
+            fi
+        fi
+    done
+
+    # /var/log/orc writable by pi
+    if [ -d /var/log/orc ] && [ -w /var/log/orc ]; then
+        pass "/var/log/orc writable by pi"
+    elif [ -d /var/log/orc ]; then
+        if [ "$FIXING" -eq 1 ]; then
+            sudo chown -R pi:pi /var/log/orc
+            fixed "/var/log/orc ownership fixed (pi:pi)"
+        else
+            fail "/var/log/orc exists but not writable by pi"
+        fi
+    fi
+
+    # ~/Videos (directory or symlink to USB)
+    if [ -b /dev/sda1 ]; then
+        local usb_uuid
+        usb_uuid=$(sudo blkid -s UUID -o value /dev/sda1 2>/dev/null || true)
+        if [ -n "$usb_uuid" ]; then
+            if grep -q "/mnt/usb" /etc/fstab 2>/dev/null; then
+                pass "/mnt/usb in fstab (UUID=$usb_uuid)"
+            else
+                if [ "$FIXING" -eq 1 ]; then
+                    echo "UUID=$usb_uuid /mnt/usb ext4 defaults,noatime,nofail 0 2" | sudo tee -a /etc/fstab > /dev/null
+                    sudo mount -a 2>/dev/null || true
+                    sudo mkdir -p /mnt/usb/incoming
+                    sudo chown pi:pi /mnt/usb/incoming
+                    fixed "/mnt/usb added to fstab (UUID=$usb_uuid)"
+                else
+                    fail "/mnt/usb not in fstab (USB drive detected at /dev/sda1)"
+                fi
+            fi
+
+            if [ -L /home/pi/Videos ]; then
+                local link_target
+                link_target=$(readlink /home/pi/Videos)
+                if [ "$link_target" = "/mnt/usb/incoming" ]; then
+                    pass "~/Videos symlink -> /mnt/usb/incoming"
+                else
+                    if [ "$FIXING" -eq 1 ]; then
+                        rm -f /home/pi/Videos
+                        ln -s /mnt/usb/incoming /home/pi/Videos
+                        fixed "~/Videos symlink corrected -> /mnt/usb/incoming"
+                    else
+                        fail "~/Videos symlink points to wrong target: $link_target"
+                    fi
+                fi
+            elif [ -d /home/pi/Videos ]; then
+                if [ "$FIXING" -eq 1 ]; then
+                    rm -rf /home/pi/Videos
+                    ln -s /mnt/usb/incoming /home/pi/Videos
+                    fixed "~/Videos replaced with symlink -> /mnt/usb/incoming"
+                else
+                    warn "~/Videos is a plain directory (USB drive present; should be symlink -> /mnt/usb/incoming)"
+                fi
+            else
+                if [ "$FIXING" -eq 1 ]; then
+                    sudo mkdir -p /mnt/usb/incoming
+                    sudo chown pi:pi /mnt/usb/incoming
+                    ln -s /mnt/usb/incoming /home/pi/Videos
+                    fixed "~/Videos symlink created -> /mnt/usb/incoming"
+                else
+                    fail "~/Videos missing (USB drive present)"
+                fi
+            fi
+        fi
+    else
+        warn "USB drive not detected at /dev/sda1 — add fstab entry manually after inserting drive"
+        if [ -d /home/pi/Videos ] || [ -L /home/pi/Videos ]; then
+            pass "~/Videos exists"
+        else
+            if [ "$FIXING" -eq 1 ]; then
+                mkdir -p /home/pi/Videos
+                fixed "~/Videos directory created"
+            else
+                fail "~/Videos missing"
+            fi
+        fi
+    fi
+}
+
+# ─── config.txt ───────────────────────────────────────────────────
+run_config_txt() {
+    [ "$SKIP_CONFIG_TXT" -eq 1 ] && return
+
+    section "config.txt"
+
+    local config_txt=""
+    if [ -f /boot/firmware/config.txt ]; then
+        config_txt="/boot/firmware/config.txt"
+    elif [ -f /boot/config.txt ]; then
+        config_txt="/boot/config.txt"
+    fi
+
+    if [ -z "$config_txt" ]; then
+        if [ -f /etc/udev/rules.d/90-qemu.rules ]; then
+            warn "config.txt not accessible (/boot/firmware not mounted — expected with 90-qemu.rules)"
+        else
+            fail "config.txt not found (neither /boot/firmware/config.txt nor /boot/config.txt)"
+        fi
         return
     fi
 
-    # Backup existing file
-    backup_file "$dest"
+    local lines=(
+        "enable_uart=1:UART for rain gauge"
+        "dtparam=i2c_arm=on:I2C for SHT40 sensor"
+        "usb_max_current_enable=1:USB current limit for Quectel modem"
+    )
 
-    log "  $dest"
-
-    if [ "$DRY_RUN" -eq 0 ]; then
-        sudo mkdir -p "$dest_dir"
-        sudo cp "$src" "$dest"
-
-        # Set permissions based on destination
-        case "$dest" in
-            /usr/local/bin/*)
-                sudo chmod +x "$dest"
-                ;;
-            /etc/update-motd.d/*)
-                sudo chmod +x "$dest"
-                ;;
-            /etc/profile.d/*.sh)
-                sudo chmod +x "$dest"
-                ;;
-            /etc/NetworkManager/system-connections/*.nmconnection)
-                sudo chmod 600 "$dest"
-                sudo chown root:root "$dest"
-                ;;
-        esac
-    fi
-
-    deploy_count=$((deploy_count + 1))
+    for entry in "${lines[@]}"; do
+        local line="${entry%%:*}"
+        local desc="${entry#*:}"
+        if grep -q "^${line}$" "$config_txt"; then
+            pass "$config_txt: $line ($desc)"
+        else
+            if [ "$FIXING" -eq 1 ]; then
+                backup_file "$config_txt"
+                echo "$line" | sudo tee -a "$config_txt" > /dev/null
+                fixed "$config_txt: $line added ($desc)"
+            else
+                fail "$config_txt: $line missing ($desc)"
+            fi
+        fi
+    done
 }
 
-# Deploy shared files first
-log "Deploying shared files..."
-while IFS= read -r -d '' file; do
-    [ "$(basename "$file")" = ".gitkeep" ] && continue
-    deploy_file "$file" "$SHARED_DIR"
-done < <(find "$SHARED_DIR" -type f -print0 | sort -z)
+# ─── System config ────────────────────────────────────────────────
+run_system_config() {
+    section "System Config"
 
-# Deploy site-specific files (overwrite shared where applicable)
-log "Deploying $SITE-specific files..."
-while IFS= read -r -d '' file; do
-    [ "$(basename "$file")" = ".gitkeep" ] && continue
-    deploy_file "$file" "$SITE_DIR"
-done < <(find "$SITE_DIR" -type f -print0 | sort -z)
-
-log "Deployed $deploy_count files ($skip_count unchanged, skipped)"
-
-# Deploy camtool.py from camera/ directory (source of truth lives outside pi/shared/)
-CAMTOOL_SRC="$REPO_ROOT/camera/camtool.py"
-if [ -f "$CAMTOOL_SRC" ]; then
-    if [ -f /usr/local/bin/camtool.py ] && cmp -s "$CAMTOOL_SRC" /usr/local/bin/camtool.py; then
-        skip_count=$((skip_count + 1))
+    # PAM MOTD — disable to prevent double-display on SSH login
+    # (.bashrc handles it via MOTD_SHOWN guard)
+    if grep -q "^session.*pam_motd.so" /etc/pam.d/sshd 2>/dev/null; then
+        if [ "$FIXING" -eq 1 ]; then
+            backup_file /etc/pam.d/sshd
+            sudo sed -i 's/^session    optional     pam_motd.so/#&/' /etc/pam.d/sshd
+            fixed "PAM MOTD disabled in /etc/pam.d/sshd"
+        else
+            fail "PAM MOTD enabled in /etc/pam.d/sshd (causes double MOTD on SSH login)"
+        fi
     else
-        backup_file /usr/local/bin/camtool.py
-        log "  /usr/local/bin/camtool.py (from camera/camtool.py)"
-        if [ "$DRY_RUN" -eq 0 ]; then
-            sudo cp "$CAMTOOL_SRC" /usr/local/bin/camtool.py
-            sudo chmod +x /usr/local/bin/camtool.py
-        fi
-        deploy_count=$((deploy_count + 1))
+        pass "PAM MOTD disabled in /etc/pam.d/sshd"
     fi
-else
-    warn "camtool.py not found at $CAMTOOL_SRC — camera config management unavailable"
-fi
 
-# ─── Phase 4: Create directories ─────────────────────────────────
-log ""
-log "--- Phase 4: Directories ---"
+    # /etc/profile.d/orc-motd.sh — remove if present (.bashrc handles it)
+    if [ -f /etc/profile.d/orc-motd.sh ]; then
+        if [ "$FIXING" -eq 1 ]; then
+            sudo rm -f /etc/profile.d/orc-motd.sh
+            fixed "/etc/profile.d/orc-motd.sh removed (.bashrc handles MOTD)"
+        else
+            fail "/etc/profile.d/orc-motd.sh present (conflicts with .bashrc MOTD block)"
+        fi
+    else
+        pass "/etc/profile.d/orc-motd.sh absent (correct)"
+    fi
 
-run sudo mkdir -p /var/log/orc/sensors
-run sudo chown -R pi:pi /var/log/orc
-run sudo mkdir -p /mnt/usb
-run sudo mkdir -p /etc/orc-sensors
-run sudo mkdir -p /etc/orc
-run sudo mkdir -p /usr/local/lib/orc-sensors
-run sudo mkdir -p /usr/local/lib/orc-led-status
-run sudo mkdir -p /etc/chrony/conf.d
-run sudo mkdir -p /etc/systemd/system/dnsmasq.service.d
-run mkdir -p /home/pi/camera_profiles
+    # Cloud-init disabled
+    if [ -f /etc/cloud/cloud-init.disabled ]; then
+        pass "cloud-init disabled"
+    else
+        if [ "$FIXING" -eq 1 ]; then
+            sudo touch /etc/cloud/cloud-init.disabled
+            fixed "cloud-init disabled"
+        else
+            fail "cloud-init not disabled (/etc/cloud/cloud-init.disabled missing)"
+        fi
+    fi
 
-# Create Videos directory or symlink
-if [ -b /dev/sda1 ]; then
-    log "USB drive detected at /dev/sda1"
-    USB_UUID=$(sudo blkid -s UUID -o value /dev/sda1 2>/dev/null || true)
-    if [ -n "$USB_UUID" ]; then
-        if ! grep -q "/mnt/usb" /etc/fstab; then
-            log "Adding USB drive to fstab (UUID=$USB_UUID)"
-            if [ "$DRY_RUN" -eq 0 ]; then
-                echo "UUID=$USB_UUID /mnt/usb ext4 defaults,noatime,nofail 0 2" | sudo tee -a /etc/fstab > /dev/null
+    # Timezone via timedatectl
+    local tz_current
+    tz_current=$(timedatectl show --property=Timezone --value 2>/dev/null || echo "unknown")
+    if [ "$tz_current" = "UTC" ] || [ "$tz_current" = "Etc/UTC" ]; then
+        pass "Timezone is UTC (timedatectl)"
+    else
+        if [ "$FIXING" -eq 1 ]; then
+            sudo timedatectl set-timezone UTC
+            fixed "Timezone set to UTC (was: $tz_current)"
+        else
+            fail "Timezone is $tz_current (should be UTC) — white screen bug if wrong"
+        fi
+    fi
+
+    # /etc/timezone — ORC-OS reads this; a wrong value crashes the frontend
+    local etc_tz
+    etc_tz=$(cat /etc/timezone 2>/dev/null || echo "")
+    if [ "$etc_tz" = "UTC" ]; then
+        pass "/etc/timezone is UTC"
+    else
+        if [ "$FIXING" -eq 1 ]; then
+            echo "UTC" | sudo tee /etc/timezone > /dev/null
+            fixed "/etc/timezone set to UTC (was: ${etc_tz:-empty})"
+        else
+            fail "/etc/timezone is '${etc_tz:-empty}' (should be UTC — causes frontend white screen)"
+        fi
+    fi
+
+    # Persistent journal
+    if grep -q "^Storage=persistent" /etc/systemd/journald.conf 2>/dev/null; then
+        pass "Persistent journal enabled (journald.conf)"
+    else
+        if [ "$FIXING" -eq 1 ]; then
+            sudo sed -i 's/^#\?Storage=.*/Storage=persistent/' /etc/systemd/journald.conf
+            if ! grep -q "^SystemMaxUse=" /etc/systemd/journald.conf; then
+                sudo sed -i 's/^#\?SystemMaxUse=.*/SystemMaxUse=50M/' /etc/systemd/journald.conf
             fi
-        fi
-        run sudo mount -a 2>/dev/null || true
-        run sudo mkdir -p /mnt/usb/incoming
-        run sudo chown pi:pi /mnt/usb/incoming
-
-        if [ ! -L /home/pi/Videos ]; then
-            log "Creating Videos symlink -> /mnt/usb/incoming"
-            run rm -rf /home/pi/Videos
-            run ln -s /mnt/usb/incoming /home/pi/Videos
+            sudo systemctl restart systemd-journald
+            fixed "Persistent journal enabled (50M cap)"
+        else
+            fail "Persistent journal not enabled (journald.conf Storage != persistent)"
         fi
     fi
-else
-    warn "USB drive not detected. Add fstab entry manually after inserting drive."
-    if [ ! -d /home/pi/Videos ] && [ ! -L /home/pi/Videos ]; then
-        run mkdir -p /home/pi/Videos
-    fi
-fi
 
-log "Directories created"
-
-# ─── Phase 5: config.txt modifications ────────────────────────────
-log ""
-log "--- Phase 5: config.txt ---"
-
-if [ "$SKIP_CONFIG_TXT" -eq 1 ]; then
-    log "Skipping config.txt modifications (--skip-config-txt)"
-else
-    CONFIG_TXT=""
-    if [ -f /boot/firmware/config.txt ]; then
-        CONFIG_TXT="/boot/firmware/config.txt"
-    elif [ -f /boot/config.txt ]; then
-        CONFIG_TXT="/boot/config.txt"
+    # /boot/firmware fstab nofail
+    if [ -f /etc/fstab ]; then
+        if grep -q "/boot/firmware" /etc/fstab; then
+            if grep "/boot/firmware" /etc/fstab | grep -q "nofail"; then
+                pass "/boot/firmware fstab entry has nofail"
+            else
+                if [ "$FIXING" -eq 1 ]; then
+                    backup_file /etc/fstab
+                    sudo sed -i '/\/boot\/firmware/ s/defaults/defaults,nofail/' /etc/fstab
+                    fixed "/boot/firmware fstab entry: nofail added"
+                else
+                    fail "/boot/firmware fstab entry missing nofail"
+                fi
+            fi
+        else
+            warn "/boot/firmware not in fstab (expected if 90-qemu.rules remaps mmcblk0)"
+        fi
     fi
 
-    if [ -n "$CONFIG_TXT" ]; then
-        log "Modifying $CONFIG_TXT (append only)"
-        backup_file "$CONFIG_TXT"
-
-        append_if_missing() {
-            local line="$1"
-            local desc="$2"
-            if ! grep -q "^${line}$" "$CONFIG_TXT"; then
-                log "  Adding: $line ($desc)"
-                if [ "$DRY_RUN" -eq 0 ]; then
-                    echo "$line" | sudo tee -a "$CONFIG_TXT" > /dev/null
+    # .bashrc MOTD block (MOTD_SHOWN guard)
+    local bashrc="/home/pi/.bashrc"
+    if [ -f "$bashrc" ]; then
+        if grep -q "run-parts /etc/update-motd.d" "$bashrc" 2>/dev/null; then
+            # Check for unguarded duplicate block from older deploy.sh versions
+            if grep -q "^cat /etc/motd" "$bashrc" 2>/dev/null; then
+                if [ "$FIXING" -eq 1 ]; then
+                    backup_file "$bashrc"
+                    sed -i '/^# ORC station status on every new terminal$/d' "$bashrc"
+                    sed -i '/^cat \/etc\/motd 2>\/dev\/null$/d' "$bashrc"
+                    sed -i '/^run-parts \/etc\/update-motd.d\/ 2>\/dev\/null$/d' "$bashrc"
+                    fixed "$bashrc: removed duplicate unguarded MOTD block"
+                else
+                    fail "$bashrc has duplicate unguarded MOTD block (conflicts with MOTD_SHOWN guard)"
                 fi
             else
-                log "  Already present: $line"
+                pass "$bashrc has MOTD_SHOWN-guarded block"
             fi
-        }
-
-        # Removed: ML-2020 RTC battery connector failed on both boards. Using Witty Pi 5 HAT+ CR2032 RTC instead.
-        # append_if_missing "dtparam=rtc_bbat_vchg=3000000" "RTC battery charging (ML-2020)"
-        append_if_missing "enable_uart=1" "UART for rain gauge"
-        append_if_missing "dtparam=i2c_arm=on" "I2C for SHT40 sensor"
-        append_if_missing "usb_max_current_enable=1" "USB current limit for Quectel modem (GPIO 5V rail has no PD negotiation)"
-    else
-        warn "config.txt not found — skipping. Add RTC/UART/I2C settings manually."
-    fi
-fi
-
-# ─── Phase 6: System configuration ───────────────────────────────
-log ""
-log "--- Phase 6: System config ---"
-
-# Disable cloud-init
-if [ ! -f /etc/cloud/cloud-init.disabled ]; then
-    log "Disabling cloud-init"
-    run sudo touch /etc/cloud/cloud-init.disabled
-fi
-
-# Verify timezone is UTC (both timedatectl and /etc/timezone must agree)
-TZ_CURRENT=$(timedatectl show --property=Timezone --value 2>/dev/null || echo "unknown")
-if [ "$TZ_CURRENT" != "UTC" ] && [ "$TZ_CURRENT" != "Etc/UTC" ]; then
-    log "Setting timezone to UTC (was: $TZ_CURRENT)"
-    run sudo timedatectl set-timezone UTC
-else
-    log "Timezone already UTC"
-fi
-
-# /etc/timezone is deprecated but ORC-OS still reads it; a wrong value
-# (e.g. Asia/Jakarta from Pi Imager locale settings) causes the frontend
-# to crash with a white screen.  Force it to UTC.
-ETC_TZ=$(cat /etc/timezone 2>/dev/null || echo "")
-if [ "$ETC_TZ" != "UTC" ]; then
-    log "Fixing /etc/timezone (was: ${ETC_TZ:-empty})"
-    if [ "$DRY_RUN" -eq 0 ]; then
-        echo "UTC" | sudo tee /etc/timezone > /dev/null
-    fi
-else
-    log "/etc/timezone already UTC"
-fi
-
-# Enable persistent journaling (survives reboots for post-mortem debugging)
-if ! grep -q "^Storage=persistent" /etc/systemd/journald.conf 2>/dev/null; then
-    log "Enabling persistent journal (50M cap)"
-    if [ "$DRY_RUN" -eq 0 ]; then
-        sudo sed -i 's/^#\?Storage=.*/Storage=persistent/' /etc/systemd/journald.conf
-        if ! grep -q "^SystemMaxUse=" /etc/systemd/journald.conf; then
-            sudo sed -i 's/^#\?SystemMaxUse=.*/SystemMaxUse=50M/' /etc/systemd/journald.conf
-        fi
-        sudo systemctl restart systemd-journald
-    fi
-else
-    log "Persistent journal already enabled"
-fi
-
-# Add nofail to boot fstab entry (prevent boot failure if boot partition has issues)
-if [ -f /etc/fstab ]; then
-    if grep -q "/boot/firmware" /etc/fstab && ! grep "/boot/firmware" /etc/fstab | grep -q "nofail"; then
-        log "Adding nofail to /boot/firmware fstab entry"
-        if [ "$DRY_RUN" -eq 0 ]; then
-            sudo sed -i '/\/boot\/firmware/ s/defaults/defaults,nofail/' /etc/fstab
-        fi
-    fi
-fi
-
-# Show ORC station status on every new terminal (appended to pi user's .bashrc).
-# The RS image already has a MOTD_SHOWN-guarded block; only add if completely missing.
-# Also clean up any unguarded duplicate that earlier deploy.sh versions may have added.
-BASHRC="/home/pi/.bashrc"
-if [ -f "$BASHRC" ]; then
-    if ! grep -q "run-parts /etc/update-motd.d/" "$BASHRC" 2>/dev/null; then
-        log "Adding ORC MOTD to $BASHRC"
-        if [ "$DRY_RUN" -eq 0 ]; then
-            cat >> "$BASHRC" << 'MOTD'
+        else
+            if [ "$FIXING" -eq 1 ]; then
+                backup_file "$bashrc"
+                cat >> "$bashrc" << 'MOTD'
 
 # Display MOTD (static + dynamic scripts from /etc/update-motd.d/)
 if [ -z "$MOTD_SHOWN" ]; then
@@ -423,192 +654,682 @@ if [ -z "$MOTD_SHOWN" ]; then
     export MOTD_SHOWN=1
 fi
 MOTD
-        fi
-    elif grep -q "^cat /etc/motd" "$BASHRC" 2>/dev/null; then
-        # Remove unguarded duplicate block added by earlier deploy.sh versions
-        log "Removing duplicate MOTD block from $BASHRC"
-        if [ "$DRY_RUN" -eq 0 ]; then
-            sed -i '/^# ORC station status on every new terminal$/d' "$BASHRC"
-            sed -i '/^cat \/etc\/motd 2>\/dev\/null$/d' "$BASHRC"
-            sed -i '/^run-parts \/etc\/update-motd.d\/ 2>\/dev\/null$/d' "$BASHRC"
-        fi
-    fi
-fi
-
-# ─── Phase 6b: Witty Pi 5 HAT+ software ─────────────────────────
-log ""
-log "--- Phase 6b: Witty Pi 5 ---"
-
-if command -v wp5 >/dev/null 2>&1; then
-    log "Witty Pi 5 software already installed (wp5)"
-else
-    log "Installing Witty Pi 5 software..."
-    WP5_DEB="/tmp/wp5_latest.deb"
-    if [ "$DRY_RUN" -eq 0 ]; then
-        wget -q https://www.uugear.com/repo/WittyPi5/wp5_latest.deb -O "$WP5_DEB" \
-            && sudo apt install -y "$WP5_DEB" \
-            && rm -f "$WP5_DEB" \
-            && log "Witty Pi 5 software installed" \
-            || warn "Witty Pi 5 software install failed — install manually"
-    fi
-fi
-
-# Sync system time to Witty Pi 5 RTC (RTC may have stale time on first install)
-if command -v wp5 >/dev/null 2>&1 && [ "$DRY_RUN" -eq 0 ]; then
-    log "Syncing system time to Witty Pi 5 RTC..."
-    printf '1\n14\n' | timeout 30 wp5 >/dev/null 2>&1 || true
-    log "RTC sync complete"
-fi
-
-# Ensure ORC-OS API starts after Witty Pi 5 daemon sets the system clock.
-# Without this, ORC-OS may set its start_time before wp5d corrects the clock,
-# causing reboot_after to trigger immediately due to the time jump.
-if [ -f /etc/systemd/system/orc-api.service ]; then
-    if ! grep -q "wp5d.service" /etc/systemd/system/orc-api.service; then
-        log "Adding wp5d.service dependency to orc-api.service..."
-        if [ "$DRY_RUN" -eq 0 ]; then
-            sudo sed -i 's/After=network.target/After=network.target wp5d.service/' /etc/systemd/system/orc-api.service
-        fi
-    else
-        log "orc-api.service already depends on wp5d.service"
-    fi
-fi
-
-# Disable ORC-OS native RTC power management (Pi 5 ML-2020 battery failed;
-# Witty Pi 5 HAT+ now owns RTC and power scheduling)
-if systemctl list-unit-files orc-rpi5-power-management.service >/dev/null 2>&1; then
-    log "Disabling orc-rpi5-power-management.service (replaced by Witty Pi 5)"
-    run sudo systemctl disable orc-rpi5-power-management.service 2>/dev/null || true
-    run sudo systemctl stop orc-rpi5-power-management.service 2>/dev/null || true
-fi
-
-# ─── Phase 7: Service enablement ─────────────────────────────────
-log ""
-log "--- Phase 7: Services ---"
-
-if [ "$deploy_count" -gt 0 ]; then
-    run sudo systemctl daemon-reload
-else
-    log "No files changed, skipping daemon-reload"
-fi
-
-enable_service() {
-    local svc="$1"
-    if systemctl is-enabled "$svc" >/dev/null 2>&1; then
-        log "  Already enabled: $svc"
-    else
-        log "  Enabling: $svc"
-        run sudo systemctl enable "$svc" 2>/dev/null || warn "Failed to enable $svc"
-    fi
-}
-
-disable_service() {
-    local svc="$1"
-    if ! systemctl is-enabled "$svc" >/dev/null 2>&1; then
-        log "  Already disabled: $svc"
-    else
-        log "  Disabling: $svc"
-        run sudo systemctl disable "$svc" 2>/dev/null || true
-    fi
-}
-
-enable_service dnsmasq
-enable_service chrony
-enable_service orc-sensors.timer
-enable_service orc-led-status.service
-enable_service orc-boot-usb-log.service
-
-# Disable conflicting ORC-OS relay service (active-low, incompatible with our hardware)
-disable_service orc-gpio-relays.service
-
-# ─── Phase 7b: ORC-OS managed services ──────────────────────────
-log ""
-log "--- Phase 7b: ORC-OS managed services ---"
-
-# orc-capture is managed by ORC-OS as a TIMER service (start/stop via web UI).
-# Remove any static service file that deploy may have placed previously.
-if [ -f /etc/systemd/system/orc-capture.service ] && [ ! -L /etc/systemd/system/orc-capture.service ]; then
-    log "Removing static orc-capture.service (replaced by ORC-OS managed timer)"
-    run sudo systemctl stop orc-capture.service 2>/dev/null || true
-    run sudo systemctl disable orc-capture.service 2>/dev/null || true
-    run sudo rm -f /etc/systemd/system/orc-capture.service
-    run sudo systemctl daemon-reload
-fi
-
-# Import orc-capture service definition into ORC-OS (only if changed or missing)
-ORC_CAPTURE_JSON="$PI_DIR/orc-capture-service.json"
-ORC_CAPTURE_LAST="/home/pi/.ORC-OS/.orc-capture-service.json.deployed"
-if [ -f "$ORC_CAPTURE_JSON" ]; then
-    if [ -f "$ORC_CAPTURE_LAST" ] && cmp -s "$ORC_CAPTURE_JSON" "$ORC_CAPTURE_LAST"; then
-        log "orc-capture service definition unchanged, skipping import"
-    else
-        log "Importing orc-capture service into ORC-OS..."
-        if [ "$DRY_RUN" -eq 0 ]; then
-            if /home/pi/venv/orc-os/bin/orc service import --preserve-env --deploy "$ORC_CAPTURE_JSON"; then
-                cp "$ORC_CAPTURE_JSON" "$ORC_CAPTURE_LAST"
-                log "orc-capture service imported and deployed"
+                fixed "$bashrc: MOTD_SHOWN-guarded block added"
             else
-                warn "orc-capture service import failed — configure manually via ORC-OS web UI"
+                fail "$bashrc missing MOTD block (run-parts /etc/update-motd.d)"
+            fi
+        fi
+    else
+        warn "/home/pi/.bashrc not found"
+    fi
+}
+
+# ─── Witty Pi 5 ───────────────────────────────────────────────────
+run_witty_pi() {
+    section "Witty Pi 5"
+
+    # wp5 command available
+    if command -v wp5 >/dev/null 2>&1; then
+        pass "Witty Pi 5 software installed (wp5)"
+    else
+        if [ "$FIXING" -eq 1 ]; then
+            local wp5_deb="/tmp/wp5_latest.deb"
+            wget -q https://www.uugear.com/repo/WittyPi5/wp5_latest.deb -O "$wp5_deb" \
+                && sudo apt install -y "$wp5_deb" \
+                && rm -f "$wp5_deb" \
+                && fixed "Witty Pi 5 software installed (wp5)" \
+                || fail "Witty Pi 5 software install failed — install wp5_latest.deb manually"
+        else
+            fail "Witty Pi 5 software not installed (wp5 not found)"
+        fi
+    fi
+
+    # wp5d daemon running (check only — started by systemd)
+    if systemctl is-active --quiet wp5d 2>/dev/null; then
+        pass "Witty Pi 5 daemon running (wp5d)"
+    else
+        warn "Witty Pi 5 daemon not running (wp5d) — start with: sudo systemctl start wp5d"
+    fi
+
+    # RTC synced to system clock
+    if command -v wp5 >/dev/null 2>&1; then
+        if [ "$FIXING" -eq 1 ]; then
+            printf '1\n14\n' | timeout 30 wp5 >/dev/null 2>&1 || true
+            fixed "Witty Pi 5 RTC synced to system clock"
+        else
+            # RTC drift check (check-only)
+            local wp5_rtc
+            wp5_rtc=$(echo "14" | wp5 2>/dev/null | grep "RTC Time:" | head -1 | sed 's/.*RTC Time: //' || true)
+            if [ -n "$wp5_rtc" ]; then
+                local sys_epoch rtc_epoch drift
+                sys_epoch=$(date -u +%s)
+                rtc_epoch=$(date -u -d "$wp5_rtc" +%s 2>/dev/null || echo "0")
+                if [ "$rtc_epoch" -ne 0 ]; then
+                    drift=$(( sys_epoch - rtc_epoch ))
+                    drift=${drift#-}  # absolute value
+                    if [ "$drift" -le 5 ]; then
+                        pass "Witty Pi 5 RTC in sync with system clock (${wp5_rtc})"
+                    else
+                        warn "Witty Pi 5 RTC drift: ${drift}s (RTC: ${wp5_rtc}) — sync with: printf '1\\n14\\n' | wp5"
+                    fi
+                fi
             fi
         fi
     fi
+
+    # orc-api.service depends on wp5d.service
+    if [ -f /etc/systemd/system/orc-api.service ]; then
+        if grep -q "wp5d.service" /etc/systemd/system/orc-api.service; then
+            pass "orc-api.service depends on wp5d.service"
+        else
+            if [ "$FIXING" -eq 1 ]; then
+                backup_file /etc/systemd/system/orc-api.service
+                sudo sed -i 's/After=network.target/After=network.target wp5d.service/' /etc/systemd/system/orc-api.service
+                sudo systemctl daemon-reload
+                fixed "orc-api.service: wp5d.service dependency added"
+            else
+                fail "orc-api.service missing wp5d.service dependency (early reboot risk)"
+            fi
+        fi
+    else
+        warn "orc-api.service not found at /etc/systemd/system/ (ORC-OS not installed?)"
+    fi
+
+    # orc-rpi5-power-management.service disabled (replaced by Witty Pi 5)
+    if systemctl list-unit-files orc-rpi5-power-management.service >/dev/null 2>&1; then
+        if systemctl is-enabled orc-rpi5-power-management.service >/dev/null 2>&1; then
+            if [ "$FIXING" -eq 1 ]; then
+                sudo systemctl disable orc-rpi5-power-management.service 2>/dev/null || true
+                sudo systemctl stop orc-rpi5-power-management.service 2>/dev/null || true
+                fixed "orc-rpi5-power-management.service disabled (replaced by Witty Pi 5)"
+            else
+                fail "orc-rpi5-power-management.service enabled (conflicts with Witty Pi 5)"
+            fi
+        else
+            pass "orc-rpi5-power-management.service disabled (correct)"
+        fi
+    else
+        pass "orc-rpi5-power-management.service not present (correct)"
+    fi
+}
+
+# ─── Services ─────────────────────────────────────────────────────
+_ensure_service_enabled() {
+    local svc="$1"
+    if systemctl is-enabled "$svc" >/dev/null 2>&1; then
+        pass "$svc enabled"
+    else
+        if [ "$FIXING" -eq 1 ]; then
+            sudo systemctl enable "$svc" 2>/dev/null \
+                && fixed "$svc enabled" \
+                || fail "$svc enable failed"
+        else
+            fail "$svc not enabled"
+        fi
+    fi
+}
+
+_ensure_service_disabled() {
+    local svc="$1"
+    if ! systemctl list-unit-files "$svc" >/dev/null 2>&1; then
+        pass "$svc not present (correct)"
+        return
+    fi
+    if systemctl is-enabled "$svc" >/dev/null 2>&1; then
+        if [ "$FIXING" -eq 1 ]; then
+            sudo systemctl disable "$svc" 2>/dev/null || true
+            sudo systemctl stop "$svc" 2>/dev/null || true
+            fixed "$svc disabled"
+        else
+            fail "$svc is enabled (should be disabled)"
+        fi
+    else
+        pass "$svc disabled (correct)"
+    fi
+}
+
+_check_service_running() {
+    local svc="$1"
+    if systemctl is-enabled "$svc" >/dev/null 2>&1; then
+        if systemctl is-active "$svc" >/dev/null 2>&1; then
+            pass "$svc enabled and running"
+        else
+            fail "$svc enabled but NOT running"
+        fi
+    else
+        fail "$svc not enabled"
+    fi
+}
+
+run_services() {
+    section "Services"
+
+    # Enable
+    _ensure_service_enabled dnsmasq
+    _ensure_service_enabled chrony
+    _ensure_service_enabled orc-sensors.timer
+    _ensure_service_enabled orc-led-status.service
+    _ensure_service_enabled orc-boot-usb-log.service
+
+    # Disable
+    # orc-gpio-relays uses active-low logic incompatible with Electronics-Salon relay module
+    _ensure_service_disabled orc-gpio-relays.service
+
+    # Check running (services managed by ORC-OS or systemd — no auto-restart here)
+    for svc in orc-api orc-led-status dnsmasq NetworkManager ModemManager chrony; do
+        _check_service_running "$svc"
+    done
+
+    # Static orc-capture.service — remove if present (replaced by ORC-OS managed timer)
+    if [ -f /etc/systemd/system/orc-capture.service ] && [ ! -L /etc/systemd/system/orc-capture.service ]; then
+        if [ "$FIXING" -eq 1 ]; then
+            sudo systemctl stop orc-capture.service 2>/dev/null || true
+            sudo systemctl disable orc-capture.service 2>/dev/null || true
+            sudo rm -f /etc/systemd/system/orc-capture.service
+            sudo systemctl daemon-reload
+            fixed "static orc-capture.service removed (replaced by ORC-OS managed timer)"
+        else
+            fail "static orc-capture.service present (should be removed — ORC-OS manages the timer)"
+        fi
+    else
+        pass "no static orc-capture.service (correct — ORC-OS manages timer)"
+    fi
+
+    # orc-capture ORC-OS import
+    local orc_capture_json="$PI_DIR/orc-capture-service.json"
+    local orc_capture_last="/home/pi/.ORC-OS/.orc-capture-service.json.deployed"
+    if [ -f "$orc_capture_json" ]; then
+        if [ -f "$orc_capture_last" ] && cmp -s "$orc_capture_json" "$orc_capture_last"; then
+            pass "orc-capture service definition matches ORC-OS (up to date)"
+        else
+            if [ "$FIXING" -eq 1 ]; then
+                if /home/pi/venv/orc-os/bin/orc service import --preserve-env --deploy "$orc_capture_json"; then
+                    cp "$orc_capture_json" "$orc_capture_last"
+                    fixed "orc-capture service imported into ORC-OS"
+                else
+                    fail "orc-capture service import failed — configure manually via ORC-OS web UI"
+                fi
+            else
+                fail "orc-capture service definition not imported into ORC-OS"
+            fi
+        fi
+    else
+        warn "orc-capture-service.json not found at $orc_capture_json — import manually via ORC-OS web UI"
+    fi
+}
+
+# ─── Credentials (check only) ─────────────────────────────────────
+run_credentials() {
+    section "Credentials"
+
+    if ls ~/.orc_deploy_* 1>/dev/null 2>&1; then
+        local creds
+        creds=$(ls ~/.orc_deploy_* | tr '\n' ' ')
+        pass "Camera credentials found: $creds"
+    else
+        warn "No camera credentials found (~/.orc_deploy_*)"
+        warn "  Create with: echo 'BASE_PASSWD=<camera_password>' > ~/.orc_deploy_$SITE"
+    fi
+
+    if [ -f ~/.ssh/authorized_keys ]; then
+        local key_count
+        key_count=$(grep -c "^ssh-" ~/.ssh/authorized_keys 2>/dev/null || echo "0")
+        pass "~/.ssh/authorized_keys exists ($key_count key(s))"
+    else
+        warn "~/.ssh/authorized_keys not found (SSH key login unavailable)"
+    fi
+}
+
+# ─── Configuration checks (check only) ────────────────────────────
+run_config_checks() {
+    section "Configuration"
+
+    # dnsmasq bind-dynamic
+    if [ -f /etc/dnsmasq.d/maintenance.conf ]; then
+        if grep -q "^bind-dynamic" /etc/dnsmasq.d/maintenance.conf; then
+            pass "/etc/dnsmasq.d/maintenance.conf: bind-dynamic present"
+        elif grep -q "^bind-interfaces" /etc/dnsmasq.d/maintenance.conf; then
+            if [ "$FIXING" -eq 1 ]; then
+                backup_file /etc/dnsmasq.d/maintenance.conf
+                sudo sed -i 's/^bind-interfaces$/bind-dynamic/' /etc/dnsmasq.d/maintenance.conf
+                fixed "/etc/dnsmasq.d/maintenance.conf: bind-interfaces replaced with bind-dynamic"
+            else
+                fail "/etc/dnsmasq.d/maintenance.conf: bind-interfaces (should be bind-dynamic)"
+            fi
+        else
+            warn "/etc/dnsmasq.d/maintenance.conf: missing bind directive"
+        fi
+    else
+        fail "/etc/dnsmasq.d/maintenance.conf not found"
+    fi
+
+    # camera-net NM connection at 192.168.50.1/24
+    if nmcli -t -f NAME con show 2>/dev/null | grep -q "camera-net"; then
+        local cam_ip
+        cam_ip=$(nmcli -t -f ipv4.addresses con show camera-net 2>/dev/null || true)
+        if echo "$cam_ip" | grep -q "192.168.50.1/24"; then
+            pass "camera-net connection: 192.168.50.1/24"
+        else
+            fail "camera-net connection: wrong IP ($cam_ip — expected 192.168.50.1/24)"
+        fi
+    else
+        fail "camera-net NetworkManager connection not found"
+    fi
+
+    # poe-relay in PATH
+    if command -v poe-relay >/dev/null 2>&1; then
+        pass "poe-relay found at $(command -v poe-relay)"
+    else
+        fail "poe-relay not found in PATH"
+    fi
+
+    # camtool.py in PATH
+    if command -v camtool.py >/dev/null 2>&1; then
+        pass "camtool.py found at $(command -v camtool.py)"
+    else
+        fail "camtool.py not found in PATH"
+    fi
+
+    # LED status config
+    if [ -f /etc/orc/led-status.yaml ]; then
+        pass "/etc/orc/led-status.yaml present"
+    else
+        fail "/etc/orc/led-status.yaml not found"
+    fi
+
+    # orc-sensors config
+    if [ -d /etc/orc-sensors ] && ls /etc/orc-sensors/*.conf >/dev/null 2>&1; then
+        local sensor_count
+        sensor_count=$(ls /etc/orc-sensors/*.conf 2>/dev/null | wc -l)
+        pass "/etc/orc-sensors/ has $sensor_count sensor config(s)"
+    else
+        warn "/etc/orc-sensors/ not found or empty (sensor logging will not run)"
+    fi
+
+    # Sensor log dir writable
+    local sensor_log_dir="/var/log/orc/sensors"
+    local first_conf
+    first_conf=$(ls /etc/orc-sensors/*.conf 2>/dev/null | head -1 || true)
+    if [ -n "$first_conf" ]; then
+        local conf_log_dir
+        conf_log_dir=$(grep "^LOG_DIR=" "$first_conf" 2>/dev/null | cut -d= -f2 | sed 's/#.*//' | xargs || true)
+        [ -n "$conf_log_dir" ] && sensor_log_dir="$conf_log_dir"
+    fi
+    if [ -d "$sensor_log_dir" ] && [ -w "$sensor_log_dir" ]; then
+        pass "sensor log directory writable ($sensor_log_dir)"
+    elif [ -d "$sensor_log_dir" ]; then
+        fail "sensor log directory exists but not writable ($sensor_log_dir)"
+    else
+        warn "sensor log directory does not exist yet ($sensor_log_dir) — created on first run"
+    fi
+
+    # QEMU 90-qemu.rules (critical — do NOT remove)
+    local qemu_rules="/etc/udev/rules.d/90-qemu.rules"
+    if [ -f "$qemu_rules" ]; then
+        if grep -q 'KERNEL=="sda", SYMLINK+="mmcblk0"' "$qemu_rules"; then
+            pass "90-qemu.rules present (required for boot — do NOT remove)"
+        else
+            warn "90-qemu.rules exists but has unexpected contents"
+        fi
+    else
+        fail "90-qemu.rules MISSING — system may not survive a reboot! Restore immediately."
+    fi
+
+    # /etc/hosts camera entry
+    if grep -q "192\.168\.50\.[0-9].*camera\|camera.*192\.168\.50\.[0-9]" /etc/hosts 2>/dev/null; then
+        local cam_host_line
+        cam_host_line=$(grep "192\.168\.50\.[0-9].*camera" /etc/hosts 2>/dev/null | head -1)
+        pass "/etc/hosts: camera entry ($cam_host_line)"
+    else
+        warn "/etc/hosts: missing camera hostname entry"
+    fi
+
+    # camera_profiles directory
+    if [ -d /home/pi/camera_profiles ]; then
+        local profile_count
+        profile_count=$(find /home/pi/camera_profiles -name "*.xml" 2>/dev/null | wc -l)
+        if [ "$profile_count" -gt 0 ]; then
+            pass "~/camera_profiles/ has $profile_count XML profile(s)"
+        else
+            warn "~/camera_profiles/ exists but empty (run: camtool.py pull <camera>)"
+        fi
+    else
+        fail "~/camera_profiles/ not found"
+    fi
+}
+
+# ─── Hardware (check only) ─────────────────────────────────────────
+run_hardware() {
+    section "Hardware"
+
+    # Pi 5 model
+    local pi_model
+    pi_model=$(tr -d '\0' < /proc/device-tree/model 2>/dev/null || echo "unknown")
+    if echo "$pi_model" | grep -q "Pi 5"; then
+        pass "Raspberry Pi 5 detected ($pi_model)"
+    else
+        warn "Expected Pi 5, found: $pi_model"
+    fi
+
+    # USB flash drive
+    if lsblk -o NAME,MODEL 2>/dev/null | grep -qi "FIT.*Plus\|Samsung.*FIT\|SanDisk.*3\.2"; then
+        local usb_model
+        usb_model=$(lsblk -o MODEL -n /dev/sda 2>/dev/null | xargs || true)
+        pass "USB flash drive detected (${usb_model:-unknown})"
+    elif [ -b /dev/sda ]; then
+        local usb_model
+        usb_model=$(lsblk -o MODEL -n /dev/sda 2>/dev/null | xargs || true)
+        warn "USB block device found but unrecognized model: ${usb_model:-unknown}"
+    else
+        warn "No USB storage device detected"
+    fi
+
+    # LTE modem (Quectel EG25-G)
+    if mmcli -L 2>/dev/null | grep -qi "quectel\|EG25"; then
+        pass "LTE modem detected (Quectel EG25-G)"
+    elif lsusb 2>/dev/null | grep -qi "quectel\|2c7c"; then
+        warn "Quectel USB device found but ModemManager doesn't see it yet"
+    else
+        fail "LTE modem not detected (Quectel EG25-G)"
+    fi
+
+    # I2C bus + sensors
+    local i2c_scan=""
+    if [ -e /dev/i2c-1 ]; then
+        pass "I2C bus available (/dev/i2c-1)"
+        if command -v i2cdetect >/dev/null 2>&1; then
+            i2c_scan=$(i2cdetect -y 1 2>/dev/null || true)
+            if echo "$i2c_scan" | grep -q "44"; then
+                pass "SHT40 sensor detected on I2C (0x44)"
+            else
+                warn "I2C available but SHT40 (0x44) not detected"
+            fi
+            if echo "$i2c_scan" | grep -q "51"; then
+                pass "Witty Pi 5 HAT+ detected on I2C (0x51)"
+            else
+                fail "Witty Pi 5 HAT+ NOT detected on I2C (0x51) — check GPIO header seating and CR2032 battery"
+            fi
+        fi
+    else
+        fail "I2C bus not available (/dev/i2c-1 missing — check dtparam=i2c_arm=on in config.txt)"
+    fi
+
+    # DS18B20 on 1-Wire
+    if ls /sys/bus/w1/devices/28-* >/dev/null 2>&1; then
+        pass "DS18B20 temperature probe detected on 1-Wire bus"
+    else
+        warn "DS18B20 not detected on 1-Wire bus (check GPIO 4 + 4.7k pull-up)"
+    fi
+
+    # Witty Pi 5 RTC drift (check only — fix is in run_witty_pi)
+    # Skipped here if already covered in run_witty_pi
+
+    # usb_max_current_enable in config.txt
+    if grep -q "^usb_max_current_enable=1" /boot/firmware/config.txt 2>/dev/null; then
+        pass "usb_max_current_enable=1 in config.txt"
+    else
+        if [ -f /etc/udev/rules.d/90-qemu.rules ]; then
+            warn "usb_max_current_enable=1 not verified (config.txt not accessible — 90-qemu.rules)"
+        else
+            fail "usb_max_current_enable=1 missing from config.txt (modem may trigger USB over-current)"
+        fi
+    fi
+
+    # /boot/firmware mounted
+    if mountpoint -q /boot/firmware 2>/dev/null; then
+        pass "/boot/firmware mounted"
+    else
+        if [ -f /etc/udev/rules.d/90-qemu.rules ]; then
+            warn "/boot/firmware not mounted (expected — 90-qemu.rules remaps mmcblk0 to USB)"
+        else
+            fail "/boot/firmware not mounted (config.txt inaccessible)"
+        fi
+    fi
+}
+
+# ─── Network (check only) ─────────────────────────────────────────
+run_network() {
+    section "Network"
+
+    # eth0 IP
+    local eth0_ip
+    eth0_ip=$(ip -4 -o addr show eth0 2>/dev/null | awk '{print $4}')
+    if [ -n "$eth0_ip" ]; then
+        if echo "$eth0_ip" | grep -q "192.168.50.1/24"; then
+            pass "eth0: $eth0_ip"
+        else
+            warn "eth0: $eth0_ip (expected 192.168.50.1/24)"
+        fi
+    else
+        warn "eth0: no IP address (PoE relay may be off — normal if relay is off)"
+    fi
+
+    # PoE relay state (GPIO 24)
+    local poe_state
+    poe_state=$(pinctrl get 24 2>/dev/null || true)
+    if echo "$poe_state" | grep -q "| --"; then
+        pinctrl set 24 ip 2>/dev/null || true
+        poe_state=$(pinctrl get 24 2>/dev/null || true)
+    fi
+    if echo "$poe_state" | grep -q "| hi"; then
+        pass "PoE relay: ON (GPIO 24 HIGH)"
+    elif echo "$poe_state" | grep -q "| lo"; then
+        warn "PoE relay: OFF (GPIO 24 LOW) — camera/eth0 unpowered"
+    else
+        warn "PoE relay: unknown state (GPIO 24 not readable)"
+    fi
+
+    # Camera reachability via DHCP leases
+    local lease_file="/var/lib/misc/dnsmasq.leases"
+    if [ -n "$eth0_ip" ]; then
+        local found_camera=0
+        if [ -f "$lease_file" ]; then
+            while read -r _ts mac cam_ip _hostname _id; do
+                [ "$cam_ip" = "192.168.50.1" ] && continue
+                if ping -c 1 -W 2 "$cam_ip" >/dev/null 2>&1; then
+                    pass "Camera at $cam_ip ($mac): reachable"
+                else
+                    warn "Camera at $cam_ip ($mac): DHCP lease active but not responding"
+                fi
+                found_camera=1
+            done < "$lease_file"
+        fi
+        [ "$found_camera" -eq 0 ] && warn "No DHCP leases — no cameras detected on eth0"
+
+        # Camera supplement light check (ANNKE C1200 reverts to eventIntelligence on power cycle)
+        local cam_pass=""
+        for f in ~/.orc_deploy_*; do
+            [ -f "$f" ] || continue
+            cam_pass=$(grep "^BASE_PASSWD=" "$f" 2>/dev/null | cut -d= -f2 || true)
+            break
+        done
+        if [ -n "$cam_pass" ] && [ -f "$lease_file" ]; then
+            while read -r _ts _mac cam_ip _hostname _id; do
+                [ "$cam_ip" = "192.168.50.1" ] && continue
+                if ping -c 1 -W 1 "$cam_ip" >/dev/null 2>&1; then
+                    local light_mode
+                    light_mode=$(curl -s --digest -u "admin:${cam_pass}" \
+                        "http://${cam_ip}/ISAPI/Image/channels/1" 2>/dev/null \
+                        | grep -o '<supplementLightMode>[^<]*</supplementLightMode>' \
+                        | sed 's/<[^>]*>//g' || true)
+                    if [ "$light_mode" = "irLight" ]; then
+                        pass "Camera $cam_ip: supplementLightMode = irLight"
+                    elif [ -n "$light_mode" ]; then
+                        fail "Camera $cam_ip: supplementLightMode = $light_mode (should be irLight — white LED flash risk)"
+                    fi
+                fi
+            done < "$lease_file"
+        fi
+    else
+        warn "Skipping camera checks (eth0 has no IP)"
+    fi
+}
+
+# ─── ORC-OS (check only) ──────────────────────────────────────────
+run_orc_os() {
+    section "ORC-OS"
+
+    # orc-api service
+    if systemctl is-active --quiet orc-api 2>/dev/null; then
+        pass "orc-api service active"
+    else
+        fail "orc-api service not active"
+    fi
+
+    # API responds on port 5000
+    if curl -s --max-time 5 http://localhost:5000 >/dev/null 2>&1; then
+        pass "ORC-OS API responds on port 5000"
+    else
+        warn "ORC-OS API not responding on port 5000 (service may still be starting)"
+    fi
+}
+
+# ─── Remote access (check only) ───────────────────────────────────
+run_remote_access() {
+    section "Remote Access"
+
+    if command -v newt >/dev/null 2>&1; then
+        pass "newt binary available ($(command -v newt))"
+    else
+        warn "newt not found in PATH (Pangolin remote access unavailable)"
+    fi
+}
+
+# ══════════════════════════════════════════════════════════════════
+# MAIN EXECUTION
+# ══════════════════════════════════════════════════════════════════
+
+run_all_checks() {
+    run_packages
+    run_overlay_files
+    run_directories
+    run_config_txt
+    run_system_config
+    run_witty_pi
+    run_services
+    run_credentials
+    run_config_checks
+    run_hardware
+    run_network
+    run_orc_os
+    run_remote_access
+}
+
+print_summary() {
+    local mode="$1"
+    printf "\n" | tee -a "$REPORT_FILE"
+    printf "═══════════════════════════════════\n" | tee -a "$REPORT_FILE"
+    if [ "$mode" = "fix" ]; then
+        printf "  \033[32mPASS\033[0m: %-4d  \033[36mFIXD\033[0m: %-4d  \033[33mWARN\033[0m: %d\n" \
+            "$PASS" "$FIXED" "$WARN"
+        printf "  PASS: %-4d  FIXD: %-4d  WARN: %d\n" \
+            "$PASS" "$FIXED" "$WARN" >> "$REPORT_FILE"
+    else
+        printf "  \033[32mPASS\033[0m: %-4d  \033[31mFAIL\033[0m: %-4d  \033[33mWARN\033[0m: %d\n" \
+            "$PASS" "$FAIL" "$WARN"
+        printf "  PASS: %-4d  FAIL: %-4d  WARN: %d\n" \
+            "$PASS" "$FAIL" "$WARN" >> "$REPORT_FILE"
+    fi
+    printf "═══════════════════════════════════\n" | tee -a "$REPORT_FILE"
+}
+
+# ── Phase 1: Check pass ────────────────────────────────────────────
+FIXING=0
+reset_counters
+
+echo "" | tee -a "$REPORT_FILE"
+echo "=== Check Phase ===" | tee -a "$REPORT_FILE"
+
+run_all_checks
+
+# Capture check-phase counts before reset
+CHECK_PASS=$PASS
+CHECK_FAIL=$FAIL
+CHECK_WARN=$WARN
+CHECK_FAILURES=("${FAILURES[@]+"${FAILURES[@]}"}")
+
+print_summary "check"
+
+# ── No failures: done ─────────────────────────────────────────────
+if [ "$CHECK_FAIL" -eq 0 ]; then
+    if [ "$CHECK_WARN" -gt 0 ]; then
+        echo "" | tee -a "$REPORT_FILE"
+        echo "Warnings are informational — review but may not need action." | tee -a "$REPORT_FILE"
+    fi
+    echo "" | tee -a "$REPORT_FILE"
+    echo "All checks passed." | tee -a "$REPORT_FILE"
+    echo "Report: $REPORT_FILE"
+    exit 0
+fi
+
+# ── Print fixes needed ────────────────────────────────────────────
+echo "" | tee -a "$REPORT_FILE"
+echo "Fixes needed:" | tee -a "$REPORT_FILE"
+for i in "${!CHECK_FAILURES[@]}"; do
+    printf "  %d. %s\n" "$((i+1))" "${CHECK_FAILURES[$i]}" | tee -a "$REPORT_FILE"
+done
+
+# ── --check flag: exit without fixing ────────────────────────────
+if [ "$CHECK_ONLY" -eq 1 ]; then
+    echo "" | tee -a "$REPORT_FILE"
+    echo "Check-only mode (--check). Run without --check to apply fixes." | tee -a "$REPORT_FILE"
+    echo "Report: $REPORT_FILE"
+    exit 1
+fi
+
+# ── Prompt (unless --yes) ─────────────────────────────────────────
+if [ "$AUTO_YES" -eq 0 ]; then
+    echo ""
+    printf "Apply %d fix(es)? [y/N] " "$CHECK_FAIL"
+    read -r response
+    if [[ ! "$response" =~ ^[Yy]$ ]]; then
+        echo "Aborted. No changes made."
+        exit 1
+    fi
+fi
+
+# ── Phase 2: Fix pass ─────────────────────────────────────────────
+FIXING=1
+reset_counters
+
+echo "" | tee -a "$REPORT_FILE"
+echo "=== Fix Phase ===" | tee -a "$REPORT_FILE"
+
+run_all_checks
+
+print_summary "fix"
+
+# ── Final status ──────────────────────────────────────────────────
+echo "" | tee -a "$REPORT_FILE"
+if [ "$FAIL" -eq 0 ]; then
+    echo "All failures resolved." | tee -a "$REPORT_FILE"
 else
-    warn "orc-capture-service.json not found at $ORC_CAPTURE_JSON"
+    echo "WARNING: $FAIL failure(s) remain after fix pass — manual intervention required." | tee -a "$REPORT_FILE"
+    echo "" | tee -a "$REPORT_FILE"
+    echo "Remaining failures:" | tee -a "$REPORT_FILE"
+    for i in "${!FAILURES[@]}"; do
+        printf "  %d. %s\n" "$((i+1))" "${FAILURES[$i]}" | tee -a "$REPORT_FILE"
+    done
 fi
 
-# ─── Phase 8: Credential check ───────────────────────────────────
-log ""
-log "--- Phase 8: Credentials ---"
-
-CRED_MISSING=0
-
-if ls ~/.orc_deploy_* 1>/dev/null 2>&1; then
-    log "Camera credentials found: $(ls ~/.orc_deploy_*)"
-else
-    warn "No camera credentials found (~/.orc_deploy_*)"
-    warn "  Create with: echo 'BASE_PASSWD=<camera_password>' > ~/.orc_deploy_$SITE"
-    CRED_MISSING=1
+if [ "$BACKUP_CREATED" -eq 1 ]; then
+    echo "" | tee -a "$REPORT_FILE"
+    echo "Backup: $BACKUP_DIR" | tee -a "$REPORT_FILE"
 fi
+echo "Report: $REPORT_FILE" | tee -a "$REPORT_FILE"
 
-if [ ! -f ~/.ssh/authorized_keys ]; then
-    warn "No SSH authorized_keys found"
-    CRED_MISSING=1
+echo "" | tee -a "$REPORT_FILE"
+echo "Next steps:" | tee -a "$REPORT_FILE"
+echo "  1. Set root password: sudo passwd root" | tee -a "$REPORT_FILE"
+echo "  2. Set camera credentials: echo 'BASE_PASSWD=<password>' > ~/.orc_deploy_$SITE" | tee -a "$REPORT_FILE"
+echo "  3. Verify camera network: ping 192.168.50.100 (after PoE relay on)" | tee -a "$REPORT_FILE"
+echo "  4. Configure camera via camtool.py (if camera replaced)" | tee -a "$REPORT_FILE"
+echo "  5. Open ORC-OS web UI and configure:" | tee -a "$REPORT_FILE"
+echo "     - Disk management, LiveORC callback URL, daemon settings" | tee -a "$REPORT_FILE"
+echo "     - Services > capture: Enable, then Start" | tee -a "$REPORT_FILE"
+echo "     - Pangolin remote access (server URL, not proxy URL)" | tee -a "$REPORT_FILE"
+echo "  6. Reboot and verify: sudo reboot" | tee -a "$REPORT_FILE"
+
+if [ "$FAIL" -gt 0 ]; then
+    exit 1
 fi
-
-if [ "$CRED_MISSING" -eq 1 ]; then
-    warn "Some credentials are missing — see warnings above"
-fi
-
-# ─── Phase 9: Verification ───────────────────────────────────────
-log ""
-log "--- Phase 9: Verification ---"
-
-if [ -x /usr/local/bin/orc-preflight ] && [ "$DRY_RUN" -eq 0 ]; then
-    log "Running orc-preflight..."
-    /usr/local/bin/orc-preflight || warn "orc-preflight reported issues (see above)"
-else
-    log "Skipping orc-preflight (dry run or not installed)"
-fi
-
-# ─── Summary ──────────────────────────────────────────────────────
-log ""
-log "=== Deploy complete for $SITE ==="
-log "Files deployed: $deploy_count"
-log "Backup at: $BACKUP_DIR"
-log "Report at: $REPORT_FILE"
-log ""
-
-if [ "$CRED_MISSING" -eq 1 ]; then
-    log "ACTION REQUIRED: Set up missing credentials (see warnings above)"
-fi
-
-log "Next steps:"
-log "  1. Set root password: sudo passwd root"
-log "  2. Set camera credentials: echo 'BASE_PASSWD=<password>' > ~/.orc_deploy_$SITE"
-log "  3. Verify camera network: ping 192.168.50.100 (after PoE relay on)"
-log "  4. Configure camera via camtool.py (if camera replaced)"
-log "  5. Open ORC-OS web UI and configure:"
-log "     - Disk management, LiveORC callback URL, daemon settings"
-log "     - Services > capture: Enable, then Start"
-log "     - Pangolin remote access (server URL, not proxy URL)"
-log "  6. Reboot and verify: sudo reboot"

@@ -1023,24 +1023,24 @@ landing on wired components. (See Sukabumi build note in ASSEMBLY_SUKABUMI.md.)
 
 ### Run Preflight Checks
 
-After SSH'ing into the Pi, run the preflight script to verify all packages,
+After SSH'ing into the Pi, run the preflight check to verify all packages,
 configs, services, and hardware are correct:
 
 ```bash
 orc-preflight
 ```
 
-Review the output — all items should be PASS (WARN is informational). If there
-are FAILs, run with `--fix` to attempt automatic fixes:
+This runs `deploy.sh jakarta --check` (auto-detected from hostname). Review
+the output — all items should be PASS (WARN is informational). If there are
+FAILs, run deploy.sh to fix them:
 
 ```bash
-orc-preflight --fix
+cd ~/code/git/openrivercam/spring_2026_ID/pi
+bash deploy.sh jakarta
 ```
 
-Key checks include: required packages, dnsmasq/NetworkManager config, RTC
-battery charging enabled, PoE relay script in PATH, and hardware detection
-(modem, sensors, USB drive). Fix any remaining FAILs manually before
-proceeding.
+This checks everything first, lists fixes needed, then prompts before applying.
+Fix any remaining FAILs manually before proceeding.
 
 ### Verify Camera
 

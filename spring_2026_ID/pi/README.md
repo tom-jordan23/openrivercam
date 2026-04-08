@@ -53,7 +53,7 @@ contains a real file.
 | `shared/etc/dnsmasq.d/maintenance.conf` | `/etc/dnsmasq.d/maintenance.conf` | DHCP server for camera PoE network on eth0 | Shared | No | No |
 | `shared/usr/local/bin/poe-relay` | `/usr/local/bin/poe-relay` | Control PoE switch relay (on/off/status) via GPIO 24 | Shared | No | No |
 | `shared/usr/local/bin/orc-capture` | `/usr/local/bin/orc-capture` | Capture 5s video from PoE camera via RTSP with quality gate | Shared | No | Yes |
-| `shared/usr/local/bin/orc-preflight` | `/usr/local/bin/orc-preflight` | Pre-deployment checks for packages, configs, services, hardware | Shared | No | Yes |
+| `shared/usr/local/bin/orc-preflight` | `/usr/local/bin/orc-preflight` | Thin wrapper: runs `deploy.sh <site> --check` (auto-detects site from hostname) | Shared | No | No |
 | `shared/etc/systemd/system/orc-capture.service` | `/etc/systemd/system/orc-capture.service` | Oneshot service: runs orc-capture on each boot (conflicts with orc-gpio-relays) | Shared | No | No |
 | `shared/etc/orc-sensors/sht40.conf` | `/etc/orc-sensors/sht40.conf` | SHT40 sensor config (I2C addr, interval, log dir, CSV columns) | Shared | No | Yes |
 | `shared/usr/local/bin/orc-sensors` | `/usr/local/bin/orc-sensors` | Wrapper: sources per-sensor configs, execs into Python logger | Shared | No | Yes |
@@ -62,7 +62,8 @@ contains a real file.
 | `shared/etc/systemd/system/orc-sensors.timer` | `/etc/systemd/system/orc-sensors.timer` | Timer: ticks every 60s, per-sensor interval checked in Python | Shared | No | Yes |
 | `shared/update-motd.d/30-camera-status` | `/etc/update-motd.d/30-camera-status` | Dynamic MOTD: relay status, Witty Pi 5 RTC/temp/voltage, eth0 IP, camera reachability | Shared | No | No |
 | `shared/update-motd.d/40-power-management` | `/etc/update-motd.d/40-power-management` | Dynamic MOTD: ORC-OS shutdown/reboot settings, Witty Pi 5 wake schedule, how to change | Shared | No | No |
-| `shared/update-motd.d/50-led-status` | `/etc/update-motd.d/50-led-status` | Dynamic MOTD: LED service status, color guide for all states/errors, config location | Shared | No | No |
+| `shared/update-motd.d/20-led-status` | `/etc/update-motd.d/20-led-status` | Dynamic MOTD: LED service status, compact color guide | Shared | No | No |
+| `shared/update-motd.d/90-links` | `/etc/update-motd.d/90-links` | Dynamic MOTD: quick reference links (ORC-OS URL, camera, commands) | Shared | No | No |
 | `shared/etc/chrony/conf.d/camera-net.conf` | `/etc/chrony/conf.d/camera-net.conf` | NTP server for camera network (Pi serves time to cameras) | Shared | No | Yes |
 | `shared/etc/orc-capture.conf` | `/etc/orc-capture.conf` | Capture settings template with all options documented (overridden by site-specific versions) | Shared (template) | No | No |
 | `sukabumi/etc/orc-capture.conf` | `/etc/orc-capture.conf` | Sukabumi capture config: RELAY_MODE=cycle, CAMERA_IP=192.168.50.139 | Sukabumi | No | No |
@@ -89,9 +90,10 @@ contains a real file.
 
 ### Automated (recommended): deploy.sh
 
-The `deploy.sh` script automates the full setup after flashing a fresh ORC-OS
-image. It installs packages, copies all overlay files, configures config.txt,
-enables services, and runs verification.
+The `deploy.sh` script is the single source of truth for station configuration.
+It always checks the full system state first (102 checks across packages, files,
+services, hardware, network), then prompts before applying any fixes. It replaces
+both the old deploy script and the old orc-preflight tool.
 
 **Workflow:**
 
@@ -118,13 +120,17 @@ cd spring_2026_ID/pi
 
 **Options:**
 ```
-./deploy.sh <site> --skip-packages    # offline/air-gapped (packages pre-installed)
-./deploy.sh <site> --skip-config-txt  # don't modify config.txt
-./deploy.sh <site> --dry-run          # show what would happen without doing it
+./deploy.sh <site> --check            # check only, no fixes (replaces orc-preflight)
+./deploy.sh <site> --yes              # apply fixes without prompting
+./deploy.sh <site> --skip-packages    # skip apt/pip checks (offline/air-gapped)
+./deploy.sh <site> --skip-config-txt  # skip config.txt checks
 ```
 
-The script creates a backup of all files it overwrites at
-`/tmp/orc-deploy-backup-<timestamp>/` and generates a report at
+You can also run `orc-preflight` from anywhere — it auto-detects the site
+from the hostname and runs `deploy.sh <site> --check`.
+
+The script creates a backup of modified files at
+`/tmp/orc-deploy-backup-<timestamp>/` and a report at
 `/tmp/orc-deploy-report-<timestamp>.txt`.
 
 ### Manual (single file updates)

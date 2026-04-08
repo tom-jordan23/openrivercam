@@ -523,11 +523,11 @@ Then set your laptop to 192.168.1.50/24 and use `arp -a` to find the camera. Re-
 ### System Status
 
 ```bash
-# Run preflight checks (packages, configs, services, hardware, RTC charging)
+# Run preflight checks (packages, configs, services, hardware, network)
 orc-preflight
 
-# Run preflight checks and auto-fix failures
-orc-preflight --fix
+# Check and fix failures (prompts before applying)
+cd ~/code/git/openrivercam/spring_2026_ID/pi && bash deploy.sh <site>
 
 # Check system uptime
 uptime
