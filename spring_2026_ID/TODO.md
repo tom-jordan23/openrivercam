@@ -115,14 +115,15 @@ Pi 5 RTC battery Molex connector broke on BOTH boards (traces tore). Switching t
 - [ ] Test Witty Pi schedule: production cycle (5m on / 10m off, 4+ cycles)
 - [ ] ORC-OS web UI: configure daemon settings per station:
   - Jakarta (always-on): "Shutdown after task" OFF, "Reboot after" 86400s (24hr safety net)
-  - Sukabumi (duty-cycle): "Shutdown after task" ON, "Reboot after" ~240s (safety net)
+  - Sukabumi (duty-cycle): "Shutdown after task" ON, "Reboot after" 3600s (1hr safety net)
+  - Both: video_file_fmt `{%Y%m%dT%H%M%S}.mp4`, parse_dates_from_file ON, allowed_dt 3600 (NodeORC default)
 - [x] Configure ORC-OS capture schedule (video filename template, daemon runner, ORC-OS timer service)
 - [ ] Camera ISAPI config via camtool.py
 - [x] orc-capture end-to-end test (relay → camera boot → RTSP → quality gate → ORC-OS pickup)
 - [ ] Rain gauge serial communication test
 - [ ] SHT40/DS18B20 sensor verification
 - [ ] LED status daemon test
-- [ ] Tailscale remote access setup
+- [ ] Pangolin remote access (pre-installed on RS image; configure via ORC-OS web UI)
 - [ ] Implement rain gauge capture script (TODO-001)
 - [ ] Power status MOTD script (undervoltage false positive)
 - [ ] Full end-to-end soak test (leave running overnight Tue→Wed)
@@ -153,6 +154,15 @@ Pi 5 RTC battery Molex connector broke on BOTH boards (traces tore). Switching t
 - [ ] Jakarta mounting hardware (pending site survey)
 - [ ] SIM cards (purchase in-country)
 - [ ] Coordinate with PMI: RTK gear, ground control points, and survey poles last used at Sukabumi — need them at Jakarta site first
+
+---
+
+## In-Country
+
+### Jakarta station software fixes
+- [ ] Fix ORC-OS daemon setting: allowed_dt was set to 900, should be 3600 (NodeORC default)
+- [ ] Fix ORC-OS daemon setting: reboot_after was set to 3600, should be 86400 (daily)
+- [ ] Verify video_file_fmt is `{%Y%m%dT%H%M%S}.mp4` and parse_dates_from_file is ON
 
 ---
 
@@ -303,7 +313,7 @@ Building incrementally as Jakarta wiring progresses.
 
 ---
 
-### TODO-008: Pangolin remote access setup
+### TODO-008: Remote access setup
 
 | Field | Value |
 |-------|-------|
@@ -311,10 +321,18 @@ Building incrementally as Jakarta wiring progresses.
 | **Site** | Both |
 | **Target** | Week 2 |
 
-Need:
-- Pangolin server URL and account
-- Newt client configuration for each device
+**Pangolin/Newt** is pre-installed on the Rainbow Sensing ORC-OS image. Configure
+via ORC-OS web UI (no software installation needed). If using a different base
+image, operators must provision their own remote access service.
+
+**Tailscale** will be evaluated in-country as an alternative. May be a better fit
+in some situations, but not usable in countries that disallow third-party VPN
+services.
+
+Remaining:
+- Configure Pangolin via ORC-OS web UI (server URL, credentials)
 - Test connectivity before sealing enclosures
+- Evaluate Tailscale as alternative during in-country testing
 
 ---
 

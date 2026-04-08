@@ -951,19 +951,55 @@ proceeding.
 2. Check signal: `mmcli -m 0 --signal-get`
 3. Test data: `ping -c 3 8.8.8.8`
 
-### Optional: Install Tailscale (Remote Access)
+### ORC-OS Web UI Configuration
 
-Tailscale provides secure remote SSH access over LTE without port forwarding or
-a public IP. Useful for field maintenance and troubleshooting.
+Access at `http://orc-sukabumi.local` (or use IP address). All hardware should
+be verified and network up before configuring ORC-OS.
 
-1. Install: `curl -fsSL https://tailscale.com/install.sh | sh`
-2. Authenticate: `sudo tailscale up --ssh`
-3. Follow the login URL to authorize the device on your tailnet
-4. Verify: `tailscale status` — node should appear as online
-5. Test remote SSH from another device on the same tailnet
+1. **Disk Management** (`/disk_management`):
+   - Minimum free space: **5 GB**
+   - Cleanup check frequency: **300 seconds** (5 minutes)
 
-The Pi will be reachable by its Tailscale hostname (e.g., `ssh pi@orc-sukabumi`)
-from any device on your tailnet, regardless of LTE carrier NAT.
+2. **LiveORC API** (`/callback_url`) — do this BEFORE daemon settings:
+   1. On **LiveORC server** (`https://openrivercam.endlessprojects.info/admin/`):
+      create a site for Sukabumi with GPS coordinates. Note the **Site ID number**.
+   2. On **ORC-OS** (`/callback_url`):
+      - Server URL: `https://openrivercam.endlessprojects.info` (no `/admin/` or `/api` suffix)
+      - Username and password (LiveORC credentials)
+      - Submit — username/password will be replaced by access + refresh tokens
+      - Site ID: (Sukabumi site number from LiveORC)
+      - Retry time: set for intermittent LTE connectivity (e.g. 120 seconds)
+      - Verify green "callback URL created" banner
+
+3. **Daemon Settings** (`/settings`):
+   - Video filename template: `{%Y%m%dT%H%M%S}.mp4` (matches orc-capture output)
+   - Parse time from filename: **ON**
+   - Verify red confirmation message shows: `/home/pi/Videos/YYYYMMDDTHHMMSS.mp4`
+   - Allowed time difference (video ↔ water level): **3600 seconds** (NodeORC default)
+   - "Shutdown after task": **ON** (Sukabumi is duty-cycled; ORC-OS shuts down after processing)
+   - "Reboot after time": **3600 seconds** (1hr safety net — prevents battery drain if processing hangs)
+   - Video configuration: select finalized config (after calibration — deferred to field)
+   - LiveORC sync: **time series + analysis images** (full video disabled to save bandwidth)
+   - Daemon runner: **OFF** until end-to-end test passes, then **ON**
+
+4. **Capture Service** — see Step 11b above. Enable and Start via web UI (`/services`).
+
+5. **Water Level** (`/water_level`) — deferred to field (requires site survey).
+
+### Remote Access
+
+**Pangolin** (reverse HTTPS proxy) is pre-installed on the Rainbow Sensing
+ORC-OS image. Configure via the ORC-OS web UI (`/pangolin` page) — no software
+installation needed. If using a different base image, operators must provision
+their own remote access service.
+
+**Important:** Enter the Pangolin **server URL** (e.g.
+`https://pangolin.openrivercam.com`), not the end-user proxy URL. Using the
+proxy URL causes token decode errors.
+
+**Tailscale** will be evaluated in-country as an alternative for SSH access.
+May be a better fit in some situations, but not usable in countries that
+disallow third-party VPN services.
 
 ### Verify Rain Gauge
 

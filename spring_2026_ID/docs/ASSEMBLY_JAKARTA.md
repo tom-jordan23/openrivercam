@@ -1124,9 +1124,9 @@ Access at `http://orc-jakarta.local:5173/` (or use IP address).
   - Video filename template: `{%Y%m%dT%H%M%S}.mp4` (matches orc-capture output)
   - Parse time from filename: **ON**
   - Verify red confirmation message shows: `/home/pi/Videos/YYYYMMDDTHHMMSS.mp4`
-  - Allowed time difference (video ↔ water level): **900 seconds**
+  - Allowed time difference (video ↔ water level): **3600 seconds** (NodeORC default)
   - "Shutdown after task": **OFF** (Jakarta is always-on)
-  - "Reboot after time": **3600 seconds** (hourly health reboot)
+  - "Reboot after time": **86400 seconds** (daily health reboot)
   - Video configuration: select finalized config (after calibration — deferred to field)
   - LiveORC sync: **time series + analysis images** (full video disabled to save bandwidth)
   - Daemon runner: **OFF** until end-to-end test passes, then **ON**
@@ -1231,8 +1231,10 @@ schedule via `wp5` (Option 6 → Choose schedule script) and enable ORC-OS
 ### Pangolin Remote Access
 
 Pangolin provides remote HTTPS access to the ORC-OS web UI via a tunneled
-reverse proxy. Configuration is handled entirely through the ORC-OS web UI
-(`/pangolin` page) — no manual file editing or CLI setup required on the Pi.
+reverse proxy. It is pre-installed on the Rainbow Sensing ORC-OS image.
+Configuration is handled entirely through the ORC-OS web UI (`/pangolin`
+page) — no software installation needed. If using a different base image,
+operators must provision their own remote access service.
 
 **Important: the Pangolin server URL is not the same as the end-user proxy
 URL.** The server URL (e.g. `https://pangolin.openrivercam.com`) is the
@@ -1248,8 +1250,12 @@ cause token decode errors (the proxy returns HTML, not the expected JSON).
 - [x] Verify HTTPS proxy URL loads ORC-OS web UI from offsite
 
 **Note:** Only HTTPS proxy mode is used (for remote dashboard access).
-Tailscale handles SSH. arm64 WireGuard tunnel mode has a known issue
-(fosrl/newt#237) but this does not affect HTTPS proxy mode.
+arm64 WireGuard tunnel mode has a known issue (fosrl/newt#237) but this
+does not affect HTTPS proxy mode.
+
+**Tailscale** will be evaluated in-country as an alternative for SSH access.
+May be a better fit in some situations, but not usable in countries that
+disallow third-party VPN services.
 
 ### LiveORC Server Check
 
