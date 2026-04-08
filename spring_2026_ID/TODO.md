@@ -105,7 +105,7 @@ Pi 5 RTC battery Molex connector broke on BOTH boards (traces tore). Switching t
 
 ### Both stations
 - [ ] Flash new ORC-OS image from Hessel (when available)
-- [x] Run deploy.sh — Jakarta done 2026-04-07 (idempotent, safe to re-run)
+- [x] Run deploy.sh — Jakarta done 2026-04-07, Sukabumi done 2026-04-08 (105 PASS, 0 FAIL)
 - [x] Install Witty Pi 5 software (wp5 v5.0.0 deb) — Jakarta done 2026-04-05
 - [x] Sync Witty Pi 5 RTC to system clock — Jakarta done 2026-04-05
 - [x] Disable orc-rpi5-power-management.service — Jakarta done 2026-04-05
@@ -118,7 +118,7 @@ Pi 5 RTC battery Molex connector broke on BOTH boards (traces tore). Switching t
   - Sukabumi (duty-cycle): "Shutdown after task" ON, "Reboot after" 3600s (1hr safety net)
   - Both: video_file_fmt `{%Y%m%dT%H%M%S}.mp4`, parse_dates_from_file ON, allowed_dt 3600 (NodeORC default)
 - [x] Configure ORC-OS capture schedule (video filename template, daemon runner, ORC-OS timer service)
-- [ ] Camera ISAPI config via camtool.py
+- [x] Camera ISAPI config via camtool.py — Sukabumi done 2026-04-08 (irLight, whiteLightBrightness=0)
 - [x] orc-capture end-to-end test (relay → camera boot → RTSP → quality gate → ORC-OS pickup)
 - [ ] Rain gauge serial communication test
 - [ ] SHT40/DS18B20 sensor verification
@@ -255,12 +255,19 @@ heights, and cable run lengths. May need to resolve in-country.
 ANNKE C1200 cameras configured via `camtool.py` using ISAPI.
 FTP upload is **not used** — video is captured via RTSP pull (see ISS-003).
 
-Remaining camera config:
-- Set admin credentials (record securely)
-- Push streaming config (1920x1080, H.264, 16 Mbps CBR, 12.5fps)
-- Push image config (IR-only supplement light, auto IR cut filter)
-- Push NTP config (Pi as NTP server)
-- Verify RTSP stream accessible from Pi (`orc-capture --skip-relay --dry-run`)
+**Sukabumi — completed 2026-04-08:**
+- [x] Credentials set (stored in ~/.orc_deploy_sukabumi)
+- [x] Image config pushed (irLight mode, whiteLightBrightness=0)
+- [x] NTP config verified (matches desired state)
+- [x] Streaming config verified (1920x1080, H.264, 12.5fps)
+- [x] RTSP verified via `orc-capture --skip-relay --dry-run` (12.4 Mbps, 64 frames)
+- [x] Full relay-cycled capture verified (13.4 Mbps, quality gate PASS)
+
+Remaining (Jakarta):
+- [ ] Push streaming config (1920x1080, H.264, 16 Mbps CBR, 12.5fps)
+- [ ] Push image config (IR-only supplement light, auto IR cut filter)
+- [ ] Push NTP config (Pi as NTP server)
+- [ ] Verify RTSP stream accessible from Pi
 
 ---
 
@@ -402,7 +409,7 @@ The drawio source was updated but the PDF was not regenerated.
 
 | Field | Value |
 |-------|-------|
-| **Status** | DONE (2026-04-07, Jakarta) |
+| **Status** | DONE (2026-04-07 Jakarta, 2026-04-08 Sukabumi) |
 | **Site** | Both |
 | **Target** | Post-deployment (Jakarta), pre-deployment (Sukabumi) |
 
@@ -424,11 +431,14 @@ don't work — cmdline.txt is the only option.
 - [x] deploy.sh updated: USB section handles fstab + symlink idempotently
 - [x] Backout scripts: `~/uas-revert.sh` (cmdline), `~/usb-video-revert.sh` (fstab + symlink)
 
-**Sukabumi — still TODO:**
-- [ ] Verify `/boot/firmware` mounts (see TODO-016)
-- [ ] Apply same cmdline.txt quirk
-- [ ] Insert USB drive, verify stable enumeration
-- [ ] Run `deploy.sh sukabumi` to set up fstab + symlink
+**Sukabumi — completed 2026-04-08:**
+- [x] Verify `/boot/firmware` mounts (see TODO-016) — confirmed, mounts fine
+- [x] Apply same cmdline.txt quirk — applied previous session, verified in cmdline
+- [x] Insert USB drive, verify stable enumeration — SanDisk 3.2Gen1, no UAS errors
+- [x] Format ext4, fstab UUID entry, mount at `/mnt/usb`
+- [x] `/home/pi/Videos` symlinked to `/mnt/usb/incoming`
+- [x] deploy.sh sukabumi --check: 105 PASS, 0 FAIL
+- [x] First capture verified landing on USB drive (20260408T143741.mp4)
 
 ---
 
@@ -436,20 +446,15 @@ don't work — cmdline.txt is the only option.
 
 | Field | Value |
 |-------|-------|
-| **Status** | OPEN |
+| **Status** | DONE (2026-04-08) |
 | **Site** | Sukabumi |
-| **Target** | Next power-on |
 
 Both stations were flashed from the same image. Jakarta's `/boot/firmware`
 mounts fine. Sukabumi had issues because we removed `90-qemu.rules` during
-debugging (then restored it). Verify on next boot that Sukabumi's
-`/boot/firmware` mounts and `cmdline.txt` is accessible — this is a
-prerequisite for TODO-015.
+debugging (then restored it).
 
-```bash
-mount | grep boot
-cat /boot/firmware/cmdline.txt
-```
+**Verified 2026-04-08:** `/boot/firmware` mounts, `cmdline.txt` accessible,
+UAS quirk confirmed in `/proc/cmdline`. 90-qemu.rules present (deploy.sh confirms).
 
 ---
 
@@ -558,6 +563,9 @@ already covered by ordered quantities vs. what needs separate ordering.
 | — | Sukabumi J2 power button: replaced dodgy Dupont connection with Wago 221 lever-nuts — tests passed | 2026-04-05 |
 | — | Doc cleanup: RTC refs (ML-2020 → Witty Pi 5), Samsung FIT removal, power budget fix, J2 wiring methods | 2026-04-05 |
 | TODO-015 | Jakarta: UAS disabled (cmdline.txt quirk), USB storage mounted, Videos symlinked, deploy.sh made idempotent | 2026-04-07 |
+| TODO-015 | Sukabumi: USB formatted ext4, mounted, Videos symlinked, first capture on USB verified | 2026-04-08 |
+| TODO-016 | Sukabumi: /boot/firmware mounts, cmdline.txt accessible, 90-qemu.rules present | 2026-04-08 |
+| TODO-004 | Sukabumi: camera ISAPI config pushed (irLight, NTP, streaming verified), RTSP + relay-cycle capture PASS | 2026-04-08 |
 | — | Sukabumi WS2812B LED wired, tested R/G/B + all status colors (orc-led-test) | 2026-04-01 |
 | — | LED driver migrated from rpi-ws281x to Adafruit Blinka (Pi 5 PIO) — see ISS-007 | 2026-04-01 |
 | — | GPIO_WIRING.md comprehensive update (Rev C) | 2026-03-20 |
