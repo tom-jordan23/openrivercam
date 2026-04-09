@@ -304,6 +304,10 @@ production and maintenance. The station picks up the change on next boot.
 - **Disconnect:** SD16 4-pin connector (keyed, waterproof). Unplug to replace
   gauge without opening enclosure.
 
+![Hydreon RG-15 optical rain gauge showing clear dome and PCB](images/components/rg15_rain_gauge.png)
+
+*Figure: The RG-15 rain gauge. The clear dome is the sensing surface — keep it clean. No moving parts inside.*
+
 ### Temperature/Humidity (SHT40)
 
 - Mounted inside the enclosure
@@ -315,6 +319,10 @@ production and maintenance. The station picks up the change on next boot.
 - Waterproof probe mounted outside the enclosure
 - Passes through PG9 cable gland
 - No maintenance required
+
+![ANNKE C1200 PoE camera with mounting hardware](images/components/annke_c1200_camera.png)
+
+*Figure: The ANNKE C1200 PoE camera installed at each site. Factory-sealed IP67 housing with built-in IR LEDs for night operation.*
 
 ---
 
@@ -387,6 +395,10 @@ gpioset gpiochip0 17=1
 # Turn off
 gpioset gpiochip0 17=0
 ```
+
+![Inside the enclosure showing DIN rail fuse holders, relay module with green PCBs, and G469 GPIO terminal connections](images/assembly/internal_wiring_detail.png)
+
+*Figure: Inside the enclosure. The relay module (green PCBs, center) has four channels — CH1 powers the camera, CH2-4 are available. Each has COM/NO/NC screw terminals on the 12V side.*
 
 ### Relay Channel Assignments
 

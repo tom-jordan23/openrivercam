@@ -104,6 +104,10 @@ power control — NOT a GPIO pin. If Pi has power but won't
 boot, try pressing the J2 button before investigating further.
 ```
 
+![Multimeter reading 5.08V at buck converter output, bench supply showing 12V input](images/assembly/ddr_5v_verification.png)
+
+*Figure: Checking 5V output with a multimeter. For Sukabumi, measure at the DDR-60G-5 output. For Jakarta, measure at any G469 5V pin (Witty Pi delivers 5V through the header).*
+
 ### Pi Frozen / Unresponsive
 
 ```
@@ -481,7 +485,7 @@ Then set your laptop to 192.168.1.50/24 and use `arp -a` to find the camera. Re-
 |---------|---------------|----------|
 | System won't boot | Pi halted but has power | Press external power button (J2 header, near USB-C) |
 | System won't boot | Dead battery (Sukabumi) | Charge battery, check solar panel |
-| System won't boot | Blown fuse | Replace fuse, investigate cause |
+| System won't boot | Blown fuse | Replace fuse, investigate cause — see fuse photo below |
 | System won't boot | Faulty USB-C cable | Replace power cable to Pi |
 | System won't boot | Witty Pi VIN not receiving 12V (Jakarta) | Check F3 fuse, measure 12V at Witty Pi VIN screw terminal |
 | Pi frozen/unresponsive | Software hang | Press J2 power button briefly for clean shutdown, then press again to boot |
@@ -489,6 +493,10 @@ Then set your laptop to 192.168.1.50/24 and use `arp -a` to find the camera. Re-
 | Intermittent shutdowns (Sukabumi) | Low battery voltage | Check solar charge controller |
 | Intermittent shutdowns (Jakarta) | BMS low-voltage cutoff | Check charger and battery health |
 | Intermittent shutdowns | Loose connection | Check all terminal connections |
+
+![Fuse holder with wrong-size Bussmann automotive fuses that do not fit the 5x20mm holder](images/troubleshooting/fuse_wrong_size.png)
+
+*Figure: Wrong fuse type. These Bussmann automotive blade fuses (6.3mm) do NOT fit the 5x20mm glass tube holders used in the stations. Use 5x20mm slow-blow glass fuses only.*
 
 ### Camera Issues (Both Sites Use PoE Cameras)
 
@@ -524,7 +532,7 @@ Then set your laptop to 192.168.1.50/24 and use `arp -a` to find the camera. Re-
 |---------|---------------|----------|
 | Condensation inside enclosure | Gore vent blocked | Clear vent obstruction |
 | Condensation inside enclosure | Failed seal | Reseal bulkheads/glands |
-| Condensation inside enclosure | PTC heater fault (Jakarta) | Check heater wiring |
+| Condensation inside enclosure | PTC heater not installed (Jakarta) | Planned for future -- use desiccant packs as interim measure or install PTC heater |
 | Corrosion on connectors | Missing dielectric grease | Clean, apply grease |
 | High internal temp | Direct sun exposure | Add shade, check fans (Jakarta) |
 | Water ingress | Failed bulkhead seal | Replace bulkhead, reseal |

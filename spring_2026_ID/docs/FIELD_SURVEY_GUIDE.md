@@ -1,5 +1,6 @@
 # ORC Field Survey — Quick Reference
 
+**Version:** 1.0 — April 2026
 **Purpose:** Abbreviated checklist for PMI field staff. Tom will provide
 detailed guidance at each step. For full procedures, see
 `survey/SURVEY_PROCESS_v3.md`.

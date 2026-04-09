@@ -372,7 +372,7 @@ sudo systemctl start orc-sensors.timer
 - [ ] Camera pole mount bracket (x1)
 
 ### Humidity Control & Climate Monitoring
-- [ ] PTC heater 15W (for enclosure)
+- [ ] ~~PTC heater 15W (for enclosure)~~ — **not installed / deferred**
 - [ ] SHT40 temperature/humidity sensor (I2C, inside enclosure)
 - [ ] DS18B20 waterproof temperature probe (1-Wire, outside enclosure)
 - [ ] Amphenol Gore vents, IP68 (x2)
@@ -501,6 +501,12 @@ bulkheads, LEDs, and buttons once you know the layout works.
 
 6. Mount stack on lower DIN rail using DIN rail clip
 
+![Pi 5 board next to OONO DIN rail mount bracket](images/assembly/pi5_and_din_bracket.png)
+
+![Completed Pi 5 compute stack, top-down view showing G469 GPIO terminal riser](images/assembly/pi5_stack_complete_topdown.png)
+
+*Figure: Completed compute stack ready for DIN rail mounting. The G469 terminal block HAT sits on top, providing screw terminal access to all GPIO pins. (Photo taken before Witty Pi 5 HAT+ was added. Your assembly will have three boards: Pi 5 + Witty Pi 5 + G469.)*
+
 ### Step 5: Mount Components on DIN Rails (30 min)
 
 **Tools needed:** Screwdriver, DIN rail clips
@@ -524,6 +530,10 @@ bulkheads, LEDs, and buttons once you know the layout works.
    - SHT40 breakout board: double-sided tape to a nearby DIN-mounted
      component's carrier tray or flat surface. Position away from heat
      sources (Pi CPU, DC-DC converters) for accurate readings.
+
+![DIN rail component layout planning with PoE switch, Pi stack, relay module, and buck converter](images/assembly/din_rail_component_planning.png)
+
+*Figure: Component placement on DIN rails before wiring. Lay out all components to verify spacing and cable reach before tightening anything down.*
 
 ### Step 6: Install Power System (45 min)
 
@@ -721,7 +731,13 @@ rail terminal blocks.
 13. **Fuse summary (3 fuse holders):**
     - F2: 5A — PoE relay/switch feed
     - F3: 5A — Pi/DDR-60G-5 feed (already installed)
-    - F4: 5A — Heater/fan feed
+    - F4: 5A — Fan feed (PTC heater not installed)
+
+![Mean Well SDR-120-12 AC-DC power supply mounted on DIN rail](images/assembly/jakarta_psu_dinrail.png)
+
+![Mean Well PSU with Heschen surge protector on DIN rail, bench supply showing 12V output](images/assembly/jakarta_psu_surge_protector.png)
+
+*Figure: Jakarta power distribution on DIN rail. The Mean Well PSU and Heschen surge suppressor are mounted on the bottom rail alongside the AC terminal blocks. Verify 12V output with a multimeter before connecting any downstream components.*
 
 ### Step 7: Wire Relay Module and PoE System (30 min)
 
@@ -796,6 +812,10 @@ domain.
      - GND (Pin 14) -> WS2812B GND
      - GPIO 18 (Pin 12) -> WS2812B DIN (data in)
 6. **Relay GPIO:** Already wired in Step 7 (VCC, GND, IN1 from G469)
+
+![G469 GPIO terminal block with solid-core wires connected, DIN rail fuse holders visible](images/assembly/g469_wiring_detail_fuses.png)
+
+*Figure: G469 GPIO terminal connections with solid-core wires. Each peripheral (SHT40, DS18B20, LED, relay) connects via screw terminals on the G469 -- no soldering required. (Photo taken before Witty Pi 5 HAT+ was added. Your assembly will have three boards: Pi 5 + Witty Pi 5 + G469.)*
 
 ### Step 9: Test Mounting Plate Assembly
 
@@ -906,6 +926,12 @@ landing on wired components. (See Sukabumi build note in ASSEMBLY_SUKABUMI.md.)
    - Brief press initiates clean shutdown (while running)
    - ~10s hold forces power off (if frozen)
 
+![Drilling holes in enclosure panel for cable glands and panel-mount components](images/assembly/panel_drilling.png)
+
+![Enclosure panel with IP67 pushbutton and cable gland installed](images/assembly/panel_button_gland_installed.png)
+
+*Figure: Enclosure panel after drilling and bulkhead installation. Verify that all glands and connectors seat flush with no gaps -- a sloppy fit compromises the IP rating. Test-fit every bulkhead before committing to final tightening.*
+
 ### Step 11: Install Mounting Plate and Connect External Peripherals
 
 1. **Install mounting plate** into enclosure with provided screws
@@ -933,13 +959,13 @@ landing on wired components. (See Sukabumi build note in ASSEMBLY_SUKABUMI.md.)
 
 5. **Route DS18B20 temperature probe** cable through PG9 gland to outside enclosure
 
-6. **Install PTC heater and fans:**
-   - Mount 15W PTC heater on enclosure interior wall
-   - Wire to 12V through thermostat/hygrostat
-   - Set to activate when humidity >70% or temp <25C
+6. **Install fans** (PTC heater was not installed — fans only):
    - Mount fans in pre-drilled enclosure holes
-   - Wire to 12V from TB1 (through heater/fan fuse)
+   - Wire to 12V from TB1 (through F4 fan fuse)
    - Fans run whenever system is powered
+   - *Note: PTC heater and hygrostat were planned but not installed.
+     If added in the future, wire heater in parallel with fans
+     through a hygrostat (set to >70% RH).*
 
 7. **Verify Gore vents clear:**
    - No obstruction
@@ -994,7 +1020,7 @@ landing on wired components. (See Sukabumi build note in ASSEMBLY_SUKABUMI.md.)
 
 1. **Cable management:**
    - Bundle and tie all internal cables
-   - Ensure no cables block vents, fans, or heaters
+   - Ensure no cables block vents or fans
 
 2. **Seal all bulkheads and glands:**
    - Tighten firmly
@@ -1011,6 +1037,10 @@ landing on wired components. (See Sukabumi build note in ASSEMBLY_SUKABUMI.md.)
    - [ ] Inline fuse installed between TB1 and relay CH1
 
 4. **Close enclosure** (leave AC disconnected)
+
+![Jakarta station enclosure fully assembled, top-down view showing all components wired](images/assembly/jakarta_enclosure_final.png)
+
+*Figure: Completed Jakarta station enclosure. All components are DIN rail mounted, cables are bundled and tied, and bulkheads are sealed. Compare your build against this photo before closing the enclosure and connecting AC power.*
 
 ---
 
@@ -1429,11 +1459,11 @@ After installation, verify actual power consumption:
 | PoE camera (x1) | ~8W | |
 | PoE switch | ~5W | |
 | Modem (idle) | ~1W | |
-| PTC heater (avg) | ~8W | |
+| ~~PTC heater (avg)~~ | ~~8W~~ | **Not installed** |
 | Fans (x2) | ~3W | |
-| **Total average** | **~33W** | |
+| **Total average** | **~25W** | |
 
-**Battery runtime:** 1280Wh / 33W = ~39 hours (theoretical)
+**Battery runtime:** 1280Wh / 25W = ~51 hours (theoretical, PTC heater not installed)
 
 ---
 

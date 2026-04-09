@@ -3,6 +3,7 @@
 **Applies to:** Sukabumi site (orc-sukabumi)
 **Modem:** Quectel EC25 LTE (USB ID `2c7c:0125`, firmware `EG25GGBR07A08M2G`)
 **Carrier:** Verizon Wireless (US bench testing) / Telkomsel (field deployment)
+**Version:** 1.0 — April 2026
 **Last verified:** 2026-03-25
 
 ---

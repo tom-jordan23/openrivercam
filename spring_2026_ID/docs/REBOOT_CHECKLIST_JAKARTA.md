@@ -1,5 +1,7 @@
 # Post-Reboot Verification Checklist — Jakarta
 
+**Version:** 1.0 — April 2026
+
 Run after rebooting the Jakarta Pi to confirm deploy.sh changes took effect.
 
 ## Context

@@ -1,5 +1,7 @@
 # Post-Reboot Verification Checklist
 
+**Version:** 1.0 — April 2026
+
 Run after rebooting the Pi to confirm all services and configurations persist.
 
 ## Context

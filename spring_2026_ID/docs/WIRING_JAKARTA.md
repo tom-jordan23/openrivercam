@@ -12,7 +12,7 @@
 - [12V Distribution](#12v-distribution)
 - [PoE Camera System](#poe-camera-system)
 - [GPIO Connections](#gpio-connections-geekworm-g469)
-- [PTC Heater & Fan Wiring](#ptc-heater--fan-wiring)
+- [Fan Wiring](#fan-wiring)
 - [Complete Enclosure Layout](#complete-enclosure-layout)
 - [Grounding System](#grounding-system)
 - [Wire Routing](#wire-routing)
@@ -69,9 +69,9 @@
               |                    |                    |
               v                    v                    v
     +-----------------+  +-----------------+  +-----------------+
-    |  PoE SWITCH     |  |  WITTY PI 5     |  |  PTC HEATER     |
-    |  LINOVISION     |  |  VIN (12V in)   |  |  (Enclosure)    |
-    |  + FUSE + RELAY |  |  -> 5V to Pi    |  |  + FANS         |
+    |  PoE SWITCH     |  |  WITTY PI 5     |  |  FANS           |
+    |  LINOVISION     |  |  VIN (12V in)   |  |  (PTC heater    |
+    |  + FUSE + RELAY |  |  -> 5V to Pi    |  |  not installed) |
     +--------+--------+  +--------+--------+  +-----------------+
                                   |
                            +------+------+
@@ -276,7 +276,7 @@ POWER PATH LOGIC:
             |                     Witty Pi delivers 5V to Pi + G469 via 40-pin header
             |                     WS2812B LED powered from G469 5V pin (freed by DDR removal)
             |
-            +--[FUSE 5A]---> PTC HEATER (via hygrostat) + FANS
+            +--[FUSE 5A]---> FANS (PTC heater + hygrostat not installed)
 
 
 FUSE SPECIFICATIONS (3 fuse holders):
@@ -285,7 +285,7 @@ FUSE SPECIFICATIONS (3 fuse holders):
 +--------------+----------+----------------------------------------------------+
 |  F2 (PoE)    |  5A      |  Relay + PoE switch (1 camera, ~20W max)         |
 |  F3 (Pi)     |  5A      |  Witty Pi 5 VIN + Pi + LED (25W max, plus margin)|
-|  F4 (Heater) |  5A      |  PTC heater + fans (25W max, plus margin)       |
+|  F4 (Fans)   |  5A      |  Fans only (PTC heater not installed)            |
 +-----------------------------------------------------------------------------+
 F1 (15A main bus fuse) removed — redundant with 3 branches all at 5A.
 ```
@@ -547,38 +547,40 @@ DS18B20 WATERPROOF TEMPERATURE PROBE (1-Wire):
 
 ---
 
-## PTC Heater & Fan Wiring
+## Fan Wiring
+
+> **Note:** PTC heater and hygrostat were planned but **not installed** on the
+> Jakarta station. F4 fuse protects fans only. If a PTC heater is added in the
+> future, wire it in parallel with the fans through a hygrostat (set to >70% RH).
 
 ```
 +-----------------------------------------------------------------------------+
-|                    PTC HEATER & FAN SYSTEM                                  |
+|                    FAN SYSTEM (PTC heater not installed)                    |
 +-----------------------------------------------------------------------------+
 
 12V FROM TB1
     |
     | [FUSE 5A]
     |
-    +--------------------------------------------------------------+
-    |                                                              |
-    v                                                              v
-+---------------------------------------+     +-------------------------------+
-|     ENCLOSURE HEATER (15W)            |     |     40 CFM FANS (x2)         |
-|                                       |     |                               |
-|  12V+ --> [HYGROSTAT] --> PTC+ --+    |     |  12V+ --> Fan 1 + --+         |
-|                             PTC  |    |     |                     |         |
-|  GND -----------------> PTC- -+  |    |     |  12V+ --> Fan 2 + --+         |
-|                                       |     |                     |         |
-|  Hygrostat setting: ON when >70% RH   |     |  GND --> Fan 1/2 - +         |
-|                                       |     |                               |
-|                                       |     |  Always-on when 12V present  |
-+---------------------------------------+     +-------------------------------+
+    v
++-------------------------------+
+|     40 CFM FANS (x2)         |
+|                               |
+|  12V+ --> Fan 1 + --+         |
+|                     |         |
+|  12V+ --> Fan 2 + --+         |
+|                     |         |
+|  GND --> Fan 1/2 - +         |
+|                               |
+|  Always-on when 12V present  |
++-------------------------------+
 
 
 NOTES:
-- PTC heater is self-regulating (won't overheat)
-- Hygrostat controls enclosure heater based on humidity
+- PTC heater and hygrostat were NOT installed (planned for future)
 - ANNKE C1200 camera is factory-sealed IP67 -- no camera heater needed
 - Fans provide internal air circulation
+- F4 fuse protects fan circuit only
 ```
 
 ---

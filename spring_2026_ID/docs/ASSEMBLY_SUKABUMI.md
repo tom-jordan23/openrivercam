@@ -269,6 +269,10 @@ bulkheads, LEDs, and buttons once you know the layout works.
    - No bent pins
    - Heatsink secure
 
+![Completed Pi 5 compute stack, side view showing GPIO terminal riser, active cooler, and DIN rail bracket](images/assembly/pi5_stack_complete_side.png)
+
+*Figure: Completed compute stack ready for DIN rail mounting. (Photo taken before Witty Pi 5 HAT+ was added. Your assembly will have three boards: Pi 5 + Witty Pi 5 + G469.)*
+
 ### Step 3: Mount Components on DIN Rail (20 min)
 
 **Tools needed:** Screwdriver, DIN rail clips
@@ -288,6 +292,10 @@ bulkheads, LEDs, and buttons once you know the layout works.
    - DDR-60G-12 buck converter (12V→12V regulated)
    - Terminal blocks (snap onto rail)
    - Fuse holder (snap onto rail or screw mount)
+
+   ![First DIN rail mounted with relay module and DDR-60G-5 buck converter](images/assembly/din_rail_first_components.png)
+
+   *Figure: First components snapped onto DIN rail.*
 
 3. **Mount items without DIN rail clips:**
    - Quectel modem: sits inside the EXVIST WWAN USB carrier, which is
@@ -382,6 +390,14 @@ pin assignments, continuity verification checklists, and build photos.
      - SDA → GPIO 2
      - SCL → GPIO 3
 
+   ![G469 GPIO breakout board showing labeled screw terminal pin assignments](images/assembly/g469_pin_labels.png)
+
+   *Figure: G469 pin labels for reference during wiring. (Photo taken before Witty Pi 5 HAT+ was added. Your assembly will have three boards: Pi 5 + Witty Pi 5 + G469.)*
+
+   ![SHT40 temperature/humidity sensor VHB-mounted on Pi DIN rail case with I2C wires](images/assembly/sht40_mounted_on_pi_case.png)
+
+   *Figure: SHT40 mounted with VHB tape on the Pi case. Position away from heat sources.*
+
 4. **Verify all connections before powering on.**
 
 ### Step 7: Test Mounting Plate Assembly
@@ -389,6 +405,10 @@ pin assignments, continuity verification checklists, and build photos.
 Power on and verify the complete mounting plate assembly works before
 proceeding to enclosure work. This is your last chance to fix wiring issues
 before conformal coating and final assembly.
+
+![Multimeter reading 5.08V at DDR-60G-5 output with bench supply at 12V](images/assembly/ddr_5v_verification.png)
+
+*Figure: Verifying 5V output after trim pot adjustment.*
 
 - [ ] 12V supply → DDR-60G-5 → Pi boots
 - [ ] GPIO 24 → relay CH1 → PoE switch powers on
@@ -780,6 +800,10 @@ pushed to the camera as a batch. No web UI needed.
    - IR LEDs should illuminate (visible glow from IR array)
    - Download a clip — verify IR-lit image (grayscale)
 
+![ANNKE C1200 PoE camera mounted on test pole with Cat6 cable](images/assembly/camera_pole_mount_test.png)
+
+*Figure: Camera pole mount test setup.*
+
 ### Step 11b: Enable Capture Service (5 min)
 
 The `orc-capture` service runs once per boot cycle: powers on the PoE relay,
@@ -901,6 +925,10 @@ and each sensor's own interval is checked before reading.
    - [ ] Power button accessible and labeled
    - [ ] Power button wired to Pi 5 J2 header (not G469 terminals)
    - [ ] No loose items inside
+
+![Sukabumi station wiring overview showing signal and power wire routing on DIN rails](images/assembly/sukabumi_wiring_overview.png)
+
+*Figure: Completed Sukabumi wiring before enclosure installation. (Photo taken before Witty Pi 5 HAT+ was added. Your assembly will have three boards: Pi 5 + Witty Pi 5 + G469.)*
 
 4. **Close enclosure:**
    - Verify gasket is clean and seated

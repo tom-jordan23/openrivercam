@@ -1,5 +1,6 @@
 # Jakarta Station — Enclosure Reference
 
+**Version:** 1.0 — April 2026
 **Print, laminate, and attach to the inside of the enclosure door.**
 
 ---
@@ -31,7 +32,7 @@ All fuses are **5x20mm glass tube** type. Do NOT use US automotive blade fuses
 |------|--------|----------|--------------------------|
 | F2 (PoE) | 5A | Relay CH1 and PoE switch | Camera loses power, Pi stays running |
 | F3 (Pi) | 5A | Witty Pi 5 VIN (12V→5V) and Pi | Pi loses power |
-| F4 (Heater) | 5A | PTC heater and fans | Climate control stops, system continues |
+| F4 (Fans) | 5A | Fans (PTC heater not installed) | Fans stop, system continues |
 
 **Replacement fuses:** 5x20mm, rated amperage, slow blow (time-delay).
 
@@ -95,7 +96,7 @@ TB1 — 12V DISTRIBUTION (from PSU / Battery)
 ┌──────┬──────┬──────┬──────┬──────┬──────┬──────┬──────┐
 │ 12V+ │ 12V+ │ 12V+ │ 12V+ │ GND  │ GND  │ GND  │ GND  │
 │ F2   │ F3   │ F4   │ RG15 │      │      │      │      │
-│(PoE) │(Pi)  │(Heat)│(pwr) │      │      │      │      │
+│(PoE) │(Pi)  │(Fans)│(pwr) │      │      │      │      │
 └──────┴──────┴──────┴──────┴──────┴──────┴──────┴──────┘
 ```
 
@@ -167,8 +168,8 @@ Driven by 1 GPIO data pin + 5V power. No relay channels used.
          │   │  │    [F2    [F3    [F4           (UPS backup)
          │   │  │     5A]   5A]    5A]
          │   │  │      │      │      │
-         │   │  │   Fuse   Witty  PTC heater
-         │   │  │   holder Pi 5   + Fans
+         │   │  │   Fuse   Witty  Fans
+         │   │  │   holder Pi 5   (no heater)
          │   │  │      │   VIN
          │   │  │   Relay  (12V→5V)
          │   │  │   CH1      │
@@ -191,7 +192,7 @@ Driven by 1 GPIO data pin + 5V power. No relay channels used.
 | **Battery low** | BMS disconnects to protect battery |
 | **AC restored** | Mean Well resumes, charger recharges battery |
 
-**Battery runtime:** ~39 hours at typical load (~33W)
+**Battery runtime:** ~51 hours at typical load (~25W, PTC heater not installed)
 
 ---
 
@@ -226,7 +227,8 @@ python3 -c "import sqlite3; c=sqlite3.connect('/home/pi/.ORC-OS/orc-os.db'); c.e
 
 | Component | Function | Control |
 |-----------|----------|---------|
-| PTC heater (15W) | Reduces humidity in enclosure | Hygrostat (>70% RH) |
+| ~~PTC heater (15W)~~ | ~~Reduces humidity in enclosure~~ | **Not installed** (planned for future) |
+| ~~Hygrostat~~ | ~~Controls PTC heater at >70% RH~~ | **Not installed** (planned for future) |
 | Fans (2x 40 CFM) | Internal air circulation | Always on |
 | Gore vents (2x M12) | Pressure equalization | Passive |
 | SHT40 sensor | Internal temp/humidity monitoring | I2C to Pi |

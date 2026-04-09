@@ -1,5 +1,6 @@
 # Sukabumi Station — Enclosure Reference
 
+**Version:** 1.0 — April 2026
 **Print, laminate, and attach to the inside of the enclosure door.**
 
 ---
