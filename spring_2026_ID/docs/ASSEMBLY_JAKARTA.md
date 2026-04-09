@@ -1042,7 +1042,8 @@ landing on wired components. (See Sukabumi build note in ASSEMBLY_SUKABUMI.md.)
 3. WS2812B status LED should indicate (colors configured in /etc/orc/led-status.yaml):
    - Green = OK
    - Yellow blink = working
-   - Red = error
+   - Red steady = camera offline (normal if camera is still booting)
+   - Red blink = capture failed (check logs)
 
 ### Run Preflight Checks
 

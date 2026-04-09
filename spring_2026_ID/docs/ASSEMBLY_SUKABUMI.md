@@ -925,7 +925,8 @@ and each sensor's own interval is checked before reading.
 6. **Check status LEDs:**
    - Green steady = OK
    - Yellow blinking = working (capture/upload)
-   - Red = error (check logs)
+   - Red steady = camera offline (normal between duty cycles)
+   - Red blink = capture failed (check logs)
 
 ### Run Preflight Checks
 

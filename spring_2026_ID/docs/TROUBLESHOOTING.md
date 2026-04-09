@@ -12,8 +12,8 @@
 | Green steady | System OK, idle | Normal operation |
 | Green + Yellow blink | Capturing/uploading | Normal operation |
 | Yellow steady | Processing | Wait for completion |
-| Red blink | Warning (non-critical) | Check logs when convenient |
-| Red steady | Error (needs attention) | Investigate immediately |
+| Red blink | Capture failed | Check camera connection and logs |
+| Red steady | Camera offline/unreachable | **Normal on Sukabumi between cycles** (camera powers down with PoE relay). On Jakarta, investigate if persistent — camera should be reachable 24/7 |
 | All off | No power or not booted | Check power system |
 | All on steady | Boot in progress | Wait 2-3 minutes |
 
