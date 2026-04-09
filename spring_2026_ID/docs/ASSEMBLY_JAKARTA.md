@@ -1392,6 +1392,29 @@ Items to verify or adjust during field deployment:
   (current floor: 12 Mbps in `/etc/orc-capture.conf` `MIN_BITRATE_KBPS`).
   Camera max is 16 Mbps CBR.
 
+### Sensor Field Testing
+
+Run `deploy.sh jakarta` to deploy sensor configs + w1-gpio overlay. **Reboot
+required** after first deploy (1-Wire overlay needs kernel reload).
+
+**RG-15 rain gauge (UART):**
+- [ ] Verify UART wiring: `minicom -D /dev/ttyAMA0 -b 9600` — type `R`, expect `Acc ... mm`
+- [ ] Verify orc-sensors reads it: `sudo orc-sensors` — check journal for `rg15:` line
+- [ ] Verify CSV: `cat /var/log/orc/sensors/rg15_$(date +%Y-%m-%d).csv`
+- [ ] Verify state file: `cat /var/lib/orc-sensors/rg15_acc.txt`
+- [ ] Simulate rain (pour water on dome), verify acc_mm increases on next read
+
+**DS18B20 temperature probe (1-Wire):**
+- [ ] Verify device detected: `ls /sys/bus/w1/devices/28-*`
+- [ ] Verify raw reading: `cat /sys/bus/w1/devices/28-*/temperature`
+- [ ] Verify orc-sensors reads it: `sudo orc-sensors` — check journal for `ds18b20:` line
+- [ ] Verify CSV: `cat /var/log/orc/sensors/ds18b20_$(date +%Y-%m-%d).csv`
+- [ ] Sanity check temp against SHT40 reading
+
+**SHT40 (verification only):**
+- [ ] Verify: `sudo orc-sensors` — check journal for `sht40:` line
+- [ ] Verify CSV: `cat /var/log/orc/sensors/sht40_$(date +%Y-%m-%d).csv`
+
 ---
 
 ## Power Budget Verification

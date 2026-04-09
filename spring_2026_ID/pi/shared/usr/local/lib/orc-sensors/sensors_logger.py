@@ -141,9 +141,117 @@ def read_sht40(conf):
     return {"temp_c": temp_c, "humidity_pct": humidity_pct}
 
 
+def read_rg15(conf):
+    """Read Hydreon RG-15 rain gauge via UART. Returns dict.
+
+    Sends 'R' command, parses response for Acc (accumulated rainfall in mm).
+    Computes interval rainfall by comparing against the last known Acc value
+    stored on disk. The RG-15 stays powered during Pi sleep and accumulates
+    internally, so the delta between readings is the rainfall during that
+    interval.
+
+    Response format: "Acc  0.01 mm, EventAcc  0.01 mm, ..."
+    """
+    import serial
+
+    port = conf.get("SERIAL_PORT", "/dev/ttyAMA0")
+    baud = int(conf.get("SERIAL_BAUD", "9600"))
+    state_file = conf.get("STATE_FILE", "/var/lib/orc-sensors/rg15_acc.txt")
+
+    # Ensure state directory exists
+    os.makedirs(os.path.dirname(state_file), exist_ok=True)
+
+    # Read previous accumulation
+    prev_acc = 0.0
+    if os.path.exists(state_file):
+        try:
+            with open(state_file) as f:
+                prev_acc = float(f.read().strip())
+        except (ValueError, OSError):
+            prev_acc = 0.0
+
+    # Query the gauge
+    ser = serial.Serial(port, baud, timeout=3)
+    try:
+        ser.reset_input_buffer()
+        ser.write(b"R\n")
+        time.sleep(0.5)
+        response = ser.read(256).decode("ascii", errors="replace").strip()
+    finally:
+        ser.close()
+
+    if not response:
+        raise ValueError(f"No response from RG-15 on {port}")
+
+    # Parse Acc field: "Acc  0.01 mm"
+    acc_mm = None
+    for part in response.split(","):
+        part = part.strip()
+        if part.startswith("Acc"):
+            tokens = part.split()
+            for i, tok in enumerate(tokens):
+                try:
+                    acc_mm = float(tok)
+                    break
+                except ValueError:
+                    continue
+
+    if acc_mm is None:
+        raise ValueError(f"Could not parse Acc from RG-15 response: {response}")
+
+    # Compute interval rainfall (handle gauge reset / rollover)
+    interval_mm = round(max(0.0, acc_mm - prev_acc), 2)
+    if acc_mm < prev_acc:
+        # Gauge was reset or rolled over — report current Acc as interval
+        interval_mm = round(acc_mm, 2)
+
+    # Save current accumulation for next reading
+    with open(state_file, "w") as f:
+        f.write(str(acc_mm))
+
+    return {
+        "acc_mm": acc_mm,
+        "interval_mm": interval_mm,
+    }
+
+
+def read_ds18b20(conf):
+    """Read DS18B20 1-Wire temperature probe. Returns dict.
+
+    Reads from sysfs: /sys/bus/w1/devices/<device_id>/temperature
+    The kernel returns temperature in millidegrees Celsius.
+    """
+    device_id = conf.get("W1_DEVICE_ID", "")
+
+    if not device_id:
+        # Auto-detect: find the first 28-* device
+        w1_dir = "/sys/bus/w1/devices"
+        if os.path.isdir(w1_dir):
+            for entry in os.listdir(w1_dir):
+                if entry.startswith("28-"):
+                    device_id = entry
+                    break
+
+    if not device_id:
+        raise ValueError("No DS18B20 device found (no 28-* in /sys/bus/w1/devices/)")
+
+    temp_path = f"/sys/bus/w1/devices/{device_id}/temperature"
+    if not os.path.exists(temp_path):
+        raise ValueError(f"DS18B20 sysfs path not found: {temp_path}")
+
+    with open(temp_path) as f:
+        raw = f.read().strip()
+
+    temp_c = round(int(raw) / 1000.0, 2)
+
+    return {"temp_c": temp_c}
+
+
 # Registry of sensor drivers
 DRIVERS = {
     "sht40": read_sht40,
+    "rg15": read_rg15,
+    "ds18b20": read_ds18b20,
 }
 
 

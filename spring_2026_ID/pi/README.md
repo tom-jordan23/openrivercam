@@ -56,6 +56,8 @@ contains a real file.
 | `shared/usr/local/bin/orc-preflight` | `/usr/local/bin/orc-preflight` | Thin wrapper: runs `deploy.sh <site> --check` (auto-detects site from hostname) | Shared | No | No |
 | `shared/etc/systemd/system/orc-capture.service` | `/etc/systemd/system/orc-capture.service` | Oneshot service: runs orc-capture on each boot (conflicts with orc-gpio-relays) | Shared | No | No |
 | `shared/etc/orc-sensors/sht40.conf` | `/etc/orc-sensors/sht40.conf` | SHT40 sensor config (I2C addr, interval, log dir, CSV columns) | Shared | No | Yes |
+| `shared/etc/orc-sensors/rg15.conf` | `/etc/orc-sensors/rg15.conf` | RG-15 rain gauge config (UART port, baud, state file for delta calc) | Shared | No | Yes |
+| `shared/etc/orc-sensors/ds18b20.conf` | `/etc/orc-sensors/ds18b20.conf` | DS18B20 temperature probe config (1-Wire, auto-detect device ID) | Shared | No | Yes |
 | `shared/usr/local/bin/orc-sensors` | `/usr/local/bin/orc-sensors` | Wrapper: sources per-sensor configs, execs into Python logger | Shared | No | Yes |
 | `shared/usr/local/lib/orc-sensors/sensors_logger.py` | `/usr/local/lib/orc-sensors/sensors_logger.py` | Multi-sensor reader: I2C read, CRC validation, CSV append, log rotation | Shared | No | Yes |
 | `shared/etc/systemd/system/orc-sensors.service` | `/etc/systemd/system/orc-sensors.service` | Oneshot service: reads all due sensors and appends to daily CSVs | Shared | No | Yes |

@@ -373,6 +373,7 @@ run_directories() {
 
     local dirs=(
         /var/log/orc/sensors
+        /var/lib/orc-sensors
         /mnt/usb
         /etc/orc-sensors
         /etc/orc
@@ -503,6 +504,7 @@ run_config_txt() {
     local lines=(
         "enable_uart=1:UART for rain gauge"
         "dtparam=i2c_arm=on:I2C for SHT40 sensor"
+        "dtoverlay=w1-gpio:1-Wire for DS18B20 temperature probe (GPIO 4)"
         "usb_max_current_enable=1:USB current limit for Quectel modem"
     )
 

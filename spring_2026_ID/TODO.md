@@ -121,11 +121,12 @@ Pi 5 RTC battery Molex connector broke on BOTH boards (traces tore). Switching t
 - [x] Configure ORC-OS capture schedule (video filename template, daemon runner, ORC-OS timer service)
 - [x] Camera ISAPI config via camtool.py — Sukabumi done 2026-04-08 (irLight, whiteLightBrightness=0)
 - [x] orc-capture end-to-end test (relay → camera boot → RTSP → quality gate → ORC-OS pickup)
-- [ ] Rain gauge serial communication test
-- [ ] SHT40/DS18B20 sensor verification
+- [x] Implement rain gauge + DS18B20 sensor drivers (sensors_logger.py + config files)
+- [ ] Rain gauge serial communication test — deferred to in-country
+- [ ] DS18B20 temperature probe test — deferred to in-country
+- [ ] SHT40 sensor verification — deferred to in-country
 - [ ] LED status daemon test
 - [ ] Pangolin remote access (pre-installed on RS image; configure via ORC-OS web UI)
-- [ ] Implement rain gauge capture script (TODO-001)
 - [ ] Power status MOTD script (undervoltage false positive)
   - [ ] MOTD: add SHT40 temperature + humidity readout
 - [ ] Full end-to-end soak test (leave running overnight Tue→Wed)
@@ -178,6 +179,30 @@ Pi 5 RTC battery Molex connector broke on BOTH boards (traces tore). Switching t
   - Eject, disconnect, boot Pi, run `wp5` option 6 to select schedule (or option 11 → 1 for always-on)
   - **Do NOT connect Pi USB-A to Witty Pi USB-C** — causes reboot loop
 
+### Sensor field testing (both stations)
+
+Run `deploy.sh <site>` first to deploy config files + w1-gpio overlay. Reboot required
+for DS18B20 (1-Wire overlay).
+
+**RG-15 rain gauge:**
+- [ ] Verify UART wiring: `minicom -D /dev/ttyAMA0 -b 9600` — type `R`, expect `Acc ... mm` response
+- [ ] Verify orc-sensors reads it: `sudo orc-sensors` — check journal for `rg15: acc_mm=... interval_mm=...`
+- [ ] Verify CSV output: `ls /var/log/orc/sensors/rg15_*.csv`
+- [ ] Verify state file: `cat /var/lib/orc-sensors/rg15_acc.txt`
+- [ ] Simulate rain (pour water on dome) and verify acc_mm increases on next read
+- [ ] On Sukabumi: verify state file persists across sleep/wake cycles (delta should be non-zero after rain)
+
+**DS18B20 temperature probe:**
+- [ ] Verify 1-Wire device detected: `ls /sys/bus/w1/devices/28-*`
+- [ ] Verify raw reading: `cat /sys/bus/w1/devices/28-*/temperature` (millidegrees C)
+- [ ] Verify orc-sensors reads it: `sudo orc-sensors` — check journal for `ds18b20: temp_c=...`
+- [ ] Verify CSV output: `ls /var/log/orc/sensors/ds18b20_*.csv`
+- [ ] Sanity check temperature against SHT40 reading (should be close)
+
+**SHT40 (verification only — already deployed):**
+- [ ] Verify orc-sensors reads it: `sudo orc-sensors` — check journal for `sht40: temp_c=... humidity_pct=...`
+- [ ] Verify CSV output: `ls /var/log/orc/sensors/sht40_*.csv`
+
 ---
 
 ## Jakarta Software Status
@@ -206,21 +231,25 @@ post-deployment.
 
 | Field | Value |
 |-------|-------|
-| **Status** | OPEN |
-| **Site** | Sukabumi |
-| **Target** | Week 2 |
+| **Status** | DONE (2026-04-09) — code complete, needs field testing |
+| **Site** | Both |
+| **Target** | In-country field testing |
 
-The RG-15 accumulates rainfall while the Pi sleeps, but no software exists to read it.
-On each wake cycle the capture script must:
+**Implemented as:** `read_rg15()` driver in `sensors_logger.py` + `rg15.conf` config file.
+Plugs into existing `orc-sensors.timer` (no new service needed).
 
-1. Open UART (`/dev/ttyAMA0`, 9600 baud)
-2. Send `R` command, parse `Acc` field from response
-3. Read previous accumulated value from disk
-4. Compute delta, log interval rainfall with timestamp
-5. Write new accumulated value to disk
+On each reading (every 300s, or each wake cycle on Sukabumi):
+1. Opens UART (`/dev/ttyAMA0`, 9600 baud)
+2. Sends `R` command, parses `Acc` field from response
+3. Reads previous accumulated value from `/var/lib/orc-sensors/rg15_acc.txt`
+4. Computes delta (interval rainfall), handles gauge reset/rollover
+5. Appends `timestamp,acc_mm,interval_mm` to daily CSV
+6. Saves current Acc to state file for next reading
 
-**Decision needed:** Should this be a standalone script, a NodeORC plugin, or a PR to
-the upstream NodeORC repo?
+**Decision:** Implemented as sensor driver within existing orc-sensors framework,
+not a standalone script or NodeORC plugin. Can be upstreamed later if useful.
+
+**Needs field testing:** UART wiring, serial communication, Acc parsing, delta logic.
 
 ---
 
