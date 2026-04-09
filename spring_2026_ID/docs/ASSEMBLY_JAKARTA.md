@@ -150,8 +150,8 @@ Configure the ANNKE C1200 camera BEFORE deployment. The Pi acts as DHCP server o
    ```
    interface=eth0
    bind-dynamic
-   dhcp-range=192.168.50.100,192.168.50.200,24h
-   dhcp-host=<CAMERA_1_MAC>,192.168.50.101
+   dhcp-range=192.168.50.200,192.168.50.254,24h
+   dhcp-host=<CAMERA_1_MAC>,192.168.50.100
    ```
    **Important:** Use `bind-dynamic` (not `bind-interfaces`). This allows dnsmasq to start
    before eth0 has carrier — required because the PoE relay may not be on at boot time.
@@ -236,11 +236,11 @@ The camera is on an isolated network with no internet. The Pi must serve NTP.
 
 1. Connect camera to PoE switch, connect switch uplink port to Pi Ethernet
 2. Wait 60-90 seconds for camera to boot and receive DHCP lease
-3. Verify: `ping 192.168.50.101`
-4. Access web interface at `http://192.168.50.101` (default credentials: admin / admin)
+3. Verify: `ping 192.168.50.100`
+4. Access web interface at `http://192.168.50.100` (default credentials: admin / admin)
 5. Test ISAPI snapshot (works on macOS/Linux without plugins):
    ```bash
-   curl --digest -u admin:password http://192.168.50.101/ISAPI/Streaming/channels/101/picture -o cam1_test.jpg
+   curl --digest -u admin:password http://192.168.50.100/ISAPI/Streaming/channels/101/picture -o cam1_test.jpg
    ```
 
 - [ ] Change admin password (record in secure location — must match `CAMERA_PASSWORD` in `.env`)
@@ -249,7 +249,7 @@ The camera is on an isolated network with no internet. The Pi must serve NTP.
 - [ ] Format MicroSD via ISAPI:
   ```bash
   curl --digest -u admin:<password> -X PUT \
-    http://192.168.50.101/ISAPI/ContentMgmt/Storage/hdd/1/format
+    http://192.168.50.100/ISAPI/ContentMgmt/Storage/hdd/1/format
   ```
 - [ ] Push camera config via camtool.py:
   ```bash
@@ -275,18 +275,18 @@ The camera is on an isolated network with no internet. The Pi must serve NTP.
 - [ ] Set recording schedule to continuous (CMR):
   ```bash
   curl --digest -u admin:<password> \
-    http://192.168.50.101/ISAPI/ContentMgmt/record/tracks/101 > /tmp/track.xml
+    http://192.168.50.100/ISAPI/ContentMgmt/record/tracks/101 > /tmp/track.xml
   sed -i 's/ActionRecordingMode>MOTION/ActionRecordingMode>CMR/g' /tmp/track.xml
   curl --digest -u admin:<password> -X PUT \
     -H "Content-Type: application/xml" -d @/tmp/track.xml \
-    http://192.168.50.101/ISAPI/ContentMgmt/record/tracks/101
+    http://192.168.50.100/ISAPI/ContentMgmt/record/tracks/101
   ```
 - [ ] Verify configs: `python3 camtool.py diff jakarta-cam1`
 - [ ] Test video capture pipeline (download 5s clip from SD via RTSP playback):
   ```bash
   START=$(date -d '15 seconds ago' +%Y%m%dT%H%M%S)
   ffmpeg -y -rtsp_transport tcp \
-    -i "rtsp://admin:<password>@192.168.50.101:554/Streaming/tracks/101?starttime=${START}" \
+    -i "rtsp://admin:<password>@192.168.50.100:554/Streaming/tracks/101?starttime=${START}" \
     -t 5 -c:v copy -an /mnt/usb/incoming/test_cam1.mp4
   ffprobe /mnt/usb/incoming/test_cam1.mp4  # verify 1080p, ~16 Mbps
   ```
@@ -1072,13 +1072,13 @@ Fix any remaining FAILs manually before proceeding.
 3. SSH into Pi
 4. Ping camera:
    ```
-   ping 192.168.50.101
+   ping 192.168.50.100
    ```
 5. Test video capture:
    ```bash
    START=$(date -d '15 seconds ago' +%Y%m%dT%H%M%S)
    ffmpeg -y -rtsp_transport tcp \
-     -i "rtsp://admin:PASSWORD@192.168.50.101:554/Streaming/tracks/101?starttime=${START}" \
+     -i "rtsp://admin:PASSWORD@192.168.50.100:554/Streaming/tracks/101?starttime=${START}" \
      -t 5 -c:v copy -an /mnt/usb/incoming/test_cam1.mp4
    ffprobe /mnt/usb/incoming/test_cam1.mp4  # verify 1080p, ~16 Mbps
    ```
@@ -1460,7 +1460,7 @@ See `TROUBLESHOOTING.md` for detailed diagnostics.
 |-----------|-------|
 | Pi hostname | |
 | Pi IP (static) | 192.168.50.1 |
-| Camera IP | 192.168.50.101 |
+| Camera IP | 192.168.50.100 |
 | Camera password | |
 | WiFi hotspot SSID | |
 | WiFi hotspot password | |

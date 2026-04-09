@@ -4,6 +4,15 @@
 **Status:** Humanitarian papers expected - duty exemption likely
 **Date:** January 9, 2026
 
+> **NOTE (April 2026):** This document was written during the planning phase.
+> Several components have changed since then (Witty Pi 5 added, DDR-60G-5
+> removed from Jakarta, G469 replaced Pi-EzConnect, Hydreon RG-15 replaced
+> DFRobot rain gauge, PoE switch replaced Planet injector, etc.). The packing
+> lists below reflect the original plan, not the final build. Both stations
+> are now built and boxed — refer to the actual BOM files and assembly guides
+> for current equipment. The customs strategy, airline restrictions, and
+> local sourcing sections remain accurate.
+
 ---
 
 ## Quick Reference

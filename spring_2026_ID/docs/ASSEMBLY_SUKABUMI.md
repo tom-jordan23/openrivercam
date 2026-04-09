@@ -33,6 +33,15 @@
   - [Step 12: Mount External Components](#step-12-mount-external-components-30-min)
   - [Step 13: Final Assembly and Sealing](#step-13-final-assembly--sealing-15-min)
 - [Power-On Procedure](#power-on-procedure)
+- [ORC Software Configuration](#orc-software-configuration)
+  - [ORC-OS Web UI Initial Setup](#orc-os-web-ui-initial-setup)
+  - [Capture Scheduling](#capture-scheduling-orc-os-managed)
+  - [Witty Pi 5 Power Management](#witty-pi-5-power-management-sukabumi)
+  - [Pangolin Remote Access](#pangolin-remote-access)
+  - [LiveORC Server Check](#liveorc-server-check)
+  - [End-to-End Verification](#end-to-end-verification)
+  - [In-Country TODOs](#in-country-todos)
+  - [Sensor Field Testing](#sensor-field-testing)
 - [Troubleshooting](#troubleshooting)
 - [Maintenance Notes](#maintenance-notes)
 - [Site-Specific Configuration](#site-specific-configuration)
@@ -530,8 +539,8 @@ The Pi serves as DHCP server for the camera network on eth0 using dnsmasq. This 
    ```
    interface=eth0
    bind-dynamic
-   dhcp-range=192.168.50.100,192.168.50.200,24h
-   dhcp-host=<CAMERA_MAC>,192.168.50.139
+   dhcp-range=192.168.50.200,192.168.50.254,24h
+   dhcp-host=<CAMERA_MAC>,192.168.50.100
    ```
    **Important:** Use `bind-dynamic` (not `bind-interfaces`). This allows dnsmasq to start
    before eth0 has carrier — required because the PoE relay may not be on at boot time.
@@ -546,10 +555,10 @@ The Pi serves as DHCP server for the camera network on eth0 using dnsmasq. This 
 3. **Connect and discover the camera:**
    - Connect camera to PoE switch, connect switch uplink port to Pi's Ethernet port
    - Wait 60-90 seconds for camera to boot
-   - The camera will receive 192.168.50.139 via DHCP
+   - The camera will receive 192.168.50.100 via DHCP
    - Verify:
      ```bash
-     ping 192.168.50.139
+     ping 192.168.50.100
      ```
    - If you need to find the MAC address first, temporarily omit the `dhcp-host` line, restart dnsmasq, let the camera get any IP from the range, then check:
      ```bash
@@ -679,15 +688,15 @@ pushed to the camera as a batch. No web UI needed.
 2. **Format the MicroSD card** via ISAPI:
    ```bash
    # Check camera detects the SD card
-   curl --digest -u admin:<password> http://192.168.50.139/ISAPI/ContentMgmt/Storage
+   curl --digest -u admin:<password> http://192.168.50.100/ISAPI/ContentMgmt/Storage
 
    # Format (takes ~60s for 64GB)
    curl --digest -u admin:<password> -X PUT \
-     http://192.168.50.139/ISAPI/ContentMgmt/Storage/hdd/1/format
+     http://192.168.50.100/ISAPI/ContentMgmt/Storage/hdd/1/format
    ```
 
 3. **Change the default admin password** on the camera web interface:
-   - From Pi: `http://192.168.50.139`
+   - From Pi: `http://192.168.50.100`
    - Default credentials: admin / admin
    - Change password immediately — must match `CAMERA_PASSWORD` in `.env`
 
@@ -727,15 +736,15 @@ pushed to the camera as a batch. No web UI needed.
    >
    > If you test the camera manually (without `orc-capture`), verify with:
    > ```
-   > curl --digest -u admin:<password> http://192.168.50.139/ISAPI/Image/channels/1 | grep supplementLightMode
-   > curl --digest -u admin:<password> http://192.168.50.139/ISAPI/System/Video/inputs/channels/1/overlays | grep enabled
+   > curl --digest -u admin:<password> http://192.168.50.100/ISAPI/Image/channels/1 | grep supplementLightMode
+   > curl --digest -u admin:<password> http://192.168.50.100/ISAPI/System/Video/inputs/channels/1/overlays | grep enabled
    > ```
 
 5. **Set recording schedule to continuous (CMR):**
    ```bash
    # Get current recording config
    curl --digest -u admin:<password> \
-     http://192.168.50.139/ISAPI/ContentMgmt/record/tracks/101 > /tmp/track.xml
+     http://192.168.50.100/ISAPI/ContentMgmt/record/tracks/101 > /tmp/track.xml
 
    # Change MOTION to CMR in all ScheduleAction blocks
    sed -i 's/ActionRecordingMode>MOTION/ActionRecordingMode>CMR/g' /tmp/track.xml
@@ -743,7 +752,7 @@ pushed to the camera as a batch. No web UI needed.
    # Push back
    curl --digest -u admin:<password> -X PUT \
      -H "Content-Type: application/xml" -d @/tmp/track.xml \
-     http://192.168.50.139/ISAPI/ContentMgmt/record/tracks/101
+     http://192.168.50.100/ISAPI/ContentMgmt/record/tracks/101
    ```
 
 6. **Verify configuration:**
@@ -759,7 +768,7 @@ pushed to the camera as a batch. No web UI needed.
    FNAME="video_$(date -d '15 seconds ago' +%Y%m%d_%H%M%S).mp4"
 
    ffmpeg -y -rtsp_transport tcp \
-     -i "rtsp://admin:<password>@192.168.50.139:554/Streaming/tracks/101?starttime=${START}&endtime=${END}" \
+     -i "rtsp://admin:<password>@192.168.50.100:554/Streaming/tracks/101?starttime=${START}&endtime=${END}" \
      -t 5 -c:v copy -an /mnt/usb/incoming/$FNAME
 
    # Verify: 1080p, ~16 Mbps, ~5 seconds
@@ -946,12 +955,12 @@ Fix any remaining FAILs manually before proceeding.
 1. Enter maintenance mode (long press power button, 3 seconds)
 2. Connect to WiFi hotspot
 3. SSH into Pi
-4. Check camera is reachable: `ping 192.168.50.139`
+4. Check camera is reachable: `ping 192.168.50.100`
 5. Download a test clip from camera SD:
    ```bash
    START=$(date -d '15 seconds ago' +%Y%m%dT%H%M%S)
    ffmpeg -y -rtsp_transport tcp \
-     -i "rtsp://admin:PASSWORD@192.168.50.139:554/Streaming/tracks/101?starttime=${START}" \
+     -i "rtsp://admin:PASSWORD@192.168.50.100:554/Streaming/tracks/101?starttime=${START}" \
      -t 5 -c:v copy -an /mnt/usb/incoming/test.mp4
    ```
 6. Verify clip: `ffprobe /mnt/usb/incoming/test.mp4` (should show 1080p, ~16 Mbps)
@@ -969,40 +978,311 @@ Fix any remaining FAILs manually before proceeding.
 2. Check signal: `mmcli -m 0 --signal-get`
 3. Test data: `ping -c 3 8.8.8.8`
 
-### ORC-OS Web UI Configuration
+---
 
-Access at `http://orc-sukabumi.local` (or use IP address). All hardware should
-be verified and network up before configuring ORC-OS.
+## ORC Software Configuration
 
-1. **Disk Management** (`/disk_management`):
-   - Minimum free space: **5 GB**
-   - Cleanup check frequency: **300 seconds** (5 minutes)
+All hardware verified, network up, camera reachable. Now configure ORC-OS
+for automated capture and upstream data sync.
 
-2. **LiveORC API** (`/callback_url`) — do this BEFORE daemon settings:
-   1. On **LiveORC server** (`https://openrivercam.endlessprojects.info/admin/`):
-      create a site for Sukabumi with GPS coordinates. Note the **Site ID number**.
-   2. On **ORC-OS** (`/callback_url`):
-      - Server URL: `https://openrivercam.endlessprojects.info` (no `/admin/` or `/api` suffix)
-      - Username and password (LiveORC credentials)
-      - Submit — username/password will be replaced by access + refresh tokens
-      - Site ID: (Sukabumi site number from LiveORC)
-      - Retry time: set for intermittent LTE connectivity (e.g. 120 seconds)
-      - Verify green "callback URL created" banner
+### ORC-OS Web UI Initial Setup
 
-3. **Daemon Settings** (`/settings`):
-   - Video filename template: `{%Y%m%dT%H%M%S}.mp4` (matches orc-capture output)
-   - Parse time from filename: **ON**
-   - Verify red confirmation message shows: `/home/pi/Videos/YYYYMMDDTHHMMSS.mp4`
-   - Allowed time difference (video ↔ water level): **3600 seconds** (NodeORC default)
-   - "Shutdown after task": **ON** (Sukabumi is duty-cycled; ORC-OS shuts down after processing)
-   - "Reboot after time": **3600 seconds** (1hr safety net — prevents battery drain if processing hangs)
-   - Video configuration: select finalized config (after calibration — deferred to field)
-   - LiveORC sync: **time series + analysis images** (full video disabled to save bandwidth)
-   - Daemon runner: **OFF** until end-to-end test passes, then **ON**
+Access at `http://orc-sukabumi.local:5173/` (or use IP address).
 
-4. **Capture Service** — see Step 11b above. Enable and Start via web UI (`/services`).
+- [ ] Set ORC-OS web dashboard password on first access
+- [ ] **Disk Management** (`/disk_management`):
+  - Minimum free space: **5 GB**
+  - Cleanup check frequency: **300 seconds** (5 minutes)
+- [ ] **LiveORC API** (`/callback_url`) -- do this BEFORE daemon settings:
+  1. On **LiveORC server** (`https://openrivercam.endlessprojects.info/admin/`):
+     create a site for Sukabumi with GPS coordinates. Note the **Site ID number**
+     (visible in the site detail URL or list). Sukabumi = Site **TBD** (to be
+     created in-country).
+  2. On **ORC-OS** (`/callback_url`):
+     - Server URL: `https://openrivercam.endlessprojects.info` (no `/admin/` or `/api` suffix)
+     - Username and password (LiveORC credentials)
+     - Submit -- username/password will be replaced by access + refresh tokens
+     - Site ID: **TBD** (Sukabumi -- deferred to in-country setup)
+     - Retry time: set for intermittent LTE connectivity (e.g. 120 seconds)
+     - Verify green "callback URL created" banner
+- [ ] **Daemon Settings** (`/settings`):
+  - Video filename template: `{%Y%m%dT%H%M%S}.mp4` (matches orc-capture output)
+  - Parse time from filename: **ON**
+  - Verify red confirmation message shows: `/home/pi/Videos/YYYYMMDDTHHMMSS.mp4`
+  - Allowed time difference (video ↔ water level): **3600 seconds** (NodeORC default)
+  - "Shutdown after task": **ON** (Sukabumi is solar/duty-cycled; ORC-OS shuts down after processing)
+  - "Reboot after time": **3600 seconds** (1hr safety net -- prevents battery drain if processing hangs)
+  - Video configuration: select finalized config (after calibration -- deferred to field)
+  - LiveORC sync: **time series + analysis images** (full video disabled to save bandwidth)
+  - Daemon runner: **OFF** until end-to-end test passes, then **ON**
+- [ ] **Water Level** (`/water_level`) -- deferred to field (requires site survey):
+  - Configure retrieval script or manual entry method
+  - Set sync tolerance (seconds) between video and water level
+- [ ] **Camera config** via camtool.py:
+  - Push streaming config (1920x1080, H.264, 16 Mbps CBR, 12.5fps)
+  - Push image config (IR-only supplement, auto IR cut filter)
+  - Push NTP config (Pi as NTP server: 192.168.50.1)
+  - Verify RTSP stream: `orc-capture --skip-relay --dry-run`
 
-5. **Water Level** (`/water_level`) — deferred to field (requires site survey).
+### Capture Scheduling (ORC-OS Managed)
+
+Video capture is managed by ORC-OS as a systemd TIMER service. The timer
+fires every 15 minutes and runs `/usr/local/bin/orc-capture` via a thin
+wrapper script. This gives the ORC team start/stop/enable/disable control
+from the web UI, while all capture logic and configuration stays in
+`/etc/orc-capture.conf`.
+
+**Architecture:**
+- `orc-capture.timer` -- systemd timer, fires every 15 min (`OnCalendar=*:0/15`)
+- `orc-capture.service` -- runs `~/.ORC-OS/services/orc-capture.sh`
+- `orc-capture.sh` -- wrapper that checks `CAPTURE_ENABLED` env var, then `exec`s `/usr/local/bin/orc-capture`
+- `/etc/orc-capture.conf` -- runtime config (camera IP, duration, quality gate, etc.)
+- All service files live in `~/.ORC-OS/services/` and are symlinked to `/etc/systemd/system/`
+
+**Service definition** is stored in the repo at `pi/shared/orc-capture-service.json`
+and imported via `orc service import --deploy` during deploy.sh.
+
+#### Web UI Setup Steps
+
+1. Navigate to **Services** (`/services`) in the ORC-OS web UI
+2. Confirm **"capture"** (ORC Video Capture) appears in the service list
+   - If missing, import manually via SSH:
+     ```
+     orc service import --deploy /path/to/orc-capture-service.json
+     ```
+3. Click on the **capture** service to open the detail page (`/services/4`)
+4. Verify the **CAPTURE_ENABLED** parameter is set to **1** (enabled)
+5. Click **Enable** first -- this creates the systemd timer symlink
+6. Click **Start** -- this activates the timer
+7. Click **Log** to verify captures are running -- you should see quality gate
+   PASS messages and "Delivered:" lines every 15 minutes
+
+#### Start/Stop Behavior
+
+ORC-OS manages the capture timer through four controls. The order matters:
+
+| Action | What it does |
+|--------|-------------|
+| **Enable** | Creates timer symlink in systemd, timer starts on boot |
+| **Start** | Activates the timer now, captures fire every 15 min |
+| **Stop** | Stops the timer, no more captures until Start |
+| **Disable** | Removes timer symlink from systemd, won't start on boot |
+
+**To pause captures:** Stop, then Disable.
+**To resume captures:** Enable first (recreates symlink), then Start.
+
+Enable/Disable controls the systemd symlink -- Disable physically removes
+the timer symlink from `/etc/systemd/system/`, and Enable recreates it.
+Always **Enable before Start** when resuming from a disabled state.
+
+#### Verification
+
+After starting the service, wait for the next :00/:15/:30/:45 mark, then:
+- Check the **Log** tab on the service detail page for a successful capture
+- Check the **Videos** page to confirm the new file appears
+- On SSH: `systemctl list-timers orc-capture.timer` shows NEXT trigger time
+
+- [ ] Import orc-capture service definition into ORC-OS
+- [ ] Verify timer is active: `systemctl list-timers orc-capture.timer`
+- [ ] Verify capture runs on timer: check logs after next :00/:15/:30/:45
+- [ ] Verify start/stop/enable/disable works from ORC-OS web UI
+
+### Witty Pi 5 Power Management (Sukabumi)
+
+**Power management uses a split responsibility model:**
+
+| Component | Responsibility |
+|-----------|---------------|
+| **Witty Pi 5** | Owns the wake/startup schedule (configured via `wp5` interactive menu) |
+| **ORC-OS** | Owns shutdown decisions (`shutdown_after_task` ON, `reboot_after` 3600s watchdog) |
+| **systemd** | `orc-api.service` starts after `wp5d.service` (prevents time-jump reboot loop) |
+
+Sukabumi is solar/duty-cycled. The Witty Pi controls when the Pi wakes up,
+and ORC-OS shuts it down after the capture-process-upload cycle completes.
+The Witty Pi ON window acts as a backstop -- if ORC-OS fails to shut down
+(e.g. processing hangs), the Witty Pi ON window expires and the Pi powers
+off anyway, preventing battery drain.
+
+```bash
+# Verify systemd ordering (set by deploy.sh)
+grep "wp5d" /etc/systemd/system/orc-api.service
+# Expected: After=network.target wp5d.service
+```
+
+- [ ] Verify `orc-api.service` has `wp5d.service` dependency
+
+#### Schedule Files
+
+Three `.wpi` schedule files are available, each defining a different
+duty cycle:
+
+| Schedule File | ON Window | OFF Window | Use Case |
+|---------------|-----------|------------|----------|
+| `prod_15.wpi` | 10 min | 5 min | **Default production** -- captures every 15 min |
+| `prod_30.wpi` | 25 min | 5 min | **Low-solar fallback** -- captures every 30 min, reduces cycles/day |
+| `maint.wpi` | Always on | Never | **Debugging/maintenance** -- Pi stays awake indefinitely |
+
+**How it works:** The Witty Pi ON window defines how long the Pi is allowed
+to stay powered. ORC-OS ("Shutdown after task" = ON) shuts down the Pi as
+soon as capture + processing + upload finishes -- typically well before the
+ON window expires. The ON window is a safety net, not the normal shutdown
+mechanism.
+
+- `prod_15.wpi` (default): 10 min ON / 5 min OFF. ORC-OS normally shuts
+  down within 3-5 min. The remaining ON time is buffer for slow uploads or
+  retries. If ORC-OS hangs, the Pi powers off at the 10-min mark.
+- `prod_30.wpi`: 25 min ON / 5 min OFF. Use during extended rainy season
+  or when solar budget is tight. Halves the number of wake cycles per day.
+- `maint.wpi`: Always-on. Use for field debugging, calibration, or initial
+  setup. Remember to switch back to a production schedule before leaving site.
+
+#### Loading Schedule Files onto Witty Pi
+
+1. Shut down the Pi (Witty Pi stays powered from external supply)
+2. Connect laptop USB cable to Witty Pi's USB-C port -- drive appears as "Witty Pi 5"
+3. Copy `.wpi` files into `schedule/` on the emulated drive
+4. Safely eject, disconnect cable, boot Pi
+5. Run `wp5` option 6 to select the active schedule
+
+- **Do NOT connect the Pi's USB-A to the Witty Pi USB-C** -- causes power feedback reboot loop
+
+#### Switching Schedules in the Field
+
+To change the active schedule (e.g. switching from `prod_15` to `maint` for
+debugging):
+
+1. SSH into the Pi (via maintenance mode hotspot or Pangolin)
+2. Run `wp5`
+3. Select option **6** (Choose schedule script)
+4. Select the desired `.wpi` file
+5. Confirm the schedule is loaded (wp5 displays next ON/OFF times)
+6. If switching TO a production schedule from `maint.wpi`, verify
+   ORC-OS daemon settings: "Shutdown after task" = **ON**, "Reboot after" = **3600s**
+7. If switching TO `maint.wpi` for debugging, consider setting
+   "Shutdown after task" = **OFF** temporarily so the Pi stays awake
+
+- [ ] Load all three `.wpi` schedule files onto Witty Pi
+- [ ] Set active schedule to `prod_15.wpi` (default)
+- [ ] Verify schedule is active: `wp5` shows correct next ON/OFF times
+- [ ] Test duty cycle: observe Pi shutdown after ORC-OS task completes,
+  then wake at next scheduled ON window
+
+### Pangolin Remote Access
+
+Pangolin provides remote HTTPS access to the ORC-OS web UI via a tunneled
+reverse proxy. It is pre-installed on the Rainbow Sensing ORC-OS image.
+Configuration is handled entirely through the ORC-OS web UI (`/pangolin`
+page) -- no software installation needed. If using a different base image,
+operators must provision their own remote access service.
+
+**Important: the Pangolin server URL is not the same as the end-user proxy
+URL.** The server URL (e.g. `https://pangolin.openrivercam.com`) is the
+Pangolin management server where Newt authenticates. The proxy URL (e.g.
+`https://arc-00002.openrivercam.com`) is the public-facing address that
+end users visit to reach the ORC-OS dashboard. Enter the **server URL** in
+the ORC-OS configuration, not the proxy URL -- using the proxy URL will
+cause token decode errors (the proxy returns HTML, not the expected JSON).
+
+- [ ] Coordinate with ORC team to create site credentials on the Pangolin dashboard
+- [ ] Configure Pangolin connection via ORC-OS web UI (server URL, site ID, secret)
+- [ ] Verify tunnel connects (check Pangolin dashboard shows site online)
+- [ ] Verify HTTPS proxy URL loads ORC-OS web UI from offsite:
+  `https://arc-00002.openrivercam.com`
+
+**Note:** Only HTTPS proxy mode is used (for remote dashboard access).
+arm64 WireGuard tunnel mode has a known issue (fosrl/newt#237) but this
+does not affect HTTPS proxy mode.
+
+**Tailscale** will be evaluated in-country as an alternative for SSH access.
+May be a better fit in some situations, but not usable in countries that
+disallow third-party VPN services.
+
+### LiveORC Server Check
+
+LiveORC server: `https://openrivercam.endlessprojects.info/`
+Hosted on AWS. Startup script: `/opt/LiveORC/start-liveorc.sh`
+
+- [ ] Verify AWS LiveORC instance is running
+- [ ] Confirm API endpoint is reachable (HTTPS)
+- [ ] Create Sukabumi site in LiveORC admin (Site ID: TBD -- deferred to in-country)
+- [ ] Test data upload (manual or via daemon -- happens during end-to-end test)
+
+**If SSL cert expires** (Let's Encrypt, auto-renews inside container):
+1. SSH into AWS instance (SSM session or SSH)
+2. Stop the stack: `cd /opt/LiveORC && sudo ./liveorc.sh stop`
+3. Restart with SSL: `sudo ./start-liveorc.sh`
+4. Verify: `curl -I https://openrivercam.endlessprojects.info/`
+5. Should return HTTP 302 with valid cert. If cert still expired, check
+   that ports 80 and 443 are open in the AWS security group (Let's Encrypt
+   HTTP-01 challenge needs port 80).
+
+**Note:** The device won't appear in LiveORC's device list until the daemon
+sends its first data sync. This is expected -- it registers on first upload.
+
+### End-to-End Verification
+
+#### Step 1: Confirm capture produces correctly named files
+
+Run a manual capture and verify the filename matches the ORC-OS template:
+```
+orc-capture
+ls -l /home/pi/Videos/
+```
+Files must be named `YYYYMMDDTHHMMSS.mp4` (e.g. `20260406T172012.mp4`).
+This matches the ORC-OS daemon template `{%Y%m%dT%H%M%S}.mp4`.
+
+**If files are named `video_YYYYMMDD_HHMMSS.mp4` instead:** the deployed
+`/etc/orc-capture.conf` is stale. Re-run `deploy.sh sukabumi` or manually
+change `FILENAME_PREFIX=video` to `FILENAME_TEMPLATE=%Y%m%dT%H%M%S` in
+`/etc/orc-capture.conf` and update `/usr/local/bin/orc-capture` to match.
+
+#### Step 2: Verify ORC-OS daemon is active and detecting files
+
+The daemon polls `/home/pi/Videos/` every 5 seconds for new files matching
+the template. It only runs if **both** conditions are met:
+1. Daemon settings are configured in the web UI (`/settings`)
+2. Daemon runner is set to **ON**
+
+**Important:** The daemon scheduler initializes at API startup. If you
+enable the daemon in the web UI after boot, you must restart the API:
+```
+sudo systemctl restart orc-api
+```
+
+Then check the logs to confirm:
+```
+journalctl -u orc-api --no-pager -n 20 | grep -i "video_check_job\|daemon"
+```
+You should see:
+```
+Daemon settings found: setting up interval job "video_check_job" with
+path: /home/pi/Videos and file template: {%Y%m%dT%H%M%S}.mp4
+```
+
+#### Step 3: Confirm videos appear in ORC-OS web UI
+
+Run a capture while the daemon is active:
+```
+orc-capture
+```
+Within 5 seconds, the video should appear in the ORC-OS web UI video list.
+Check the API logs for confirmation:
+```
+journalctl -u orc-api --no-pager -n 10 | grep "Found file"
+```
+You should see: `Found file: /home/pi/Videos/YYYYMMDDTHHMMSS.mp4 with
+timestamp ..., adding to database.`
+
+Videos may show error status if no water level data or video config is set
+yet -- this is expected during bench testing.
+
+#### Step 4: Full pipeline (deferred to field)
+
+- [ ] orc-capture runs successfully (relay -> camera -> RTSP -> quality gate -> file saved)
+- [ ] Daemon picks up captured video and processes it
+- [ ] Data syncs to LiveORC server
+- [ ] LED status shows green (healthy)
+- [ ] Leave running for soak test (minimum 4 hours, ideally overnight)
 
 ### In-Country TODOs
 
@@ -1012,7 +1292,7 @@ Items to verify or adjust during field deployment:
   videos appear in the ORC-OS web UI Videos tab after capture. If they don't,
   check `journalctl -u orc-api` for `Errno 18` and revert to SD card:
   `rm ~/Videos && mkdir ~/Videos`. Compare with Jakarta setup.
-- [ ] **OSD overlays:** Verify both cameras have OSD disabled (date/time and
+- [ ] **OSD overlays:** Verify camera has OSD disabled (date/time and
   channel name). Run `orc-capture` and confirm "OSD overlays already disabled"
   in the log output.
 - [ ] **Capture settings review:** Review capture quality gate thresholds based
@@ -1021,30 +1301,32 @@ Items to verify or adjust during field deployment:
   (current floor: 12 Mbps in `/etc/orc-capture.conf` `MIN_BITRATE_KBPS`).
   Camera max is 16 Mbps CBR.
 
-### Remote Access
+### Sensor Field Testing
 
-**Pangolin** (reverse HTTPS proxy) is pre-installed on the Rainbow Sensing
-ORC-OS image. Configure via the ORC-OS web UI (`/pangolin` page) — no software
-installation needed. If using a different base image, operators must provision
-their own remote access service.
+Run `deploy.sh sukabumi` to deploy sensor configs + w1-gpio overlay. **Reboot
+required** after first deploy (1-Wire overlay needs kernel reload).
 
-**Important:** Enter the Pangolin **server URL** (e.g.
-`https://pangolin.openrivercam.com`), not the end-user proxy URL. Using the
-proxy URL causes token decode errors.
+**RG-15 rain gauge (UART):**
+- [ ] Verify UART wiring: `minicom -D /dev/ttyAMA0 -b 9600` -- type `R`, expect `Acc ... mm`
+- [ ] Verify orc-sensors reads it: `sudo orc-sensors` -- check journal for `rg15:` line
+- [ ] Verify CSV: `cat /var/log/orc/sensors/rg15_$(date +%Y-%m-%d).csv`
+- [ ] Verify state file: `cat /var/lib/orc-sensors/rg15_acc.txt`
+- [ ] Simulate rain (pour water on dome), verify acc_mm increases on next read
+- [ ] **Verify always-on power:** put Pi to sleep (`sudo halt`), then measure 12V
+  at TB1 with multimeter -- it should still be present. The RG-15 must stay
+  powered during sleep to accumulate rainfall. If it loses power, rainfall
+  between cycles is lost.
 
-**Tailscale** will be evaluated in-country as an alternative for SSH access.
-May be a better fit in some situations, but not usable in countries that
-disallow third-party VPN services.
+**DS18B20 temperature probe (1-Wire):**
+- [ ] Verify device detected: `ls /sys/bus/w1/devices/28-*`
+- [ ] Verify raw reading: `cat /sys/bus/w1/devices/28-*/temperature`
+- [ ] Verify orc-sensors reads it: `sudo orc-sensors` -- check journal for `ds18b20:` line
+- [ ] Verify CSV: `cat /var/log/orc/sensors/ds18b20_$(date +%Y-%m-%d).csv`
+- [ ] Sanity check temp against SHT40 reading
 
-### Verify Rain Gauge
-
-1. Check UART device: `ls /dev/ttyAMA0` or `ls /dev/serial0`
-2. Test serial communication: `cat /dev/ttyAMA0` (tip bucket, check for data)
-3. Manually tip bucket, verify data received
-4. **Verify always-on power:** put Pi to sleep (`sudo halt`), then measure 12V
-   at TB1 with multimeter — it should still be present. The RG-15 must stay
-   powered during sleep to accumulate rainfall. If it loses power, rainfall
-   between cycles is lost.
+**SHT40 (verification only):**
+- [ ] Verify: `sudo orc-sensors` -- check journal for `sht40:` line
+- [ ] Verify CSV: `cat /var/log/orc/sensors/sht40_$(date +%Y-%m-%d).csv`
 
 ---
 
@@ -1095,7 +1377,7 @@ See `TROUBLESHOOTING.md` for detailed diagnostics.
 | WiFi hotspot password | |
 | LTE SIM number | |
 | Modem IMEI | |
-| Camera IP address | 192.168.50.139 |
+| Camera IP address | 192.168.50.100 |
 | Video capture method | RTSP pull via orc-capture (not FTP) |
 | Camera NTP source | Pi at 192.168.50.1 (chrony) |
 | Camera stream | 1920x1080, H.264, 16 Mbps CBR, 12.5fps |

@@ -44,6 +44,16 @@ One USB per site, each containing everything needed to rebuild or troubleshoot t
 ### 6. Pi Overlay Files & Deploy Script
 - [ ] `pi/` directory (deploy.sh + shared/ + sukabumi/ + jakarta/)
 - [ ] `pi/PACKAGES.md` — package manifest
+- [ ] Witty Pi schedule files (`sukabumi/prod_15.wpi`, `sukabumi/prod_30.wpi`, `sukabumi/maint.wpi`)
+
+### 6a. Operator & Field Guides
+- [ ] Operator guide (`docs/OPERATOR_GUIDE.md`)
+- [ ] Field survey guide (`docs/FIELD_SURVEY_GUIDE.md`)
+- [ ] InaCORS HOWTO (`survey/InaCORS_HOWTO.md`)
+
+### 6b. Maintenance Mode (orc-pmi-stations)
+- [ ] `orc-pmi-stations` repo info — GitHub URL: https://github.com/tom-jordan23/orc-pmi-stations
+- [ ] README explaining how maintenance mode flags are controlled via GitHub Actions
 
 ### 7. Build Reference Photos
 - [ ] Normalized build photos (`build_notes/sukabumi/photos/`)

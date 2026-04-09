@@ -67,10 +67,10 @@ START: No status LEDs lit
                  ▼           ▼
            Replace    ┌──────────────────────┐
            fuse       │ Check power path:    │
-                      │ DDR-60G-5 5V output  │
-                      │ (both sites)         │
-                      │                      │
-                      │                      │
+                      │ SUKABUMI: DDR-60G-5  │
+                      │   5V output          │
+                      │ JAKARTA: Witty Pi    │
+                      │   VIN (12V from F3)  │
                       └───────┬──────────────┘
                               │
                         ┌─────┴─────┐
@@ -174,7 +174,7 @@ START: No video capture
          ▼
 ┌─────────────────────────┐
 │ Ping camera from Pi:    │
-│ ping 192.168.50.139     │
+│ ping 192.168.50.100     │
 │ (or configured IP)      │
 └───────────┬─────────────┘
             │
@@ -218,7 +218,7 @@ START: Camera offline
          ▼
 ┌─────────────────────────┐
 │ Ping camera from Pi:    │
-│ ping 192.168.50.101     │
+│ ping 192.168.50.100     │
 └───────────┬─────────────┘
             │
      ┌──────┴──────┐
@@ -400,8 +400,8 @@ Both sites use the Pi as a DHCP server (dnsmasq) on the 192.168.50.0/24 camera n
 
 | Site | Pi IP | Camera IPs |
 |------|-------|------------|
-| Sukabumi | 192.168.50.1 | 192.168.50.139 |
-| Jakarta | 192.168.50.1 | 192.168.50.101 |
+| Sukabumi | 192.168.50.1 | 192.168.50.100 |
+| Jakarta | 192.168.50.1 | 192.168.50.100 |
 
 **Note:** The SADP utility (Hikvision/ANNKE) does not run on ARM Macs — neither natively nor under Parallels. The dnsmasq approach eliminates the need for SADP entirely.
 
@@ -420,7 +420,7 @@ dnsmasq fails immediately if the interface has no carrier. The camera never gets
 ```bash
 sudo systemctl restart dnsmasq
 # Wait 60-90s for camera to get DHCP lease, then:
-ping 192.168.50.139
+ping 192.168.50.100
 ```
 
 **Permanent fix:** Change `bind-interfaces` to `bind-dynamic` in `/etc/dnsmasq.d/maintenance.conf`.
@@ -470,7 +470,7 @@ Then set your laptop to 192.168.1.50/24 and use `arp -a` to find the camera. Re-
 | System won't boot | Dead battery (Sukabumi) | Charge battery, check solar panel |
 | System won't boot | Blown fuse | Replace fuse, investigate cause |
 | System won't boot | Faulty USB-C cable | Replace power cable to Pi |
-| System won't boot | DDR-60G-5 failure (Jakarta) | Check 5V output with multimeter |
+| System won't boot | Witty Pi VIN not receiving 12V (Jakarta) | Check F3 fuse, measure 12V at Witty Pi VIN screw terminal |
 | Pi frozen/unresponsive | Software hang | Press J2 power button briefly for clean shutdown, then press again to boot |
 | Pi frozen/unresponsive | Hard lock | Hold J2 power button ~10s to force off, then press to boot |
 | Intermittent shutdowns (Sukabumi) | Low battery voltage | Check solar charge controller |
@@ -584,13 +584,13 @@ mmcli -m 0 --disable && sleep 5 && mmcli -m 0 --enable
 
 ```bash
 # Ping cameras (Sukabumi)
-ping -c 3 192.168.50.139
+ping -c 3 192.168.50.100
 
 # Ping camera (Jakarta)
-ping -c 3 192.168.50.101
+ping -c 3 192.168.50.100
 
 # Test camera connectivity with ISAPI snapshot
-curl --digest -u admin:PASSWORD http://192.168.50.101/ISAPI/Streaming/channels/101/picture -o /tmp/cam1.jpg
+curl --digest -u admin:PASSWORD http://192.168.50.100/ISAPI/Streaming/channels/101/picture -o /tmp/cam1.jpg
 
 # Test RTSP capture
 orc-capture --skip-relay --dry-run

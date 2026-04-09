@@ -80,6 +80,14 @@ contains a real file.
 | `shared/etc/orc/led-status.yaml` | `/etc/orc/led-status.yaml` | LED status config: colors, patterns, error suppression, GPIO pin | Shared | No | Yes |
 | `sukabumi/etc/cloud/templates/hosts.debian.tmpl` | `/etc/cloud/templates/hosts.debian.tmpl` | Hosts file template with camera hostname | Sukabumi | No | No |
 | `sukabumi/etc/NetworkManager/system-connections/camera-net.nmconnection` | `/etc/NetworkManager/system-connections/camera-net.nmconnection` | Static IP (192.168.50.1) for eth0 camera network | Sukabumi | No | No |
+| `shared/usr/local/bin/orc-maintenance-check` | `/usr/local/bin/orc-maintenance-check` | Check orc-pmi-stations repo for maintenance mode flag, update local state | Shared | No | No |
+| `shared/etc/orc-maintenance.conf` | `/etc/orc-maintenance.conf` | Maintenance mode config (GitHub repo URL, check interval, local state file) | Shared | No | No |
+| `shared/etc/systemd/system/orc-maintenance-check.service` | `/etc/systemd/system/orc-maintenance-check.service` | Oneshot service: runs orc-maintenance-check to poll for maintenance mode | Shared | No | No |
+| `jakarta/station_mode` | *(deploy-time reference)* | Station mode identifier for Jakarta (used by deploy.sh) | Jakarta | No | No |
+| `sukabumi/station_mode` | *(deploy-time reference)* | Station mode identifier for Sukabumi (used by deploy.sh) | Sukabumi | No | No |
+| `sukabumi/prod_15.wpi` | *(Witty Pi schedule)* | Witty Pi 5 production schedule: 15-minute capture cycle | Sukabumi | No | No |
+| `sukabumi/prod_30.wpi` | *(Witty Pi schedule)* | Witty Pi 5 production schedule: 30-minute capture cycle | Sukabumi | No | No |
+| `sukabumi/maint.wpi` | *(Witty Pi schedule)* | Witty Pi 5 maintenance schedule: keeps Pi awake indefinitely | Sukabumi | No | No |
 
 **Column guide:**
 - **Credentials?** — Yes if the file contains passwords, keys, or secrets that

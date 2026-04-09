@@ -7,7 +7,7 @@ Run after rebooting the Jakarta Pi to confirm deploy.sh changes took effect.
 - **Site:** Jakarta (AC power, RELAY_MODE=always)
 - **Image:** ORC-OS on Debian trixie, Pi 5 8GB
 - **Hostname:** orc-jakarta
-- **Camera:** ANNKE C1200 at 192.168.50.101
+- **Camera:** ANNKE C1200 at 192.168.50.100
 - **QEMU rules:** `/etc/udev/rules.d/90-qemu.rules` present (required for boot — do NOT remove)
 - **Boot partition:** `/boot/firmware` mounts normally on this image (unlike Sukabumi)
 - **USB drive:** SanDisk 3.2Gen1 250GB at `/mnt/usb` (UAS disabled via cmdline.txt quirk)
@@ -182,11 +182,11 @@ Jakarta uses `RELAY_MODE=always` — relay stays on permanently.
 ```bash
 poe-relay on                     # energize relay
 # wait ~60s for camera boot
-ping -c 3 192.168.50.101        # Jakarta camera IP
+ping -c 3 192.168.50.100        # Jakarta camera IP
 ```
 
 - [ ] Relay energizes (GPIO 24 HIGH)
-- [ ] Camera reachable at 192.168.50.101 after boot
+- [ ] Camera reachable at 192.168.50.100 after boot
 
 ### 10. Capture Test (after camera is configured)
 
@@ -208,7 +208,7 @@ orc-capture --skip-relay --dry-run
 chronyc clients | head -5
 ```
 
-Camera IP (192.168.50.101) should appear once it has been powered long
+Camera IP (192.168.50.100) should appear once it has been powered long
 enough to query NTP. If only localhost appears, chrony is serving — camera
 just hasn't queried yet.
 

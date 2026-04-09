@@ -50,19 +50,22 @@ SECTION 4: AC/DC ISOLATION (should NOT beep)
 [ ] TB1 GND             <-->  N terminal block           ___PASS(silent) ___FAIL(beep)
 
 
-SECTION 5: 5V POWER INPUT (should beep)
------------------------------------------
+SECTION 5: WITTY PI VIN POWER INPUT (should beep)
+---------------------------------------------------
 [ ] TB1 12V+            <-->  F3 fuse holder input       ___PASS ___FAIL
-[ ] F3 fuse output      <-->  DDR-60G-5 V+ input        ___PASS ___FAIL
-[ ] TB1 GND             <-->  DDR-60G-5 V- input        ___PASS ___FAIL
-[ ] DDR-60G-5 V+ out    <-->  G469 Pin 2 (5V)           ___PASS ___FAIL
-[ ] DDR-60G-5 V- out    <-->  G469 Pin 25 (GND)         ___PASS ___FAIL
+[ ] F3 fuse output      <-->  Witty Pi VIN (+)           ___PASS ___FAIL
+[ ] TB1 GND             <-->  Witty Pi VIN (-)           ___PASS ___FAIL
+
+NOTE: Witty Pi 5 VIN accepts 6-30V DC and converts to 5V/5A onboard.
+      The Witty Pi supplies 5V to the Pi via the GPIO header.
+      G469 Pin 2 (5V) is powered from the Witty Pi 5V output through
+      the Pi header — do NOT wire G469 Pin 2 directly to TB1.
 
 
-SECTION 6: 5V SHORT CHECKS (should NOT beep)
-----------------------------------------------
+SECTION 6: WITTY PI / 5V SHORT CHECKS (should NOT beep)
+---------------------------------------------------------
 [ ] G469 Pin 2 (5V)     <-->  G469 Pin 25 (GND)         ___PASS(silent) ___FAIL(beep)
-[ ] DDR-60G-5 V+ in     <-->  DDR-60G-5 V- in           ___PASS(silent) ___FAIL(beep)
+[ ] Witty Pi VIN (+)    <-->  Witty Pi VIN (-)           ___PASS(silent) ___FAIL(beep)
 [ ] TB1 12V+            <-->  G469 Pin 2 (5V)           ___PASS(silent) ___FAIL(beep)
 
 
@@ -104,7 +107,7 @@ SECTION 11: 12V ISOLATION FROM PI GPIO (should NOT beep)
 *** IF ANY OF THESE BEEP, STOP. DO NOT POWER ON. ***
 *** 12V on a GPIO pin will destroy the Pi instantly. ***
 
-[ ] TB1 12V+  <-->  DDR-60G-5 V+ output                 ___PASS(silent) ___FAIL(beep)
+[ ] TB1 12V+  <-->  Witty Pi 5V output (via header)      ___PASS(silent) ___FAIL(beep)
 [ ] TB1 12V+  <-->  G469 Pin 2 (5V)                     ___PASS(silent) ___FAIL(beep)
 [ ] TB1 12V+  <-->  G469 Pin 3 (GPIO 2)                 ___PASS(silent) ___FAIL(beep)
 [ ] TB1 12V+  <-->  G469 Pin 4 (5V)                     ___PASS(silent) ___FAIL(beep)

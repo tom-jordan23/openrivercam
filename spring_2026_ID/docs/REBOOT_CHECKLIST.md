@@ -177,7 +177,7 @@ Then reboot or restart orc-api (`sudo systemctl restart orc-api`).
 ```bash
 poe-relay on
 # wait ~60s for camera boot
-ping -c 1 192.168.50.139
+ping -c 1 192.168.50.100
 ```
 
 - [ ] Relay powers on (GPIO 24 HIGH)
@@ -194,9 +194,9 @@ correct config on every capture cycle, so these are self-healing:
 # Credentials in ~/.orc_deploy_sukabumi (BASE_PASSWD)
 source ~/.orc_deploy_sukabumi
 curl -s --digest -u "admin:${BASE_PASSWD}" \
-  http://192.168.50.139/ISAPI/Image/channels/1 | grep supplementLightMode
+  http://192.168.50.100/ISAPI/Image/channels/1 | grep supplementLightMode
 curl -s --digest -u "admin:${BASE_PASSWD}" \
-  http://192.168.50.139/ISAPI/System/Video/inputs/channels/1/overlays | grep enabled
+  http://192.168.50.100/ISAPI/System/Video/inputs/channels/1/overlays | grep enabled
 ```
 
 - [ ] supplementLightMode is `irLight` or `eventIntelligence` (orc-capture fixes this)
@@ -230,7 +230,7 @@ poe-relay off
 sudo chronyc clients | head -5
 ```
 
-Camera IP (192.168.50.139) should appear as a client if it has been powered
+Camera IP (192.168.50.100) should appear as a client if it has been powered
 on long enough to make an NTP request. If only `localhost` appears, that's
 OK — chrony is serving, camera just hasn't queried yet.
 

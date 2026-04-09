@@ -30,8 +30,9 @@ All fuses are **5x20mm glass tube** type. Do NOT use US automotive blade fuses
 | F1 (5V rail) | 5A | DDR-60G-5 buck converter and Pi | Pi loses power, camera stops |
 | F2 (12V PoE) | 5A | Relay CH1 and PoE switch | Camera loses power, Pi stays running |
 
-**Replacement fuses:** 5x20mm, 5A, slow blow (time-delay). For ML or LIR
-chemistry RTC battery replacement info, see GPIO_WIRING.md Step 8.
+**Replacement fuses:** 5x20mm, 5A, slow blow (time-delay). RTC battery:
+CR2032 coin cell in the Witty Pi 5 HAT+ holder (non-rechargeable, no
+config.txt charging settings needed).
 
 ---
 
