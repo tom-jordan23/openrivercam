@@ -117,7 +117,7 @@ TB1 — 12V DISTRIBUTION (from PSU / Battery)
 
 | CH | GPIO | Load | State when Pi is OFF |
 |----|------|------|----------------------|
-| 1 | GPIO 24 (Pin 18) | PoE switch (camera) | **OFF** (fail-safe) |
+| 1 | GPIO 24 (Pin 18) | PoE switch (camera) | **OFF** (fail-safe — loads turn off when power is lost) |
 | 2 | GPIO 17 (Pin 11) | Available — GPIO wired, no load | OFF |
 | 3 | GPIO 27 (Pin 13) | Available — GPIO wired, no load | OFF |
 | 4 | GPIO 22 (Pin 15) | Available — GPIO wired, no load | OFF |
@@ -211,7 +211,7 @@ Driven by 1 GPIO data pin + 5V power. No relay channels used.
 | Setting | Value | Notes |
 |---------|-------|-------|
 | Shutdown after task | OFF | Jakarta is always-on (AC power) |
-| Reboot after | 86400s (24hr) | Safety net: auto-reboots if stuck, limits data loss to ~1 cycle |
+| Reboot after | 86400s (24hr) | Automatic recovery: auto-reboots if stuck, limits data loss to ~1 cycle |
 | Capture interval | 15 min | Via orc-capture.timer (`OnCalendar=*:0/15`) |
 | Relay mode | always | PoE camera stays powered continuously |
 

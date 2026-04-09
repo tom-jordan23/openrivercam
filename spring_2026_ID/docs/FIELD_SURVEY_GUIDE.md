@@ -1,4 +1,4 @@
-# ORC Field Survey — Quick Reference
+# ORC Field Survey — Field Reference
 
 **Version:** 1.0 — April 2026
 **Purpose:** Abbreviated checklist for PMI field staff. Tom will provide
@@ -6,8 +6,8 @@ detailed guidance at each step. For full procedures, see
 `survey/SURVEY_PROCESS_v3.md`.
 
 **Equipment:**
-- ArduSimple RTK rover + survey pole + spirit level
-- Android phone with GNSS Master + SW Maps (+ cell data for NTRIP)
+- ArduSimple RTK rover (high-precision GPS receiver) + survey pole + spirit level (waterpass / bubble level)
+- Android phone with GNSS Master + SW Maps (+ cell data for NTRIP (internet-based GPS correction service))
 - Ground control point markers (high contrast — white/red or checkerboard)
 - Notebook + pen (backup)
 - Phone/tablet for photos of each GCP
@@ -34,15 +34,15 @@ See `survey/InaCORS_HOWTO.md` for NTRIP setup.
 - [ ] Connect rover to InaCORS NTRIP via GNSS Master
   - Host: `103.22.171.6`, Port: `2001`, Mountpoint: `VRS`
   - If no cell coverage: deploy base station instead (see SURVEY_PROCESS_v3 Section 4)
-- [ ] Wait for **RTK FIX** (30-120 seconds, up to 5 min near equator)
-- [ ] Verify: accuracy < 5cm, 12+ satellites, PDOP < 2.5
+- [ ] Wait for **RTK FIX (highest-accuracy GPS mode)** (30-120 seconds, up to 5 min near equator)
+- [ ] Verify: accuracy < 5cm, 12+ satellites, PDOP (Position Dilution of Precision — lower numbers are better) < 2.5
 - [ ] **CRITICAL:** Do NOT run InaCORS and base station radio simultaneously
 
 ---
 
 ## Step 1: Place Ground Control Points
 
-GCPs teach the camera how pixels translate to real-world distances.
+GCPs are reference points with known positions. The software uses them to calculate real distances from the camera image.
 
 - [ ] Place **8-10 markers** visible in the camera's field of view
 - [ ] Spread across **both banks** — left and right
@@ -51,8 +51,8 @@ GCPs teach the camera how pixels translate to real-world distances.
 - [ ] Tilt markers slightly toward the camera
 - [ ] Use high-contrast markers (white center + dark border, or checkerboard)
 
-**Bad:** All points on one bank, or all in a straight line.
-**Good:** Points scattered across both banks and near/far from camera.
+**Incorrect:** All points on one bank, or all in a straight line.
+**Correct:** Points scattered across both banks and near/far from camera.
 
 ---
 
@@ -64,7 +64,7 @@ GCPs teach the camera how pixels translate to real-world distances.
 - [ ] Verify the video file exists and is not corrupted
 
 **This video is critical** — it's used to calibrate the camera in ORC-OS.
-If anything moves during the survey, record a second video at the end.
+If any GCP marker is moved or disturbed during the survey, record a second video at the end.
 
 ---
 
@@ -73,18 +73,18 @@ If anything moves during the survey, record a second video at the end.
 For each marker:
 - [ ] Place rover pole on the **center** of the marker
 - [ ] Hold pole **perfectly vertical** (check spirit level!)
-- [ ] Wait for **RTK FIX** — do NOT record on FLOAT or SINGLE
+- [ ] Wait for **RTK FIX** — do NOT record on FLOAT (medium accuracy — not reliable enough for survey) or SINGLE (low accuracy — not usable)
 - [ ] Record the point in SW Maps
 - [ ] Take a photo of the marker with your phone (for later ID)
 - [ ] Label: GCP1, GCP2, etc. — match labels between survey data and photos
 
-**All GCPs in one continuous survey session. Do not turn off the base/NTRIP.**
+**Complete all GCP measurements in one continuous session. Do not turn off the base/NTRIP.**
 
 ---
 
 ## Step 4: Survey Cross Section
 
-A line of bottom elevation points, **perpendicular to flow direction**.
+A line of bottom elevation points, **at a right angle (90 degrees) to the direction of water flow — crossing from one bank to the other**.
 
 - [ ] Walk the rover across the channel perpendicular to flow
 - [ ] Walk in as straight a line as possible
@@ -94,7 +94,7 @@ A line of bottom elevation points, **perpendicular to flow direction**.
   including banks above the water line
 - [ ] For submerged points: note pole length (bottom to antenna center)
 
-You will likely need to wade. Antenna stays above water.
+You may need to walk through the water. Keep the GPS antenna above the water surface at all times.
 
 ---
 
@@ -127,8 +127,8 @@ Measure 2-3 GCPs a second time as independent check points.
 
 - [ ] Verify all data saved (export from SW Maps)
 - [ ] Photo of SW Maps point count screen (backup)
-- [ ] Record second calibration video if anything moved
-- [ ] Remove all GCP markers — leave no rubbish
+- [ ] Record second calibration video if any GCP marker was moved or disturbed
+- [ ] Remove all markers and equipment from the site
 - [ ] Quick count: GCPs + cross section + water level + camera position all present?
 
 ---
@@ -138,16 +138,16 @@ Measure 2-3 GCPs a second time as independent check points.
 See `survey/SURVEY_DATA_PROCESSING.md` for detailed steps.
 
 - [ ] Export survey data as GeoJSON from SW Maps
-- [ ] Reproject to UTM (see `survey/QGIS_Reproject_WGS84_to_UTM48S.md`)
+- [ ] Convert coordinates to UTM format (a map coordinate system that uses meters) (see `survey/QGIS_Reproject_WGS84_to_UTM48S.md`)
 - [ ] Split into two files: **GCPs** and **Cross section**
-- [ ] Subtract pole length from cross section Z values
+- [ ] Subtract pole length from cross section elevation (height) values
 - [ ] Upload calibration video to ORC-OS
 - [ ] Upload GCP file → match points to pixels in calibration video
 - [ ] Upload cross section file
 - [ ] Enter water level measurement
 - [ ] Enter camera position
 - [ ] Run calibration — verify GCP fit looks correct
-- [ ] If anything looks wrong → **redo the survey**
+- [ ] If the calibration results show large errors or the GCP positions do not match the video → **redo the survey**
 
 ---
 
@@ -156,7 +156,7 @@ See `survey/SURVEY_DATA_PROCESSING.md` for detailed steps.
 | Mistake | Why it matters |
 |---------|---------------|
 | All GCPs on one bank | Camera can't understand depth/perspective |
-| GCPs in a straight line | Same problem — no 3D constraint |
+| GCPs in a straight line | Same problem — the software cannot calculate depth or distance correctly |
 | Recording on FLOAT status | Position error 10-50cm |
 | Tilted survey pole | Even small tilt = large error |
 | Base + NTRIP running at same time | Silently wrong positions, no error flag |
@@ -167,7 +167,7 @@ See `survey/SURVEY_DATA_PROCESSING.md` for detailed steps.
 
 ---
 
-## Quick Reference: InaCORS NTRIP
+## Field Reference: InaCORS NTRIP
 
 | Parameter | Value |
 |-----------|-------|

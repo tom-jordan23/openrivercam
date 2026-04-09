@@ -13,10 +13,10 @@
 - [2. Normal Operation](#2-normal-operation)
 - [3. Checking the Station Remotely](#3-checking-the-station-remotely)
 - [4. Power Button](#4-power-button)
-- [5. Power Cycle — Wake and Sleep](#5-power-cycle--how-the-station-wakes-and-sleeps)
+- [5. Power Cycle — How the Station Wakes and Sleeps](#5-power-cycle--how-the-station-wakes-and-sleeps)
 - [6. Maintenance Mode](#6-maintenance-mode)
 - [7. Routine Maintenance](#7-routine-maintenance)
-- [8. Troubleshooting — Quick Fixes](#8-troubleshooting--quick-fixes)
+- [8. Troubleshooting — Common Problems and Solutions](#8-troubleshooting--common-problems-and-solutions)
 - [9. What NOT to Do](#9-what-not-to-do)
 - [10. Sensor Reference](#10-sensor-reference)
 - [11. Extending the Station](#11-extending-the-station--available-relay-channels)
@@ -31,7 +31,7 @@ measures water velocity from the video, and calculates river flow (discharge).
 Results upload to a central server over LTE cellular data.
 
 **You do not need to operate the station day-to-day.** It runs unattended.
-This guide covers what to check, how to tell if something is wrong, and what
+This guide covers what to check, how to identify a problem, and what
 to do about it.
 
 ---
@@ -55,12 +55,13 @@ The LED is visible through the enclosure window without opening the box.
 | **OFF** | — | No power or sleeping | Normal for Sukabumi between cycles |
 
 **Note on solid red:** A steady red LED means the camera is offline. On
-Sukabumi this is **normal between capture cycles** — the camera powers down
+Sukabumi this is **normal between capture cycles**. The camera powers down
 with the PoE relay to save solar energy. Solid red is only a problem if the
-camera should be on at that time (e.g., Jakarta where the camera runs 24/7,
-or Sukabumi during an active capture cycle).
+camera should be on at that time. For example, this is a problem on Jakarta
+where the camera runs 24 hours a day, or on Sukabumi during an active
+capture cycle.
 
-**Rule of thumb:** Green = good. Any other color for more than 10 minutes =
+**General guideline:** Green = good. Any other color for more than 10 minutes =
 investigate.
 
 ---
@@ -72,7 +73,7 @@ investigate.
 The station wakes every 15 minutes, captures a video, processes it, uploads
 results, then goes back to sleep. A complete cycle takes about 3 minutes.
 
-What you'll see:
+What you will see:
 1. LED turns white (booting) — ~25 seconds
 2. LED turns green flashing (capturing) — ~1 minute
 3. LED turns green steady (processing/uploading) — ~1-2 minutes
@@ -86,10 +87,10 @@ What you'll see:
 The station runs continuously. It captures a video every 15 minutes but stays
 powered on between captures.
 
-What you'll see:
+What you will see:
 - LED is green steady most of the time
 - LED flashes green briefly every 15 minutes during capture
-- Station reboots itself once per day (health check) — you'll see white LED
+- Station reboots itself once per day (health check) — you will see white LED
   briefly
 
 ---
@@ -103,8 +104,8 @@ The primary way to access the station dashboard from anywhere with internet:
 - **Jakarta:** `https://arc-00001.openrivercam.com`
 - **Sukabumi:** `https://arc-00002.openrivercam.com`
 
-This provides HTTPS access to the ORC-OS web dashboard via a tunneled
-reverse proxy. No port number needed — just the URL above.
+This provides HTTPS access to the ORC-OS web dashboard via a secure
+remote connection. Open this address in a web browser.
 Login password is stored separately (ask Tom).
 
 The dashboard shows recent videos, processing status, and sensor data.
@@ -145,9 +146,9 @@ receives power. The Witty Pi has its own clock (CR2032 battery) and runs
 independently of the Pi — even when the Pi is completely off, the Witty Pi
 is keeping time and waiting for the next scheduled wake.
 
-### How It Works (Sukabumi — Duty Cycled)
+### How It Works (Sukabumi — Duty Cycled (Repeating On/Off Schedule))
 
-The power cycle has two parts with **split responsibility**:
+The power cycle has two parts. The Witty Pi board controls when the Pi turns on. The ORC-OS software controls when the Pi shuts down.
 
 1. **Witty Pi turns the Pi ON** at the scheduled time (restores 5V power)
 2. The Pi boots, captures video, processes it, uploads results
@@ -155,16 +156,16 @@ The power cycle has two parts with **split responsibility**:
 4. The Pi is completely off — no power draw except the Witty Pi clock
 5. **Witty Pi turns the Pi ON again** at the next scheduled time
 
-The Witty Pi's ON window (e.g., 10 minutes) is a **safety backstop** — if
-ORC-OS doesn't shut down on its own (software hang, crash), the Witty Pi
-forces a clean shutdown at the end of the ON window. Under normal operation,
-ORC-OS shuts down well before this backstop kicks in.
+The Witty Pi's ON window (for example, 10 minutes) is a **safety limit**.
+If ORC-OS does not shut down on its own because of a software hang or crash,
+the Witty Pi forces a clean shutdown at the end of the ON window. Under
+normal operation, ORC-OS shuts down well before this safety limit activates.
 
 ### How It Works (Jakarta — Always On)
 
 Jakarta's Witty Pi is set to "default state when powered = ON." The Pi
-stays on continuously. The Witty Pi just passes power through. ORC-OS
-reboots the Pi once per day as a health check.
+stays on continuously. The Witty Pi passes power through without
+interruption. ORC-OS reboots the Pi once per day as a health check.
 
 ### Available Schedules (Sukabumi)
 
@@ -203,7 +204,7 @@ to ON.
 
 Maintenance mode **suspends video capture**, which also suspends the
 ORC-OS "shutdown after task" behavior. This is useful for debugging,
-software updates, or any work where you don't want the station capturing
+software updates, or any work where you do not want the station capturing
 or shutting down mid-task.
 
 > **Important:** Maintenance mode does NOT change the Witty Pi schedule.
@@ -226,7 +227,7 @@ production and maintenance. The station picks up the change on next boot.
 
 ### What Changes in Maintenance Mode
 
-- Video capture stops (no RTSP pulls, no relay cycling)
+- Video capture stops (no video recording from the camera, no camera power switching)
 - ORC-OS "shutdown after task" is effectively disabled (nothing to trigger it)
 - ORC-OS web dashboard stays accessible
 - LED shows cyan
@@ -276,9 +277,9 @@ To keep the station on indefinitely:
   - **Never** open during or immediately after rain
   - Open during the **warmest, driest** part of the day (midday sun)
   - Take your time once open — the air exchange happens immediately when
-    the lid opens, so rushing won't help
+    the lid opens. Working quickly does not prevent this.
   - If you see condensation on any component, close the lid immediately
-    and let the GORE vents do their job over the next 24 hours
+    and let the GORE vents remove moisture over the next 24 hours
   - Enter maintenance mode before opening (prevents capture cycles
     during service)
 
@@ -293,19 +294,19 @@ To keep the station on indefinitely:
 ### After Storms
 
 - [ ] Check station is still operating (LED green)
-- [ ] Check camera is still aimed correctly (hasn't shifted)
-- [ ] Check rain gauge hasn't been knocked off mount
+- [ ] Check camera is still aimed correctly (has not shifted)
+- [ ] Check rain gauge has not been displaced from its mount
 - [ ] Check enclosure for water intrusion
 - [ ] **Jakarta:** Check AC power is on (building may have tripped breaker)
 
 ---
 
-## 8. Troubleshooting — Quick Fixes
+## 8. Troubleshooting — Common Problems and Solutions
 
 ### Station LED is OFF (no light at all)
 
 1. **Sukabumi:** May be sleeping between cycles. Wait 15 minutes — if LED
-   doesn't come on, press power button briefly.
+   does not come on, press power button briefly.
 2. **Jakarta:** Check AC power is on at the building breaker.
 3. Press power button briefly. If nothing happens, open enclosure and check
    fuses (see door sheet inside lid).
@@ -322,7 +323,7 @@ To keep the station on indefinitely:
 1. LTE modem may need time to connect. Wait 5 minutes.
 2. Check antenna — is it connected and not damaged?
 3. If problem persists, check SIM card (open enclosure, inspect modem).
-4. Verify cell coverage at site hasn't changed.
+4. Verify cell coverage at site has not changed.
 
 ### LED is YELLOW (storage problem)
 
@@ -333,7 +334,7 @@ To keep the station on indefinitely:
 
 1. **Sukabumi:** Battery may be low. Check if solar panel is clean and
    unobstructed. Check battery voltage (should be >12V).
-2. **Jakarta:** Check AC power. May be a brownout or voltage sag.
+2. **Jakarta:** Check AC power. May be a temporary drop in power voltage.
 
 ### No data on LiveORC server
 
@@ -358,7 +359,7 @@ To keep the station on indefinitely:
 | Change any software settings without guidance | The system is carefully configured |
 | Open the enclosure in rain | Water intrusion damages electronics |
 | Force-hold the power button regularly | Use brief press for clean shutdown |
-| Unplug the rain gauge cable | It accumulates data that would be lost |
+| Disconnect the rain gauge cable | It accumulates data that would be lost |
 | Point the camera at a different angle | Requires complete recalibration (field survey) |
 | Swap SD cards between stations | Each card is configured for its station |
 | Connect power to any terminal marked "GPIO" | 12V on GPIO pins destroys the Pi instantly |
@@ -372,7 +373,7 @@ To keep the station on indefinitely:
 - Mounted outside the enclosure
 - Optical sensor — no moving parts, self-cleaning dome
 - Measures rainfall intensity and accumulation
-- Stays powered 24/7 (even when Pi sleeps on Sukabumi)
+- Stays powered 24 hours a day (even when Pi sleeps on Sukabumi)
 - **Cleaning:** Wipe dome with damp cloth. Do not use solvents.
 - **Disconnect:** SD16 4-pin connector (keyed, waterproof). Unplug to replace
   gauge without opening enclosure.
@@ -406,14 +407,14 @@ Each station has a 4-channel relay module. Only **channel 1** is used
 
 ### What the Relays Can Do
 
-Each relay channel is an electrically isolated switch that the Pi controls
-via a GPIO pin. When the Pi sets the pin HIGH, the relay closes and connects
+Each relay channel is a switch that separates the low-voltage control circuit
+from the 12V power circuit. The Pi controls each relay via a GPIO (input/output) pin. When the Pi sets the pin HIGH, the relay closes and connects
 power to whatever is wired to it. When the pin goes LOW (or the Pi loses
 power), the relay opens and the load loses power.
 
 - **Switching capacity:** 12V DC from the station's power bus (TB1)
 - **Each channel is independent** — they can be on/off in any combination
-- **Fail-safe:** All relays open (loads off) if the Pi crashes or loses power
+- **Fail-safe** (designed to turn off safely when power is lost)**:** All relays open (loads off) if the Pi crashes or loses power
 - **Control:** Any script or service on the Pi can toggle a relay by setting
   a GPIO pin high or low
 
@@ -433,9 +434,10 @@ power), the relay opens and the load loses power.
 - Power a 12V solenoid for automated water sampling.
 
 **Integration with other systems:**
-- Use a relay as a dry-contact output to interface with existing telemetry or
-  SCADA systems. The relay's NO/NC terminals can signal to any system that
-  reads contact closures.
+- Use a relay as a simple on/off switch output (the relay only opens and closes
+  a circuit) to interface with existing telemetry or SCADA (industrial
+  monitoring) systems. The relay's NO/NC terminals can signal to any system
+  that reads on/off switch signals.
 - Power a 12V radio or LoRa transmitter for local data relay to a nearby
   station or gateway.
 

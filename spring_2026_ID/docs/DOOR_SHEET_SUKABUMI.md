@@ -97,7 +97,7 @@ TB1 — 12V DISTRIBUTION (from solar battery)
 
 | CH | GPIO | Load | State when Pi is OFF |
 |----|------|------|----------------------|
-| 1 | GPIO 24 (Pin 18) | PoE switch (camera) | **OFF** (fail-safe: camera unpowered) |
+| 1 | GPIO 24 (Pin 18) | PoE switch (camera) | **OFF** (fail-safe — loads turn off when power is lost: camera unpowered) |
 | 2 | GPIO 17 (Pin 11) | Available — GPIO wired, no load | OFF |
 | 3 | GPIO 27 (Pin 13) | Available — GPIO wired, no load | OFF |
 | 4 | GPIO 22 (Pin 15) | Available — GPIO wired, no load | OFF |

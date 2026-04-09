@@ -34,7 +34,7 @@
 
 ## Diagnostic Flowcharts
 
-### System Won't Power On
+### System Will Not Power On
 
 ```
 START: No status LEDs lit
@@ -52,7 +52,9 @@ START: No status LEDs lit
          │             │
          ▼             ▼
      ┌────────┐   Check power source
-     │ Done!  │   ┌─────────────────┐
+     │System  │
+     │is      │
+     │working.│   ┌─────────────────┐
      └────────┘   │ Sukabumi: Solar │
                   │ Jakarta: AC     │
                   └────────┬────────┘
@@ -100,7 +102,7 @@ START: No status LEDs lit
 
 NOTE: The external power button is wired to the Pi 5 J2
 header (2-pin, near USB-C port). This is a dedicated hardware
-power control — NOT a GPIO pin. If Pi has power but won't
+power control — NOT a GPIO pin. If Pi has power but will not
 boot, try pressing the J2 button before investigating further.
 ```
 
@@ -155,7 +157,7 @@ If `ip addr` shows only an `inet6` (IPv6) address on eth0 with no `inet` (IPv4) 
 - `ping <camera-ip>` fails with "Network is unreachable"
 - `ip addr show eth0` shows `fe80::...` link-local IPv6 but no `192.168.x.x`
 
-**Cause:** The Pi's Ethernet interface hasn't been assigned a static IPv4 address and dnsmasq hasn't been configured yet. Without a static IP, the Pi can't serve DHCP to cameras on the 192.168.50.0/24 network.
+**Cause:** The Pi Ethernet interface has not been assigned a static IPv4 address and dnsmasq has not been configured yet. Without a static IP, the Pi cannot serve DHCP to cameras on the 192.168.50.0/24 network.
 
 **Fix — assign a static IPv4 address and set up dnsmasq:**
 
@@ -211,7 +213,9 @@ START: No video capture
        │                    │
   ┌────┴────┐         ┌─────┴─────┐
   │         │         │           │
-No LED    LED on    QG FAIL   QG PASS
+No LED    LED on    Quality   Quality
+  │         │       check     check
+  │         │       FAIL      PASS
   │         │         │           │
   ▼         ▼         ▼           ▼
 ┌─────┐  ┌────────┐ ┌───────┐  ┌────────┐
@@ -253,7 +257,9 @@ START: Camera offline
   ┌────┴────┐               │
   │         │         ┌─────┴─────┐
 No LED    LED on      │           │
-  │         │       QG FAIL   QG PASS
+  │         │       Quality   Quality
+  │         │       check     check
+  │         │       FAIL      PASS
   ▼         ▼         │           │
 ┌─────┐  ┌────────┐   ▼           ▼
 │Check│  │Check   │ ┌───────┐  ┌────────┐
@@ -454,7 +460,7 @@ correct config.
 
 ### Finding camera MAC address
 
-If you don't have the MAC address yet:
+If you do not have the MAC address yet:
 
 1. Temporarily remove any `dhcp-host=` lines from `/etc/dnsmasq.conf`
 2. Restart dnsmasq: `sudo systemctl restart dnsmasq`
@@ -483,11 +489,11 @@ Then set your laptop to 192.168.1.50/24 and use `arp -a` to find the camera. Re-
 
 | Problem | Possible Cause | Solution |
 |---------|---------------|----------|
-| System won't boot | Pi halted but has power | Press external power button (J2 header, near USB-C) |
-| System won't boot | Dead battery (Sukabumi) | Charge battery, check solar panel |
-| System won't boot | Blown fuse | Replace fuse, investigate cause — see fuse photo below |
-| System won't boot | Faulty USB-C cable | Replace power cable to Pi |
-| System won't boot | Witty Pi VIN not receiving 12V (Jakarta) | Check F3 fuse, measure 12V at Witty Pi VIN screw terminal |
+| System will not boot | Pi halted but has power | Press external power button (J2 header, near USB-C) |
+| System will not boot | Dead battery (Sukabumi) | Charge battery, check solar panel |
+| System will not boot | Blown fuse | Replace fuse, investigate cause — see fuse photo below |
+| System will not boot | Faulty USB-C cable | Replace power cable to Pi |
+| System will not boot | Witty Pi VIN not receiving 12V (Jakarta) | Check F3 fuse, measure 12V at Witty Pi VIN screw terminal |
 | Pi frozen/unresponsive | Software hang | Press J2 power button briefly for clean shutdown, then press again to boot |
 | Pi frozen/unresponsive | Hard lock | Hold J2 power button ~10s to force off, then press to boot |
 | Intermittent shutdowns (Sukabumi) | Low battery voltage | Check solar charge controller |
@@ -530,7 +536,7 @@ Then set your laptop to 192.168.1.50/24 and use `arp -a` to find the camera. Re-
 
 | Problem | Possible Cause | Solution |
 |---------|---------------|----------|
-| Condensation inside enclosure | Gore vent blocked | Clear vent obstruction |
+| Condensation inside enclosure | Gore vent (a waterproof air vent that allows air pressure to balance) blocked | Clear vent obstruction |
 | Condensation inside enclosure | Failed seal | Reseal bulkheads/glands |
 | Condensation inside enclosure | PTC heater not installed (Jakarta) | Planned for future -- use desiccant packs as interim measure or install PTC heater |
 | Corrosion on connectors | Missing dielectric grease | Clean, apply grease |
@@ -694,7 +700,7 @@ The relay module uses **active-high logic** (verified empirically 2026-03-26):
 driving GPIO HIGH energizes the relay coil (closing the NO contact).
 The PoE switch is wired through the NO (normally open) contact, so the relay
 must be energized for cameras to have power. At boot (GPIO unconfigured), the
-relay defaults to de-energized = cameras off (fail-safe).
+relay defaults to de-energized = cameras off (fail-safe — loads turn off safely when power is lost).
 
 > **Note:** ORC's `orc-gpio-relays.py` uses active-low convention. A PR will be
 > submitted to make ORC's relay polarity configurable.
@@ -746,7 +752,7 @@ sudo hwclock --hctosys
 ```
 
 **Note:** The Pi 5 built-in RTC (J5 ML-2020 connector) is NOT used. The ML-2020
-battery connector broke on both Sukabumi and Jakarta boards. The Witty Pi 5 HAT+
+battery connector failed on both Sukabumi and Jakarta boards. The Witty Pi 5 HAT+
 replaces this function with a more robust CR2032 coin cell holder.
 
 ### Logs
@@ -803,7 +809,7 @@ Contact technical support if:
 
 1. **Hardware failure** - Component needs replacement
 2. **Software bug** - ORC application error not in logs
-3. **Network config** - Can't establish LTE connection
+3. **Network config** - Cannot establish LTE connection
 4. **Physical damage** - Enclosure, pole, or cable damage
 5. **Repeated failures** - Same component fails multiple times
 
@@ -837,7 +843,7 @@ Contact technical support if:
 
 ### Annually
 
-- [ ] Inspect conformal coating on PCBs
+- [ ] Inspect conformal coating (a thin protective layer on circuit boards) on PCBs
 - [ ] Check battery health (Jakarta: UPS, Sukabumi: solar)
 - [ ] Replace degraded cable ties
 - [ ] Test full system shutdown and restart
