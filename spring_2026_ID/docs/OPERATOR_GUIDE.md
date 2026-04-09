@@ -301,7 +301,101 @@ production and maintenance. The station picks up the change on next boot.
 
 ---
 
-## 10. Emergency Contacts
+## 10. Extending the Station — Available Relay Channels
+
+Each station has a 4-channel relay module. Only **channel 1** is used
+(PoE camera power). **Channels 2, 3, and 4 are available** for future use.
+
+### What the Relays Can Do
+
+Each relay channel is an electrically isolated switch that the Pi controls
+via a GPIO pin. When the Pi sets the pin HIGH, the relay closes and connects
+power to whatever is wired to it. When the pin goes LOW (or the Pi loses
+power), the relay opens and the load loses power.
+
+- **Switching capacity:** 12V DC from the station's power bus (TB1)
+- **Each channel is independent** — they can be on/off in any combination
+- **Fail-safe:** All relays open (loads off) if the Pi crashes or loses power
+- **Control:** Any script or service on the Pi can toggle a relay by setting
+  a GPIO pin high or low
+
+### Ideas for Future Use
+
+**Alerting and notification:**
+- Wire a relay to a siren, strobe light, or warning beacon. Trigger it from
+  software when the river level exceeds a threshold. The relay can power a
+  12V alarm device directly from TB1.
+- Wire a relay to a cellular SMS gateway module (12V powered). Send automated
+  text messages during flood events.
+
+**Additional instruments:**
+- Power a water level sensor on a duty cycle (turn on to take a reading, turn
+  off to save power). Useful for Sukabumi where solar budget is limited.
+- Power a second camera for a different view angle or a wider scene.
+- Power a 12V solenoid for automated water sampling.
+
+**Integration with other systems:**
+- Use a relay as a dry-contact output to interface with existing telemetry or
+  SCADA systems. The relay's NO/NC terminals can signal to any system that
+  reads contact closures.
+- Power a 12V radio or LoRa transmitter for local data relay to a nearby
+  station or gateway.
+
+### How to Connect a New Load
+
+**This requires opening the enclosure. Only trained personnel should do
+this. See Section 6 for humidity warnings about opening the enclosure.**
+
+The GPIO control wiring from the Pi to relay inputs IN2, IN3, and IN4 is
+**already done** on both stations. You only need to wire the 12V load side.
+
+Each unused relay channel has three screw terminals on the 12V output side:
+
+| Terminal | Function |
+|----------|----------|
+| **COM** (Common) | Connect to 12V+ from TB1 (through a fuse) |
+| **NO** (Normally Open) | Connect to your 12V load (+) |
+| **NC** (Normally Closed) | Not used (leave empty for fail-safe behavior) |
+
+The load's ground wire returns to TB1 GND.
+
+**Always add a fuse** between TB1 and the relay COM terminal. Match the fuse
+to the load's current draw (e.g., 2A fuse for a 20W load at 12V).
+
+To control the relay from the Pi (command line):
+```
+# Turn on relay channel 2 (GPIO 17)
+gpioset gpiochip0 17=1
+
+# Turn off
+gpioset gpiochip0 17=0
+```
+
+### Relay Channel Assignments
+
+| Channel | GPIO | G469 Pin | Status |
+|---------|------|----------|--------|
+| CH1 | GPIO 24 | Pin 18 | **In use** — PoE camera power |
+| CH2 | GPIO 17 | Pin 11 | Available — GPIO wired, no load |
+| CH3 | GPIO 27 | Pin 13 | Available — GPIO wired, no load |
+| CH4 | GPIO 22 | Pin 15 | Available — GPIO wired, no load |
+
+These assignments are the same on both stations.
+
+### Important Notes
+
+- **Do not exceed 12V or 10A per channel** on the relay contacts
+- **Always use NO (Normally Open)** contacts for fail-safe behavior — loads
+  turn off if the Pi loses power
+- **Add a fuse** on every new load circuit
+- **Label all new wiring** clearly at both ends
+- **Document what you connected** — update the door sheet inside the enclosure
+- **Test before leaving the site** — verify the relay toggles and the load
+  responds
+
+---
+
+## 11. Emergency Contacts
 
 | Role | Name | Phone | Email |
 |------|------|-------|-------|

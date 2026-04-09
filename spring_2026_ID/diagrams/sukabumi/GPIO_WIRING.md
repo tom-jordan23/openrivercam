@@ -230,9 +230,9 @@ cycle. However, **NO is chosen deliberately as a fail-safe:**
 | **VCC** | Powers the relay module's logic circuit | Pi 5V (from G469 Pin 4) |
 | **GND** | Ground reference for the module | Pi GND (from G469 Pin 20) |
 | **IN1** | Control signal for relay channel 1 | GPIO 24 (Pin 18) — PoE switch |
-| **IN2** | Control signal for relay channel 2 | *(available — not connected)* |
-| **IN3** | Control signal for relay channel 3 | *(available — not connected)* |
-| **IN4** | Control signal for relay channel 4 | *(available — not connected)* |
+| **IN2** | Control signal for relay channel 2 | GPIO 17 (Pin 11) — available for future use |
+| **IN3** | Control signal for relay channel 3 | GPIO 27 (Pin 13) — available for future use |
+| **IN4** | Control signal for relay channel 4 | GPIO 22 (Pin 15) — available for future use |
 
 The input side accepts **3.3V signals** from the Pi GPIO. The module has built-in
 Darlington transistor drivers that amplify the 3.3V signal to drive the relay coils.
@@ -1108,9 +1108,9 @@ These verify that 12V cannot reach the Pi GPIO:
 | Channel | Relay Input | GPIO | G469 Pin | Load (12V side) | Purpose |
 |---------|------------|------|----------|-----------------|---------|
 | CH1 | IN1 | GPIO 24 | Pin 18 | PoE switch 12V power | Camera power cycling |
-| CH2 | IN2 | — | — | *(available)* | — |
-| CH3 | IN3 | — | — | *(available)* | — |
-| CH4 | IN4 | — | — | *(available)* | — |
+| CH2 | IN2 | GPIO 17 | Pin 11 | *(available — wired, no load)* | — |
+| CH3 | IN3 | GPIO 27 | Pin 13 | *(available — wired, no load)* | — |
+| CH4 | IN4 | GPIO 22 | Pin 15 | *(available — wired, no load)* | — |
 
 **Note:** Status indication uses a single WS2812B addressable RGB LED on GPIO 18
 (Pin 12), powered from the Pi 5V rail. It does not use any relay channels.
@@ -1149,15 +1149,15 @@ These verify that 12V cannot reach the Pi GPIO:
 | GPIO 12 | 32 | PWM0 capable |
 | GPIO 13 | 33 | PWM1 capable |
 | GPIO 16 | 36 | General purpose |
-| GPIO 17 | 11 | General purpose (was relay IN2 — now free) |
+| GPIO 17 | 11 | Relay IN2 (wired, no load assigned) |
 | GPIO 19 | 35 | PWM1 capable |
 | GPIO 20 | 38 | General purpose |
 | GPIO 21 | 40 | General purpose |
-| GPIO 22 | 15 | General purpose (was relay IN4 — now free) |
+| GPIO 22 | 15 | Relay IN4 (wired, no load assigned) |
 | GPIO 23 | 16 | General purpose |
 | GPIO 25 | 22 | General purpose |
 | GPIO 26 | 37 | General purpose |
-| GPIO 27 | 13 | General purpose (was relay IN3 — now free) |
+| GPIO 27 | 13 | Relay IN3 (wired, no load assigned) |
 
 ---
 

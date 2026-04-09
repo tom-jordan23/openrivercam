@@ -115,10 +115,10 @@ TB1 — 12V DISTRIBUTION (from PSU / Battery)
 
 | CH | GPIO | Load | State when Pi is OFF |
 |----|------|------|----------------------|
-| 1 | GPIO 24 | PoE switch (camera) | **OFF** (fail-safe) |
-| 2 | — | Available for future use | OFF |
-| 3 | — | Available for future use | OFF |
-| 4 | — | Available for future use | OFF |
+| 1 | GPIO 24 (Pin 18) | PoE switch (camera) | **OFF** (fail-safe) |
+| 2 | GPIO 17 (Pin 11) | Available — GPIO wired, no load | OFF |
+| 3 | GPIO 27 (Pin 13) | Available — GPIO wired, no load | OFF |
+| 4 | GPIO 22 (Pin 15) | Available — GPIO wired, no load | OFF |
 
 All relays use **NO (Normally Open)** contacts. When the Pi loses power or
 crashes, all relays open and all loads lose power. This prevents uncontrolled
