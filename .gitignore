@@ -21,5 +21,5 @@ spring_2026_ID/camera/**/*.local
 # Build photos (large, not version controlled)
 spring_2026_ID/build_photos/
 
-# Generated PDFs (rebuild with docs/build_pdf.sh)
-spring_2026_ID/docs/pdf/
+# PDFs are tracked in git for easy access by non-technical users.
+# Rebuild with: cd spring_2026_ID/docs && ./build_pdf.sh

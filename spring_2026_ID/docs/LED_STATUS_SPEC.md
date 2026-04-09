@@ -16,7 +16,7 @@
 | Booting | White | Solid | Set early in boot sequence |
 | Idle / healthy | Green | Solid | System OK, waiting for next capture |
 | Capture running | Green | Flash (2 Hz) | RTSP pull in progress |
-| Maintenance mode | Cyan | Solid | WiFi hotspot active |
+| Maintenance mode | Cyan | Solid | Maintenance mode active |
 | Shutting down | Green | Single slow pulse | Clean shutdown in progress |
 | Off / sleeping | OFF | — | Pi halted or between wake cycles |
 

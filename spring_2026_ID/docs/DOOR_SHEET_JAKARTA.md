@@ -14,8 +14,8 @@
 | Station hostname | *(fill after install)* |
 | Camera IP | 192.168.50.100 |
 | Pi IP (camera network) | 192.168.50.1 |
-| WiFi hotspot SSID | *(fill after install)* |
-| WiFi hotspot password | *(fill after install)* |
+| WiFi hotspot SSID | N/A (hotspot not available) |
+| WiFi hotspot password | N/A (hotspot not available) |
 | AC circuit breaker # | *(fill after install)* |
 | Ground rod resistance | *(fill after install)* Ohm |
 | Installed by | |
@@ -241,14 +241,14 @@ python3 -c "import sqlite3; c=sqlite3.connect('/home/pi/.ORC-OS/orc-os.db'); c.e
 The power button (Pi 5 J2 header) handles all power and maintenance functions:
 
 - **Brief press:** power on (from halted) or clean shutdown (while running)
-- **Long press (3 seconds):** enter maintenance mode (WiFi hotspot + SSH)
+- **Long press (3 seconds):** enter maintenance mode (access via Pangolin or Tailscale)
 - **10-second hold:** force power off (if frozen)
 
 ## Maintenance Mode
 
 1. Long press power button (3 seconds)
-2. Pi starts WiFi hotspot
-3. Connect to hotspot with laptop/phone
+2. Pi enters maintenance mode (prevents auto-shutdown)
+3. Connect via Pangolin (`https://arc-00001.openrivercam.com`) or Tailscale
 4. SSH to Pi for diagnostics
 
 ---

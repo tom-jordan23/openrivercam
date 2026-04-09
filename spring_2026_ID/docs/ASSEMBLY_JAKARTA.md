@@ -71,7 +71,7 @@ Complete these steps BEFORE traveling to Indonesia:
 - [ ] Test video capture pipeline (download 5s clip from camera SD via RTSP)
 - [ ] Enable sensor logging (`orc-sensors.timer`) — see "Enable sensor logging service" section
 - [ ] Verify SHT40 readings in `/var/log/orc/sensors/sht40_*.csv`
-- [ ] Configure WiFi hotspot for maintenance mode
+- [ ] ~~Configure WiFi hotspot~~ N/A (hotspot not available; use Pangolin or Tailscale for remote access)
 - [ ] Set up WS2812B status LED service (GPIO 18, config in /etc/orc/led-status.yaml)
 - [ ] Pre-configure Telkomsel APN (if known)
 
@@ -1099,7 +1099,7 @@ Fix any remaining FAILs manually before proceeding.
 ### Verify Camera
 
 1. Enter maintenance mode (long press power button, 3 seconds)
-2. Connect laptop to WiFi hotspot
+2. Connect to the Pi via Pangolin (`https://arc-00001.openrivercam.com`) or Tailscale
 3. SSH into Pi
 4. Ping camera:
    ```
@@ -1157,7 +1157,7 @@ for automated capture and upstream data sync.
 
 ### ORC-OS Web UI Initial Setup
 
-Access at `http://orc-jakarta.local:5173/` (or use IP address).
+Access at `https://arc-00001.openrivercam.com` (via Pangolin).
 
 - [x] Set ORC-OS web dashboard password on first access
 - [x] **Disk Management** (`/disk_management`):
@@ -1493,8 +1493,8 @@ See `TROUBLESHOOTING.md` for detailed diagnostics.
 | Pi IP (static) | 192.168.50.1 |
 | Camera IP | 192.168.50.100 |
 | Camera password | |
-| WiFi hotspot SSID | |
-| WiFi hotspot password | |
+| WiFi hotspot SSID | N/A (hotspot not available) |
+| WiFi hotspot password | N/A (hotspot not available) |
 | LTE SIM number | |
 | Modem IMEI | |
 | Ground resistance | ohm |

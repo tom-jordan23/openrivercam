@@ -13,13 +13,14 @@
 - [2. Normal Operation](#2-normal-operation)
 - [3. Checking the Station Remotely](#3-checking-the-station-remotely)
 - [4. Power Button](#4-power-button)
-- [5. Maintenance Mode](#5-maintenance-mode)
-- [6. Routine Maintenance](#6-routine-maintenance)
-- [7. Troubleshooting — Quick Fixes](#7-troubleshooting--quick-fixes)
-- [8. What NOT to Do](#8-what-not-to-do)
-- [9. Sensor Reference](#9-sensor-reference)
-- [10. Extending the Station](#10-extending-the-station--available-relay-channels)
-- [11. Emergency Contacts](#11-emergency-contacts)
+- [5. Power Cycle — Wake and Sleep](#5-power-cycle--how-the-station-wakes-and-sleeps)
+- [6. Maintenance Mode](#6-maintenance-mode)
+- [7. Routine Maintenance](#7-routine-maintenance)
+- [8. Troubleshooting — Quick Fixes](#8-troubleshooting--quick-fixes)
+- [9. What NOT to Do](#9-what-not-to-do)
+- [10. Sensor Reference](#10-sensor-reference)
+- [11. Extending the Station](#11-extending-the-station--available-relay-channels)
+- [12. Emergency Contacts](#12-emergency-contacts)
 
 ---
 
@@ -95,25 +96,18 @@ What you'll see:
 
 ## 3. Checking the Station Remotely
 
-### Web Dashboard (ORC-OS) — Local Access Only
-
-Connect to the station's WiFi hotspot (maintenance mode), then open:
-
-- **Sukabumi:** `http://orc-sukabumi.local:5173/`
-- **Jakarta:** `http://orc-jakarta.local:5173/`
-
-The dashboard shows recent videos, processing status, and sensor data.
-Login password is stored separately (ask Tom).
-
 ### Remote Access (Pangolin)
 
-From anywhere with internet, without needing to be physically at the site:
+The primary way to access the station dashboard from anywhere with internet:
 
 - **Jakarta:** `https://arc-00001.openrivercam.com`
 - **Sukabumi:** `https://arc-00002.openrivercam.com`
 
 This provides HTTPS access to the ORC-OS web dashboard via a tunneled
-reverse proxy. Credentials stored separately.
+reverse proxy. No port number needed — just the URL above.
+Login password is stored separately (ask Tom).
+
+The dashboard shows recent videos, processing status, and sensor data.
 
 **Note:** We are also evaluating Tailscale as an alternative remote access
 solution. Tailscale may be a better fit in some situations but is not usable
@@ -144,10 +138,79 @@ schedule handles wake/sleep automatically. Only use the button for maintenance.
 
 ---
 
-## 5. Maintenance Mode
+## 5. Power Cycle — How the Station Wakes and Sleeps
 
-Maintenance mode keeps the station awake and stops video capture so you can
-work on it without interference.
+Each station has a **Witty Pi 5 HAT+** board that controls when the Pi
+receives power. The Witty Pi has its own clock (CR2032 battery) and runs
+independently of the Pi — even when the Pi is completely off, the Witty Pi
+is keeping time and waiting for the next scheduled wake.
+
+### How It Works (Sukabumi — Duty Cycled)
+
+The power cycle has two parts with **split responsibility**:
+
+1. **Witty Pi turns the Pi ON** at the scheduled time (restores 5V power)
+2. The Pi boots, captures video, processes it, uploads results
+3. **ORC-OS shuts the Pi DOWN** when processing is complete ("shutdown after task")
+4. The Pi is completely off — no power draw except the Witty Pi clock
+5. **Witty Pi turns the Pi ON again** at the next scheduled time
+
+The Witty Pi's ON window (e.g., 10 minutes) is a **safety backstop** — if
+ORC-OS doesn't shut down on its own (software hang, crash), the Witty Pi
+forces a clean shutdown at the end of the ON window. Under normal operation,
+ORC-OS shuts down well before this backstop kicks in.
+
+### How It Works (Jakarta — Always On)
+
+Jakarta's Witty Pi is set to "default state when powered = ON." The Pi
+stays on continuously. The Witty Pi just passes power through. ORC-OS
+reboots the Pi once per day as a health check.
+
+### Available Schedules (Sukabumi)
+
+| Schedule | ON | OFF | Captures/day | Use when |
+|----------|-----|------|-------------|----------|
+| **prod_15** (default) | 10 min | 5 min | 96 | Normal operation |
+| **prod_30** | 25 min | 5 min | 48 | Low solar / conserve battery |
+| **maint** | Always on | — | Continuous | Debugging, software updates |
+
+### Changing the Schedule
+
+**This requires SSH access to the Pi via Pangolin or Tailscale.**
+
+1. SSH into the station
+2. Run `wp5` (the Witty Pi interactive menu)
+3. Select option **6** to choose a schedule file
+4. Select the desired `.wpi` schedule
+5. The new schedule takes effect on the next power cycle
+
+To check the current schedule:
+```bash
+wp5
+```
+Option **7** shows the current schedule status.
+
+**To switch Jakarta to duty-cycle mode** (e.g., if moved to solar power in
+the future): load a `.wpi` schedule file and set ORC-OS "Shutdown after task"
+to ON.
+
+**To switch Sukabumi to always-on** (for extended maintenance): load the
+`maint.wpi` schedule. Remember to switch back to `prod_15.wpi` when done.
+
+---
+
+## 6. Maintenance Mode
+
+Maintenance mode **suspends video capture**, which also suspends the
+ORC-OS "shutdown after task" behavior. This is useful for debugging,
+software updates, or any work where you don't want the station capturing
+or shutting down mid-task.
+
+> **Important:** Maintenance mode does NOT change the Witty Pi schedule.
+> On Sukabumi, the Witty Pi will still cut power at the end of its ON
+> window (e.g., after 10 minutes) even in maintenance mode. If you need
+> the station to stay on longer than one Witty Pi cycle, you must also
+> load the `maint.wpi` schedule (see Section 5).
 
 ### Entering Maintenance Mode
 
@@ -164,19 +227,29 @@ production and maintenance. The station picks up the change on next boot.
 ### What Changes in Maintenance Mode
 
 - Video capture stops (no RTSP pulls, no relay cycling)
+- ORC-OS "shutdown after task" is effectively disabled (nothing to trigger it)
 - ORC-OS web dashboard stays accessible
-- Station stays awake (won't auto-shutdown even on Sukabumi)
 - LED shows cyan
+- **Witty Pi schedule is unchanged** — the Pi will still power off at the
+  end of the ON window unless you load `maint.wpi`
+
+### For Extended Maintenance on Sukabumi
+
+To keep the station on indefinitely:
+1. Enter maintenance mode (button or GitHub)
+2. SSH in via Pangolin and load the maintenance schedule: `wp5` → option 6 → `maint.wpi`
+3. The Witty Pi will now keep the Pi powered continuously
+4. When done: load `prod_15.wpi`, set station back to "production", reboot
 
 ### Exiting Maintenance Mode
 
-- Brief press of power button, OR
 - Change mode back to "production" on GitHub and reboot, OR
 - Reboot the Pi (`sudo reboot` via SSH)
+- On Sukabumi: also restore the production schedule (`prod_15.wpi`) if you changed it
 
 ---
 
-## 6. Routine Maintenance
+## 7. Routine Maintenance
 
 ### Monthly
 
@@ -227,7 +300,7 @@ production and maintenance. The station picks up the change on next boot.
 
 ---
 
-## 7. Troubleshooting — Quick Fixes
+## 8. Troubleshooting — Quick Fixes
 
 ### Station LED is OFF (no light at all)
 
@@ -277,7 +350,7 @@ production and maintenance. The station picks up the change on next boot.
 
 ---
 
-## 8. What NOT to Do
+## 9. What NOT to Do
 
 | Do NOT | Why |
 |--------|-----|
@@ -292,7 +365,7 @@ production and maintenance. The station picks up the change on next boot.
 
 ---
 
-## 9. Sensor Reference
+## 10. Sensor Reference
 
 ### Rain Gauge (Hydreon RG-15)
 
@@ -326,7 +399,7 @@ production and maintenance. The station picks up the change on next boot.
 
 ---
 
-## 10. Extending the Station — Available Relay Channels
+## 11. Extending the Station — Available Relay Channels
 
 Each station has a 4-channel relay module. Only **channel 1** is used
 (PoE camera power). **Channels 2, 3, and 4 are available** for future use.
@@ -424,7 +497,7 @@ These assignments are the same on both stations.
 
 ---
 
-## 11. Emergency Contacts
+## 12. Emergency Contacts
 
 | Role | Name | Phone | Email |
 |------|------|-------|-------|

@@ -774,20 +774,16 @@ dmesg | grep -i usb
 1. **Long press** power button (3+ seconds)
 2. Wait for **cyan LED** steady on
 3. System will:
-   - Start WiFi hotspot
    - Prevent auto-shutdown
    - Enable SSH access
 
 ### Connecting to Maintenance Mode
 
-1. On laptop/phone, connect to WiFi:
-   - SSID: `ORC-SITENAME-MAINT`
-   - Password: `[configured password]`
+1. Connect to the station via Pangolin or Tailscale:
+   - Jakarta: `https://arc-00001.openrivercam.com`
+   - Sukabumi: `https://arc-00002.openrivercam.com`
 
-2. SSH into Pi:
-   ```bash
-   ssh pi@192.168.4.1
-   ```
+2. SSH into Pi via Pangolin or Tailscale
 
 3. Default credentials:
    - User: `pi`

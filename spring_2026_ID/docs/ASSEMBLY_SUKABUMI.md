@@ -86,7 +86,7 @@ Complete these steps BEFORE traveling to Indonesia:
 - [ ] Test video capture pipeline (download 5s clip from camera SD via RTSP)
 - [ ] Enable sensor logging (`orc-sensors.timer`) — see Step 11c
 - [ ] Verify SHT40 readings in `/var/log/orc/sensors/sht40_*.csv`
-- [ ] Configure WiFi hotspot for maintenance mode
+- [ ] ~~Configure WiFi hotspot~~ N/A (hotspot not available; use Pangolin or Tailscale for remote access)
 - [ ] Set up WS2812B NeoPixel status LED (GPIO 18 data, 5V/GND from Pi rail)
 - [ ] Pre-configure Telkomsel APN (if known)
 
@@ -982,7 +982,7 @@ Fix any remaining FAILs manually before proceeding.
 <a href="images/sukabumi/camera-live-view-working.png"><img src="images/sukabumi/camera-live-view-working.png" alt="ANNKE camera live view displayed on monitor via PoE switch and Pi, showing successful end-to-end bench test of camera system" width="400"></a>
 
 1. Enter maintenance mode (long press power button, 3 seconds)
-2. Connect to WiFi hotspot
+2. Connect to the Pi via Pangolin (`https://arc-00002.openrivercam.com`) or Tailscale
 3. SSH into Pi
 4. Check camera is reachable: `ping 192.168.50.100`
 5. Download a test clip from camera SD:
@@ -1016,7 +1016,7 @@ for automated capture and upstream data sync.
 
 ### ORC-OS Web UI Initial Setup
 
-Access at `http://orc-sukabumi.local:5173/` (or use IP address).
+Access at `https://arc-00002.openrivercam.com` (via Pangolin).
 
 - [ ] Set ORC-OS web dashboard password on first access
 - [ ] **Disk Management** (`/disk_management`):
@@ -1180,7 +1180,7 @@ mechanism.
 To change the active schedule (e.g. switching from `prod_15` to `maint` for
 debugging):
 
-1. SSH into the Pi (via maintenance mode hotspot or Pangolin)
+1. SSH into the Pi (via Pangolin or Tailscale)
 2. Run `wp5`
 3. Select option **6** (Choose schedule script)
 4. Select the desired `.wpi` file
@@ -1402,8 +1402,8 @@ See `TROUBLESHOOTING.md` for detailed diagnostics.
 |-----------|-------|
 | Pi hostname | |
 | Pi IP (if static) | |
-| WiFi hotspot SSID | |
-| WiFi hotspot password | |
+| WiFi hotspot SSID | N/A (hotspot not available) |
+| WiFi hotspot password | N/A (hotspot not available) |
 | LTE SIM number | |
 | Modem IMEI | |
 | Camera IP address | 192.168.50.100 |
