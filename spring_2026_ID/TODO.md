@@ -179,6 +179,13 @@ Pi 5 RTC battery Molex connector broke on BOTH boards (traces tore). Switching t
   - Eject, disconnect, boot Pi, run `wp5` option 6 to select schedule (or option 11 → 1 for always-on)
   - **Do NOT connect Pi USB-A to Witty Pi USB-C** — causes reboot loop
 
+### Power button verification (both stations)
+- [ ] Confirm brief press powers on Pi from off state
+- [ ] Confirm brief press initiates clean shutdown from running state
+- [ ] Confirm long press (3s) enters maintenance mode
+- [ ] Confirm hold (10s) forces power off
+- [ ] Update OPERATOR_GUIDE.md Section 4 if behavior differs from documented
+
 ### Sensor field testing (both stations)
 
 Run `deploy.sh <site>` first to deploy config files + w1-gpio overlay. Reboot required
