@@ -162,6 +162,47 @@ Pi 5 RTC battery Molex connector broke on BOTH boards (traces tore). Switching t
 
 ## In-Country
 
+### Camera quality evaluation (Jakarta — do BEFORE Sukabumi)
+
+Determine if the ANNKE C1200 at current/improved settings meets ORC's
+quality requirements, or if a camera replacement is needed. Run all tests
+at the Jakarta site where we have AC power and continuous operation.
+
+**Phase 1: Baseline measurement**
+- [ ] Capture 10 videos with current config (baseline: 1080p, 16 Mbps CBR)
+- [ ] Run `video_quality_test.py` on all 10: `python3 video_quality_test.py *.mp4 --compare`
+- [ ] Record SI, TI, blockiness, and delivered bitrate stats
+
+**Phase 2: Profile A test (20 Mbps CBR, 1080p)**
+- [ ] Push Profile A: `python3 camtool.py push jakarta-cam1 --config profiles/profile-a/streaming_101.xml`
+- [ ] Capture 10 videos
+- [ ] Run `video_quality_test.py *.mp4 --compare` against baseline captures
+- [ ] Key question: does RTSP actually deliver higher bitrate, or is transport the bottleneck?
+
+**Phase 3: Profile B test (20 Mbps CBR, 720p)**
+- [ ] Push Profile B: `python3 camtool.py push jakarta-cam1 --config profiles/profile-b/streaming_101.xml`
+- [ ] Update orc-capture.conf: EXPECTED_WIDTH=1280, EXPECTED_HEIGHT=720
+- [ ] Capture 10 videos
+- [ ] Run comparison — look for higher SI (better texture per pixel) and lower blockiness
+- [ ] Key question: does 720p provide sufficient spatial coverage of the cross section?
+
+**Phase 4: Profile C test (local SD recording — if A/B insufficient)**
+- [ ] Only attempt if Profiles A and B do not reliably exceed 15 Mbps delivered
+- [ ] Requires orc-capture modification for ISAPI recording (see profile-c/CAPTURE_NOTES.md)
+- [ ] Capture 10 videos via local SD + copy
+- [ ] Compare bitrate and quality against RTSP profiles
+
+**Phase 5: ORC processing validation (definitive test)**
+- [ ] For each viable profile, create a separate ORC-OS video configuration
+- [ ] Run calibration video + GCPs + cross section through ORC for each profile
+- [ ] Compare ORC results: velocity confidence, PIV correlation pass rate, discharge estimates
+- [ ] Select the profile that produces the most reliable ORC results
+
+**Decision gate:**
+- If any RTSP profile reliably delivers 15+ Mbps with acceptable ORC results → keep ANNKE C1200
+- If no RTSP profile works but Profile C does → implement ISAPI capture method
+- If no profile produces acceptable ORC results → plan camera replacement before Sukabumi deployment
+
 ### Network convention migration (.139/.101 → .100)
 - [ ] Fix `pi/shared/etc/dnsmasq.d/maintenance.conf`: change dhcp-range to `.200,.254,24h`, remove Sukabumi-specific dhcp-host line (move to site-specific file)
 - [ ] Create `pi/sukabumi/etc/dnsmasq.d/cameras.conf` with Sukabumi camera MAC → .100

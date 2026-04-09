@@ -1,0 +1,91 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!--
+  Profile C: Camera-local SD recording + file copy
+  Goal: Bypass RTSP transport bottleneck entirely — camera records to its own
+  SD card at full encoder quality, Pi copies the file after recording.
+  Changes from baseline:
+    - videoQualityControlType: CBR → VBR (let encoder use bits where needed)
+    - constantBitRate: 20480 (20 Mbps target, VBR can peak above this)
+    - vbrUpperCap: 25600 (25 Mbps peak — allows burst for complex scenes)
+    - vbrLowerCap: 16384 (16 Mbps floor — never drops below Hessel's minimum)
+    - maxFrameRate: 1250 (12.5 fps)
+    - GovLength: 13 (key frame every ~1 sec)
+    - smoothing: 1
+  Rationale: With VBR, the encoder allocates more bits to high-motion water
+  surface frames and fewer to static frames. The SD card has no transport
+  bottleneck — the encoder gets all the bits it asks for. The Pi copies
+  the finished file over the PoE Ethernet link (100 Mbps), which is far
+  faster than real-time RTSP.
+  REQUIRES: orc-capture modified to trigger ISAPI recording, wait for
+  completion, then copy file from camera SD via ISAPI/FTP/NFS. This is
+  a software change — see profile-c/CAPTURE_NOTES.md.
+-->
+<ns0:StreamingChannel xmlns:ns0="http://www.std-cgi.com/ver20/XMLSchema" version="2.0">
+  <ns0:id>101</ns0:id>
+  <ns0:channelName>Camera 01</ns0:channelName>
+  <ns0:enabled>true</ns0:enabled>
+  <ns0:Transport>
+    <ns0:maxPacketSize>1000</ns0:maxPacketSize>
+    <ns0:ControlProtocolList>
+      <ns0:ControlProtocol>
+        <ns0:streamingTransport>RTSP</ns0:streamingTransport>
+      </ns0:ControlProtocol>
+      <ns0:ControlProtocol>
+        <ns0:streamingTransport>HTTP</ns0:streamingTransport>
+      </ns0:ControlProtocol>
+      <ns0:ControlProtocol>
+        <ns0:streamingTransport>SHTTP</ns0:streamingTransport>
+      </ns0:ControlProtocol>
+    </ns0:ControlProtocolList>
+    <ns0:Unicast>
+      <ns0:enabled>true</ns0:enabled>
+      <ns0:rtpTransportType>RTP/TCP</ns0:rtpTransportType>
+    </ns0:Unicast>
+    <ns0:Multicast>
+      <ns0:enabled>true</ns0:enabled>
+      <ns0:destIPAddress>0.0.0.0</ns0:destIPAddress>
+      <ns0:videoDestPortNo>8860</ns0:videoDestPortNo>
+      <ns0:audioDestPortNo>8862</ns0:audioDestPortNo>
+    </ns0:Multicast>
+    <ns0:Security>
+      <ns0:enabled>true</ns0:enabled>
+      <ns0:certificateType>digest</ns0:certificateType>
+      <ns0:SecurityAlgorithm>
+        <ns0:algorithmType>MD5</ns0:algorithmType>
+      </ns0:SecurityAlgorithm>
+    </ns0:Security>
+  </ns0:Transport>
+  <ns0:Video>
+    <ns0:enabled>true</ns0:enabled>
+    <ns0:videoInputChannelID>1</ns0:videoInputChannelID>
+    <ns0:videoCodecType>H.264</ns0:videoCodecType>
+    <ns0:videoScanType>progressive</ns0:videoScanType>
+    <ns0:videoResolutionWidth>1920</ns0:videoResolutionWidth>
+    <ns0:videoResolutionHeight>1080</ns0:videoResolutionHeight>
+    <ns0:videoQualityControlType>VBR</ns0:videoQualityControlType>
+    <ns0:constantBitRate>20480</ns0:constantBitRate>
+    <ns0:fixedQuality>60</ns0:fixedQuality>
+    <ns0:vbrUpperCap>25600</ns0:vbrUpperCap>
+    <ns0:vbrLowerCap>16384</ns0:vbrLowerCap>
+    <ns0:maxFrameRate>1250</ns0:maxFrameRate>
+    <ns0:keyFrameInterval>1000</ns0:keyFrameInterval>
+    <ns0:snapShotImageType>JPEG</ns0:snapShotImageType>
+    <ns0:H264Profile>Main</ns0:H264Profile>
+    <ns0:GovLength>13</ns0:GovLength>
+    <ns0:SVC>
+      <ns0:enabled>false</ns0:enabled>
+    </ns0:SVC>
+    <ns0:PacketType>PS</ns0:PacketType>
+    <ns0:PacketType>RTP</ns0:PacketType>
+    <ns0:smoothing>1</ns0:smoothing>
+    <ns0:H265Profile>Main</ns0:H265Profile>
+    <ns0:SmartCodec>
+      <ns0:enabled>false</ns0:enabled>
+    </ns0:SmartCodec>
+  </ns0:Video>
+  <ns0:Audio>
+    <ns0:enabled>false</ns0:enabled>
+    <ns0:audioInputChannelID>1</ns0:audioInputChannelID>
+    <ns0:audioCompressionType>G.711ulaw</ns0:audioCompressionType>
+  </ns0:Audio>
+</ns0:StreamingChannel>
