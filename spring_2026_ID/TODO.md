@@ -162,6 +162,17 @@ Pi 5 RTC battery Molex connector broke on BOTH boards (traces tore). Switching t
 
 ## In-Country
 
+### Network convention migration (.139/.101 → .100)
+- [ ] Sukabumi: update camera DHCP reservation MAC → .100 in dnsmasq
+- [ ] Sukabumi: update `/etc/orc-capture.conf` CAMERA_IP to 192.168.50.100
+- [ ] Sukabumi: update camera static IP (via camtool or camera web UI)
+- [ ] Sukabumi: verify `ping 192.168.50.100` and `orc-capture --skip-relay --dry-run`
+- [ ] Jakarta: update camera DHCP reservation MAC → .100 in dnsmasq
+- [ ] Jakarta: update `/etc/orc-capture.conf` CAMERA_IP to 192.168.50.100
+- [ ] Jakarta: update camera static IP (via camtool or camera web UI)
+- [ ] Jakarta: verify `ping 192.168.50.100` and `orc-capture --skip-relay --dry-run`
+- [ ] Both: run `deploy.sh <site>` to normalize configs after changes
+
 ### Jakarta station software fixes
 - [ ] Fix ORC-OS daemon setting: allowed_dt was set to 900, should be 3600 (NodeORC default)
 - [ ] Fix ORC-OS daemon setting: reboot_after was set to 3600, should be 86400 (daily)

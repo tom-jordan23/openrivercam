@@ -11,7 +11,7 @@
 | Site | Jakarta, Indonesia |
 | Power | 220V AC mains with 12V LiFePO4 UPS (100Ah) |
 | Station hostname | *(fill after install)* |
-| Camera IP | 192.168.50.101 |
+| Camera IP | 192.168.50.100 |
 | Pi IP (camera network) | 192.168.50.1 |
 | WiFi hotspot SSID | *(fill after install)* |
 | WiFi hotspot password | *(fill after install)* |
@@ -30,7 +30,7 @@ All fuses are **5x20mm glass tube** type. Do NOT use US automotive blade fuses
 | Fuse | Rating | Protects | What Happens If It Blows |
 |------|--------|----------|--------------------------|
 | F2 (PoE) | 5A | Relay CH1 and PoE switch | Camera loses power, Pi stays running |
-| F3 (Pi) | 5A | DDR-60G-5 buck converter and Pi | Pi loses power |
+| F3 (Pi) | 5A | Witty Pi 5 VIN (12V→5V) and Pi | Pi loses power |
 | F4 (Heater) | 5A | PTC heater and fans | Climate control stops, system continues |
 
 **Replacement fuses:** 5x20mm, rated amperage, slow blow (time-delay).
@@ -60,7 +60,7 @@ All fuses are **5x20mm glass tube** type. Do NOT use US automotive blade fuses
 | **Green/Yellow** | Earth ground (PE) |
 | **Red** | 12V positive |
 | **Black** | Ground (GND) |
-| **Yellow** | 5V power (buck converter to Pi, Pi to relay VCC) |
+| **Yellow** | 5V power (Witty Pi to Pi via header, Pi to relay VCC) |
 | **Blue (thin)** | GPIO signal — relay IN1 (PoE switch, GPIO 24) |
 | **Green** | GPIO 18 data — WS2812B status LED |
 
@@ -70,7 +70,7 @@ All fuses are **5x20mm glass tube** type. Do NOT use US automotive blade fuses
 
 | GPIO | Pin | Function |
 |------|-----|----------|
-| — | 2 | 5V power IN (from DDR-60G-5) |
+| — | 2 | 5V power (from Witty Pi 5, shared with LED VDD) |
 | — | 4 | 5V power OUT (to relay VCC) |
 | GPIO 2 | 3 | I2C SDA (SHT40 sensor) |
 | GPIO 3 | 5 | I2C SCL (SHT40 sensor) |
@@ -78,11 +78,12 @@ All fuses are **5x20mm glass tube** type. Do NOT use US automotive blade fuses
 | — | 9 | GND (SHT40, rain gauge, DS18B20) |
 | GPIO 14 | 8 | UART TX → RG-15 RX |
 | GPIO 15 | 10 | UART RX ← RG-15 TX |
+| — | 14 | GND (LED) |
+| — | 17 | 3V3 power (DS18B20 + pull-up) |
 | GPIO 18 | 12 | WS2812B data (status LED) |
-| GPIO 23 | 16 | Available |
 | GPIO 24 | 18 | Relay IN1 (PoE switch) |
 | — | 20 | GND (relay module) |
-| — | 25 | GND (buck converter) |
+| — | 39 | GND (DS18B20) |
 
 ---
 
@@ -131,13 +132,15 @@ Driven by 1 GPIO data pin + 5V power. No relay channels used.
 | Color | Pattern | Meaning |
 |-------|---------|---------|
 | Green | Solid | System OK, idle |
-| Blue | Solid | Capturing / uploading |
-| Yellow | Solid | Warning (degraded) |
-| Red | Solid | Error |
-| Cyan | Solid | Maintenance mode active |
+| Green | Flash | Capturing video |
+| Green | Slow pulse | Shutting down |
 | White | Solid | Boot in progress |
-| Green | Slow blink | OK, on battery/UPS |
-| Red | Fast blink | Critical error |
+| Cyan | Solid | Maintenance mode active |
+| Red | Solid | Camera offline (may be normal — see operator guide) |
+| Red | Flash | Capture failed |
+| Blue | Solid/flash | Network/LTE problem |
+| Yellow | Solid/flash | Storage problem |
+| Magenta | Solid | Power issue |
 | OFF | — | Pi is off / sleeping |
 
 ---
@@ -160,17 +163,16 @@ Driven by 1 GPIO data pin + 5V power. No relay channels used.
          │      │                                      │
          │   ┌──┼──────┬──────┬──────┐            Battery
          │   │  │      │      │      │            100Ah
-         │   │ [F1   [F2    [F3    [F4           (UPS backup)
-         │   │ 15A]   5A]   5A]    5A]
+         │   │  │    [F2    [F3    [F4           (UPS backup)
+         │   │  │     5A]   5A]    5A]
          │   │  │      │      │      │
-         │   │  │   Fuse    DDR    PTC heater
-         │   │  │   holder  60G-5  + Fans
-         │   │  │      │   (→5.1V)
-         │   │  │   Relay     │
-         │   │  │   CH1    Pi 5
-         │   │  │      │
+         │   │  │   Fuse   Witty  PTC heater
+         │   │  │   holder Pi 5   + Fans
+         │   │  │      │   VIN
+         │   │  │   Relay  (12V→5V)
+         │   │  │   CH1      │
+         │   │  │      │   Pi 5
          │   │  │   PoE Switch
-         │   │  │      │
          │   │  │      │
          │   │  │    Cam1
          │   │  │

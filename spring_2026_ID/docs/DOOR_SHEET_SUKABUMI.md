@@ -11,7 +11,7 @@
 | Site | Sukabumi, Indonesia |
 | Power | 12V Solar (existing 200W panel / 50Ah battery) |
 | Station hostname | *(fill after install)* |
-| Camera IP | 192.168.50.139 |
+| Camera IP | 192.168.50.100 |
 | Pi IP (camera network) | 192.168.50.1 |
 | WiFi hotspot SSID | *(fill after install)* |
 | WiFi hotspot password | *(fill after install)* |
@@ -55,14 +55,16 @@ chemistry RTC battery replacement info, see GPIO_WIRING.md Step 8.
 | — | 4 | 5V power OUT (to relay VCC) |
 | GPIO 2 | 3 | I2C SDA (SHT40 sensor) |
 | GPIO 3 | 5 | I2C SCL (SHT40 sensor) |
+| GPIO 4 | 7 | 1-Wire data (DS18B20 probe) |
 | — | 9 | GND (SHT40, rain gauge) |
 | GPIO 14 | 8 | UART TX → RG-15 RX |
 | GPIO 15 | 10 | UART RX ← RG-15 TX |
 | GPIO 18 | 12 | WS2812B data (status LED) |
-| GPIO 23 | 16 | Available |
+| — | 17 | 3V3 power (DS18B20 + pull-up) |
 | GPIO 24 | 18 | Relay IN1 (PoE switch) |
 | — | 20 | GND (relay module) |
 | — | 25 | GND (buck converter) |
+| — | 39 | GND (DS18B20) |
 
 ---
 
@@ -110,14 +112,16 @@ Driven by 1 GPIO data pin + 5V power. No relay channels used.
 | Color | Pattern | Meaning |
 |-------|---------|---------|
 | Green | Solid | System OK, idle |
-| Blue | Solid | Capturing / uploading |
-| Yellow | Solid | Warning (degraded) |
-| Red | Solid | Error |
-| Cyan | Solid | Maintenance mode active |
+| Green | Flash | Capturing video |
+| Green | Slow pulse | Shutting down |
 | White | Solid | Boot in progress |
-| Green | Slow blink | OK, on battery (if applicable) |
-| Red | Fast blink | Critical error |
-| OFF | — | Pi is off / sleeping |
+| Cyan | Solid | Maintenance mode active |
+| Red | Solid | Camera offline (normal between cycles) |
+| Red | Flash | Capture failed |
+| Blue | Solid/flash | Network/LTE problem |
+| Yellow | Solid/flash | Storage problem |
+| Magenta | Solid | Power issue |
+| OFF | — | Pi is off / sleeping (normal between cycles) |
 
 ---
 
