@@ -3,14 +3,19 @@
 # build_pdf.sh — Convert markdown documentation to PDF via LaTeX
 #
 # Usage:
-#   ./build_pdf.sh                    # convert all docs
-#   ./build_pdf.sh OPERATOR_GUIDE.md  # convert one doc
+#   ./build_pdf.sh                    # convert all docs (English)
+#   ./build_pdf.sh OPERATOR_GUIDE.md  # convert one doc (English)
+#   ./build_pdf.sh --lang id          # convert all docs (Bahasa Indonesia)
+#   ./build_pdf.sh --lang id OPERATOR_GUIDE.md  # one doc, Indonesian
 #   ./build_pdf.sh --list             # list available docs
 #
 # Prerequisites:
 #   sudo apt install pandoc texlive-xetex texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended
+#   For Indonesian: pip install googletrans==4.0.0-rc1 (in docs/.venv)
 #
-# Output: docs/pdf/<filename>.pdf
+# Output:
+#   English:    docs/pdf/<filename>.pdf
+#   Indonesian: docs/pdf/id/<filename>.id.pdf
 #
 # Every page includes:
 #   Header: document title (left), version (right)
@@ -21,6 +26,27 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 DOCS_DIR="$SCRIPT_DIR"
 PDF_DIR="$SCRIPT_DIR/pdf"
+LANG="en"
+
+# Parse --lang flag
+args=()
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --lang)
+            LANG="$2"
+            shift 2
+            ;;
+        *)
+            args+=("$1")
+            shift
+            ;;
+    esac
+done
+set -- "${args[@]+"${args[@]}"}"
+
+if [ "$LANG" = "id" ]; then
+    PDF_DIR="$SCRIPT_DIR/pdf/id"
+fi
 
 mkdir -p "$PDF_DIR"
 
@@ -198,7 +224,15 @@ LATEXEOF
 convert_one() {
     local md_file="$1"
     local basename="${md_file%.md}"
-    local pdf_file="$PDF_DIR/${basename}.pdf"
+    local pdf_file
+    local source_md="$DOCS_DIR/$md_file"
+    local translated_tmp=""
+
+    if [ "$LANG" = "id" ]; then
+        pdf_file="$PDF_DIR/${basename}.id.pdf"
+    else
+        pdf_file="$PDF_DIR/${basename}.pdf"
+    fi
 
     if [ ! -f "$DOCS_DIR/$md_file" ]; then
         echo "SKIP: $md_file not found"
@@ -211,7 +245,24 @@ convert_one() {
     audience="${DOC_AUDIENCE[$md_file]:-}"
     build_date=$(date +%Y-%m-%d)
 
-    echo "  Converting: $md_file (v${version}) → pdf/${basename}.pdf"
+    # Translate if Indonesian
+    if [ "$LANG" = "id" ]; then
+        echo "  Translating: $md_file → Bahasa Indonesia..."
+        translated_tmp=$(mktemp /tmp/orc-translate-XXXXXX.md)
+        # Use venv python if available
+        local py="python3"
+        [ -x "$SCRIPT_DIR/.venv/bin/python3" ] && py="$SCRIPT_DIR/.venv/bin/python3"
+        if ! "$py" "$SCRIPT_DIR/translate_md.py" "$DOCS_DIR/$md_file" -o "$translated_tmp"; then
+            echo "    FAILED: translation error"
+            rm -f "$translated_tmp"
+            return 1
+        fi
+        source_md="$translated_tmp"
+        # Extract title from translated doc (first H1)
+        title=$(grep -m1 '^# ' "$source_md" | sed 's/^# //' || echo "$title")
+    fi
+
+    echo "  Converting: $md_file (v${version}, ${LANG}) → $(basename "$pdf_file")"
 
     header_file=$(mktemp /tmp/orc-latex-XXXXXX.tex)
     make_latex_header "$title" "$version" > "$header_file"
@@ -221,14 +272,21 @@ convert_one() {
     safe_title=$(echo "$title" | sed 's/&/\\&/g; s/_/\\_/g; s/#/\\#/g; s/%/\\%/g')
     safe_audience=$(echo "$audience" | sed 's/&/\\&/g; s/_/\\_/g; s/#/\\#/g; s/%/\\%/g')
 
-    pandoc "$DOCS_DIR/$md_file" \
+    local toc_title="Contents"
+    local subtitle="Indonesia ORC Deployment --- Spring 2026"
+    if [ "$LANG" = "id" ]; then
+        toc_title="Daftar Isi"
+        subtitle="Penempatan ORC Indonesia --- Musim Semi 2026"
+    fi
+
+    pandoc "$source_md" \
         --from markdown \
         --to pdf \
         --resource-path="$DOCS_DIR" \
         --pdf-engine=xelatex \
         --include-in-header="$header_file" \
         --toc --toc-depth=2 \
-        -V toc-title="Contents" \
+        -V toc-title="$toc_title" \
         -V geometry:margin=1in \
         -V fontsize=11pt \
         -V colorlinks=true \
@@ -236,13 +294,14 @@ convert_one() {
         -V urlcolor=blue \
         -V documentclass=article \
         -V title="$safe_title" \
-        -V subtitle="Indonesia ORC Deployment --- Spring 2026" \
+        -V subtitle="$subtitle" \
         -V author="American Red Cross / Palang Merah Indonesia" \
         -V date="Version ${version} | Audience: ${safe_audience} | Built ${build_date}" \
         -o "$pdf_file" 2>/dev/null
 
     local rc=$?
     rm -f "$header_file"
+    [ -n "$translated_tmp" ] && rm -f "$translated_tmp"
 
     if [ $rc -ne 0 ]; then
         echo "    FAILED: $md_file (check LaTeX errors)"
@@ -272,7 +331,10 @@ if [ "${1:-}" = "--list" ]; then
     exit 0
 fi
 
-echo "Building PDFs (LaTeX)..."
+LANG_LABEL="English"
+[ "$LANG" = "id" ] && LANG_LABEL="Bahasa Indonesia"
+
+echo "Building PDFs (LaTeX, ${LANG_LABEL})..."
 echo "Output: $PDF_DIR/"
 echo ""
 
