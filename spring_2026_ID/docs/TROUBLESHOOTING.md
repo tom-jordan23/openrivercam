@@ -5,6 +5,19 @@
 
 ---
 
+## Contents
+
+- [Quick Reference - Status LEDs](#quick-reference---status-leds)
+- [Diagnostic Flowcharts](#diagnostic-flowcharts)
+- [Camera Network Setup](#camera-network-setup)
+- [Common Issues & Solutions](#common-issues--solutions)
+- [Command Reference](#command-reference)
+- [Maintenance Mode](#maintenance-mode)
+- [When to Escalate](#when-to-escalate)
+- [Preventive Maintenance Schedule](#preventive-maintenance-schedule)
+
+---
+
 ## Quick Reference - Status LEDs
 
 | LED Pattern | Meaning | Action |
@@ -486,7 +499,7 @@ Then set your laptop to 192.168.1.50/24 and use `arp -a` to find the camera. Re-
 | PoE camera offline | Cat6 cable fault | Test cable continuity |
 | PoE camera offline | 12V power to switch | Check fuse, terminal connections |
 | PoE camera offline (Sukabumi) | Camera still booting | Wait 60s after Pi wakes |
-| PoE camera not reachable | dnsmasq failed at boot | `sudo systemctl restart dnsmasq`, wait 60-90s — see "dnsmasq failed at boot" below |
+| PoE camera not reachable | dnsmasq failed at boot | `sudo systemctl restart dnsmasq`, wait 60-90s — see [Camera Network Setup](#camera-network-setup) |
 | PoE camera not reachable | Wrong IP address | Verify camera DHCP settings |
 | PoE camera not reachable | Network config | Check Pi and camera on same subnet |
 | PoE camera not reachable | Pi eth0 IPv6-only | Pi has no IPv4 address — see "Pi eth0 Has Only IPv6 Address" above |
@@ -751,7 +764,7 @@ dmesg | grep -i usb
 ### Entering Maintenance Mode
 
 1. **Long press** power button (3+ seconds)
-2. Wait for **yellow LED** steady on
+2. Wait for **cyan LED** steady on
 3. System will:
    - Start WiFi hotspot
    - Prevent auto-shutdown

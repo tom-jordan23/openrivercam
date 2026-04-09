@@ -6,6 +6,23 @@
 
 ---
 
+## Contents
+
+- [What the Station Does](#what-the-station-does)
+- [1. Status LED](#1-status-led--is-the-station-ok)
+- [2. Normal Operation](#2-normal-operation)
+- [3. Checking the Station Remotely](#3-checking-the-station-remotely)
+- [4. Power Button](#4-power-button)
+- [5. Maintenance Mode](#5-maintenance-mode)
+- [6. Routine Maintenance](#6-routine-maintenance)
+- [7. Troubleshooting — Quick Fixes](#7-troubleshooting--quick-fixes)
+- [8. What NOT to Do](#8-what-not-to-do)
+- [9. Sensor Reference](#9-sensor-reference)
+- [10. Extending the Station](#10-extending-the-station--available-relay-channels)
+- [11. Emergency Contacts](#11-emergency-contacts)
+
+---
+
 ## What the Station Does
 
 The station automatically records short videos of the river every 15 minutes,
@@ -363,7 +380,7 @@ The load's ground wire returns to TB1 GND.
 to the load's current draw (e.g., 2A fuse for a 20W load at 12V).
 
 To control the relay from the Pi (command line):
-```
+```bash
 # Turn on relay channel 2 (GPIO 17)
 gpioset gpiochip0 17=1
 

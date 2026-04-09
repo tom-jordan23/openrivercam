@@ -39,7 +39,8 @@ All fuses are **5x20mm glass tube** type. Do NOT use US automotive blade fuses
 
 ## AC Mains Wiring
 
-**DANGER: 220V AC inside this enclosure. Disconnect AC breaker before servicing.**
+> **DANGER: 220V AC inside this enclosure. Disconnect AC breaker before
+> servicing. Lethal voltage present on L and N terminals.**
 
 | Terminal | Label | Wire Color | Function |
 |----------|-------|------------|----------|
@@ -214,7 +215,7 @@ Driven by 1 GPIO data pin + 5V power. No relay channels used.
 | Relay mode | always | PoE camera stays powered continuously |
 
 **To change:** ORC-OS web UI > Settings, or direct DB edit:
-```
+```bash
 python3 -c "import sqlite3; c=sqlite3.connect('/home/pi/.ORC-OS/orc-os.db'); c.execute('UPDATE settings SET reboot_after=86400 WHERE id=1'); c.commit()"
 ```
 **Note:** UI enforces minimum 300s. Setting 0 (disable) requires direct DB edit.

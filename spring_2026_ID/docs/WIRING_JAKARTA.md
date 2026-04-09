@@ -4,6 +4,24 @@
 
 ---
 
+## Contents
+
+- [System Overview](#system-overview)
+- [AC Power Input Detail](#ac-power-input-detail)
+- [Battery & UPS System](#battery--ups-system)
+- [12V Distribution](#12v-distribution)
+- [PoE Camera System](#poe-camera-system)
+- [GPIO Connections](#gpio-connections-geekworm-g469)
+- [PTC Heater & Fan Wiring](#ptc-heater--fan-wiring)
+- [Complete Enclosure Layout](#complete-enclosure-layout)
+- [Grounding System](#grounding-system)
+- [Wire Routing](#wire-routing)
+- [Wire Gauge Spec](#wire-gauge-spec)
+- [Wire Color Code](#wire-color-code)
+- [Terminal Block Labels](#terminal-block-labels)
+
+---
+
 ## System Overview
 
 ```
@@ -76,11 +94,17 @@
 
 ## AC Power Input Detail
 
+> **DANGER: 220V AC in this section. Disconnect the AC breaker before
+> touching any AC wiring. Lethal voltage is present on L and N terminals
+> whenever the breaker is on.**
+
 The surge suppressor is a PARALLEL device — it does not pass power through.
 It sits across the AC line and clamps voltage spikes. The PSU and surge
 suppressor both tap off the same AC bus via DIN rail terminal blocks.
 
-DC ground (TB1) is a separate floating ground — do NOT connect DC ground to AC PE.
+> **WARNING:** DC ground (TB1) is a separate floating ground — do NOT
+> connect DC ground to AC PE. Mixing them can create ground loops and
+> compromise surge protection.
 
 ```
 +-----------------------------------------------------------------------------+

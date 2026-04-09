@@ -7,6 +7,22 @@
 
 ---
 
+## Contents
+
+- [Prerequisites](#prerequisites)
+- [Step 1: Install ModemManager](#step-1-install-modemmanager)
+- [Step 2: Confirm USB Detection](#step-2-confirm-usb-detection)
+- [Step 3: Confirm Device Nodes](#step-3-confirm-device-nodes)
+- [Step 4: Verify with ModemManager](#step-4-verify-with-modemmanager)
+- [Step 5: Verify with AT Commands](#step-5-verify-with-at-commands-alternative)
+- [Step 6: Interpret Results](#step-6-interpret-results)
+- [Step 7: Verify APN Configuration](#step-7-verify-apn-configuration)
+- [Bench Test Baseline](#bench-test-baseline-2026-03-25)
+- [Troubleshooting](#troubleshooting)
+- [Notes](#notes)
+
+---
+
 ## Prerequisites
 
 - User in `dialout` group (default for `pi`)
