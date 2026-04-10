@@ -8,61 +8,43 @@ One USB per site, each containing everything needed to rebuild or troubleshoot t
 ## USB Drive Contents (both drives get everything)
 
 ### 1. ORC-OS Base Image
-- [ ] ORC-OS `.img.gz` from Hessel / Rainbow Sensing (latest)
-- [ ] Raspberry Pi Imager installer (Windows + Mac)
+- [x] ORC-OS `.img.gz` from Hessel / Rainbow Sensing (latest)
+- [x] Rainbow Sensing documentation
+- ~~Raspberry Pi Imager installer~~ — download from raspberrypi.com as needed
 
 ### 2. This Repository (full clone)
-- [ ] `spring_2026_ID/` directory — complete snapshot at time of departure
+- [x] `spring_2026_ID/` directory — complete snapshot at time of departure
 
 ### 3. Printable Documentation (PDF exports)
-- [ ] Assembly guide — Sukabumi (`docs/ASSEMBLY_SUKABUMI.md`)
-- [ ] Assembly guide — Jakarta (`docs/ASSEMBLY_JAKARTA.md`)
-- [ ] Wiring guide — Sukabumi (`docs/WIRING_SUKABUMI.md`)
-- [ ] Wiring guide — Jakarta (`docs/WIRING_JAKARTA.md`)
-- [ ] GPIO wiring reference (`diagrams/sukabumi/GPIO_WIRING.md`)
-- [ ] Troubleshooting guide (`docs/TROUBLESHOOTING.md`)
-- [ ] Door sheet — Sukabumi (`docs/DOOR_SHEET_SUKABUMI.md`)
-- [ ] Door sheet — Jakarta (`docs/DOOR_SHEET_JAKARTA.md`)
-- [ ] Continuity checklist — Sukabumi (`docs/CONTINUITY_CHECKLIST_SUKABUMI.txt`)
-- [ ] Continuity checklist — Jakarta (`docs/CONTINUITY_CHECKLIST_JAKARTA.txt`)
-- [ ] LED status spec (`docs/LED_STATUS_SPEC.md`)
-- [ ] Reboot checklist (`docs/REBOOT_CHECKLIST.md`)
-- [ ] Network convention (`pi/NETWORK_CONVENTION.md`)
+- [x] All 13 English PDFs in `docs/pdf/`
+- [x] All 13 Indonesian PDFs in `docs/pdf/id/`
+- [x] Markdown source in `spring_2026_ID/docs/` for regeneration
 
 ### 4. Wiring Diagrams (print-ready)
-- [ ] Circuit diagram — Sukabumi (PDF + SVG)
-- [ ] Circuit diagram — Jakarta (TXT — PDF not yet generated)
-- [ ] DIN rail layout — Sukabumi (SVG)
-- [ ] DIN rail layout — Jakarta (SVG)
-- [ ] System overview — Sukabumi (SVG)
-- [ ] System overview — Jakarta (SVG)
+- [x] All diagrams included in `spring_2026_ID/diagrams/`
 
 ### 5. Camera Configuration
-- [ ] `camera/` directory (camtool.py + all XML configs + cameras.json)
-- [ ] Camera credentials document (separate encrypted file or printed)
+- [x] `camera/` directory (camtool.py + all XML configs + profiles)
+- ~~Camera credentials~~ — stored on each Pi at `~/.orc_deploy_*`, not on USB
 
 ### 6. Pi Overlay Files & Deploy Script
-- [ ] `pi/` directory (deploy.sh + shared/ + sukabumi/ + jakarta/)
-- [ ] `pi/PACKAGES.md` — package manifest
-- [ ] Witty Pi schedule files (`sukabumi/prod_15.wpi`, `sukabumi/prod_30.wpi`, `sukabumi/maint.wpi`)
+- [x] `pi/` directory (deploy.sh + shared/ + sukabumi/ + jakarta/)
+- [x] Witty Pi schedule files included
 
-### 6a. Operator & Field Guides
-- [ ] Operator guide (`docs/OPERATOR_GUIDE.md`)
-- [ ] Field survey guide (`docs/FIELD_SURVEY_GUIDE.md`)
-- [ ] InaCORS HOWTO (`survey/InaCORS_HOWTO.md`)
+### 7. Operator, Field, and Survey Guides
+- [x] All included in PDFs and markdown source
+- [x] Survey process + InaCORS HOWTO in `survey/`
 
-### 6b. Maintenance Mode (orc-pmi-stations)
-- [ ] `orc-pmi-stations` repo info — GitHub URL: https://github.com/tom-jordan23/orc-pmi-stations
-- [ ] README explaining how maintenance mode flags are controlled via GitHub Actions
+### 8. Build Reference Photos
+- [x] Curated photos in `spring_2026_ID/docs/images/`
 
-### 7. Build Reference Photos
-- [ ] Normalized build photos (`build_notes/sukabumi/photos/`)
-- [ ] Key assembly photos showing cable routing, component placement
+### 9. BOMs & Spares Lists
+- [x] All BOMs included in `spring_2026_ID/`
 
-### 8. BOMs & Spares Lists
-- [ ] BOM_Sukabumi.md
-- [ ] BOM_Jakarta.md
-- [ ] BOM_Spares.md
+### Excluded (easily obtainable)
+- Raspberry Pi Imager — download from raspberrypi.com
+- Camera credentials — on each Pi, not distributed on USB
+- Pre-flashed SD cards — rebuild with ORC-OS image + deploy.sh
 
 ---
 
