@@ -4,17 +4,26 @@
 Analyzes captured video files and produces a scorecard of metrics relevant
 to ORC surface velocity detection:
 
+  Proxy metrics (always available):
   - Delivered bitrate (from container metadata)
   - Spatial Information (SI) — texture/edge detail per frame
   - Temporal Information (TI) — frame-to-frame motion
   - Blockiness index — H.264 compression artifact detection
   - Frame count, effective FPS, resolution
 
+  PIV metrics (requires ffpiv):
+  - Correlation coefficient distribution and pass rate (corr_min = 0.2)
+  - Signal-to-noise ratio distribution and pass rate (s2n_min = 3.0)
+  - Combined PIV pass rate — the key number for profile comparison
+  - Displacement magnitude vs. ¼-window rule
+
 Usage:
     python3 video_quality_test.py VIDEO_FILE
     python3 video_quality_test.py VIDEO_FILE --roi 200,100,1600,900
-    python3 video_quality_test.py VIDEO_FILE --compare VIDEO_FILE_2
-    python3 video_quality_test.py *.mp4 --summary
+    python3 video_quality_test.py *.mp4 --compare
+    python3 video_quality_test.py *.mp4 --compare --window-size 96
+    python3 video_quality_test.py VIDEO_FILE --no-piv
+    python3 video_quality_test.py VIDEO_FILE --json
 
 ROI (Region of Interest) crops analysis to the water surface area,
 excluding sky and bank. Format: x,y,width,height in pixels.
@@ -24,17 +33,29 @@ Metrics Reference (ITU-T P.910):
     TI = std_dev(frame_n - frame_n-1) — higher = more visible motion
     Both correlate with ORC's ability to detect surface velocity patterns.
 
+PIV Reference (FFPIV / pyorc):
+    The PIV analysis runs the same cross-correlation algorithm used by
+    pyorc (via ffpiv) directly on the raw video frames. This gives the
+    actual pass rates that determine whether a video is usable for
+    velocimetry — not proxy estimates, but the real signal.
+
+    - corr_min = 0.2: minimum cross-correlation peak (pyorc default)
+    - s2n_min = 3.0: minimum signal-to-noise ratio (pyorc default)
+    - ¼-window rule: displacement must not exceed 25% of window size
+
+    Note: these results are on RAW (non-orthorectified) frames. Actual
+    pyorc processing includes orthorectification and normalization, so
+    real pass rates may differ. Use these for relative comparison across
+    camera profiles, not as absolute go/no-go thresholds.
+
 ORC-Specific Context (from pyorc velocimetry docs):
     - 20 Mbps at 1080p is the recommended bitrate (pyorc docs)
     - 15 Mbps is the practical floor (per Hessel Winsemius)
-    - PIV correlation threshold (corr_min) = 0.2
-    - PIV signal-to-noise ratio (s2n_min) = 3.0
-    - If too many frame pairs fail these, the video is unusable
-    - SI/TI thresholds below are ESTIMATES — the definitive test is
-      running the video through ORC and checking PIV pass rates
 
 Requires:
     pip install opencv-python-headless numpy
+    pip install ffpiv          (optional — enables PIV pass-rate analysis)
+    pip install ffpiv          (optional — enables PIV pass-rate analysis)
 """
 
 import argparse
@@ -45,6 +66,12 @@ import sys
 
 import cv2
 import numpy as np
+
+try:
+    import ffpiv
+    HAS_FFPIV = True
+except ImportError:
+    HAS_FFPIV = False
 
 
 def get_ffprobe_info(video_path):
@@ -200,7 +227,170 @@ def compute_blockiness(gray):
     return round(boundary_mean / non_boundary_mean, 4)
 
 
-def print_scorecard(info, metrics):
+def load_frames_gray(video_path, roi_str=None, max_frames=60):
+    """Load grayscale frames from video as a numpy stack.
+
+    Returns (stack, fps) where stack has shape (n_frames, height, width).
+    Samples evenly across the video if it has more than max_frames.
+    """
+    cap = cv2.VideoCapture(video_path)
+    if not cap.isOpened():
+        raise RuntimeError(f"Cannot open video: {video_path}")
+
+    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    total = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    fps = cap.get(cv2.CAP_PROP_FPS) or 25.0
+    rx, ry, rw, rh = parse_roi(roi_str, width, height)
+
+    # Decide which frames to read
+    if total <= max_frames:
+        indices = set(range(total))
+    else:
+        indices = set(np.linspace(0, total - 1, max_frames, dtype=int))
+
+    frames = []
+    idx = 0
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
+        if idx in indices:
+            roi = frame[ry:ry+rh, rx:rx+rw]
+            gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+            frames.append(gray)
+        idx += 1
+    cap.release()
+
+    if len(frames) < 2:
+        return None, fps
+    return np.array(frames, dtype=np.uint8), fps
+
+
+def compute_snr(corr_window):
+    """Signal-to-noise ratio: peak correlation / mean of remainder.
+
+    corr_window is a 2D correlation map for one interrogation window.
+    Returns the ratio of the maximum value to the mean of non-peak values.
+    """
+    peak = np.nanmax(corr_window)
+    if peak == 0 or np.isnan(peak):
+        return 0.0
+    # Mask out a 3x3 region around the peak
+    mask = np.ones_like(corr_window, dtype=bool)
+    peak_pos = np.unravel_index(np.nanargmax(corr_window), corr_window.shape)
+    py, px = peak_pos
+    y_lo = max(0, py - 1)
+    y_hi = min(corr_window.shape[0], py + 2)
+    x_lo = max(0, px - 1)
+    x_hi = min(corr_window.shape[1], px + 2)
+    mask[y_lo:y_hi, x_lo:x_hi] = False
+    remainder = corr_window[mask]
+    remainder = remainder[~np.isnan(remainder)]
+    if len(remainder) == 0:
+        return 0.0
+    noise = np.mean(remainder)
+    if noise < 1e-6:
+        return peak / 1e-6  # cap at very high SNR
+    return peak / noise
+
+
+def analyze_piv(video_path, roi_str=None, window_size=64, overlap=32):
+    """Run FFPIV cross-correlation on video frames and report quality metrics.
+
+    Returns a dict with correlation, SNR, displacement, and pass-rate stats,
+    or None if ffpiv is not available or analysis fails.
+    """
+    if not HAS_FFPIV:
+        return None
+
+    stack, fps = load_frames_gray(video_path, roi_str, max_frames=60)
+    if stack is None:
+        return None
+
+    n_frames = stack.shape[0]
+    ws = (window_size, window_size)
+    ov = (overlap, overlap)
+
+    # Get correlation maps: shape (n_pairs, n_windows, corr_h, corr_w)
+    try:
+        x_coords, y_coords, corr = ffpiv.cross_corr(
+            stack, window_size=ws, overlap=ov, verbose=False
+        )
+    except Exception as e:
+        print(f"  ffpiv cross_corr failed: {e}", file=sys.stderr)
+        return None
+
+    n_pairs = corr.shape[0]
+    n_windows = corr.shape[1]
+
+    # Peak correlation per window per pair
+    peak_corr = np.nanmax(corr, axis=(-1, -2))  # (n_pairs, n_windows)
+
+    # SNR per window per pair
+    snr = np.zeros_like(peak_corr)
+    for p in range(n_pairs):
+        for w in range(n_windows):
+            snr[p, w] = compute_snr(corr[p, w])
+
+    # Displacement vectors
+    try:
+        u, v = ffpiv.piv_stack(stack, window_size=ws, overlap=ov)
+        displacement = np.sqrt(u**2 + v**2)  # pixels per frame
+    except Exception as e:
+        print(f"  ffpiv piv_stack failed: {e}", file=sys.stderr)
+        displacement = None
+
+    # Pass rates using pyorc defaults
+    corr_min = 0.2
+    s2n_min = 3.0
+    pass_corr = peak_corr >= corr_min
+    pass_snr = snr >= s2n_min
+    pass_both = pass_corr & pass_snr
+
+    # Displacement vs 1/4-window rule
+    quarter_window = window_size / 4.0
+    if displacement is not None:
+        disp_flat = displacement[~np.isnan(displacement)]
+        pass_disp = disp_flat[disp_flat <= quarter_window]
+        disp_ok_pct = 100.0 * len(pass_disp) / len(disp_flat) if len(disp_flat) > 0 else 0
+    else:
+        disp_flat = np.array([])
+        disp_ok_pct = 0
+
+    flat_corr = peak_corr[~np.isnan(peak_corr)]
+    flat_snr = snr[~np.isnan(snr)]
+
+    result = {
+        "piv_frames_used": n_frames,
+        "piv_pairs": n_pairs,
+        "piv_windows_per_pair": n_windows,
+        "piv_window_size": window_size,
+        "piv_overlap": overlap,
+        # Correlation stats
+        "corr_median": round(float(np.median(flat_corr)), 3) if len(flat_corr) else 0,
+        "corr_p25": round(float(np.percentile(flat_corr, 25)), 3) if len(flat_corr) else 0,
+        "corr_p75": round(float(np.percentile(flat_corr, 75)), 3) if len(flat_corr) else 0,
+        "corr_pass_pct": round(100.0 * np.sum(pass_corr) / pass_corr.size, 1),
+        # SNR stats
+        "snr_median": round(float(np.median(flat_snr)), 2) if len(flat_snr) else 0,
+        "snr_p25": round(float(np.percentile(flat_snr, 25)), 2) if len(flat_snr) else 0,
+        "snr_p75": round(float(np.percentile(flat_snr, 75)), 2) if len(flat_snr) else 0,
+        "snr_pass_pct": round(100.0 * np.sum(pass_snr) / pass_snr.size, 1),
+        # Combined pass rate — the key number
+        "piv_pass_pct": round(100.0 * np.sum(pass_both) / pass_both.size, 1),
+        # Displacement stats (pixels/frame)
+        "disp_median": round(float(np.median(disp_flat)), 2) if len(disp_flat) else 0,
+        "disp_p25": round(float(np.percentile(disp_flat, 25)), 2) if len(disp_flat) else 0,
+        "disp_p75": round(float(np.percentile(disp_flat, 75)), 2) if len(disp_flat) else 0,
+        "disp_max": round(float(np.max(disp_flat)), 2) if len(disp_flat) else 0,
+        "disp_quarter_window": quarter_window,
+        "disp_in_range_pct": round(disp_ok_pct, 1),
+    }
+    return result
+
+
+def print_scorecard(info, metrics, piv=None):
     """Print a formatted scorecard."""
     print()
     print(f"{'='*60}")
@@ -266,10 +456,50 @@ def print_scorecard(info, metrics):
         for issue in issues:
             print(f"    {issue}")
 
-    print()
-    print("  NOTE: SI and TI have no defined ORC minimums. Use --compare")
-    print("  across profiles to find the best option, then validate with")
-    print("  ORC processing (check PIV corr_min and s2n_min pass rates).")
+    # PIV analysis (if ffpiv available)
+    if piv:
+        print()
+        print(f"  PIV Analysis ({piv['piv_pairs']} pairs, "
+              f"{piv['piv_windows_per_pair']} windows/pair, "
+              f"{piv['piv_window_size']}px window):")
+        print()
+
+        # Correlation
+        corr_grade = ("GOOD" if piv['corr_pass_pct'] > 80 else
+                      "FAIR" if piv['corr_pass_pct'] > 50 else "POOR")
+        print(f"    Correlation (≥0.2):   {piv['corr_pass_pct']:5.1f}% pass  [{corr_grade}]")
+        print(f"      median {piv['corr_median']:.3f}  "
+              f"(p25: {piv['corr_p25']:.3f}, p75: {piv['corr_p75']:.3f})")
+
+        # SNR
+        snr_grade = ("GOOD" if piv['snr_pass_pct'] > 80 else
+                     "FAIR" if piv['snr_pass_pct'] > 50 else "POOR")
+        print(f"    SNR (≥3.0):           {piv['snr_pass_pct']:5.1f}% pass  [{snr_grade}]")
+        print(f"      median {piv['snr_median']:.2f}  "
+              f"(p25: {piv['snr_p25']:.2f}, p75: {piv['snr_p75']:.2f})")
+
+        # Combined
+        piv_grade = ("GOOD" if piv['piv_pass_pct'] > 70 else
+                     "FAIR" if piv['piv_pass_pct'] > 40 else "POOR")
+        print(f"    Combined pass rate:   {piv['piv_pass_pct']:5.1f}%       [{piv_grade}]")
+        print()
+
+        # Displacement
+        disp_grade = ("OK" if piv['disp_in_range_pct'] > 90 else
+                      "WARN" if piv['disp_in_range_pct'] > 70 else "BAD")
+        print(f"    Displacement:         median {piv['disp_median']:.1f} px/frame  "
+              f"(max {piv['disp_max']:.1f})")
+        print(f"      ≤ ¼ window ({piv['disp_quarter_window']:.0f}px): "
+              f"{piv['disp_in_range_pct']:.1f}%  [{disp_grade}]")
+        if piv['disp_in_range_pct'] < 90:
+            print(f"      Consider {'larger window or lower FPS'}"
+                  f" to keep displacement under ¼ window")
+    elif HAS_FFPIV:
+        print()
+        print("  PIV Analysis: failed (see stderr)")
+    else:
+        print()
+        print("  PIV Analysis: skipped (install ffpiv: pip install ffpiv)")
 
     print()
     print(f"{'='*60}")
@@ -300,11 +530,30 @@ def print_comparison(results):
         ("Blockiness", lambda r: f"{r['metrics']['blockiness_mean']:.3f}"),
     ]
 
+    # Add PIV rows if any result has PIV data
+    has_piv = any(r.get("piv") for r in results)
+    if has_piv:
+        rows.extend([
+            ("", lambda r: ""),  # blank separator
+            ("PIV pass rate %", lambda r: f"{r['piv']['piv_pass_pct']:.1f}" if r.get("piv") else "n/a"),
+            ("  Corr pass %", lambda r: f"{r['piv']['corr_pass_pct']:.1f}" if r.get("piv") else "n/a"),
+            ("  SNR pass %", lambda r: f"{r['piv']['snr_pass_pct']:.1f}" if r.get("piv") else "n/a"),
+            ("  Corr median", lambda r: f"{r['piv']['corr_median']:.3f}" if r.get("piv") else "n/a"),
+            ("  SNR median", lambda r: f"{r['piv']['snr_median']:.2f}" if r.get("piv") else "n/a"),
+            ("Disp median (px/fr)", lambda r: f"{r['piv']['disp_median']:.1f}" if r.get("piv") else "n/a"),
+            ("Disp in range %", lambda r: f"{r['piv']['disp_in_range_pct']:.1f}" if r.get("piv") else "n/a"),
+        ])
+
     for label, fn in rows:
         line = f"  {label:<25}"
         for r in results:
             line += f" {fn(r):>18}"
         print(line)
+
+    if has_piv:
+        print()
+        print("  PIV pass rate = % of windows passing both corr≥0.2 AND snr≥3.0")
+        print("  Disp in range = % of displacements ≤ ¼ interrogation window")
 
     print()
     print(f"{'='*80}")
@@ -321,7 +570,16 @@ def main():
                         help="Print side-by-side comparison table")
     parser.add_argument("--json", action="store_true",
                         help="Output as JSON instead of formatted text")
+    parser.add_argument("--no-piv", action="store_true",
+                        help="Skip PIV analysis even if ffpiv is installed")
+    parser.add_argument("--window-size", type=int, default=64,
+                        help="PIV interrogation window size in pixels (default: 64)")
+    parser.add_argument("--piv-overlap", type=int, default=None,
+                        help="PIV window overlap in pixels (default: window_size/2)")
     args = parser.parse_args()
+
+    piv_overlap = args.piv_overlap if args.piv_overlap is not None else args.window_size // 2
+    run_piv = HAS_FFPIV and not args.no_piv
 
     results = []
     for video in args.videos:
@@ -331,12 +589,21 @@ def main():
 
         info = get_ffprobe_info(video)
         metrics = analyze_frames(video, args.roi)
-        results.append({"info": info, "metrics": metrics})
+
+        piv = None
+        if run_piv:
+            piv = analyze_piv(video, args.roi, args.window_size, piv_overlap)
+
+        entry = {"info": info, "metrics": metrics, "piv": piv}
+        results.append(entry)
 
         if args.json:
-            print(json.dumps({**info, **metrics}, indent=2))
+            out = {**info, **metrics}
+            if piv:
+                out.update(piv)
+            print(json.dumps(out, indent=2))
         elif not args.compare:
-            print_scorecard(info, metrics)
+            print_scorecard(info, metrics, piv)
 
     if args.compare and len(results) > 1:
         print_comparison(results)

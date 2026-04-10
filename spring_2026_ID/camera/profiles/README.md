@@ -41,11 +41,71 @@ python3 camtool.py push sukabumi-cam1 --config common/streaming_101.xml
 
 ## Testing Protocol
 
-For each profile, capture 10 videos and compare:
-1. Actual delivered bitrate (`ffprobe -show_format`)
-2. Frame count and framerate
-3. Visual quality (zoom into water surface texture)
-4. ORC processing results (velocity confidence, pattern detection)
+### Automated test
+
+`run_profile_test.sh` cycles through profiles, captures videos for each,
+and runs `video_quality_test.py` to produce per-profile scorecards and a
+cross-profile comparison table.
+
+```bash
+# Test all profiles (10 captures each)
+./run_profile_test.sh
+
+# Test specific profiles, 5 captures each
+./run_profile_test.sh --profiles baseline,a,b --captures 5
+
+# Focus analysis on the water ROI
+./run_profile_test.sh --roi 200,100,1600,900
+
+# Dry run (show what would happen)
+./run_profile_test.sh --dry-run
+```
+
+Results land in `tests/camera_profiles_<timestamp>/`.
+
+### What gets measured
+
+**Proxy metrics (always available):**
+- Delivered bitrate vs. 20 Mbps target / 15 Mbps floor
+- Spatial Information (SI) — texture/edge detail per frame
+- Temporal Information (TI) — frame-to-frame motion
+- Blockiness — H.264 compression artifact severity
+
+**PIV metrics (requires `pip install ffpiv`):**
+- **Correlation pass rate** — % of interrogation windows with cross-correlation
+  peak ≥ 0.2 (pyorc `corr_min` default)
+- **SNR pass rate** — % of windows with signal-to-noise ratio ≥ 3.0
+  (pyorc `s2n_min` default)
+- **Combined PIV pass rate** — the single number for comparing profiles
+- **Displacement analysis** — whether frame-to-frame motion stays within
+  the ¼-window rule for the chosen interrogation window size
+
+The PIV analysis runs FFPIV (the same cross-correlation engine used by
+pyorc) directly on raw video frames. This gives real pass rates instead
+of proxy estimates. Note: results are on non-orthorectified frames, so
+use them for **relative comparison** between profiles, not as absolute
+go/no-go thresholds.
+
+```bash
+# Standalone analysis with custom PIV window size
+python3 video_quality_test.py *.mp4 --compare --window-size 96
+
+# Skip PIV (proxy metrics only)
+python3 video_quality_test.py *.mp4 --compare --no-piv
+
+# JSON output for further processing
+python3 video_quality_test.py video.mp4 --json
+```
+
+### Decision criteria
+
+1. **PIV pass rate** — higher is better; the profile with the highest
+   combined pass rate preserves the most usable texture for velocimetry
+2. **Displacement in range** — if < 90%, consider a larger `--window-size`
+   or the flow is too fast for this frame rate
+3. **Delivered bitrate** — must reliably exceed 15 Mbps (pyorc floor)
+4. **Blockiness** — if severe (> 1.3), the encoder is destroying texture
+   regardless of bitrate
 
 Document results in `tests/` before committing to a profile for deployment.
 
