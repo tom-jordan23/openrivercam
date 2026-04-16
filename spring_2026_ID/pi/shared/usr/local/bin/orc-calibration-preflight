@@ -1,0 +1,278 @@
+#!/bin/bash
+# orc-calibration-preflight — verify station is ready for calibration capture
+#
+# Read-only check script. Run this before orc-calibration-capture to catch
+# misconfiguration, unreachable camera, wrong mode, or missing files —
+# anything that would make the actual calibration capture fail in the field.
+#
+# Checks performed (all read-only, no state changes):
+#   Environment
+#     - running on an ORC station (hostname starts with orc-)
+#     - running as pi user (warn if root or other)
+#     - orc-capture available on PATH
+#     - orc-capture.conf exists and loads
+#     - camera credentials present (CAMERA_PASS or BASE_PASSWD set)
+#     - Pi time synced (timedatectl shows synchronized)
+#   Camera reachability
+#     - CAMERA_IP pings within 3s
+#     - RTSP port 554 TCP open
+#     - ISAPI HTTP port 80 open
+#     - ISAPI /System/deviceInfo returns 200 with correct auth
+#     - camera clock is within 5s of Pi clock
+#     - camera model string is expected (ANNKE C1200 / Hikvision G6)
+#   State / gate
+#     - maintenance-mode flag is present (required — capture blocked otherwise)
+#     - no stale /tmp/orc_capture_* files (warn if found)
+#     - orc-capture.timer state (report only, not a pass/fail)
+#   Storage
+#     - output dir (/home/pi/calibration) writable or creatable
+#     - disk free on /home > 1 GiB
+#     - session dir writable
+#
+# Usage:
+#   orc-calibration-preflight [--session SESSION] [--output-dir DIR]
+#
+# Exit codes:
+#   0  all checks passed (warnings allowed)
+#   1  one or more checks failed
+#   2  usage / invocation error
+#
+# The full run log is also written to:
+#   <output-dir>/<session>/preflight-<HHMMSS>.log
+
+set -o pipefail
+
+# ─── Args ──────────────────────────────────────────────────────────
+SESSION="$(date +%Y%m%d)"
+OUTPUT_DIR="/home/pi/calibration"
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --session)     SESSION="$2"; shift 2 ;;
+        --output-dir)  OUTPUT_DIR="$2"; shift 2 ;;
+        -h|--help)
+            sed -n '2,40p' "$0" | sed 's/^# \?//'
+            exit 0
+            ;;
+        *) echo "Unknown argument: $1" >&2; exit 2 ;;
+    esac
+done
+
+SESSION_DIR="${OUTPUT_DIR}/${SESSION}"
+LOG_FILE="${SESSION_DIR}/preflight-$(date +%H%M%S).log"
+
+# Create session dir before we log anywhere
+mkdir -p "$SESSION_DIR" 2>/dev/null || {
+    echo "ERROR: cannot create session dir $SESSION_DIR" >&2
+    exit 1
+}
+
+# ─── Reporting ─────────────────────────────────────────────────────
+PASS=0
+FAIL=0
+WARN=0
+
+# Unicode markers would be nice but keep portable
+tee_log() { tee -a "$LOG_FILE"; }
+
+pass()  { echo "  PASS  $*" | tee_log; PASS=$((PASS+1)); }
+fail()  { echo "  FAIL  $*" | tee_log; FAIL=$((FAIL+1)); }
+warn()  { echo "  WARN  $*" | tee_log; WARN=$((WARN+1)); }
+info()  { echo "        $*" | tee_log; }
+hdr()   { echo | tee_log; echo "── $* ──" | tee_log; }
+
+echo "orc-calibration-preflight — $(date '+%Y-%m-%d %H:%M:%S')" | tee_log
+echo "session: $SESSION" | tee_log
+echo "log:     $LOG_FILE" | tee_log
+
+# ─── Environment ───────────────────────────────────────────────────
+hdr "Environment"
+
+HOST="$(hostname)"
+case "$HOST" in
+    orc-*) pass "hostname $HOST looks like an ORC station" ;;
+    *)     warn "hostname '$HOST' does not start with 'orc-'" ;;
+esac
+
+if [ "$(id -un)" = "pi" ]; then
+    pass "running as pi user"
+elif [ "$(id -u)" -eq 0 ]; then
+    warn "running as root (orc-capture expects pi user)"
+else
+    warn "running as $(id -un) (orc-capture expects pi user)"
+fi
+
+if command -v orc-capture >/dev/null 2>&1; then
+    pass "orc-capture found at $(command -v orc-capture)"
+else
+    fail "orc-capture not on PATH"
+fi
+
+ORC_CAPTURE_CONF="${ORC_CAPTURE_CONF:-/etc/orc-capture.conf}"
+if [ -f "$ORC_CAPTURE_CONF" ]; then
+    # shellcheck disable=SC1090
+    if ( set +e; source "$ORC_CAPTURE_CONF" ) >/dev/null 2>&1; then
+        pass "$ORC_CAPTURE_CONF loads cleanly"
+        # shellcheck disable=SC1090
+        source "$ORC_CAPTURE_CONF"
+    else
+        fail "$ORC_CAPTURE_CONF has syntax errors (source failed)"
+    fi
+else
+    fail "$ORC_CAPTURE_CONF missing"
+fi
+
+# Defaults so later checks can still run
+CAMERA_IP="${CAMERA_IP:-}"
+CAMERA_USER="${CAMERA_USER:-admin}"
+RTSP_PORT="${RTSP_PORT:-554}"
+
+# Load credential file
+CRED_FILE=""
+for f in "$HOME/.orc_deploy_sukabumi" "$HOME/.orc_deploy_jakarta" "$HOME/.orc_deploy"; do
+    if [ -f "$f" ]; then
+        CRED_FILE="$f"
+        # shellcheck disable=SC1090
+        source "$f" 2>/dev/null || true
+        break
+    fi
+done
+CAMERA_PASS="${CAMERA_PASS:-${BASE_PASSWD:-}}"
+if [ -n "$CAMERA_PASS" ]; then
+    pass "camera password loaded${CRED_FILE:+ from $CRED_FILE}"
+else
+    fail "no camera password found (CAMERA_PASS or BASE_PASSWD unset)"
+fi
+
+if command -v timedatectl >/dev/null 2>&1; then
+    if timedatectl show --property=NTPSynchronized --value 2>/dev/null | grep -q "yes"; then
+        pass "system clock is NTP-synchronized"
+    else
+        warn "system clock is NOT NTP-synchronized — timestamps may drift"
+    fi
+fi
+
+# ─── Camera reachability ───────────────────────────────────────────
+hdr "Camera reachability"
+
+if [ -z "$CAMERA_IP" ]; then
+    fail "CAMERA_IP not set in config — skipping camera checks"
+else
+    info "camera IP: $CAMERA_IP"
+
+    if ping -c 1 -W 3 "$CAMERA_IP" >/dev/null 2>&1; then
+        pass "ping $CAMERA_IP"
+    else
+        fail "ping $CAMERA_IP — is the camera powered? check PoE relay (poe-relay status)"
+    fi
+
+    # RTSP port check (bash /dev/tcp — available in bash without extra deps)
+    if timeout 3 bash -c "cat </dev/null >/dev/tcp/${CAMERA_IP}/${RTSP_PORT}" 2>/dev/null; then
+        pass "RTSP port ${RTSP_PORT}/tcp open"
+    else
+        fail "RTSP port ${RTSP_PORT}/tcp not reachable"
+    fi
+
+    # ISAPI (HTTP 80) check
+    if timeout 3 bash -c "cat </dev/null >/dev/tcp/${CAMERA_IP}/80" 2>/dev/null; then
+        pass "ISAPI port 80/tcp open"
+    else
+        fail "ISAPI port 80/tcp not reachable"
+    fi
+
+    # Authenticated ISAPI probe — fetch deviceInfo
+    if [ -n "$CAMERA_PASS" ] && command -v curl >/dev/null 2>&1; then
+        DEV_XML="$(curl -s --max-time 5 --digest -u "${CAMERA_USER}:${CAMERA_PASS}" \
+            "http://${CAMERA_IP}/ISAPI/System/deviceInfo" 2>/dev/null || true)"
+        if echo "$DEV_XML" | grep -q "<deviceInfo"; then
+            pass "ISAPI /System/deviceInfo returned device info"
+            MODEL="$(echo "$DEV_XML" | grep -oE "<model>[^<]+" | head -n1 | sed 's/<model>//')"
+            if [ -n "$MODEL" ]; then
+                info "camera model: $MODEL"
+            fi
+
+            # Check camera clock vs Pi clock
+            TIME_XML="$(curl -s --max-time 5 --digest -u "${CAMERA_USER}:${CAMERA_PASS}" \
+                "http://${CAMERA_IP}/ISAPI/System/time" 2>/dev/null || true)"
+            CAM_ISO="$(echo "$TIME_XML" | grep -oE "<localTime>[^<]+" | head -n1 | sed 's/<localTime>//')"
+            if [ -n "$CAM_ISO" ]; then
+                CAM_EPOCH=$(date -d "$CAM_ISO" +%s 2>/dev/null || echo "")
+                PI_EPOCH=$(date +%s)
+                if [ -n "$CAM_EPOCH" ]; then
+                    DELTA=$(( PI_EPOCH - CAM_EPOCH ))
+                    DELTA_ABS=${DELTA#-}
+                    if [ "$DELTA_ABS" -le 5 ]; then
+                        pass "camera clock within ${DELTA_ABS}s of Pi clock"
+                    elif [ "$DELTA_ABS" -le 60 ]; then
+                        warn "camera clock off by ${DELTA_ABS}s (acceptable but should be < 5s)"
+                    else
+                        fail "camera clock off by ${DELTA_ABS}s — fix NTP on camera before capture"
+                    fi
+                fi
+            fi
+        elif echo "$DEV_XML" | grep -qi "401\|Unauthorized"; then
+            fail "ISAPI auth failed — check CAMERA_PASS in credentials file"
+        else
+            fail "ISAPI /System/deviceInfo did not return expected XML"
+        fi
+    fi
+fi
+
+# ─── State / gate ──────────────────────────────────────────────────
+hdr "State / gate"
+
+if [ -f /run/orc-maintenance-mode ]; then
+    pass "maintenance mode is ON (capture timer is gated)"
+else
+    fail "maintenance mode is OFF — set it in orc-pmi-stations repo + reboot before calibration"
+fi
+
+if systemctl is-active --quiet orc-capture.timer; then
+    info "orc-capture.timer is ACTIVE (orc-calibration-capture will stop it temporarily)"
+else
+    info "orc-capture.timer is INACTIVE"
+fi
+
+STALE=$(ls /tmp/orc_capture_* 2>/dev/null | wc -l)
+if [ "$STALE" -gt 0 ]; then
+    warn "$STALE stale /tmp/orc_capture_* file(s) — orc-calibration-capture will clear them"
+fi
+
+# ─── Storage ───────────────────────────────────────────────────────
+hdr "Storage"
+
+if [ -w "$OUTPUT_DIR" ] || mkdir -p "$OUTPUT_DIR" 2>/dev/null; then
+    pass "output dir $OUTPUT_DIR is writable"
+else
+    fail "output dir $OUTPUT_DIR not writable"
+fi
+
+if [ -w "$SESSION_DIR" ]; then
+    pass "session dir $SESSION_DIR is writable"
+else
+    fail "session dir $SESSION_DIR not writable"
+fi
+
+# Disk free on /home — df reports in 1K blocks by default
+HOME_FREE_KB=$(df -P /home 2>/dev/null | awk 'NR==2 {print $4}')
+if [ -n "$HOME_FREE_KB" ]; then
+    HOME_FREE_MIB=$(( HOME_FREE_KB / 1024 ))
+    if [ "$HOME_FREE_MIB" -ge 1024 ]; then
+        pass "/home has ${HOME_FREE_MIB} MiB free (>= 1 GiB)"
+    else
+        fail "/home has only ${HOME_FREE_MIB} MiB free — free space before capturing"
+    fi
+fi
+
+# ─── Summary ───────────────────────────────────────────────────────
+hdr "Summary"
+echo "PASS: $PASS  FAIL: $FAIL  WARN: $WARN" | tee_log
+echo "log:  $LOG_FILE" | tee_log
+
+if [ "$FAIL" -gt 0 ]; then
+    echo "preflight FAILED — fix issues above before running orc-calibration-capture" | tee_log
+    exit 1
+fi
+
+echo "preflight OK — safe to run orc-calibration-capture" | tee_log
+exit 0

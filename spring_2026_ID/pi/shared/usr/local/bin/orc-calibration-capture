@@ -13,36 +13,42 @@
 #   - Delegates capture to `orc-capture --dry-run` — reuses the quality
 #     gate, ISAPI config enforcement, and relay logic rather than
 #     duplicating them.
-#   - Saves the resulting video to a named destination with a
-#     descriptive filename.
+#   - Writes output to a per-session directory with a metadata sidecar.
 #   - Restores maintenance mode and timer state on exit, even on error
 #     or SIGINT.
 #
 # Usage:
-#   orc-calibration-capture [--label LABEL] [--output-dir DIR]
+#   orc-calibration-capture [--label LABEL] [--session SESSION]
+#                           [--output-dir DIR] [--skip-preflight-check]
 #
 # Examples:
 #   orc-calibration-capture --label profile-a
-#   orc-calibration-capture --label profile-b --output-dir /home/pi/calib
+#   orc-calibration-capture --session 20260417_morning --label profile-b
 #
-# Output filename:
-#   <output-dir>/<YYYYMMDDTHHMMSS>_<label>.<ext>   (if --label given)
-#   <output-dir>/<YYYYMMDDTHHMMSS>.<ext>           (otherwise)
+# Output layout:
+#   <output-dir>/<session>/<YYYYMMDDTHHMMSS>_<label>.<ext>    # video
+#   <output-dir>/<session>/<YYYYMMDDTHHMMSS>_<label>.json     # sidecar
+#   <output-dir>/<session>/session.log                         # append-only log
 #
 # Defaults:
-#   --output-dir  /home/pi/calibration
+#   --output-dir   /home/pi/calibration
+#   --session      today's date (YYYYMMDD)
 
 set -o pipefail
 
 LABEL=""
+SESSION="$(date +%Y%m%d)"
 OUTPUT_DIR="/home/pi/calibration"
+SKIP_PREFLIGHT_CHECK=0
 
 while [ $# -gt 0 ]; do
     case "$1" in
-        --label)       LABEL="$2"; shift 2 ;;
-        --output-dir)  OUTPUT_DIR="$2"; shift 2 ;;
+        --label)                  LABEL="$2"; shift 2 ;;
+        --session)                SESSION="$2"; shift 2 ;;
+        --output-dir)             OUTPUT_DIR="$2"; shift 2 ;;
+        --skip-preflight-check)   SKIP_PREFLIGHT_CHECK=1; shift ;;
         -h|--help)
-            sed -n '2,33p' "$0" | sed 's/^# \?//'
+            sed -n '2,36p' "$0" | sed 's/^# \?//'
             exit 0
             ;;
         *)
@@ -53,9 +59,57 @@ while [ $# -gt 0 ]; do
     esac
 done
 
+SESSION_DIR="${OUTPUT_DIR}/${SESSION}"
+SESSION_LOG="${SESSION_DIR}/session.log"
+
+mkdir -p "$SESSION_DIR" || {
+    echo "ERROR: cannot create session dir $SESSION_DIR" >&2
+    exit 1
+}
+
+# ─── Logging ───────────────────────────────────────────────────────
 LOG_PREFIX="[orc-calibration-capture]"
-log() { echo "$(date '+%Y-%m-%d %H:%M:%S') $LOG_PREFIX $*"; }
-err() { echo "$(date '+%Y-%m-%d %H:%M:%S') $LOG_PREFIX ERROR: $*" >&2; }
+_ts() { date '+%Y-%m-%d %H:%M:%S'; }
+log() { local msg="$(_ts) $LOG_PREFIX $*"; echo "$msg"; echo "$msg" >> "$SESSION_LOG"; }
+err() { local msg="$(_ts) $LOG_PREFIX ERROR: $*"; echo "$msg" >&2; echo "$msg" >> "$SESSION_LOG"; }
+
+# ─── Pre-invocation validation ─────────────────────────────────────
+if ! command -v orc-capture >/dev/null 2>&1; then
+    err "orc-capture not found on PATH"
+    exit 1
+fi
+
+ORC_CAPTURE_CONF="${ORC_CAPTURE_CONF:-/etc/orc-capture.conf}"
+if [ ! -f "$ORC_CAPTURE_CONF" ]; then
+    err "$ORC_CAPTURE_CONF not found"
+    exit 1
+fi
+# shellcheck disable=SC1090
+source "$ORC_CAPTURE_CONF"
+CAMERA_IP="${CAMERA_IP:-}"
+EXPECTED_WIDTH="${EXPECTED_WIDTH:-1920}"
+EXPECTED_HEIGHT="${EXPECTED_HEIGHT:-1080}"
+
+if [ -z "$CAMERA_IP" ]; then
+    err "CAMERA_IP not set in $ORC_CAPTURE_CONF"
+    exit 1
+fi
+
+# Quick camera reachability check before we disturb any state
+if ! ping -c 1 -W 3 "$CAMERA_IP" >/dev/null 2>&1; then
+    err "camera $CAMERA_IP is not pingable — fix power / network before retry"
+    err "(run orc-calibration-preflight for a full diagnostic)"
+    exit 1
+fi
+
+# Warn if preflight wasn't run in this session
+if [ "$SKIP_PREFLIGHT_CHECK" -eq 0 ]; then
+    if ! ls "${SESSION_DIR}"/preflight-*.log >/dev/null 2>&1; then
+        log "WARNING: no preflight log found in $SESSION_DIR"
+        log "         run 'orc-calibration-preflight --session $SESSION' first,"
+        log "         or pass --skip-preflight-check to suppress this warning."
+    fi
+fi
 
 # ─── State we may need to restore on exit ──────────────────────────
 MAINT_WAS_ON=0
@@ -64,48 +118,42 @@ TIMER_WAS_ACTIVE=0
 restore_state() {
     local rc=$?
     if [ "$TIMER_WAS_ACTIVE" -eq 1 ]; then
-        log "Restoring orc-capture.timer"
+        log "restoring orc-capture.timer"
         sudo systemctl start orc-capture.timer 2>/dev/null || \
-            err "Failed to restart orc-capture.timer — check manually"
+            err "failed to restart orc-capture.timer — check manually"
     fi
     if [ "$MAINT_WAS_ON" -eq 1 ]; then
-        log "Restoring maintenance-mode flag"
+        log "restoring maintenance-mode flag"
         sudo touch /run/orc-maintenance-mode || \
-            err "Failed to restore maintenance flag — recreate manually"
+            err "failed to restore maintenance flag — recreate manually"
     fi
     exit "$rc"
 }
 trap restore_state EXIT INT TERM
 
-# ─── Sanity checks ─────────────────────────────────────────────────
-if ! command -v orc-capture >/dev/null 2>&1; then
-    err "orc-capture not found on PATH"
-    exit 1
-fi
-
 # ─── Suspend timer + lift maintenance gate ─────────────────────────
 if systemctl is-active --quiet orc-capture.timer; then
     TIMER_WAS_ACTIVE=1
-    log "Stopping orc-capture.timer"
+    log "stopping orc-capture.timer"
     sudo systemctl stop orc-capture.timer
 fi
 
 if [ -f /run/orc-maintenance-mode ]; then
     MAINT_WAS_ON=1
-    log "Maintenance mode is ON — lifting temporarily"
+    log "maintenance mode is ON — lifting temporarily"
     sudo rm -f /run/orc-maintenance-mode
 fi
-
-# ─── Prepare destination ──────────────────────────────────────────
-mkdir -p "$OUTPUT_DIR"
 
 # Clear stale /tmp captures so we can unambiguously identify our output
 rm -f /tmp/orc_capture_*
 
 # ─── Run capture ───────────────────────────────────────────────────
-log "Starting calibration capture via orc-capture --dry-run"
-log "(scene should be clear of people/boats; GCP markers should be visible)"
-if ! orc-capture --dry-run; then
+log "starting calibration capture (session=$SESSION${LABEL:+, label=$LABEL})"
+log "scene must be clear of people/boats; all GCP markers in frame"
+
+# Tee orc-capture output into session log for later audit
+if ! orc-capture --dry-run 2>&1 | tee -a "$SESSION_LOG"; then
+    # Note: pipefail — non-zero from orc-capture propagates here
     err "orc-capture failed — see output above"
     exit 1
 fi
@@ -113,29 +161,131 @@ fi
 # ─── Locate and file the result ────────────────────────────────────
 CAPTURED=$(ls -1t /tmp/orc_capture_* 2>/dev/null | head -n1)
 if [ -z "$CAPTURED" ]; then
-    err "No /tmp/orc_capture_* file found after capture"
+    err "no /tmp/orc_capture_* file found after capture"
     exit 1
 fi
 
 EXT="${CAPTURED##*.}"
 TS=$(date '+%Y%m%dT%H%M%S')
-if [ -n "$LABEL" ]; then
-    DEST="${OUTPUT_DIR}/${TS}_${LABEL}.${EXT}"
-else
-    DEST="${OUTPUT_DIR}/${TS}.${EXT}"
+BASE_NAME="${TS}${LABEL:+_${LABEL}}"
+DEST="${SESSION_DIR}/${BASE_NAME}.${EXT}"
+SIDECAR="${SESSION_DIR}/${BASE_NAME}.json"
+
+if [ -e "$DEST" ]; then
+    err "destination already exists: $DEST (run again in a moment for a new timestamp)"
+    exit 1
 fi
 
 cp "$CAPTURED" "$DEST"
-log "Saved calibration video: $DEST"
+log "saved calibration video: $DEST"
 
-# ─── Report video properties ───────────────────────────────────────
+# ─── Post-capture validation + sidecar ─────────────────────────────
+# ffprobe — capture detailed info for both validation and the sidecar
+FFPROBE_JSON=""
 if command -v ffprobe >/dev/null 2>&1; then
-    log "Video properties (for your records):"
-    ffprobe -v error \
-        -show_entries stream=codec_name,width,height,r_frame_rate,bit_rate \
-        -show_entries format=duration,bit_rate,size \
-        -of default=noprint_wrappers=1 "$DEST" 2>/dev/null | sed 's/^/  /'
+    FFPROBE_JSON="$(ffprobe -v error -print_format json \
+        -show_format -show_streams "$DEST" 2>/dev/null || true)"
 fi
 
-log "Next: scp this file to your laptop and proceed with Phase 4 in"
-log "docs/VIDEO_CONFIG_SETUP.md (upload to ORC-OS web UI)."
+# Extract key properties (jq if available, grep fallback)
+get_prop() {
+    local key="$1"
+    if [ -n "$FFPROBE_JSON" ] && command -v jq >/dev/null 2>&1; then
+        jq -r "$key // empty" <<<"$FFPROBE_JSON" 2>/dev/null
+    fi
+}
+
+V_WIDTH="$(get_prop '.streams[] | select(.codec_type=="video") | .width')"
+V_HEIGHT="$(get_prop '.streams[] | select(.codec_type=="video") | .height')"
+V_CODEC="$(get_prop '.streams[] | select(.codec_type=="video") | .codec_name')"
+V_BITRATE="$(get_prop '.streams[] | select(.codec_type=="video") | .bit_rate')"
+V_FRAMERATE="$(get_prop '.streams[] | select(.codec_type=="video") | .r_frame_rate')"
+F_DURATION="$(get_prop '.format.duration')"
+F_BITRATE="$(get_prop '.format.bit_rate')"
+F_SIZE="$(get_prop '.format.size')"
+
+# Validate captured video against orc-capture.conf expectations
+VALID_OK=1
+if [ -n "$V_WIDTH" ] && [ "$V_WIDTH" -ne "$EXPECTED_WIDTH" ]; then
+    err "captured width $V_WIDTH != EXPECTED_WIDTH $EXPECTED_WIDTH"
+    VALID_OK=0
+fi
+if [ -n "$V_HEIGHT" ] && [ "$V_HEIGHT" -ne "$EXPECTED_HEIGHT" ]; then
+    err "captured height $V_HEIGHT != EXPECTED_HEIGHT $EXPECTED_HEIGHT"
+    VALID_OK=0
+fi
+if [ -n "$F_SIZE" ] && [ "$F_SIZE" -lt 1048576 ]; then
+    err "captured file is suspiciously small (${F_SIZE} bytes) — inspect before use"
+    VALID_OK=0
+fi
+
+if [ "$VALID_OK" -eq 1 ]; then
+    log "capture properties match orc-capture.conf expectations"
+else
+    log "WARNING: capture validation failed — video saved but may be unusable"
+fi
+
+# Write sidecar JSON
+STATION="$(hostname | sed 's/^orc-//')"
+CAPTURE_CONF_SHA="$(sha256sum "$ORC_CAPTURE_CONF" 2>/dev/null | awk '{print $1}')"
+CAPTURE_CONF_SHA="${CAPTURE_CONF_SHA:-unknown}"
+
+cat > "$SIDECAR" <<EOF
+{
+  "schema_version": 1,
+  "captured_at": "$(date -u '+%Y-%m-%dT%H:%M:%SZ')",
+  "captured_at_local": "$(date '+%Y-%m-%dT%H:%M:%S%z')",
+  "session": "$SESSION",
+  "label": "$LABEL",
+  "filename": "${BASE_NAME}.${EXT}",
+  "station": "$STATION",
+  "hostname": "$(hostname)",
+  "camera": {
+    "ip": "$CAMERA_IP",
+    "rtsp_path": "${RTSP_PATH:-Streaming/Channels/101}"
+  },
+  "orc_capture_conf_sha256": "$CAPTURE_CONF_SHA",
+  "expected": {
+    "width": $EXPECTED_WIDTH,
+    "height": $EXPECTED_HEIGHT,
+    "min_bitrate_kbps": ${MIN_BITRATE_KBPS:-12000}
+  },
+  "observed": {
+    "codec": "${V_CODEC:-unknown}",
+    "width": ${V_WIDTH:-null},
+    "height": ${V_HEIGHT:-null},
+    "framerate": "${V_FRAMERATE:-unknown}",
+    "duration_s": ${F_DURATION:-null},
+    "video_bitrate_bps": ${V_BITRATE:-null},
+    "overall_bitrate_bps": ${F_BITRATE:-null},
+    "file_size_bytes": ${F_SIZE:-null}
+  },
+  "validation_passed": $([ "$VALID_OK" -eq 1 ] && echo true || echo false)
+}
+EOF
+log "wrote metadata sidecar: $SIDECAR"
+
+# Pretty-print properties to stdout + session log
+log "video properties:"
+if [ -n "$F_SIZE" ]; then
+    MiB=$(( F_SIZE / 1048576 ))
+    log "  file size:     ${MiB} MiB (${F_SIZE} bytes)"
+fi
+log "  codec:         ${V_CODEC:-unknown}"
+log "  resolution:    ${V_WIDTH:-?}x${V_HEIGHT:-?}"
+log "  framerate:     ${V_FRAMERATE:-unknown}"
+log "  duration:      ${F_DURATION:-unknown} s"
+if [ -n "$F_BITRATE" ]; then
+    kbps=$(( F_BITRATE / 1000 ))
+    log "  bitrate:       ${kbps} kbps"
+fi
+
+if [ "$VALID_OK" -eq 0 ]; then
+    log ""
+    log "capture saved but FAILED validation — review before using."
+    exit 1
+fi
+
+log ""
+log "next: scp $DEST to your laptop and proceed with"
+log "      Phase 4 in docs/VIDEO_CONFIG_SETUP.md."
