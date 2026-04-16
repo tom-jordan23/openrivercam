@@ -153,7 +153,7 @@ Pi 5 RTC battery Molex connector broke on BOTH boards (traces tore). Switching t
 - [ ] Verify passport, visa, travel docs
 
 ### Deferred to in-country
-- [ ] Jakarta battery + charger (sourced locally by PMI team)
+- [x] ~~Jakarta battery + charger~~ → APC 900VA UPS procured locally
 - [ ] Jakarta mounting hardware (pending site survey)
 - [ ] SIM cards (purchase in-country)
 - [ ] Coordinate with PMI: RTK gear, ground control points, and survey poles last used at Sukabumi — need them at Jakarta site first
@@ -318,14 +318,16 @@ not a standalone script or NodeORC plugin. Can be upstreamed later if useful.
 
 | Field | Value |
 |-------|-------|
-| **Status** | OPEN |
+| **Status** | DONE (2026-04-16) |
 | **Site** | Jakarta |
-| **Target** | Week 2 (order) or source in-country |
 
-BOM_Jakarta.md lists "12V LiFePO4 Battery + Charger" as TBD, price TBD.
-Need to select specific product and source from Tokopedia/Shopee before travel,
-or plan to source locally in Jakarta.
-Must match: 12V LiFePO4, >=100Ah, with compatible charger, fits in weatherproof box.
+**Resolution:** Switched from 12V LiFePO4 battery + charger to a commercial
+APC 900VA AC UPS (220V, line-interactive). Procured locally in Jakarta.
+The UPS sits upstream of the Mean Well PSU on the AC side — no DC-side
+battery integration, no charger, no battery box needed. Provides ~3-5
+hours of backup power at 12-15W measured system load (derated for Jakarta
+heat and battery aging). Simplifies wiring and eliminates the charger/BMS
+compatibility questions.
 
 ---
 

@@ -78,6 +78,16 @@ This step is critical. Your username and password will not work for NTRIP connec
 4. Click **"Buy Now"** (the service is free of charge).
 5. Tick the Terms of Use checkbox.
 6. Click **"Subscribe Now"**.
+7. **Wait for activation.** The subscription status may show "Pending" for
+   up to 30 minutes after subscribing. Refresh the SBC portal page and
+   check that the status changes to "Active" before attempting to connect.
+   NTRIP connections will fail (no mountpoints, authentication errors)
+   while the subscription is still pending.
+
+> **Do this before traveling to the field.** Register and subscribe at
+> least one day before your first survey. If you arrive at the site and
+> discover the subscription is pending, you will lose field time waiting
+> for activation over a cell connection.
 
 ### 1.4 Verify Your Connection Details
 

@@ -230,7 +230,7 @@ Keep the following at the local PMI office for field service. Covers both Sukabu
 | PoE injector (Planet IPOE-260-12V or equiv) | 1 | |
 | AC-DC power supply | 1 | Match installed unit |
 | Surge protector | 1 | |
-| UPS battery (if replaceable) | 1 | Match installed UPS |
+| APC 900VA UPS (if replacement needed) | 1 | Same model or equivalent 900VA+ |
 
 ### Consumables
 
@@ -493,7 +493,7 @@ Depends on Phase 1 decisions. Can run in parallel with Phase 3.
 | # | Topic | Question to Answer | Deliverable | Status |
 |---|-------|-------------------|-------------|--------|
 | 4.1 | **Tropical enclosure cooling** | What cooling options work for 40°C+ ambient? | Comparison of thermoelectric, fan, passive options with power draw | ✅ Passive cooling (budget decision) |
-| 4.2 | **24hr UPS system** | What 12V UPS can provide ~1200Wh backup? | Product options with cost/size comparison | ✅ LiFePO4 100Ah + charger |
+| 4.2 | **UPS system** | What backup power approach? | Product options with cost/size comparison | ✅ APC 900VA commercial AC UPS (updated Apr 2026) |
 | 4.3 | **PoE injector verification** | Confirm Planet IPOE-260-12V works with 12V battery input | Datasheet confirmation or alternative | ✅ Confirmed - native 12V support |
 | 4.4 | **AC power supply** | Which industrial 220V→12V supply? | Product recommendation rated for Indonesia power quality | ✅ Mean Well SDR-120-12 |
 
@@ -514,13 +514,13 @@ Depends on Phase 1 decisions. Can run in parallel with Phase 3.
 - PTC heater still used for nighttime humidity control
 - Cost: ~$100-150 vs $1,800 for active cooling
 
-**24hr UPS System:**
-- 12V 100Ah LiFePO4 battery (~$300-400)
-- 20A LiFePO4 charger (~$80-100)
-- Victron BatteryProtect (~$50-80)
-- Total: ~$500-630
-- Runtime: 20-25 hours at 50W load
-- LiFePO4 chosen for tropical heat tolerance (vs AGM which degrades above 30°C)
+**UPS System (updated April 2026):**
+- ~~12V LiFePO4 100Ah + charger~~ — replaced by commercial AC UPS
+- **APC 900VA UPS** (220V, line-interactive) — ~$160 sourced locally in Jakarta
+- Sits upstream of Mean Well PSU on AC side — no DC-side integration
+- Runtime: ~3-5 hours at 12-15W measured load (derated for heat and battery aging)
+- Standalone appliance: plug building AC in, plug station AC cord out
+- Eliminates charger, battery box, BMS compatibility, and DC wiring complexity
 
 **PoE Injector:**
 - Planet IPOE-260-12V ✅ CONFIRMED
@@ -610,7 +610,7 @@ Evaluate customs and import considerations for traveling US → Indonesia with e
 
 | # | Topic | Deliverable |
 |---|-------|-------------|
-| 6.5.1 | **Air travel restrictions** | LiFePO4 battery rules, lithium limits, carry-on vs checked |
+| 6.5.1 | **Air travel restrictions** | ~~LiFePO4 battery rules~~ N/A — UPS sourced locally, carry-on vs checked for electronics |
 | 6.5.2 | **Indonesian customs duties** | Duty rates for electronics, cameras, batteries |
 | 6.5.3 | **Import permits/certifications** | IMEI registration for modems, any required permits |
 | 6.5.4 | **Documentation needed** | Commercial invoice, packing list, equipment manifest |
@@ -618,7 +618,7 @@ Evaluate customs and import considerations for traveling US → Indonesia with e
 | 6.5.6 | **Carnet ATA consideration** | Temporary import for equipment that will be installed |
 
 **Key Considerations:**
-- LiFePO4 batteries have airline Wh limits (typically 100Wh carry-on, 160Wh with approval)
+- ~~LiFePO4 batteries~~ N/A — APC 900VA UPS sourced locally in Jakarta
 - Indonesian customs may charge duty on electronics (0-15% typical)
 - Modems with IMEI may require registration with Indonesian telecom authority
 - Solar panels/large batteries may be better sourced in Indonesia
@@ -702,7 +702,7 @@ Based on research review, the following items may need attention:
 | Gap | Risk | Action Needed |
 |-----|------|---------------|
 | **Active cooling for enclosure** | High | SITES.md mentions active cooling but no research exists. Need to specify: thermoelectric, exhaust fan, or AC unit |
-| **UPS sizing** | High | 24hr backup at ~50W load = 1200Wh. This is a large UPS. Research 12V UPS options or consider separate battery bank |
+| ~~**UPS sizing**~~ | ~~High~~ | ✅ Resolved: APC 900VA commercial AC UPS. ~3-5 hr runtime at 12-15W measured load. |
 | **12V PoE switch vs injector** | Medium | SITES.md says "12v PoE switch" but most PoE switches need 48V. Planet IPOE-260-12V is an injector, not a switch. Clarify network topology |
 | **AC input voltage** | Low | Indonesia uses 220V/50Hz. Verify power supply accepts 220V |
 | **Mounting pole** | Low | No specs for pole. Standard camera pole or custom? Height? Material? |

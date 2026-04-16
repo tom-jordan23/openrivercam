@@ -10,7 +10,7 @@
 | Field | Value |
 |-------|-------|
 | Site | Jakarta, Indonesia |
-| Power | 220V AC mains with 12V LiFePO4 UPS (100Ah) |
+| Power | 220V AC mains with APC 900VA UPS |
 | Station hostname | *(fill after install)* |
 | Camera IP | 192.168.50.100 |
 | Pi IP (camera network) | 192.168.50.1 |
@@ -92,7 +92,7 @@ All fuses are **5x20mm glass tube** type. Do NOT use US automotive blade fuses
 ## Terminal Block (TB1) Labels
 
 ```
-TB1 — 12V DISTRIBUTION (from PSU / Battery)
+TB1 — 12V DISTRIBUTION (from PSU via UPS)
 ┌──────┬──────┬──────┬──────┬──────┬──────┬──────┬──────┐
 │ 12V+ │ 12V+ │ 12V+ │ 12V+ │ GND  │ GND  │ GND  │ GND  │
 │ F2   │ F3   │ F4   │ RG15 │      │      │      │      │

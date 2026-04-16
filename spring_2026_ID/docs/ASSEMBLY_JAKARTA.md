@@ -1,7 +1,7 @@
 # Assembly Guide - Jakarta Site
 
 **Site:** Jakarta, Indonesia (coastal/urban)
-**Type:** AC-powered with 24hr UPS, 1x PoE camera
+**Type:** AC-powered with APC 900VA UPS, 1x PoE camera
 **Purpose:** New training/demo installation
 
 ---
@@ -355,11 +355,10 @@ sudo systemctl start orc-sensors.timer
 - [ ] Proxicast ANT-122-S02 MIMO LTE puck antenna (IP67, 12mm hole mount)
 
 ### Power System
+- [ ] APC 900VA UPS (220V AC, line-interactive — source locally)
 - [ ] Mean Well SDR-120-12 DIN rail PSU
 - [ ] Heschen HS-40-N 2P surge protector (40kA, 275V)
 - [ ] DDR-60G-5 DC-DC buck converter (12V->5V for Pi power)
-- [ ] LiFePO4 100Ah battery (source locally)
-- [ ] 20A LiFePO4 charger (source locally or carry)
 - [ ] Power distribution blocks (12-position, DIN rail)
 - [ ] DIN rail fuse holders + 5x20mm glass tube fuses (5A slow blow)
 
@@ -679,17 +678,15 @@ rail terminal blocks.
     - Measure DC at TB1: 12V+ to GND should read ~12V
     - Unplug AC cord before proceeding to downstream wiring
 
-11. **Wire battery system (deferred — battery sourced in-country):**
-    ```
-    Mean Well 12V+ --+---> Charger input (+)
-                      |
-                      +---> Terminal block TB1 (system 12V+)
+11. **UPS placement (no wiring — standalone appliance):**
 
-    Charger output ---> Battery (+)
-    Battery (+) ---> Terminal block TB1 (backup 12V+)
-    Battery (-) ---> Terminal block TB1 (system GND)
-    ```
-    Battery BMS handles low-voltage cutoff automatically.
+    The APC 900VA UPS sits outside the enclosure as a standalone appliance.
+    Building AC plugs into the UPS input. The station's AC cord (SP13
+    bulkhead) plugs into one of the UPS outlets. No DC-side wiring, no
+    charger, no battery integration inside the enclosure.
+
+    Position the UPS near the enclosure, on a shelf or floor, protected
+    from rain. The UPS has its own internal battery managed automatically.
 
 12. **Wire DDR-60G-5 buck converter:**
 
@@ -1054,14 +1051,11 @@ landing on wired components. (See Sukabumi build note in ASSEMBLY_SUKABUMI.md.)
 
 ### Connect AC Power
 
-1. **Connect AC cable** to building power (220V)
-2. **Observe Mean Well PSU:**
+1. **Plug building AC into UPS input**, then **plug station AC cord into UPS outlet**
+2. **Turn on UPS** — verify UPS status LED shows "online" (AC present)
+3. **Observe Mean Well PSU:**
    - Green LED should light
    - 12V output active
-
-3. **Check battery charger:**
-   - Charging indicator should light
-   - Battery voltage rising (if depleted)
 
 ### Power On Pi
 
@@ -1142,11 +1136,11 @@ from any device on your tailnet, regardless of LTE carrier NAT.
 
 ### Verify UPS Function
 
-1. With system running stable, disconnect AC power
-2. System should continue running on battery
-3. Monitor battery voltage (should be >12.0V)
-4. Reconnect AC after 5-10 minutes test
-5. Verify charger resumes
+1. With system running stable, unplug building AC from UPS input
+2. UPS should switch to battery (audible beep, status LED changes)
+3. System should continue running — Pi stays up, camera stays reachable
+4. Reconnect AC after 2-5 minutes
+5. UPS should switch back to mains (beep stops, status LED returns to normal)
 
 ---
 
@@ -1463,7 +1457,7 @@ After installation, verify actual power consumption:
 | Fans (x2) | ~3W | |
 | **Total average** | **~25W** | |
 
-**Battery runtime:** 1280Wh / 25W = ~51 hours (theoretical, PTC heater not installed)
+**UPS runtime:** APC 900VA at ~12-15W measured system load = ~3-5 hours (internal 12V 7-9Ah sealed lead-acid battery, derated for heat and aging)
 
 ---
 
@@ -1475,11 +1469,11 @@ See `TROUBLESHOOTING.md` for detailed diagnostics.
 
 | Symptom | Check |
 |---------|-------|
-| No power | AC voltage? Surge protector? PSU LED? |
+| No power | UPS on? AC voltage? Surge protector? PSU LED? |
 | No Pi boot | Fuse F3? 12V at Witty Pi VIN? 5V at GPIO pins? Power button pressed? J2 wiring? |
 | Cameras offline | PoE switch powered? Relay GPIO wiring correct? Inline fuse intact? Cable continuity? Ping test? |
 | No LTE | Antenna? SIM? IMEI registered? |
-| Battery not charging | Charger LED? Battery terminals? |
+| UPS beeping | AC power lost — system running on UPS battery. Check building power. |
 
 ---
 
@@ -1597,8 +1591,17 @@ full pipeline (orthorectification, PIV, discharge calculation).
 
 ---
 
-**Document Version:** 3.5
-**Last Updated:** April 7, 2026
+**Document Version:** 3.6
+**Last Updated:** April 16, 2026
+**Changes from v3.5:**
+- UPS changed from 12V LiFePO4 battery + charger to APC 900VA commercial AC UPS
+- Removed LiFePO4 battery and charger from component inventory
+- Step 6 battery wiring replaced with UPS placement instructions (standalone appliance, no DC integration)
+- Power-on procedure updated for UPS
+- UPS verification updated (AC unplug test instead of battery voltage monitoring)
+- Power budget updated: UPS provides ~3-5 hr runtime at 12-15W measured load, not 51hr extended backup
+- Troubleshooting updated: battery charging replaced with UPS status
+
 **Changes from v3.3:**
 - Capture scheduling moved from static systemd service to ORC-OS managed TIMER service
 - Added capture service setup steps for web UI (Enable before Start, stop/disable behavior)

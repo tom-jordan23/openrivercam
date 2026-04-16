@@ -63,14 +63,9 @@ Park once, walk between buildings. All on Jl. Hayam Wuruk.
 **3a. RoyalPV — Harco Glodok Lt. 5, Blok D No. 39** (opens 10:00)
 WA: 0812-9782-2052 | Hours: Mon-Fri 10-17, Sat 10-13
 
-| Item | Indonesian term | Notes |
-|------|----------------|-------|
-| 100Ah LiFePO4 battery + charger | "baterai lithium LiFePO4 100Ah" + "charger LFP" | Ask specifically for LiFePO4 charger, not lead-acid ("bukan charger timbal"). Brands: VMP, VOZ. |
-| Battery box / enclosure | "kotak baterai" / "box baterai IP65" | May not be in stock — backup: Tokopedia same-day. |
+~~**Original plan:** 100Ah LiFePO4 battery + charger — **REPLACED** by APC 900VA UPS (already procured).~~
 
-Backup battery shops:
-- **Panel Surya Jakarta** — LTC Glodok Lt. 1, Blok A1 No. 20
-- **Sinar Berkat Surya** — LTC Glodok Lt. UG, Blok A26 No. 3 (Tel: 021-62203961)
+Skip this stop unless you need other solar/battery supplies.
 
 **3b. JE Indonesia / Sinar Gemilang — Electrical Supply**
 

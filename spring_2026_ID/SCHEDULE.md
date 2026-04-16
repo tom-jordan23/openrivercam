@@ -18,7 +18,7 @@
 
 **Late Afternoon**
 - Purchase Telkomsel prepaid SIMs (kiosk or Grapari store)
-- Order LiFePO4 100Ah battery on Tokopedia/Shopee (1-2 day delivery)
+- ~~Order LiFePO4 100Ah battery~~ → APC 900VA UPS procured locally
 - Order grounding equipment if not visiting hardware store today (rod, cable, lugs)
 - Start IMEI registration for both Quectel modems (https://imei.kemenperin.go.id/)
 
@@ -68,7 +68,7 @@ This is the blocking decision for both sites. Must complete before Sukabumi.
 
 **Evening**
 - Start soak test on final profile (leave running overnight)
-- Battery may arrive — inspect and bench-test with multimeter
+- ~~Battery may arrive~~ → UPS already procured
 
 **Decision gate summary:**
 - If any RTSP profile reliably delivers 15+ Mbps with acceptable ORC results → keep ANNKE C1200
@@ -97,9 +97,10 @@ This is the blocking decision for both sites. Must complete before Sukabumi.
 - Simulate rain (pour water on RG-15 dome), confirm acc_mm increases
 
 **Evening**
-- Integrate battery into power chain (LiFePO4 → charger → 12V bus)
-- Wire fans + PTC heater (if not yet done)
-- Test thermal management — run fans, verify PTC heater cycles
+- Connect UPS: building AC → UPS input, station AC cord → UPS outlet
+- Test UPS: unplug building AC, verify system stays running, replug
+- Wire fans (if not yet done)
+- Test fans — verify air circulation
 
 ---
 
@@ -329,7 +330,7 @@ This is the blocking decision for both sites. Must complete before Sukabumi.
 
 **Critical path:** Day 3 (camera quality gate) must complete before Sukabumi deployment. If it takes longer, Days 4-5 have flexibility to absorb overflow.
 
-**Battery delivery:** Ordered Day 1, expected Day 3-4. If delayed, Jakarta runs on AC-only; battery integration slides but doesn't block other work.
+**UPS:** APC 900VA procured locally. Standalone appliance — plug in and go, no integration work.
 
 **Weather:** Tropical rain could delay site installation (Days 6, 10). Indoor work (sensor wiring, software) can fill rain days. Build in the expectation that one day may get rained out.
 

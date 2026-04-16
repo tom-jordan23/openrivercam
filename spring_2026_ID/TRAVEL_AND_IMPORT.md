@@ -20,7 +20,7 @@
 | Category | Carry from US | Source in Indonesia |
 |----------|--------------|---------------------|
 | Electronics (Pi, cameras, modem) | Yes | No |
-| Batteries (LiFePO4 100Ah) | **NO** | Yes (Jakarta) |
+| UPS (APC 900VA) | No | Yes (Jakarta — source locally) |
 | Conformal coating | Yes (small bottle OK) | No |
 | Enclosures | Maybe | Preferred locally |
 | Mounting hardware | Some | Bulk locally |
@@ -34,24 +34,16 @@
 
 ### Lithium/LiFePO4 Batteries
 
-**CRITICAL:** The 100Ah LiFePO4 battery for Jakarta site CANNOT fly.
+**NOTE (April 2026):** The original plan called for a 12V LiFePO4 100Ah battery
+(1,280 Wh) which could not fly. This has been replaced with a commercial APC
+900VA UPS sourced locally in Jakarta. No large batteries need to be transported.
 
 | Battery Type | Wh Rating | Carry-On | Checked | Status |
 |--------------|-----------|----------|---------|--------|
-| LiFePO4 100Ah 12V | 1,280 Wh | **NO** | **NO** | Must source locally |
+| ~~LiFePO4 100Ah 12V~~ | ~~1,280 Wh~~ | — | — | **Replaced by APC 900VA UPS (sourced locally)** |
 | Small Li-ion (laptop) | <100 Wh | Yes | No | Normal rules |
 | Power banks | <100 Wh | Yes (2 max) | No | Normal rules |
 | Pi 5 (no battery) | N/A | Yes | Yes | No issue |
-
-**Airline limits (typical):**
-- Carry-on: Up to 100Wh without approval, 100-160Wh with airline approval
-- Checked: Lithium batteries prohibited
-- 1,280Wh battery: Not allowed on passenger aircraft
-
-**Solution:** Purchase LiFePO4 battery in Jakarta
-- Tokopedia, Shopee, or local battery suppliers
-- Brands available: LiTime, Ampere Time, local equivalents
-- Allow 1-2 days for local delivery
 
 ### Other Restricted Items
 
@@ -152,7 +144,7 @@ Keep these with you - irreplaceable or long lead time:
 
 | Item | Est. Cost (USD) | Where to Buy |
 |------|-----------------|--------------|
-| **LiFePO4 100Ah battery** | $300-400 | Tokopedia, Shopee, local battery shops |
+| **APC 900VA UPS** | ~$160 | Local electronics stores, Tokopedia |
 | Grounding rod (1.5m copper) | $13 | Electrical supply stores |
 | Ground cable (6 AWG, 10m) | $10 | Electrical supply |
 | Ground lugs + clamps | $6 | Electrical supply |
@@ -162,7 +154,7 @@ Keep these with you - irreplaceable or long lead time:
 | Concrete + anchors | $6 | Hardware stores |
 | Silicone sealant | $5 | Hardware stores |
 | Electrical tape | $3 | Any store |
-| **Jakarta local total** | **~$394-494** | |
+| **Jakarta local total** | **~$254-294** | |
 
 ### Sukabumi - Optional Local Purchases
 
@@ -338,7 +330,7 @@ Indonesian regulations require IMEI registration for cellular devices.
 - [ ] Pack checked luggage #1 and #2
 - [ ] Weigh all bags (confirm under limits)
 - [ ] Confirm flight allows 2 checked bags
-- [ ] Research Jakarta battery suppliers (have backup options)
+- [x] ~~Research Jakarta battery suppliers~~ APC 900VA UPS sourced locally
 - [ ] Confirm local contact will receive you / assist with procurement
 
 ### Day of Travel
@@ -351,7 +343,7 @@ Indonesian regulations require IMEI registration for cellular devices.
 ### Upon Arrival
 
 - [ ] Clear customs (green channel, show papers if asked)
-- [ ] Purchase LiFePO4 battery within 1-2 days
+- [x] ~~Purchase LiFePO4 battery~~ APC 900VA UPS procured
 - [ ] Purchase local hardware items (grounding, pole, etc.)
 - [ ] Begin IMEI registration if staying >60 days
 
@@ -379,7 +371,7 @@ Indonesian regulations require IMEI registration for cellular devices.
 |------|------------|
 | Customs delays | Have all documentation ready, arrive with time buffer |
 | Equipment damaged in transit | Use hard cases, pack fragile items in carry-on |
-| Battery not available locally | Research multiple suppliers, have backup plan |
+| UPS not available locally | APC is widely available in Jakarta; Tokopedia as backup |
 | IMEI registration required | Start process immediately on arrival |
 | Lost luggage | Critical items in carry-on, have spares in second checked bag |
 | Component DOA | Test everything before departure, carry spares |

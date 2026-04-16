@@ -76,9 +76,8 @@ Components specific to the PoE camera / AC power site.
 | Planet IPOE-260-12V | PoE injector spare | 1 | $164.00 | $164.00 | Planet Tech |
 | Mean Well SDR-120-12 | AC-DC PSU spare | 1 | $59.84 | $59.84 | DigiKey |
 | Phoenix Contact SPD | Surge protector spare | 1 | $78.15 | $78.15 | DigiKey |
-| PTC Heater 10W | Camera heater spare | 1 | $14.99 | $14.99 | Amazon |
 | PTC Heater 15W | Enclosure heater spare | 1 | $19.99 | $19.99 | Amazon |
-| | | | **Subtotal** | **$441.63** | |
+| | | | **Subtotal** | **$426.64** | |
 
 ---
 

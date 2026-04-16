@@ -18,7 +18,7 @@ These decisions were made during ordering and differ from earlier BOM versions:
 | Change | Old | New | Rationale |
 |--------|-----|-----|-----------|
 | **Witty Pi 5 REINSTATED** | $0 | ~$50 | Pi 5 ML-2020 battery connector failed on both boards; Witty Pi 5 HAT+ uses CR2032 coin cell |
-| **Victron BatteryProtect dropped** | $53.55 | $0 | LiTime BMS has built-in low-voltage cutoff |
+| **Victron BatteryProtect dropped** | $53.55 | $0 | Replaced by commercial AC UPS |
 | **USB-RS485 adapter dropped** | $21.95 | $0 | GPIO breakout handles rain gauge RS232 |
 | **Surge protector swapped** | Phoenix Contact $78.15 | Heschen HS-40-N $20.51 | Cheaper, single-phase (correct for site) |
 | **Distribution block swapped** | DigiKey Phoenix Contact $37 | Amazon generic $23.12 | Cheaper, same function |
@@ -144,7 +144,7 @@ PWR-006 (fuse holders), PWR-007/008 (fuses), ENC-004 (cable glands), ENC-008 (ha
 | Item | Description | Reason |
 |------|-------------|--------|
 | ~~CPU-002~~ | ~~Witty Pi 5 HAT+ ($59.95)~~ | ~~Hessel's new OS image works with Pi 5 built-in RTC~~ — **REINSTATED as CPU-013** (Pi 5 ML-2020 battery connector failed on both boards; CR2032-based Witty Pi 5 replaces built-in RTC) |
-| PWR-004 | Victron BatteryProtect ($53.55) | LiTime BMS has built-in low-voltage cutoff |
+| PWR-004 | Victron BatteryProtect ($53.55) | Replaced by commercial AC UPS approach |
 | UI-005 | USB to RS485/232 Adapter ($21.95) | GPIO breakout handles rain gauge RS232 |
 | HUM-003 | PTC Heater 10W for Camera ($29.98) | ANNKE C1200 is factory-sealed IP67; external heater can't reach lens |
 | CAM-005 | IP68 RJ45 Waterproof Coupler ($12.99) | Replaced by ETH-BULKHEAD connectors |
@@ -174,11 +174,10 @@ PWR-006 (fuse holders), PWR-007/008 (fuses), ENC-004 (cable glands), ENC-008 (ha
 | ENC-011 | Pole Base Flange + Concrete Anchors | 200,000 | $13 | Toko bangunan | |
 | ENC-012 | U-Bolts for Pole Mounting (M8 x 150mm SS) | 100,000 | $6 | Toko bangunan | |
 | RAIN-002 | Pole Mount Arm for Rain Gauge | 150,000 | $10 | Fabricate locally | |
-| PWR-002 | 12V LiFePO4 Battery + Charger | TBD | TBD | Tokopedia / Shopee | Need charger matching battery chemistry |
-| BATT-BOX | Weatherproof Battery Box | ~500,000 | ~$30 | ACE / Tokopedia | Size to fit battery + charger |
+| PWR-002 | APC 900VA UPS (220V AC line-interactive) | ~2,500,000 | ~$160 | Local electronics / Tokopedia | Provides AC backup upstream of Mean Well PSU |
 | MISC | Concrete mix, wire nuts, cable ties | 100,000 | $6 | Any hardware store | |
 
-**Local Sourcing Subtotal: ~$126+ USD** (battery price TBD)
+**Local Sourcing Subtotal: ~$256 USD**
 
 ---
 
@@ -191,12 +190,12 @@ PWR-006 (fuse holders), PWR-007/008 (fuses), ENC-004 (cable glands), ENC-008 (ha
 | Adafruit | $15.78 | SHT40 sensors + cables |
 | Hydreon | $99.00 | Rain gauge |
 | **Ordered Total** | **$1,076.88** | All shipped items |
-| Local Sourcing (Jakarta) | ~$126+ | Grounding, pole, misc (battery TBD) |
-| **Project Total** | **~$1,203+** | Excluding battery system |
+| Local Sourcing (Jakarta) | ~$256 | Grounding, pole, UPS, misc |
+| **Project Total** | **~$1,333** | All components |
 
 **NOTE:** jakarta_order.csv shows a total of $1,863.19 but that formula is stale — it does not reflect items zeroed out during ordering. The actual ordered total from line items is $1,076.88 (updated for 1-camera configuration).
 
-**Budget comparison:** Jakarta $1,077 (shipped) + Sukabumi $948 (actual) = ~$2,025 shipped. Well within $3,000 target even with local sourcing and battery.
+**Budget comparison:** Jakarta $1,077 (shipped) + $256 (local) + Sukabumi $948 (actual) = ~$2,281 total. Well within $3,000 target.
 
 ---
 
@@ -206,7 +205,8 @@ PWR-006 (fuse holders), PWR-007/008 (fuses), ENC-004 (cable glands), ENC-008 (ha
 - **Witty Pi 5 HAT+ RTC (CR2032):** Replaces Pi 5 built-in RTC (ML-2020 connector failed on both boards)
 - **ANNKE C1200 + LINOVISION 12V PoE Switch:** 802.3af/at compatible
 - **Mean Well SDR-120-12:** 88-264VAC input (Indonesia 220V OK)
-- **DDR-60G-5:** 9-36V input, covers battery voltage range
+- **DDR-60G-5:** 9-36V input, converts 12V bus to 5V
+- **APC 900VA UPS:** Line-interactive, 220V AC backup upstream of PSU
 - **Quectel EG25-G:** Indonesian LTE bands B1/B3/B5/B8/B40
 - **MG 422C:** Silicone conformal coat rated for >95% RH
 - **SP13 DC bulkheads:** 13A/250V — adequate for 12V 8A bus
@@ -218,6 +218,7 @@ PWR-006 (fuse holders), PWR-007/008 (fuses), ENC-004 (cable glands), ENC-008 (ha
 
 | Date | Version | Changes |
 |------|---------|---------|
+| 2026-04-16 | 5.3 | **UPS changed from 12V LiFePO4 battery + charger to APC 900VA commercial AC UPS.** Removed PWR-002 (LiFePO4 battery + charger) and BATT-BOX (battery enclosure). Added APC 900VA UPS as PWR-002. UPS sits upstream of Mean Well PSU on AC side — no DC-side battery integration. Updated local sourcing subtotals and project total. |
 | 2026-04-04 | 5.2 | Witty Pi 5 HAT+ reinstated (CPU-013) + CR2032 battery (CPU-014). Pi 5 ML-2020 battery connector failed on both boards. ML-2020 line (CPU-012) superseded. Updated Component Compatibility for 3-board stack. |
 | 2026-03-26 | 5.1 | Reduced from 2 cameras to 1. Cat6 cables 4→2, CNLINKO bulkheads 2→1. Updated subtotals. |
 | 2026-03-09 | 5.0 | Reconciled against authoritative jakarta_order.csv. Dropped Witty Pi 5 (Pi 5 RTC), Victron BatteryProtect (BMS cutoff), USB-RS485 (GPIO handles it), camera heater (sealed camera). Swapped Phoenix Contact SPD → Heschen HS-40-N, Phoenix PTFIX → Amazon generic. Right-sized Cat6 cable. Added fans, neoprene isolation, ethernet + DC bulkhead connectors. Deferred mounting hardware. Corrected conformal coat to MG 422C. Updated all prices to actual order prices. |
@@ -228,6 +229,6 @@ PWR-006 (fuse holders), PWR-007/008 (fuses), ENC-004 (cable glands), ENC-008 (ha
 
 ---
 
-**Document prepared:** January 9, 2026 | **Last updated:** April 4, 2026
-**Version:** 5.2 (Witty Pi 5 HAT+ reinstated — Pi 5 ML-2020 connector failure)
+**Document prepared:** January 9, 2026 | **Last updated:** April 16, 2026
+**Version:** 5.3 (UPS changed to APC 900VA commercial AC UPS)
 **Authoritative source:** `jakarta_order.csv`

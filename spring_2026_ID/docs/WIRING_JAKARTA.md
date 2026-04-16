@@ -8,7 +8,7 @@
 
 - [System Overview](#system-overview)
 - [AC Power Input Detail](#ac-power-input-detail)
-- [Battery & UPS System](#battery--ups-system)
+- [UPS System (APC 900VA)](#ups-system-apc-900va)
 - [12V Distribution](#12v-distribution)
 - [PoE Camera System](#poe-camera-system)
 - [GPIO Connections](#gpio-connections-geekworm-g469)
@@ -27,11 +27,20 @@
 ```
 +-----------------------------------------------------------------------------+
 |                           JAKARTA SITE WIRING                               |
-|                   AC Power / PoE Camera / 24hr UPS                          |
+|                   AC Power / PoE Camera / APC UPS                           |
 +-----------------------------------------------------------------------------+
 
             220V AC (Building Power)
                     |
+                    v
+            +---------------+
+            | APC 900VA UPS |
+            | (220V AC      |
+            |  line-inter-  |
+            |  active)      |
+            +-------+-------+
+                    |
+                    | 220V AC (UPS output)
                     v
             +---------------+
             | SURGE         |
@@ -41,25 +50,13 @@
             +-------+-------+
                     |
                     v
-            +---------------+         +-------------------+
-            | MEAN WELL     |         |                   |
-            | SDR-120-12    |--12V--->|  LiFePO4 CHARGER  |
-            | (120W, 12V)   |         |  (20A)            |
-            +-------+-------+         +---------+---------+
-                    |                           |
-                    |                           v
-                    |                   +-------------------+
-                    |                   |  LiFePO4 BATTERY  |
-                    |                   |  12V 100Ah        |
-                    |                   |  (1280Wh)         |
-                    |                   |  BMS built-in     |
-                    |                   |  low-voltage      |
-                    |                   |  cutoff           |
-                    |                   +---------+---------+
-                    |                             |
-                    +------------+----------------+
-                                 |
-                                 v
+            +---------------+
+            | MEAN WELL     |
+            | SDR-120-12    |
+            | (120W, 12V)   |
+            +-------+-------+
+                    |
+                    v
                     +-----------------------------+
                     |      12V DISTRIBUTION       |
                     |      (Terminal Block)       |
@@ -189,67 +186,63 @@ Bridge bar connects all 4 lugs electrically.
 
 ---
 
-## Battery & UPS System
+## UPS System (APC 900VA)
 
 ```
 +-----------------------------------------------------------------------------+
-|                         BATTERY / UPS SYSTEM                                |
+|                         UPS SYSTEM (AC-SIDE BACKUP)                         |
 +-----------------------------------------------------------------------------+
 
-FROM MEAN WELL 12V OUTPUT
-         |
-         +----------------------------------+
-         |                                  |
-         v                                  v
-+---------------------+            +---------------------+
-|  TERMINAL BLOCK     |            |  LiFePO4 CHARGER    |
-|  TB1 (System 12V)   |            |  (20A, 14.6V max)   |
-|                     |            |                     |
-|  Powers loads when  |            |  Bulk -> Absorb ->  |
-|  AC present         |            |  Float charging     |
-+---------------------+            +----------+----------+
-                                              |
-                                              v
-                                   +---------------------+
-                                   |  LiFePO4 BATTERY    |
-                                   |  12V 100Ah          |
-                                   |  (1280Wh capacity)  |
-                                   |                     |
-                                   |  BMS Built-in:      |
-                                   |  - Over-discharge   |
-                                   |    (low-V cutoff)   |
-                                   |  - Over-charge      |
-                                   |  - Over-current     |
-                                   |  - Temperature      |
-                                   +----------+----------+
-                                              |
-                                              v
-                                   +---------------------+
-                                   |  TERMINAL BLOCK     |
-                                   |  TB1 (System 12V)   |
-                                   |                     |
-                                   |  Battery feeds TB1  |
-                                   |  when AC fails      |
-                                   +---------------------+
+          220V AC (Building Power)
+                    |
+                    v
+         +---------------------+
+         |  APC 900VA UPS      |
+         |  (Line-Interactive)  |
+         |                     |
+         |  220V AC input      |
+         |  220V AC output     |
+         |  Internal battery   |
+         |  managed by UPS     |
+         +----------+----------+
+                    |
+                    | 220V AC (conditioned)
+                    v
+         +---------------------+
+         |  SURGE PROTECTOR    |
+         |  + MEAN WELL PSU    |
+         |  (see AC Power      |
+         |   Input section)    |
+         +----------+----------+
+                    |
+                    | 12V DC
+                    v
+         +---------------------+
+         |  TB1 (System 12V)   |
+         +---------------------+
 
 
 POWER PATH LOGIC:
 +----------------------------------------------------------------------------+
 |                                                                            |
 |  AC PRESENT:                                                               |
-|  - Mean Well powers all loads directly via TB1                            |
-|  - Charger maintains battery at float voltage                              |
-|  - Battery on standby (BMS manages health)                                |
+|  - UPS passes AC through (line-interactive, AVR stabilizes voltage)       |
+|  - UPS charges internal battery                                           |
+|  - Mean Well PSU converts to 12V DC for all loads                         |
 |                                                                            |
 |  AC FAILS:                                                                 |
-|  - Mean Well output drops to 0V                                           |
-|  - Battery discharges through TB1 to all loads                            |
-|  - BMS disconnects at low-voltage cutoff to protect battery               |
+|  - UPS switches to battery (automatic, <10ms transfer time)              |
+|  - UPS inverter provides 220V AC from internal battery                    |
+|  - Mean Well PSU continues operating normally — no DC-side changes        |
+|  - Runtime: ~3-5 hours at 12-15W typical load (900VA UPS)                |
 |                                                                            |
 |  AC RESTORED:                                                              |
-|  - Mean Well resumes powering loads                                       |
-|  - Charger resumes charging battery                                       |
-|  - BMS reconnects when battery recovers                                   |
+|  - UPS switches back to mains                                             |
+|  - UPS recharges internal battery                                         |
+|                                                                            |
+|  The UPS is a standalone appliance — no wiring to 12V bus, no charger,   |
+|  no BMS, no DC integration. It plugs into the wall and the station's     |
+|  AC cord plugs into it.                                                   |
 |                                                                            |
 +----------------------------------------------------------------------------+
 ```
@@ -613,10 +606,10 @@ NOTES:
     |  | +----------+  +-----------+  +------------+  +-----------------+ ||
     |  +------------------------------------------------------------------+|
     |                                                                       |
-    |  +------------+  +------------+                [FAN 1]  [FAN 2]      |
-    |  | LTE MODEM  |  |  CHARGER   |                                      |
-    |  |  (Velcro)  |  |            |                                      |
-    |  +------------+  +------------+                                      |
+    |  +------------+                               [FAN 1]  [FAN 2]      |
+    |  | LTE MODEM  |                                                      |
+    |  |  (Velcro)  |                                                      |
+    |  +------------+                                                      |
     |                                                                       |
     |  [CNLINKO]                                                            |
     |   Cam1 ETH                                                           |
@@ -750,7 +743,7 @@ Do not use wire thinner than 1.5 mm² (16 AWG) for any AC connection.
 Print and attach:
 
 ```
-TB1 - MAIN 12V (from PSU / Battery)
+TB1 - MAIN 12V (from PSU via UPS)
 +----+----+----+----+----+----+
 |12+ |12+ |12+ |12- |12- |GND |
 |PSU |PoE | Pi |PSU |RET |    |
@@ -767,8 +760,15 @@ GROUND BAR
 
 **PRINT THIS DOCUMENT - LAMINATE FOR FIELD USE**
 
-**Document Version:** 3.4
-**Last Updated:** April 4, 2026
+**Document Version:** 3.5
+**Last Updated:** April 16, 2026
+**Changes from v3.4:**
+- UPS changed from 12V LiFePO4 battery + charger to APC 900VA commercial AC UPS
+- System overview diagram updated: UPS sits upstream of surge protector and PSU on AC side
+- Battery & UPS section completely rewritten — no DC-side battery integration
+- Removed charger from enclosure internal layout
+- Updated TB1 label (from PSU via UPS, not PSU / Battery)
+
 **Changes from v3.3:**
 - DDR-60G-5 buck converter REMOVED — Witty Pi 5 VIN screw terminal accepts 12V directly (6-30V rated), converts to 5V onboard
 - F3 fuse now feeds Witty Pi 5 VIN instead of DDR-60G-5

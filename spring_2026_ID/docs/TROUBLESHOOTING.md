@@ -497,7 +497,7 @@ Then set your laptop to 192.168.1.50/24 and use `arp -a` to find the camera. Re-
 | Pi frozen/unresponsive | Software hang | Press J2 power button briefly for clean shutdown, then press again to boot |
 | Pi frozen/unresponsive | Hard lock | Hold J2 power button ~10s to force off, then press to boot |
 | Intermittent shutdowns (Sukabumi) | Low battery voltage | Check solar charge controller |
-| Intermittent shutdowns (Jakarta) | BMS low-voltage cutoff | Check charger and battery health |
+| Intermittent shutdowns (Jakarta) | UPS battery depleted or AC unstable | Check UPS status LED, verify AC mains |
 | Intermittent shutdowns | Loose connection | Check all terminal connections |
 
 ![Fuse holder with wrong-size Bussmann automotive fuses that do not fit the 5x20mm holder](images/troubleshooting/fuse_wrong_size.png)

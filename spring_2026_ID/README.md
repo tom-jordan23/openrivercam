@@ -11,7 +11,7 @@ running on Raspberry Pi 5 with Witty Pi 5 HAT+ power management.
 | Site | Power | Camera | Compute Stack | Status |
 |------|-------|--------|---------------|--------|
 | **Sukabumi** | Solar (200W panel / 50Ah battery) | ANNKE C1200 PoE, power-cycled | Pi 5 + Witty Pi 5 + G469 | Built, software configured, ready to deploy |
-| **Jakarta** | AC utility (Mean Well PSU) + LiFePO4 UPS | ANNKE C1200 PoE, continuous | Pi 5 + Witty Pi 5 + G469 | Built, software configured, ready to deploy |
+| **Jakarta** | AC utility (Mean Well PSU) + APC 900VA UPS | ANNKE C1200 PoE, continuous | Pi 5 + Witty Pi 5 + G469 | Built, software configured, ready to deploy |
 
 ## Key Architecture
 
