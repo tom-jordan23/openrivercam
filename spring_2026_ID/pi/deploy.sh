@@ -306,9 +306,18 @@ _fix_overlay_file() {
         /etc/NetworkManager/system-connections/*.nmconnection)
             sudo chmod 600 "$dest"
             sudo chown root:root "$dest" ;;
+        /etc/udev/rules.d/*)
+            sudo chmod 644 "$dest"
+            sudo chown root:root "$dest" ;;
     esac
 
-    fixed "$dest"
+    # Verify the fix landed — promote from FAIL to FIXD
+    if sudo cmp -s "$src" "$dest"; then
+        FAIL=$((FAIL-1))
+        fixed "$dest"
+    else
+        fail "$dest (copy failed — still differs after fix)"
+    fi
 }
 
 run_overlay_files() {
@@ -362,8 +371,10 @@ run_overlay_files() {
             dest="${dest%|*}"
             _fix_overlay_file "$src" "$dest"
         done
-        # After file changes, reload systemd units
+        # After file changes, reload systemd units and udev rules
         sudo systemctl daemon-reload
+        sudo udevadm control --reload-rules
+        sudo udevadm trigger
     fi
 }
 
@@ -503,6 +514,8 @@ run_config_txt() {
 
     local lines=(
         "enable_uart=1:UART for rain gauge"
+        "dtoverlay=uart0:Explicit UART0 enable on GPIO 14/15"
+        "dtoverlay=disable-bt:Free UART0 from Bluetooth contention"
         "dtparam=i2c_arm=on:I2C for SHT40 sensor"
         "dtoverlay=w1-gpio:1-Wire for DS18B20 temperature probe (GPIO 4)"
         "usb_max_current_enable=1:USB current limit for Quectel modem"
@@ -556,6 +569,23 @@ run_config_txt() {
             warn "cmdline.txt not accessible (/boot/firmware not mounted) — cannot verify UAS quirk"
         else
             fail "cmdline.txt not found — cannot apply Samsung FIT UAS quirk"
+        fi
+    fi
+
+    # cmdline.txt — serial console must be disabled for rain gauge UART
+    # The kernel default console=serial0,115200 claims ttyAMA0 (GPIO 14/15)
+    # with 0600 root:root permissions, blocking the RG-15 rain gauge.
+    if [ -n "$cmdline_txt" ]; then
+        if grep -q "console=serial0" "$cmdline_txt"; then
+            if [ "$FIXING" -eq 1 ]; then
+                backup_file "$cmdline_txt"
+                sudo sed -i 's/console=serial0,[0-9]* //' "$cmdline_txt"
+                fixed "$cmdline_txt: serial console removed (frees ttyAMA0 for rain gauge — reboot required)"
+            else
+                fail "$cmdline_txt: console=serial0 present — blocks rain gauge access to ttyAMA0"
+            fi
+        else
+            pass "$cmdline_txt: serial console not present (ttyAMA0 free for rain gauge)"
         fi
     fi
 }
