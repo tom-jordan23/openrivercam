@@ -364,41 +364,39 @@ NOTES:
 
 ### Rain Gauge Not Reporting
 
+**First step:** Run `deploy.sh <site> --check` — it queries the RG-15 over UART
+and reports status. If the gauge responds in imperial units (inches), run
+`deploy.sh <site> --yes` to auto-fix to metric mode (stored in gauge EEPROM).
+
+If deploy.sh can't reach the gauge, use the manual flowchart below:
+
 ```
 START: No rain data
          │
          ▼
 ┌────────────────────────────┐
-│ Check UART device:         │
-│ ls /dev/ttyAMA0            │
-│ ls /dev/serial0            │
+│ Run deploy.sh <site>       │
+│ --check and look for       │
+│ RG-15 line in Hardware     │
 └───────────┬────────────────┘
             │
-     ┌──────┴──────┐
-     │             │
-  Not found     Found
-     │             │
-     ▼             ▼
-┌──────────────┐  ┌────────────────┐
-│ Check wiring │  │ Test serial:   │
-│ VCC: 12V     │  │ cat /dev/      │
-│ GND: Ground  │  │ ttyAMA0        │
-│ TX: GPIO 15  │  │ (tip bucket,   │
-│ RX: GPIO 14  │  │ watch output)  │
-└──────────────┘  └────────┬───────┘
-                           │
-                     ┌─────┴─────┐
-                     │           │
-                  No data     Data OK
-                     │           │
-                     ▼           ▼
-               ┌──────────┐  ┌────────────┐
-               │ Check    │  │ Check ORC  │
-               │ 12V pwr  │  │ rain gauge │
-               │ to RG-15 │  │ config     │
-               │ TX/RX    │  │            │
-               │ wiring   │  └────────────┘
-               └──────────┘
+    ┌───────┼────────┐
+    │       │        │
+  PASS    FAIL     WARN
+    │       │        │
+    ▼       ▼        ▼
+ Gauge   Imperial  No response
+ is OK   units     on ttyAMA0
+    │       │        │
+    ▼       ▼        ▼
+┌────────┐ ┌──────┐ ┌──────────────┐
+│ Check  │ │ Run  │ │ Check wiring │
+│ ORC    │ │ with │ │ VCC: 12V     │
+│ sensor │ │ --yes│ │ GND: Ground  │
+│ config │ │ flag │ │ TX: GPIO 15  │
+│        │ │      │ │ RX: GPIO 14  │
+└────────┘ └──────┘ │ Check 12V pwr│
+                    └──────────────┘
 ```
 
 **Sukabumi — Rain Data During Power Cycling:**

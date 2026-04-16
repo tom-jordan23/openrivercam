@@ -1133,6 +1133,52 @@ run_hardware() {
         warn "DS18B20 not detected on 1-Wire bus (check GPIO 4 + 4.7k pull-up)"
     fi
 
+    # RG-15 rain gauge on UART (ttyAMA0)
+    if [ -c /dev/ttyAMA0 ]; then
+        # Query gauge: send R, read response
+        local rg15_response=""
+        if command -v python3 >/dev/null 2>&1; then
+            rg15_response=$(python3 -c "
+import serial, time
+try:
+    ser = serial.Serial('/dev/ttyAMA0', 9600, timeout=3)
+    ser.reset_input_buffer()
+    ser.write(b'R\n')
+    time.sleep(0.5)
+    print(ser.read(256).decode('ascii', errors='replace').strip())
+    ser.close()
+except Exception as e:
+    print(f'ERROR:{e}')
+" 2>/dev/null || true)
+        fi
+
+        if [ -z "$rg15_response" ]; then
+            warn "RG-15: no response on /dev/ttyAMA0 (gauge not connected or pyserial missing)"
+        elif echo "$rg15_response" | grep -q "^ERROR:"; then
+            warn "RG-15: UART error — ${rg15_response#ERROR:}"
+        elif echo "$rg15_response" | grep -q " mm"; then
+            pass "RG-15 rain gauge responding in metric mode ($rg15_response)"
+        elif echo "$rg15_response" | grep -q " in"; then
+            if [ "$FIXING" -eq 1 ]; then
+                # Send M command to switch to metric (persists in EEPROM)
+                python3 -c "
+import serial, time
+ser = serial.Serial('/dev/ttyAMA0', 9600, timeout=3)
+ser.write(b'M\n')
+time.sleep(0.5)
+ser.close()
+" 2>/dev/null
+                fixed "RG-15: switched to metric mode (mm) — stored in gauge EEPROM"
+            else
+                fail "RG-15 responding in imperial units (inches) — need metric (mm)"
+            fi
+        else
+            warn "RG-15: unexpected response format: $rg15_response"
+        fi
+    else
+        warn "RG-15: /dev/ttyAMA0 not available (check UART config in config.txt)"
+    fi
+
     # Witty Pi 5 RTC drift (check only — fix is in run_witty_pi)
     # Skipped here if already covered in run_witty_pi
 
