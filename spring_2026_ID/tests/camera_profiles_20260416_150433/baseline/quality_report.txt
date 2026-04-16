@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "/home/pi/code/git/openrivercam/spring_2026_ID/camera/profiles/video_quality_test.py", line 67, in <module>
+    import cv2
+ModuleNotFoundError: No module named 'cv2'
