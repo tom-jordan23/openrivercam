@@ -403,6 +403,8 @@ run_directories() {
                 sudo mkdir -p "$d"
                 if [[ "$d" == /var/log/orc* ]]; then
                     sudo chown -R pi:pi /var/log/orc
+                elif [[ "$d" == /var/lib/orc-sensors ]]; then
+                    sudo chown pi:pi "$d"
                 fi
                 fixed "$d created"
             else
@@ -420,6 +422,18 @@ run_directories() {
             fixed "/var/log/orc ownership fixed (pi:pi)"
         else
             fail "/var/log/orc exists but not writable by pi"
+        fi
+    fi
+
+    # /var/lib/orc-sensors writable by pi (rg15_acc.txt lives here)
+    if [ -d /var/lib/orc-sensors ] && [ -w /var/lib/orc-sensors ]; then
+        pass "/var/lib/orc-sensors writable by pi"
+    elif [ -d /var/lib/orc-sensors ]; then
+        if [ "$FIXING" -eq 1 ]; then
+            sudo chown pi:pi /var/lib/orc-sensors
+            fixed "/var/lib/orc-sensors ownership fixed (pi:pi)"
+        else
+            fail "/var/lib/orc-sensors exists but not writable by pi (rg15 will fail)"
         fi
     fi
 
@@ -693,6 +707,23 @@ run_system_config() {
         else
             warn "/boot/firmware not in fstab (expected if 90-qemu.rules remaps mmcblk0)"
         fi
+    fi
+
+    # Getty autologin — disable leftover autologin from upstream image
+    # The stock image auto-logins as hcwinsemius which doesn't exist, causing
+    # a getty restart loop (~every 5s) that floods the journal.
+    local autologin_conf="/etc/systemd/system/getty@tty1.service.d/autologin.conf"
+    if [ -f "$autologin_conf" ]; then
+        if [ "$FIXING" -eq 1 ]; then
+            sudo rm -f "$autologin_conf"
+            sudo systemctl daemon-reload
+            sudo systemctl restart getty@tty1.service 2>/dev/null || true
+            fixed "Getty autologin disabled (removed $autologin_conf)"
+        else
+            fail "Getty autologin still enabled ($autologin_conf — causes login loop)"
+        fi
+    else
+        pass "Getty autologin disabled (no autologin.conf override)"
     fi
 
     # .bashrc MOTD block (MOTD_SHOWN guard)
