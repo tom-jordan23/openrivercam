@@ -352,13 +352,13 @@ SHT40 TEMPERATURE/HUMIDITY SENSOR (I2C):
 DS18B20 WATERPROOF TEMPERATURE PROBE (1-Wire):
 ┌────────────────────────────────────────────────────────────────────────────┐
 │                                                                            │
-│   3.3V ──[4.7kΩ]──┬── GPIO 4 (Pin 7, 1-Wire data)                        │
-│                    │                                                       │
-│                    │   ┌───────────────────────┐                           │
-│                    ├───│  DS18B20 Waterproof    │                           │
-│                    │   │  Temperature Probe     │                           │
-│                    │   │  (stainless, 1m cable) │                           │
-│   GND ─────────────┼───│                        │                           │
+│   3.3V (Pin 17) ──[4.7kΩ]──┬── GPIO 4 (Pin 7, 1-Wire data)               │
+│                             │                                              │
+│                             │   ┌───────────────────────┐                  │
+│                             ├───│  DS18B20 Waterproof    │                  │
+│                             │   │  Temperature Probe     │                  │
+│                             │   │  (stainless, 1m cable) │                  │
+│   GND (Pin 39) ─────────────┼───│                        │                  │
 │                    │   │  OUTSIDE enclosure     │                           │
 │                    │   │  (through PG9 gland)   │                           │
 │                    │   └───────────────────────┘                           │

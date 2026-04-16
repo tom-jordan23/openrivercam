@@ -801,9 +801,9 @@ domain.
 4. **DS18B20 waterproof temperature probe:**
    - Connect to Geekworm G469 (internal wiring only — probe routes outside
      through PG9 gland during enclosure step):
-     - Data -> GPIO 4 / Pin 7 (with 4.7k ohm pull-up to 3.3V)
-     - VCC -> 3.3V
-     - GND -> GND
+     - Data -> GPIO 4 / Pin 7 (with 4.7k ohm pull-up to 3.3V Pin 17)
+     - VCC -> 3.3V / Pin 17
+     - GND -> GND / Pin 39
 5. **WS2812B status LED:** Wire from Geekworm G469 to WS2812B NeoPixel:
      - 5V (Pin 2) -> WS2812B VDD
      - GND (Pin 14) -> WS2812B GND

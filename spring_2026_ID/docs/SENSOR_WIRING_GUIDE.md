@@ -11,8 +11,8 @@ Print and laminate for field reference.
 | Connection | Pin | Notes |
 |------------|-----|-------|
 | Data | GPIO 4 / Pin 7 | 1-Wire data line |
-| Power | 3V3 / Pin 1 | |
-| Ground | GND / Pin 6 | |
+| Power | 3V3 / Pin 17 | |
+| Ground | GND / Pin 39 | |
 
 - 4.7k ohm pull-up resistor between data (GPIO 4) and 3V3
 - Pull-up resistor mounts on Geekworm G469 terminals
@@ -20,14 +20,14 @@ Print and laminate for field reference.
 - Requires `dtoverlay=w1-gpio` in `/boot/firmware/config.txt`
 
 ```
-3V3 (Pin 1) ──[4.7kΩ]──┬── GPIO 4 (Pin 7)
-                         │
-                    ┌────┴────────────┐
-                    │  DS18B20 probe   │
-                    │  (stainless, 1m) │
-                    └────┬────────────┘
-                         │
-GND (Pin 6) ─────────────┘
+3V3 (Pin 17) ──[4.7kΩ]──┬── GPIO 4 (Pin 7)
+                          │
+                     ┌────┴────────────┐
+                     │  DS18B20 probe   │
+                     │  (stainless, 1m) │
+                     └────┬────────────┘
+                          │
+GND (Pin 39) ─────────────┘
 ```
 
 ---
@@ -62,7 +62,7 @@ Hydreon RG-15              Geekworm G469 / TB1
 
 | Sensor | Data Pin(s) | Power | Ground | Gland |
 |--------|------------|-------|--------|-------|
-| DS18B20 temp probe | GPIO 4 / Pin 7 (+ 4.7k pull-up to 3V3) | 3V3 / Pin 1 | GND / Pin 6 | PG9 |
+| DS18B20 temp probe | GPIO 4 / Pin 7 (+ 4.7k pull-up to 3V3) | 3V3 / Pin 17 | GND / Pin 39 | PG9 |
 | RG-15 rain gauge | GPIO 14 (TX) / Pin 8, GPIO 15 (RX) / Pin 10 | 12V (TB1) | GND (TB1) | PG9 |
 
 ---
