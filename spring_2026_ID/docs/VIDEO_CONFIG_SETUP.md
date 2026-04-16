@@ -91,23 +91,25 @@ length, and lens distortion must match the production captures.
    be visible in the camera frame.
 3. Clear the scene: no people, boats, vehicles, or waved markers.
 4. SSH into the Pi from the field laptop.
-5. Trigger one manual capture:
+5. Trigger one manual capture using the helper script:
    ```bash
-   sudo rm /run/orc-maintenance-mode       # temporarily lift the gate
-   orc-capture --dry-run                    # captures to /tmp, no ORC-OS delivery
-   sudo touch /run/orc-maintenance-mode     # restore the gate
+   orc-calibration-capture --label profile-a
    ```
+   The helper stops the 15-min capture timer, lifts the maintenance
+   gate, runs `orc-capture --dry-run`, files the output, then restores
+   both timer and gate state on exit. Output lands in
+   `/home/pi/calibration/<timestamp>_<label>.mp4`.
 6. Copy the MP4 off the Pi to the field laptop:
    ```bash
-   scp pi@<station>:/tmp/orc_capture_*.mp4 ./calibration.mp4
+   scp pi@<station>:/home/pi/calibration/*_profile-a.mp4 ./calibration.mp4
    ```
 7. Open the video on the laptop. Verify:
    - All GCP markers are clearly visible.
    - No motion blur on the markers.
    - Image is sharp across the full frame.
    - No people or obstructions.
-8. If anything is wrong, fix and repeat from step 3. Keep only the best
-   take.
+8. If anything is wrong, fix and rerun `orc-calibration-capture`. Keep
+   only the best take.
 
 > **Discovery note — bitrate may vary.** The quality gate minimum is
 > 12 Mbps, but actual delivered bitrate can be lower than the camera's

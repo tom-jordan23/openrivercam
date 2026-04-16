@@ -1,0 +1,141 @@
+#!/bin/bash
+# orc-calibration-capture — one-off capture for ORC-OS video-config authoring
+#
+# Produces a single clean video from the station's PoE camera in its
+# final mounted position. The output is intended for use as the
+# "calibration video" when creating a video configuration in the
+# ORC-OS web UI (see docs/VIDEO_CONFIG_SETUP.md).
+#
+# How it differs from orc-capture:
+#   - Stops orc-capture.timer temporarily so the 15-min scheduler does
+#     not interfere with the capture.
+#   - Lifts the maintenance-mode flag temporarily so orc-capture can run.
+#   - Delegates capture to `orc-capture --dry-run` — reuses the quality
+#     gate, ISAPI config enforcement, and relay logic rather than
+#     duplicating them.
+#   - Saves the resulting video to a named destination with a
+#     descriptive filename.
+#   - Restores maintenance mode and timer state on exit, even on error
+#     or SIGINT.
+#
+# Usage:
+#   orc-calibration-capture [--label LABEL] [--output-dir DIR]
+#
+# Examples:
+#   orc-calibration-capture --label profile-a
+#   orc-calibration-capture --label profile-b --output-dir /home/pi/calib
+#
+# Output filename:
+#   <output-dir>/<YYYYMMDDTHHMMSS>_<label>.<ext>   (if --label given)
+#   <output-dir>/<YYYYMMDDTHHMMSS>.<ext>           (otherwise)
+#
+# Defaults:
+#   --output-dir  /home/pi/calibration
+
+set -o pipefail
+
+LABEL=""
+OUTPUT_DIR="/home/pi/calibration"
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --label)       LABEL="$2"; shift 2 ;;
+        --output-dir)  OUTPUT_DIR="$2"; shift 2 ;;
+        -h|--help)
+            sed -n '2,33p' "$0" | sed 's/^# \?//'
+            exit 0
+            ;;
+        *)
+            echo "Unknown argument: $1" >&2
+            echo "Run with --help for usage." >&2
+            exit 2
+            ;;
+    esac
+done
+
+LOG_PREFIX="[orc-calibration-capture]"
+log() { echo "$(date '+%Y-%m-%d %H:%M:%S') $LOG_PREFIX $*"; }
+err() { echo "$(date '+%Y-%m-%d %H:%M:%S') $LOG_PREFIX ERROR: $*" >&2; }
+
+# ─── State we may need to restore on exit ──────────────────────────
+MAINT_WAS_ON=0
+TIMER_WAS_ACTIVE=0
+
+restore_state() {
+    local rc=$?
+    if [ "$TIMER_WAS_ACTIVE" -eq 1 ]; then
+        log "Restoring orc-capture.timer"
+        sudo systemctl start orc-capture.timer 2>/dev/null || \
+            err "Failed to restart orc-capture.timer — check manually"
+    fi
+    if [ "$MAINT_WAS_ON" -eq 1 ]; then
+        log "Restoring maintenance-mode flag"
+        sudo touch /run/orc-maintenance-mode || \
+            err "Failed to restore maintenance flag — recreate manually"
+    fi
+    exit "$rc"
+}
+trap restore_state EXIT INT TERM
+
+# ─── Sanity checks ─────────────────────────────────────────────────
+if ! command -v orc-capture >/dev/null 2>&1; then
+    err "orc-capture not found on PATH"
+    exit 1
+fi
+
+# ─── Suspend timer + lift maintenance gate ─────────────────────────
+if systemctl is-active --quiet orc-capture.timer; then
+    TIMER_WAS_ACTIVE=1
+    log "Stopping orc-capture.timer"
+    sudo systemctl stop orc-capture.timer
+fi
+
+if [ -f /run/orc-maintenance-mode ]; then
+    MAINT_WAS_ON=1
+    log "Maintenance mode is ON — lifting temporarily"
+    sudo rm -f /run/orc-maintenance-mode
+fi
+
+# ─── Prepare destination ──────────────────────────────────────────
+mkdir -p "$OUTPUT_DIR"
+
+# Clear stale /tmp captures so we can unambiguously identify our output
+rm -f /tmp/orc_capture_*
+
+# ─── Run capture ───────────────────────────────────────────────────
+log "Starting calibration capture via orc-capture --dry-run"
+log "(scene should be clear of people/boats; GCP markers should be visible)"
+if ! orc-capture --dry-run; then
+    err "orc-capture failed — see output above"
+    exit 1
+fi
+
+# ─── Locate and file the result ────────────────────────────────────
+CAPTURED=$(ls -1t /tmp/orc_capture_* 2>/dev/null | head -n1)
+if [ -z "$CAPTURED" ]; then
+    err "No /tmp/orc_capture_* file found after capture"
+    exit 1
+fi
+
+EXT="${CAPTURED##*.}"
+TS=$(date '+%Y%m%dT%H%M%S')
+if [ -n "$LABEL" ]; then
+    DEST="${OUTPUT_DIR}/${TS}_${LABEL}.${EXT}"
+else
+    DEST="${OUTPUT_DIR}/${TS}.${EXT}"
+fi
+
+cp "$CAPTURED" "$DEST"
+log "Saved calibration video: $DEST"
+
+# ─── Report video properties ───────────────────────────────────────
+if command -v ffprobe >/dev/null 2>&1; then
+    log "Video properties (for your records):"
+    ffprobe -v error \
+        -show_entries stream=codec_name,width,height,r_frame_rate,bit_rate \
+        -show_entries format=duration,bit_rate,size \
+        -of default=noprint_wrappers=1 "$DEST" 2>/dev/null | sed 's/^/  /'
+fi
+
+log "Next: scp this file to your laptop and proceed with Phase 4 in"
+log "docs/VIDEO_CONFIG_SETUP.md (upload to ORC-OS web UI)."
