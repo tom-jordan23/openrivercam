@@ -12,7 +12,9 @@ import json
 import os
 import sys
 import textwrap
-from datetime import datetime
+import time
+import uuid
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 try:
@@ -39,7 +41,11 @@ DEFAULT_PROFILE_DIR = Path.home() / "camera_profiles"
 PROFILE_DIR = None
 
 HIK_NS = "http://www.hikvision.com/ver20/XMLSchema"
-ET.register_namespace("", HIK_NS)
+STD_NS = "http://www.std-cgi.com/ver20/XMLSchema"
+# The ANNKE C1200 (Hikvision G6 OEM) uses the std-cgi namespace in its XML.
+# Register it as the default so ElementTree serializes elements without a
+# prefix — the camera silently ignores elements with ns0: prefixed names.
+ET.register_namespace("", STD_NS)
 
 ENDPOINTS = {
     "streaming_101":    "/ISAPI/Streaming/channels/101",
@@ -161,6 +167,15 @@ def isapi_put(session, base_url: str, path: str, xml_body: str, timeout: int) ->
     url = f"{base_url}{path}"
     headers = {"Content-Type": "application/xml"}
     resp = session.put(url, data=xml_body, headers=headers, timeout=timeout)
+    resp.raise_for_status()
+    return resp
+
+
+def isapi_post(session, base_url: str, path: str, xml_body: str, timeout: int) -> requests.Response:
+    """POST XML to an ISAPI endpoint."""
+    url = f"{base_url}{path}"
+    headers = {"Content-Type": "application/xml"}
+    resp = session.post(url, data=xml_body, headers=headers, timeout=timeout)
     resp.raise_for_status()
     return resp
 
@@ -366,7 +381,16 @@ def cmd_push(args):
     """Upload local XML configs to camera."""
     camera = get_camera(args.camera_name)
     password = get_password(args)
-    endpoints = resolve_endpoints(args.endpoints)
+
+    # --config overrides: push a specific file as streaming_101
+    config_override = None
+    if getattr(args, "config", None):
+        config_override = Path(args.config).expanduser().resolve()
+        if not config_override.is_file():
+            sys.exit(f"Error: config file not found: {config_override}")
+        endpoints = ["streaming_101"]
+    else:
+        endpoints = resolve_endpoints(args.endpoints)
 
     if not args.dry_run:
         session, base_url = make_session(camera, password, args.timeout)
@@ -377,7 +401,7 @@ def cmd_push(args):
 
     # Auto-backup live config before pushing
     if not args.dry_run and not args.no_backup:
-        pushable = [ep for ep in endpoints if resolve_config_path(camera, ep) is not None]
+        pushable = [ep for ep in endpoints if config_override or resolve_config_path(camera, ep) is not None]
         if pushable:
             backup_dir = backup_live_config(
                 session, base_url, args.camera_name, camera,
@@ -388,7 +412,7 @@ def cmd_push(args):
     errors = 0
     skipped = 0
     for ep in endpoints:
-        config_path = resolve_config_path(camera, ep)
+        config_path = config_override if config_override else resolve_config_path(camera, ep)
         if config_path is None:
             if args.verbose:
                 print(f"  {ep}: skipped (no config file)")
@@ -396,7 +420,10 @@ def cmd_push(args):
             continue
 
         isapi_path = ENDPOINTS[ep]
-        source = config_path.relative_to(PROFILE_DIR)
+        try:
+            source = config_path.relative_to(PROFILE_DIR)
+        except ValueError:
+            source = config_path
 
         try:
             root = parse_xml(config_path.read_text())
@@ -539,6 +566,298 @@ def cmd_verify(args):
 
 
 # ---------------------------------------------------------------------------
+# SD Card Recording
+# ---------------------------------------------------------------------------
+
+def cmd_storage(args):
+    """Check camera SD card status."""
+    camera = get_camera(args.camera_name)
+    password = get_password(args)
+    session, base_url = make_session(camera, password, args.timeout)
+
+    print(f"Storage: {args.camera_name} ({camera['host']})")
+
+    try:
+        resp = isapi_get(session, base_url, "/ISAPI/ContentMgmt/Storage", args.timeout)
+    except requests.exceptions.ConnectionError:
+        sys.exit(f"  ERROR: Cannot connect to {camera['host']} — camera offline or unreachable")
+    except requests.exceptions.HTTPError as e:
+        status = e.response.status_code if e.response is not None else "unknown"
+        sys.exit(f"  ERROR: HTTP {status} — ContentMgmt/Storage may not be supported")
+
+    root = parse_xml(resp.text)
+
+    # Find HDD/SD entries (Hikvision uses <hdd> elements for all storage)
+    for hdd in root.iter():
+        tag = hdd.tag.split("}")[-1] if "}" in hdd.tag else hdd.tag
+        if tag != "hdd":
+            continue
+
+        hdd_id = ""
+        hdd_name = ""
+        status_text = ""
+        capacity_mb = 0
+        free_mb = 0
+        hdd_type = ""
+
+        for child in hdd:
+            ctag = child.tag.split("}")[-1] if "}" in child.tag else child.tag
+            if ctag == "id":
+                hdd_id = child.text or ""
+            elif ctag == "hddName":
+                hdd_name = child.text or ""
+            elif ctag == "status":
+                status_text = child.text or ""
+            elif ctag == "capacity":
+                capacity_mb = int(child.text or 0)
+            elif ctag == "freeSpace":
+                free_mb = int(child.text or 0)
+            elif ctag == "property":
+                hdd_type = child.text or ""
+
+        if not hdd_id:
+            continue
+
+        capacity_gb = capacity_mb / 1024
+        free_gb = free_mb / 1024
+        pct = (free_mb / capacity_mb * 100) if capacity_mb else 0
+
+        print(f"  [{hdd_id}] {hdd_name or 'SD Card'} ({hdd_type})")
+        print(f"       Status:   {status_text}")
+        print(f"       Capacity: {capacity_gb:.1f} GB")
+        print(f"       Free:     {free_gb:.1f} GB ({pct:.0f}%)")
+
+
+def _build_search_xml(track: str, start_time: datetime, end_time: datetime) -> str:
+    """Build CMSearchDescription XML for finding recorded files."""
+    search_id = str(uuid.uuid4())
+    # Format times as ISO 8601 with Z suffix (UTC)
+    start_str = start_time.strftime("%Y-%m-%dT%H:%M:%SZ")
+    end_str = end_time.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    return f"""<?xml version="1.0" encoding="utf-8"?>
+<CMSearchDescription>
+  <searchID>{search_id}</searchID>
+  <trackList>
+    <trackID>{track}</trackID>
+  </trackList>
+  <timeSpanList>
+    <timeSpan>
+      <startTime>{start_str}</startTime>
+      <endTime>{end_str}</endTime>
+    </timeSpan>
+  </timeSpanList>
+  <maxResults>40</maxResults>
+  <searchResultPostion>0</searchResultPostion>
+  <metadataList>
+    <metadataDescriptor>//recordType.meta.std-cgi.com</metadataDescriptor>
+  </metadataList>
+</CMSearchDescription>"""
+
+
+def _parse_search_results(response_text: str) -> str | None:
+    """Parse CMSearchResult XML, return playbackURI of the most recent manual recording.
+
+    The camera interleaves 'manual' recordings (our triggered captures) with
+    'timing' recordings (continuous schedule). We filter for manual only.
+    """
+    root = parse_xml(response_text)
+
+    # Check numOfMatches
+    for elem in root.iter():
+        tag = elem.tag.split("}")[-1] if "}" in elem.tag else elem.tag
+        if tag == "numOfMatches" and elem.text == "0":
+            return None
+
+    # Walk searchMatchItem elements, collect manual recording URIs
+    uris = []
+    for item in root.iter():
+        tag = item.tag.split("}")[-1] if "}" in item.tag else item.tag
+        if tag != "searchMatchItem":
+            continue
+
+        # Check if this is a manual recording
+        is_manual = False
+        uri = None
+        for child in item.iter():
+            ctag = child.tag.split("}")[-1] if "}" in child.tag else child.tag
+            if ctag == "metadataDescriptor" and child.text and "manual" in child.text:
+                is_manual = True
+            if ctag == "playbackURI" and child.text:
+                uri = child.text.strip()
+
+        if is_manual and uri:
+            uris.append(uri)
+
+    if not uris:
+        return None
+
+    # Return the last manual recording (most recent)
+    return uris[-1]
+
+
+def _parse_playback_duration(playback_uri: str) -> int | None:
+    """Extract recording duration in seconds from a Hikvision playback URI.
+
+    URI format: rtsp://host/Streaming/tracks/101/?starttime=20260416T140102Z&endtime=20260416T140110Z&...
+    """
+    try:
+        from urllib.parse import urlparse, parse_qs
+        parsed = urlparse(playback_uri)
+        params = parse_qs(parsed.query)
+        start_str = params.get("starttime", [None])[0]
+        end_str = params.get("endtime", [None])[0]
+        if start_str and end_str:
+            fmt = "%Y%m%dT%H%M%SZ"
+            start = datetime.strptime(start_str, fmt)
+            end = datetime.strptime(end_str, fmt)
+            return max(1, int((end - start).total_seconds()))
+    except Exception:
+        pass
+    return None
+
+
+def _download_recording(camera: dict, password: str, playback_uri: str,
+                         output_path: Path, timeout: int, verbose: bool):
+    """Download a recording from the camera via RTSP playback.
+
+    The ANNKE C1200 (Hikvision G6 OEM) does not support the HTTP
+    ContentMgmt/download endpoint. Instead we use RTSP playback with
+    ffmpeg codec-copy, which is the standard fallback used by HikLoad
+    (--ffmpeg mode). The recorded data is remuxed without re-encoding,
+    so the original SD card quality is preserved byte-for-byte.
+    """
+    import subprocess
+
+    user = camera["username"]
+    # Inject credentials into the RTSP playback URI
+    auth_uri = playback_uri.replace("rtsp://", f"rtsp://{user}:{password}@", 1)
+
+    # Parse clip duration from URI for ffmpeg -t flag and process timeout.
+    # Without -t, ffmpeg hangs waiting for more data after the clip ends
+    # because some cameras don't cleanly signal end-of-stream.
+    clip_duration = _parse_playback_duration(playback_uri) or 10
+    ffmpeg_t = clip_duration + 5  # margin for camera clock skew
+    process_timeout = ffmpeg_t + 15  # margin for connection setup
+
+    cmd = [
+        "ffmpeg", "-y", "-hide_banner", "-loglevel", "warning",
+        "-rtsp_transport", "tcp",
+        "-i", auth_uri,
+        "-t", str(ffmpeg_t),
+        "-c", "copy", "-an",
+        "-f", "mp4",
+        str(output_path),
+    ]
+
+    if verbose:
+        print(f"  RTSP playback: {clip_duration}s clip, ffmpeg timeout {process_timeout}s")
+
+    result = subprocess.run(cmd, capture_output=True, text=True,
+                            timeout=process_timeout)
+    if result.returncode != 0:
+        stderr = result.stderr.strip()
+        raise RuntimeError(f"ffmpeg failed (exit {result.returncode}): {stderr}")
+
+    if not output_path.exists() or output_path.stat().st_size == 0:
+        raise RuntimeError("ffmpeg produced no output file")
+
+    return output_path.stat().st_size
+
+
+def cmd_record(args):
+    """Record video to camera SD card and download the file."""
+    camera = get_camera(args.camera_name)
+    password = get_password(args)
+    timeout = max(args.timeout, 60)
+    session, base_url = make_session(camera, password, timeout)
+    track = args.track
+    duration = args.duration
+
+    # Resolve output path
+    if args.output:
+        output_path = Path(args.output).expanduser().resolve()
+    else:
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        output_path = Path.cwd() / f"{args.camera_name}_{ts}.mp4"
+
+    # Check storage (warn only, don't block)
+    try:
+        resp = isapi_get(session, base_url, "/ISAPI/ContentMgmt/Storage", timeout)
+        storage_ok = "ok" in resp.text.lower()
+        if not storage_ok:
+            print("  WARNING: SD card status may not be OK — proceeding anyway",
+                  file=sys.stderr)
+    except Exception:
+        print("  WARNING: Could not check storage status", file=sys.stderr)
+
+    # Record start time (UTC, with buffer for clock skew)
+    start_time = datetime.now(timezone.utc)
+
+    # Start recording
+    start_path = f"/ISAPI/ContentMgmt/record/control/manual/start/tracks/{track}"
+    try:
+        isapi_put(session, base_url, start_path, "", timeout)
+    except requests.exceptions.HTTPError as e:
+        # May already be recording — try stop then start
+        if e.response is not None and e.response.status_code in (400, 409):
+            if args.verbose:
+                print("  Previous recording active — stopping first")
+            stop_path = f"/ISAPI/ContentMgmt/record/control/manual/stop/tracks/{track}"
+            try:
+                isapi_put(session, base_url, stop_path, "", timeout)
+                time.sleep(1)
+            except Exception:
+                pass
+            isapi_put(session, base_url, start_path, "", timeout)
+        else:
+            raise
+
+    print(f"Recording {duration}s on track {track}...")
+
+    # Wait for capture duration
+    time.sleep(duration)
+
+    # Stop recording
+    stop_path = f"/ISAPI/ContentMgmt/record/control/manual/stop/tracks/{track}"
+    isapi_put(session, base_url, stop_path, "", timeout)
+    end_time = datetime.now(timezone.utc)
+
+    if args.verbose:
+        print(f"  Recording stopped ({duration}s)")
+
+    # Brief pause for camera to finalize the file
+    time.sleep(2)
+
+    # Search for the recorded file (5s buffer each side for clock skew)
+    search_start = start_time - timedelta(seconds=5)
+    search_end = end_time + timedelta(seconds=5)
+    search_xml = _build_search_xml(track, search_start, search_end)
+
+    if args.verbose:
+        print(f"  Searching: {search_start.strftime('%H:%M:%S')} — {search_end.strftime('%H:%M:%S')} UTC")
+
+    resp = isapi_post(session, base_url, "/ISAPI/ContentMgmt/search",
+                      search_xml, timeout)
+
+    playback_uri = _parse_search_results(resp.text)
+    if not playback_uri:
+        print(f"\nSearch response:\n{resp.text[:500]}", file=sys.stderr)
+        sys.exit("Error: No recording found in search results. Check camera clock (NTP).")
+
+    if args.verbose:
+        print(f"  Found: {playback_uri[:80]}...")
+
+    # Download via RTSP playback (ffmpeg codec-copy)
+    print("Downloading...", end="", flush=True)
+    total = _download_recording(camera, password, playback_uri,
+                                output_path, timeout, args.verbose)
+
+    size_mb = total / (1024 * 1024)
+    print(f" {size_mb:.1f} MB → {output_path}")
+
+
+# ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
 
@@ -554,7 +873,10 @@ def build_parser() -> argparse.ArgumentParser:
               %(prog)s pull jakarta-cam1 streaming_101 image
               %(prog)s diff sukabumi-cam1
               %(prog)s push jakarta-cam1 overlays --dry-run
+              %(prog)s push sukabumi-cam1 --config profiles/profile-a/streaming_101.xml
               %(prog)s verify sukabumi-cam1
+              %(prog)s storage sukabumi-cam1
+              %(prog)s record sukabumi-cam1 --duration 5 -o capture.mp4
 
             endpoints:
               """ + ", ".join(sorted(ENDPOINTS.keys()))
@@ -596,6 +918,8 @@ def build_parser() -> argparse.ArgumentParser:
     p_push = sub.add_parser("push", help="Upload XML files to camera")
     p_push.add_argument("camera_name", help="Camera name from cameras.json")
     p_push.add_argument("endpoints", nargs="*", help="Specific endpoints (default: all)")
+    p_push.add_argument("--config", metavar="FILE",
+                        help="Push a specific XML file as streaming_101 (overrides layered lookup)")
     p_push.add_argument("--no-backup", action="store_true",
                         help="Skip automatic pre-push backup of live config")
 
@@ -608,6 +932,20 @@ def build_parser() -> argparse.ArgumentParser:
     p_verify = sub.add_parser("verify", help="Check config drift (exit 0=match, 1=drift, 2=error)")
     p_verify.add_argument("camera_name", help="Camera name from cameras.json")
     p_verify.add_argument("endpoints", nargs="*", help="Specific endpoints (default: all)")
+
+    # storage
+    p_storage = sub.add_parser("storage", help="Check SD card status")
+    p_storage.add_argument("camera_name", help="Camera name from cameras.json")
+
+    # record
+    p_record = sub.add_parser("record", help="Record video to SD card and download")
+    p_record.add_argument("camera_name", help="Camera name from cameras.json")
+    p_record.add_argument("--duration", type=int, default=5, metavar="SEC",
+                          help="Recording duration in seconds (default: 5)")
+    p_record.add_argument("--output", "-o", metavar="FILE",
+                          help="Output file path (default: ./<camera>_<timestamp>.mp4)")
+    p_record.add_argument("--track", default="101",
+                          help="ISAPI track ID (default: 101)")
 
     return parser
 
@@ -638,6 +976,8 @@ def main():
         "push": cmd_push,
         "diff": cmd_diff,
         "verify": cmd_verify,
+        "storage": cmd_storage,
+        "record": cmd_record,
     }
 
     commands[args.command](args)

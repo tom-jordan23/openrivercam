@@ -1,15 +1,14 @@
 <?xml version='1.0' encoding='utf-8'?>
 <!--
-  Profile A: Higher bitrate ceiling
-  Goal: Push RTSP-delivered bitrate above 15 Mbps floor
+  Profile A: Optimized GOP structure
+  Goal: Improve pattern tracking with shorter key frame intervals and
+  minimal bitrate smoothing, at the camera's maximum 16 Mbps CBR.
   Changes from baseline:
-    - constantBitRate: 16384 → 20480 (20 Mbps)
-    - maxFrameRate: 1250 (12.5 fps — matches actual RTSP delivery)
-    - GovLength: 13 (key frame every ~1 sec at 12.5 fps)
-    - smoothing: 1 (minimize bitrate smoothing — let it peak)
-  Rationale: Camera can encode 20 Mbps easily. If RTSP can deliver it,
-  the floor rises from ~12 to ~15+ Mbps. Key frames every second improve
-  pattern tracking start-of-GOP quality.
+    - GovLength: 50 → 13 (key frame every ~1 sec at 12.5 fps)
+    - smoothing: 50 → 1 (minimize bitrate smoothing — let it peak)
+  Rationale: Key frames every second improve pattern tracking start-of-GOP
+  quality. Low smoothing allows the encoder to allocate more bits to complex
+  frames. Bitrate stays at 16384 (camera firmware max on ANNKE C1200).
 -->
 <ns0:StreamingChannel xmlns:ns0="http://www.std-cgi.com/ver20/XMLSchema" version="2.0">
   <ns0:id>101</ns0:id>
@@ -54,7 +53,7 @@
     <ns0:videoResolutionWidth>1920</ns0:videoResolutionWidth>
     <ns0:videoResolutionHeight>1080</ns0:videoResolutionHeight>
     <ns0:videoQualityControlType>CBR</ns0:videoQualityControlType>
-    <ns0:constantBitRate>20480</ns0:constantBitRate>
+    <ns0:constantBitRate>16384</ns0:constantBitRate>
     <ns0:fixedQuality>60</ns0:fixedQuality>
     <ns0:maxFrameRate>1250</ns0:maxFrameRate>
     <ns0:keyFrameInterval>1000</ns0:keyFrameInterval>

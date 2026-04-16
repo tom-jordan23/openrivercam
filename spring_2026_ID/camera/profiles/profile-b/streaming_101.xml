@@ -1,18 +1,15 @@
 <?xml version='1.0' encoding='utf-8'?>
 <!--
   Profile B: More bits per pixel at lower resolution
-  Goal: Maximum texture quality — 20 Mbps into fewer pixels = best possible
+  Goal: Maximum texture quality — 16 Mbps into fewer pixels = best possible
   compression quality per pixel for water surface pattern detection
   Changes from baseline:
     - videoResolutionWidth: 1920 → 1280
     - videoResolutionHeight: 1080 → 720
-    - constantBitRate: 16384 → 20480 (20 Mbps target)
-    - maxFrameRate: 1250 (12.5 fps)
     - GovLength: 13 (key frame every ~1 sec)
     - smoothing: 1
-  Rationale: 720p has 2.25x fewer pixels than 1080p. At 20 Mbps, the encoder
-  has ~4.5x more bits per pixel than baseline (1080p@16Mbps). This is the
-  maximum quality option for surface texture preservation.
+  Rationale: 720p has 2.25x fewer pixels than 1080p. At 16 Mbps (camera max),
+  the encoder has ~2.25x more bits per pixel than baseline (1080p@16Mbps).
   Trades spatial resolution for compression quality. ORC can work at 720p
   if the camera-to-river distance provides sufficient pixel coverage.
   IMPORTANT: orc-capture quality gate needs EXPECTED_WIDTH=1280,
@@ -61,7 +58,7 @@
     <ns0:videoResolutionWidth>1280</ns0:videoResolutionWidth>
     <ns0:videoResolutionHeight>720</ns0:videoResolutionHeight>
     <ns0:videoQualityControlType>CBR</ns0:videoQualityControlType>
-    <ns0:constantBitRate>20480</ns0:constantBitRate>
+    <ns0:constantBitRate>16384</ns0:constantBitRate>
     <ns0:fixedQuality>60</ns0:fixedQuality>
     <ns0:maxFrameRate>1250</ns0:maxFrameRate>
     <ns0:keyFrameInterval>1000</ns0:keyFrameInterval>

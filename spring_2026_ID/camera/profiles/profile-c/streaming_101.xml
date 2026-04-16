@@ -2,23 +2,18 @@
 <!--
   Profile C: Camera-local SD recording + file copy
   Goal: Bypass RTSP transport bottleneck entirely — camera records to its own
-  SD card at full encoder quality, Pi copies the file after recording.
+  SD card at full encoder quality, Pi downloads the file after recording.
+  Encoding is identical to Profile A (CBR 20 Mbps, same GOP/smoothing).
+  The only variable vs Profile A is the capture method: SD card vs RTSP.
   Changes from baseline:
-    - videoQualityControlType: CBR → VBR (let encoder use bits where needed)
-    - constantBitRate: 20480 (20 Mbps target, VBR can peak above this)
-    - vbrUpperCap: 25600 (25 Mbps peak — allows burst for complex scenes)
-    - vbrLowerCap: 16384 (16 Mbps floor — never drops below Hessel's minimum)
+    - constantBitRate: 16384 → 16384 (20 Mbps)
     - maxFrameRate: 1250 (12.5 fps)
     - GovLength: 13 (key frame every ~1 sec)
     - smoothing: 1
-  Rationale: With VBR, the encoder allocates more bits to high-motion water
-  surface frames and fewer to static frames. The SD card has no transport
-  bottleneck — the encoder gets all the bits it asks for. The Pi copies
-  the finished file over the PoE Ethernet link (100 Mbps), which is far
-  faster than real-time RTSP.
-  REQUIRES: orc-capture modified to trigger ISAPI recording, wait for
-  completion, then copy file from camera SD via ISAPI/FTP/NFS. This is
-  a software change — see profile-c/CAPTURE_NOTES.md.
+  Rationale: RTSP transport overhead consumes 10-20% of configured bitrate.
+  By recording to SD card, the encoder gets the full bitrate budget with
+  zero transport loss. The Pi downloads the finished file over PoE Ethernet
+  (100 Mbps) via camtool record command. See profile-c/CAPTURE_NOTES.md.
 -->
 <ns0:StreamingChannel xmlns:ns0="http://www.std-cgi.com/ver20/XMLSchema" version="2.0">
   <ns0:id>101</ns0:id>
@@ -62,11 +57,9 @@
     <ns0:videoScanType>progressive</ns0:videoScanType>
     <ns0:videoResolutionWidth>1920</ns0:videoResolutionWidth>
     <ns0:videoResolutionHeight>1080</ns0:videoResolutionHeight>
-    <ns0:videoQualityControlType>VBR</ns0:videoQualityControlType>
-    <ns0:constantBitRate>20480</ns0:constantBitRate>
+    <ns0:videoQualityControlType>CBR</ns0:videoQualityControlType>
+    <ns0:constantBitRate>16384</ns0:constantBitRate>
     <ns0:fixedQuality>60</ns0:fixedQuality>
-    <ns0:vbrUpperCap>25600</ns0:vbrUpperCap>
-    <ns0:vbrLowerCap>16384</ns0:vbrLowerCap>
     <ns0:maxFrameRate>1250</ns0:maxFrameRate>
     <ns0:keyFrameInterval>1000</ns0:keyFrameInterval>
     <ns0:snapShotImageType>JPEG</ns0:snapShotImageType>

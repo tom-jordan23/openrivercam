@@ -47,15 +47,17 @@ DRY_RUN=0
 PROFILES_TO_TEST="baseline,a,b"
 CAMERA_NAME=""  # auto-detect from hostname
 SETTLE_TIME=15  # seconds to wait after profile push for camera to adjust
+MIN_BITRATE=""  # override orc-capture MIN_BITRATE_KBPS (e.g., for bench testing)
 
 # ─── Parse arguments ─────────────────────────────────────────────
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --profiles)   PROFILES_TO_TEST="$2"; shift 2 ;;
-        --captures)   NUM_CAPTURES="$2"; shift 2 ;;
-        --roi)        ROI="$2"; shift 2 ;;
-        --camera)     CAMERA_NAME="$2"; shift 2 ;;
-        --dry-run)    DRY_RUN=1; shift ;;
+        --profiles)     PROFILES_TO_TEST="$2"; shift 2 ;;
+        --captures)     NUM_CAPTURES="$2"; shift 2 ;;
+        --roi)          ROI="$2"; shift 2 ;;
+        --camera)       CAMERA_NAME="$2"; shift 2 ;;
+        --min-bitrate)  MIN_BITRATE="$2"; shift 2 ;;
+        --dry-run)      DRY_RUN=1; shift ;;
         --help|-h)
             sed -n '2,/^$/p' "$0" | sed 's/^# \?//'
             exit 0
@@ -70,9 +72,10 @@ if [ -z "$CAMERA_NAME" ]; then
     CAMERA_NAME="${STATION}-cam1"
 fi
 
-# Python — prefer venv if available
+# Python — prefer venv if available (profiles venv > docs venv > system)
 PY="python3"
 [ -x "$DOCS_VENV/bin/python3" ] && PY="$DOCS_VENV/bin/python3"
+[ -x "$SCRIPT_DIR/.venv/bin/python3" ] && PY="$SCRIPT_DIR/.venv/bin/python3"
 
 # ─── Helpers ─────────────────────────────────────────────────────
 log()  { echo "$(date '+%H:%M:%S') [profile-test] $1"; }
@@ -102,7 +105,7 @@ PROFILE_DESCRIPTIONS=(
     [baseline]="Baseline: 1080p, 16 Mbps CBR, H.264"
     [a]="Profile A: 1080p, 20 Mbps CBR, H.264, shorter GOP"
     [b]="Profile B: 720p, 20 Mbps CBR, H.264 (max bits/pixel)"
-    [c]="Profile C: 1080p, 20 Mbps VBR, H.264 (for local SD recording)"
+    [c]="Profile C: 1080p, 20 Mbps CBR, H.264 (SD card recording — bypasses RTSP)"
     [e]="Profile E: 1080p, 12 Mbps CBR, H.265 (~20 Mbps H.264 equivalent)"
 )
 
@@ -110,6 +113,12 @@ declare -A PROFILE_CAPTURE_OVERRIDES
 # Profile B needs different quality gate resolution
 PROFILE_CAPTURE_OVERRIDES=(
     [b]="EXPECTED_WIDTH=1280 EXPECTED_HEIGHT=720"
+)
+
+declare -A PROFILE_CAPTURE_METHOD
+# Profile C records to camera SD card instead of RTSP pull
+PROFILE_CAPTURE_METHOD=(
+    [c]="sdcard"
 )
 
 # ─── Validation ──────────────────────────────────────────────────
@@ -120,6 +129,7 @@ log "Profiles: $PROFILES_TO_TEST"
 log "Captures per profile: $NUM_CAPTURES"
 log "Output: $OUTPUT_DIR"
 [ -n "$ROI" ] && log "ROI: $ROI"
+[ -n "$MIN_BITRATE" ] && log "Min bitrate override: ${MIN_BITRATE} kbps"
 echo ""
 
 # Check dependencies
@@ -160,7 +170,7 @@ for profile in "${PROFILES[@]}"; do
 
     # Push camera config
     log "Pushing config: $(basename "$config")"
-    run python3 "$CAMTOOL" push "$CAMERA_NAME" --config "$config" 2>/dev/null || {
+    run "$PY" "$CAMTOOL" --profile-dir "$CAMERA_DIR" push "$CAMERA_NAME" --config "$config" 2>/dev/null || {
         err "Failed to push config for profile $profile"
         continue
     }
@@ -171,22 +181,42 @@ for profile in "${PROFILES[@]}"; do
 
     # Capture videos
     overrides="${PROFILE_CAPTURE_OVERRIDES[$profile]:-}"
+    capture_method="${PROFILE_CAPTURE_METHOD[$profile]:-rtsp}"
     for i in $(seq 1 "$NUM_CAPTURES"); do
-        log "  Capture $i/$NUM_CAPTURES"
+        log "  Capture $i/$NUM_CAPTURES (method: $capture_method)"
         if [ "$DRY_RUN" -eq 0 ]; then
-            # Run orc-capture with any resolution overrides
-            if [ -n "$overrides" ]; then
-                env $overrides "$ORC_CAPTURE" --skip-relay --dry-run 2>&1 | tail -1
+            if [ "$capture_method" = "sdcard" ]; then
+                # SD card recording via camtool record
+                output_file="$profile_dir/capture_$(printf '%03d' "$i").mp4"
+                "$PY" "$CAMTOOL" --profile-dir "$CAMERA_DIR" \
+                    record "$CAMERA_NAME" \
+                    --duration 5 \
+                    --output "$output_file" \
+                    --timeout 60 || {
+                    err "  SD card capture failed"
+                }
             else
-                "$ORC_CAPTURE" --skip-relay --dry-run 2>&1 | tail -1
-            fi
+                # RTSP capture via orc-capture
+                # Build a per-profile temp config that applies all overrides.
+                # We can't use env vars because orc-capture.conf overwrites them.
+                capture_conf="/tmp/orc-capture-test-${profile}-$$.conf"
+                cp /etc/orc-capture.conf "$capture_conf"
+                [ -n "$MIN_BITRATE" ] && sed -i "s/^MIN_BITRATE_KBPS=.*/MIN_BITRATE_KBPS=$MIN_BITRATE/" "$capture_conf"
+                # Apply per-profile overrides (e.g., EXPECTED_WIDTH=1280)
+                for kv in $overrides; do
+                    key="${kv%%=*}"
+                    val="${kv#*=}"
+                    sed -i "s/^${key}=.*/${key}=${val}/" "$capture_conf"
+                done
+                ORC_CAPTURE_CONF="$capture_conf" "$ORC_CAPTURE" --skip-relay 2>&1 | tail -1
 
-            # Move the captured file to profile directory
-            latest=$(ls -t /home/pi/Videos/*.mp4 2>/dev/null | head -1)
-            if [ -n "$latest" ]; then
-                mv "$latest" "$profile_dir/"
-            else
-                err "  No video file produced"
+                # Move the captured file to profile directory
+                latest=$(ls -t /home/pi/Videos/*.mp4 2>/dev/null | head -1)
+                if [ -n "$latest" ]; then
+                    mv "$latest" "$profile_dir/"
+                else
+                    err "  No video file produced"
+                fi
             fi
 
             # Brief pause between captures
@@ -212,7 +242,7 @@ done
 # ─── Restore baseline config ────────────────────────────────────
 
 log "Restoring baseline camera config..."
-run python3 "$CAMTOOL" push "$CAMERA_NAME" --config "${PROFILE_CONFIGS[baseline]}" 2>/dev/null || true
+run "$PY" "$CAMTOOL" --profile-dir "$CAMERA_DIR" push "$CAMERA_NAME" --config "${PROFILE_CONFIGS[baseline]}" 2>/dev/null || true
 
 # ─── Cross-profile comparison ────────────────────────────────────
 
