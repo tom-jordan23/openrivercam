@@ -20,13 +20,11 @@ stock AGM/lead-acid, and LiFePO4 options required cross-checking charger
 chemistry compatibility. The time pressure led to a pivot: we purchased
 a commercial APC 900VA AC UPS instead.
 
-**Impact:** The APC 900VA UPS provides ~3-5 hours of backup at our
-measured 12-15W system load, compared to the ~20-25 hours the original
-LiFePO4 100Ah design would have delivered. That's a significant
-reduction in outage tolerance for a site in Jakarta where grid power is
-unreliable. The UPS is simpler (standalone appliance, no DC integration,
-no charger wiring) but the runtime tradeoff was driven by schedule
-pressure, not engineering preference.
+**Impact:** The commercial AC UPS is significantly less runtime than
+the original LiFePO4 design would have delivered. The UPS is simpler
+(standalone appliance, no DC integration, no charger wiring) but the
+runtime tradeoff was driven by schedule pressure, not engineering
+preference.
 
 **Recommendation for next time:**
 - Order the LiFePO4 battery and charger online (Tokopedia/Shopee) at
