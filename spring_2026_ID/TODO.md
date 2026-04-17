@@ -1,6 +1,6 @@
 # TODO List - Indonesia Spring 2026 Deployment
 
-**Last updated:** 2026-04-07
+**Last updated:** 2026-04-17
 **Departure:** April 12, 2026 (9 days)
 
 ---
@@ -717,7 +717,56 @@ Also have the fix pass `chmod 600 ~/.tailscale_nodekey` — it's currently
 
 ---
 
-## P2 — Nice to Have
+### TODO-022: Verify RG-15 rain gauge responds and is in polling mode (Sukabumi)
+
+| Field | Value |
+|-------|-------|
+| **Status** | OPEN |
+| **Site** | Sukabumi |
+| **Priority** | P1 |
+| **Target** | Next site visit |
+
+RG-15 has gone silent on `/dev/ttyAMA0` as of 2026-04-17 ~10:10 UTC.
+Before that, every CSV entry read `Acc=0.0` across 43 samples (04:04–07:59
+UTC). Root-cause recollection: gauge was configured in continuous ('C')
+mode — pushing event lines to UART while the Pi was asleep, so `R`-based
+polling never saw real data. Driver has since been rewritten (see below),
+but the current hardware state needs a physical check.
+
+**Driver changes already applied** (commits pending):
+- `sensors_logger.py:read_rg15()` now sends `P\n` every read (idempotent
+  force-polling), drains RX buffer, and parses `TotalAcc` (EEPROM-backed,
+  survives power cycles) with exact-token match. Previous parser matched
+  `Acc` first, which is the field that resets on power-cycle / `A`
+  command — not what we want.
+- `rg15.conf`: `CSV_HEADER` → `timestamp,totalacc_mm,interval_mm`,
+  `STATE_FILE` → `rg15_totalacc.txt`. Stale `rg15_acc.txt` removed from
+  `/var/lib/orc-sensors/`.
+
+**Field check steps:**
+1. Confirm RG-15 has 12V on TB1 (multimeter at gauge J2 VCC/GND).
+2. Confirm UART TX wire (gauge → Pi GPIO 15/RXD) continuity.
+3. `sudo systemctl stop orc-sensors.timer`
+4. Passive listen for continuous mode:
+   ```
+   python3 -c "import serial,time; s=serial.Serial('/dev/ttyAMA0',9600,timeout=5); time.sleep(5); print(s.read(4096))"
+   ```
+   Any unsolicited bytes → gauge is in `C` mode.
+5. Force polling + read:
+   ```
+   python3 -c "import serial,time; s=serial.Serial('/dev/ttyAMA0',9600,timeout=2); s.write(b'P\n'); time.sleep(0.5); s.reset_input_buffer(); s.write(b'R\n'); time.sleep(0.6); print(s.read(512))"
+   ```
+   Expect `Acc 0.xx mm, EventAcc ..., TotalAcc x.xx mm, RInt ...`.
+6. `sudo systemctl start orc-sensors.timer` and tail
+   `journalctl -u orc-sensors -f` — expect
+   `rg15: totalacc_mm=..., interval_mm=0.0` on first read, non-zero
+   intervals after rain.
+
+**If gauge is still silent after power check**: power-cycle the gauge
+(disconnect/reconnect TB1 feed — should emit a banner on boot). If still
+silent, suspect TX wire or gauge firmware — swap to spare RG-15.
+
+**Apply the same fix to Jakarta** once that gauge is wired (TODO-018).
 
 ### TODO-012: Verify DDR-60G quiescent power draw
 
