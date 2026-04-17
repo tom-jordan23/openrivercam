@@ -144,73 +144,81 @@ def read_sht40(conf):
 def read_rg15(conf):
     """Read Hydreon RG-15 rain gauge via UART. Returns dict.
 
-    Sends 'R' command, parses response for Acc (accumulated rainfall in mm).
-    Computes interval rainfall by comparing against the last known Acc value
-    stored on disk. The RG-15 stays powered during Pi sleep and accumulates
-    internally, so the delta between readings is the rainfall during that
-    interval.
+    Forces polling mode ('P'), then requests a reading ('R') and parses
+    TotalAcc (lifetime rainfall in EEPROM — survives power cycles and 'A'
+    resets, unlike Acc). Interval rainfall is the delta against the last
+    TotalAcc saved to disk.
 
-    Response format: "Acc  0.01 mm, EventAcc  0.01 mm, ..."
+    Response format: "Acc 0.01 mm, EventAcc 0.01 mm, TotalAcc 0.01 mm, RInt 0.00 mmph"
     """
     import serial
 
     port = conf.get("SERIAL_PORT", "/dev/ttyAMA0")
     baud = int(conf.get("SERIAL_BAUD", "9600"))
-    state_file = conf.get("STATE_FILE", "/var/lib/orc-sensors/rg15_acc.txt")
+    state_file = conf.get("STATE_FILE", "/var/lib/orc-sensors/rg15_totalacc.txt")
 
-    # Ensure state directory exists
     os.makedirs(os.path.dirname(state_file), exist_ok=True)
 
-    # Read previous accumulation
-    prev_acc = 0.0
+    prev_total = None
     if os.path.exists(state_file):
         try:
             with open(state_file) as f:
-                prev_acc = float(f.read().strip())
+                prev_total = float(f.read().strip())
         except (ValueError, OSError):
-            prev_acc = 0.0
+            prev_total = None
 
-    # Query the gauge
     ser = serial.Serial(port, baud, timeout=3)
     try:
-        ser.reset_input_buffer()
+        # Drain any unsolicited bytes (in case gauge is in continuous mode)
+        time.sleep(0.1)
+        if ser.in_waiting:
+            ser.read(ser.in_waiting)
+
+        # Force polling mode (idempotent; prevents data loss from continuous mode)
+        ser.write(b"P\n")
+        time.sleep(0.3)
+        if ser.in_waiting:
+            ser.read(ser.in_waiting)
+
         ser.write(b"R\n")
-        time.sleep(0.5)
-        response = ser.read(256).decode("ascii", errors="replace").strip()
+        time.sleep(0.6)
+        response = ser.read(512).decode("ascii", errors="replace").strip()
     finally:
         ser.close()
 
     if not response:
         raise ValueError(f"No response from RG-15 on {port}")
 
-    # Parse Acc field: "Acc  0.01 mm"
-    acc_mm = None
+    # Parse TotalAcc with exact token match (Acc/EventAcc/TotalAcc all start with "Acc")
+    total_mm = None
     for part in response.split(","):
-        part = part.strip()
-        if part.startswith("Acc"):
-            tokens = part.split()
-            for i, tok in enumerate(tokens):
+        tokens = part.strip().split()
+        if tokens and tokens[0] == "TotalAcc":
+            for tok in tokens[1:]:
                 try:
-                    acc_mm = float(tok)
+                    total_mm = float(tok)
                     break
                 except ValueError:
                     continue
+            break
 
-    if acc_mm is None:
-        raise ValueError(f"Could not parse Acc from RG-15 response: {response}")
+    if total_mm is None:
+        raise ValueError(f"Could not parse TotalAcc from RG-15 response: {response}")
 
-    # Compute interval rainfall (handle gauge reset / rollover)
-    interval_mm = round(max(0.0, acc_mm - prev_acc), 2)
-    if acc_mm < prev_acc:
-        # Gauge was reset or rolled over — report current Acc as interval
-        interval_mm = round(acc_mm, 2)
+    # First read ever: no delta available, treat interval as 0
+    if prev_total is None:
+        interval_mm = 0.0
+    elif total_mm < prev_total:
+        # TotalAcc should never decrease; if it does, treat as unrecoverable discontinuity
+        interval_mm = 0.0
+    else:
+        interval_mm = round(total_mm - prev_total, 2)
 
-    # Save current accumulation for next reading
     with open(state_file, "w") as f:
-        f.write(str(acc_mm))
+        f.write(str(total_mm))
 
     return {
-        "acc_mm": acc_mm,
+        "totalacc_mm": total_mm,
         "interval_mm": interval_mm,
     }
 

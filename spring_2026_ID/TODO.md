@@ -1,6 +1,6 @@
 # TODO List - Indonesia Spring 2026 Deployment
 
-**Last updated:** 2026-04-07
+**Last updated:** 2026-04-17
 **Departure:** April 12, 2026 (9 days)
 
 ---
@@ -624,7 +624,157 @@ the autologin user setting.
 
 ---
 
-## P2 — Nice to Have
+### TODO-020: Document unprovisioned-SIM diagnostic state
+
+| Field | Value |
+|-------|-------|
+| **Status** | OPEN |
+| **Site** | Both |
+| **Priority** | P1 |
+
+Operator manual / troubleshooting guide should explain what an unprovisioned
+SIM looks like in the field, so PMI staff don't chase host-side fixes for what
+is a carrier-side activation problem.
+
+**Symptom signature (observed on Sukabumi 2026-04-17):**
+- `mmcli -m 0` reports `state: failed`, `failed reason: sim-missing`
+- `mmcli -m 0 --enable` returns `Wrong state: modem in failed state`
+- AT level (`/dev/ttyUSB2`) sees the SIM normally:
+  - `AT+CPIN?` → `+CPIN: READY`
+  - `AT+CCID` returns ICCID; `AT+CIMI` returns IMSI
+  - `AT+CSQ` shows strong signal (e.g. `26,99` ≈ -61 dBm)
+  - `AT+QENG="servingcell"` shows `LIMSRV` (limited service)
+  - `AT+CREG?` / `AT+CGREG?` / `AT+CEREG?` all return `0,0`
+  - `AT+COPS=0` fails with `+CME ERROR: 13` (SIM failure)
+- QMI (`qmicli -d /dev/cdc-wdm0 --uim-get-card-status`) reports
+  `Card state: present` but `Application state: illegal`
+
+**Conclusion:** SIM is physically fine, RF path is fine. The carrier has not
+activated the line — modem is being rejected during authentication. Only fix
+is to activate the SIM with the carrier (Telkomsel for these deployments).
+Once activated, ModemManager auto-registers (default `COPS=0`); no host
+config changes needed.
+
+**Recovery sequence after activation:**
+1. `sudo systemctl restart ModemManager`
+2. `mmcli -m 0 --enable`
+3. If still stuck: `printf 'AT+CFUN=1,1\r\n' | sudo tee /dev/ttyUSB2` to fully
+   reset the radio, then re-run step 1-2 once `/dev/ttyUSB2` reappears.
+
+**Docs to update:**
+- `docs/TROUBLESHOOTING.md` — add a "Cellular won't register" section with the
+  symptom signature and the AT/QMI/MM probe commands above.
+- Operator manual — add a one-paragraph "if the LED is red because of no
+  cellular, here's how to tell whether to call the carrier or call us" guide
+  for PMI staff.
+- Cross-link from TODO-010 (SIM card strategy).
+
+---
+
+### TODO-021: Tailscale persistent login — deploy.sh integration
+
+| Field | Value |
+|-------|-------|
+| **Status** | OPEN |
+| **Site** | Both |
+| **Priority** | P1 |
+
+Stations must never log out of Tailscale. Sukabumi was found logged out on
+2026-04-17 (controlplane.tailscale.com fetch failures during SIM flapping
+left `tailscaled` stuck in "Needs login" state). Re-authenticated manually
+via browser.
+
+**Admin-console side (done for Sukabumi 2026-04-17):**
+- Machine → ⋯ → Disable key expiry. Do the same for Jakarta when it comes
+  online. Without this, node key rotates every 180d and the device logs
+  itself out.
+
+**Pi side (to implement):**
+Auth key already staged at `/home/pi/.tailscale_nodekey` on Sukabumi
+(reusable, non-expiring, pre-authorized, tagged as appropriate). Need to
+teach `deploy.sh` to use it so a fresh SD image or a wiped state dir
+re-joins the tailnet unattended.
+
+Add a `run_tailscale()` section to `spring_2026_ID/pi/deploy.sh` (call it
+from `run_all_checks` next to `run_remote_access`). Checks:
+
+1. `tailscale` and `tailscaled` installed (install from
+   `https://tailscale.com/install.sh` if fixing — or add to apt section).
+2. `tailscaled.service` enabled and active.
+3. `tailscale status` reports logged-in (not "Logged out" / "Needs login").
+4. Node appears up with an IP in `100.64.0.0/10`.
+
+Fix path when logged out:
+- Read auth key from `/home/pi/.tailscale_nodekey` (fail with clear message
+  if missing — tell operator to create it from admin console → Settings →
+  Keys, reusable + non-expiring + pre-auth).
+- `sudo tailscale up --auth-key="$(cat ~/.tailscale_nodekey)" \
+    --hostname=orc-${SITE} --ssh --accept-dns=false`
+- Verify with `tailscale status` after.
+
+Also have the fix pass `chmod 600 ~/.tailscale_nodekey` — it's currently
+664 and that file is a bearer credential.
+
+**Verification:**
+- Fresh reflash → run `deploy.sh sukabumi` → node appears in admin console
+  without any browser step.
+- `sudo systemctl stop tailscaled && sudo rm /var/lib/tailscale/tailscaled.state
+  && sudo systemctl start tailscaled` → `deploy.sh` re-auths it.
+
+**Cross-link:** TODO-008 (remote access setup).
+
+---
+
+### TODO-022: Verify RG-15 rain gauge responds and is in polling mode (Sukabumi)
+
+| Field | Value |
+|-------|-------|
+| **Status** | OPEN |
+| **Site** | Sukabumi |
+| **Priority** | P1 |
+| **Target** | Next site visit |
+
+RG-15 has gone silent on `/dev/ttyAMA0` as of 2026-04-17 ~10:10 UTC.
+Before that, every CSV entry read `Acc=0.0` across 43 samples (04:04–07:59
+UTC). Root-cause recollection: gauge was configured in continuous ('C')
+mode — pushing event lines to UART while the Pi was asleep, so `R`-based
+polling never saw real data. Driver has since been rewritten (see below),
+but the current hardware state needs a physical check.
+
+**Driver changes already applied** (commits pending):
+- `sensors_logger.py:read_rg15()` now sends `P\n` every read (idempotent
+  force-polling), drains RX buffer, and parses `TotalAcc` (EEPROM-backed,
+  survives power cycles) with exact-token match. Previous parser matched
+  `Acc` first, which is the field that resets on power-cycle / `A`
+  command — not what we want.
+- `rg15.conf`: `CSV_HEADER` → `timestamp,totalacc_mm,interval_mm`,
+  `STATE_FILE` → `rg15_totalacc.txt`. Stale `rg15_acc.txt` removed from
+  `/var/lib/orc-sensors/`.
+
+**Field check steps:**
+1. Confirm RG-15 has 12V on TB1 (multimeter at gauge J2 VCC/GND).
+2. Confirm UART TX wire (gauge → Pi GPIO 15/RXD) continuity.
+3. `sudo systemctl stop orc-sensors.timer`
+4. Passive listen for continuous mode:
+   ```
+   python3 -c "import serial,time; s=serial.Serial('/dev/ttyAMA0',9600,timeout=5); time.sleep(5); print(s.read(4096))"
+   ```
+   Any unsolicited bytes → gauge is in `C` mode.
+5. Force polling + read:
+   ```
+   python3 -c "import serial,time; s=serial.Serial('/dev/ttyAMA0',9600,timeout=2); s.write(b'P\n'); time.sleep(0.5); s.reset_input_buffer(); s.write(b'R\n'); time.sleep(0.6); print(s.read(512))"
+   ```
+   Expect `Acc 0.xx mm, EventAcc ..., TotalAcc x.xx mm, RInt ...`.
+6. `sudo systemctl start orc-sensors.timer` and tail
+   `journalctl -u orc-sensors -f` — expect
+   `rg15: totalacc_mm=..., interval_mm=0.0` on first read, non-zero
+   intervals after rain.
+
+**If gauge is still silent after power check**: power-cycle the gauge
+(disconnect/reconnect TB1 feed — should emit a banner on boot). If still
+silent, suspect TX wire or gauge firmware — swap to spare RG-15.
+
+**Apply the same fix to Jakarta** once that gauge is wired (TODO-018).
 
 ### TODO-012: Verify DDR-60G quiescent power draw
 
