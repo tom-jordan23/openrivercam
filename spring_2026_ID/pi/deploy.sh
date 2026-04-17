@@ -309,6 +309,10 @@ _fix_overlay_file() {
         /etc/udev/rules.d/*)
             sudo chmod 644 "$dest"
             sudo chown root:root "$dest" ;;
+        /etc/systemd/logind.conf.d/*)
+            sudo chmod 644 "$dest"
+            sudo chown root:root "$dest"
+            sudo systemctl kill -s HUP systemd-logind 2>/dev/null || true ;;
     esac
 
     # Verify the fix landed — promote from FAIL to FIXD
@@ -824,6 +828,110 @@ run_witty_pi() {
     fi
 }
 
+# ─── Power button (Pi 5 J2 header) ────────────────────────────────
+# The J2 header connects to RP1 firmware, not Linux GPIO. Three layers:
+#   1. Short press while running  → RP1 emits KEY_POWER → logind → poweroff
+#   2. Long press (~5s) while running → RP1 force-cuts power (hardware, always works)
+#   3. Short press while halted   → RP1 wakes PMIC (requires WAKE_ON_GPIO=1)
+#
+# Layers 2 and 3 are firmware. Layer 1 depends on Linux. We verify:
+#   - EEPROM: POWER_OFF_ON_HALT=0 and WAKE_ON_GPIO=1 (bootloader config)
+#   - Input device: RP1 exposes "pwr_button" to Linux (/proc/bus/input/devices)
+#   - logind drop-in is deployed (handled by run_overlay_files)
+run_power_button() {
+    section "Power Button"
+
+    # EEPROM config — governs whether a button press can wake the Pi and
+    # whether `halt` leaves the Pi in a wakeable state.
+    if command -v rpi-eeprom-config >/dev/null 2>&1; then
+        local ee_cfg
+        ee_cfg=$(sudo rpi-eeprom-config 2>/dev/null || true)
+
+        if [ -z "$ee_cfg" ]; then
+            warn "rpi-eeprom-config returned no output (not a Pi 5? EEPROM unreadable?)"
+        else
+            # WAKE_ON_GPIO: default 1. A button press only wakes the Pi from halt
+            # if this is 1. If unset, default applies — treat as PASS.
+            local wake_val
+            wake_val=$(echo "$ee_cfg" | grep -E "^WAKE_ON_GPIO=" | cut -d= -f2 | tr -d '[:space:]')
+            if [ -z "$wake_val" ] || [ "$wake_val" = "1" ]; then
+                pass "EEPROM WAKE_ON_GPIO=${wake_val:-1 (default)} (button can wake from halt)"
+            else
+                if [ "$FIXING" -eq 1 ]; then
+                    local tmp_cfg
+                    tmp_cfg=$(mktemp)
+                    echo "$ee_cfg" | sed 's/^WAKE_ON_GPIO=.*/WAKE_ON_GPIO=1/' > "$tmp_cfg"
+                    if sudo rpi-eeprom-config --apply "$tmp_cfg" >/dev/null 2>&1; then
+                        fixed "EEPROM WAKE_ON_GPIO set to 1 (reboot required)"
+                    else
+                        fail "EEPROM WAKE_ON_GPIO: rpi-eeprom-config --apply failed"
+                    fi
+                    rm -f "$tmp_cfg"
+                else
+                    fail "EEPROM WAKE_ON_GPIO=$wake_val (should be 1 — button cannot wake from halt)"
+                fi
+            fi
+
+            # POWER_OFF_ON_HALT: default 0. If 1, `halt` fully powers off and
+            # the Pi needs button press to restart — surprises ops staff.
+            local poh_val
+            poh_val=$(echo "$ee_cfg" | grep -E "^POWER_OFF_ON_HALT=" | cut -d= -f2 | tr -d '[:space:]')
+            if [ -z "$poh_val" ] || [ "$poh_val" = "0" ]; then
+                pass "EEPROM POWER_OFF_ON_HALT=${poh_val:-0 (default)} (halt keeps Pi in wakeable state)"
+            else
+                if [ "$FIXING" -eq 1 ]; then
+                    local tmp_cfg
+                    tmp_cfg=$(mktemp)
+                    echo "$ee_cfg" | sed 's/^POWER_OFF_ON_HALT=.*/POWER_OFF_ON_HALT=0/' > "$tmp_cfg"
+                    if sudo rpi-eeprom-config --apply "$tmp_cfg" >/dev/null 2>&1; then
+                        fixed "EEPROM POWER_OFF_ON_HALT set to 0 (reboot required)"
+                    else
+                        fail "EEPROM POWER_OFF_ON_HALT: rpi-eeprom-config --apply failed"
+                    fi
+                    rm -f "$tmp_cfg"
+                else
+                    fail "EEPROM POWER_OFF_ON_HALT=$poh_val (should be 0 — halt would require button press to restart)"
+                fi
+            fi
+        fi
+    else
+        warn "rpi-eeprom-config not available — cannot verify EEPROM power-button settings"
+    fi
+
+    # RP1 exposes the J2 header to Linux as an input device named "pwr_button".
+    # If this is missing, either RP1 firmware is wedged or the kernel driver is
+    # not loaded — short-press shutdown will not work (long-press force-off
+    # still will, since it's pure firmware).
+    if [ -r /proc/bus/input/devices ]; then
+        if grep -q 'Name="pwr_button"' /proc/bus/input/devices; then
+            pass "RP1 pwr_button input device present (/proc/bus/input/devices)"
+        else
+            fail "RP1 pwr_button input device MISSING — short-press shutdown will not work (long-press force-off still functional via RP1 firmware)"
+        fi
+    else
+        warn "/proc/bus/input/devices not readable — cannot verify pwr_button device"
+    fi
+
+    # Effective logind HandlePowerKey setting. The overlay file covers the
+    # on-disk config; this cross-checks that logind actually loaded it.
+    # (busctl is provided by systemd and always available.)
+    if command -v busctl >/dev/null 2>&1; then
+        local effective_hpk
+        effective_hpk=$(busctl get-property org.freedesktop.login1 /org/freedesktop/login1 \
+            org.freedesktop.login1.Manager HandlePowerKey 2>/dev/null \
+            | awk '{print $2}' | tr -d '"' || true)
+        if [ "$effective_hpk" = "poweroff" ]; then
+            pass "logind HandlePowerKey=poweroff (effective, via busctl)"
+        elif [ -n "$effective_hpk" ]; then
+            # The overlay file fix reloads logind, so if this still shows wrong
+            # after a fix pass, the drop-in is being overridden somewhere.
+            fail "logind HandlePowerKey=$effective_hpk (should be poweroff — check for overriding drop-ins under /etc/systemd/logind.conf.d/ or /run/systemd/logind.conf.d/)"
+        else
+            warn "logind HandlePowerKey: busctl returned empty (logind not running?)"
+        fi
+    fi
+}
+
 # ─── Services ─────────────────────────────────────────────────────
 _ensure_service_enabled() {
     local svc="$1"
@@ -1324,6 +1432,7 @@ run_all_checks() {
     run_config_txt
     run_system_config
     run_witty_pi
+    run_power_button
     run_services
     run_credentials
     run_config_checks

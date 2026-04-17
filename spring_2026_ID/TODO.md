@@ -264,6 +264,14 @@ for DS18B20 (1-Wire overlay).
 - [ ] Verify orc-sensors reads it: `sudo orc-sensors` — check journal for `sht40: temp_c=... humidity_pct=...`
 - [ ] Verify CSV output: `ls /var/log/orc/sensors/sht40_*.csv`
 
+### RG-15 rain gauge — force Polled mode (zeros bug)
+- [ ] Both sites: RG-15 returning `Acc 0.00` even during rain because gauge is in Continuous mode (default) while `sensors_logger.py:read_rg15` polls synchronously with `R` — auto-push frames race the reply. Send `P\n` once over UART to put the gauge in Polled mode (persists in EEPROM), then verify `R` returns correct `Acc` value. Consider adding a `deploy.sh --check` step that detects/fixes this like the imperial→metric autofix already does.
+
+### GNSS correction source — decide and configure
+- [ ] Decide correction source for the survey: local base OR NTRIP service (not both).
+- [ ] If local base: confirm GNSS master settings (survey-in vs fixed coordinates, antenna height, RTCM output, constellations, logging rate) match rover expectations. Rover does **not** send GGA upstream.
+- [ ] If NTRIP: confirm mountpoint, credentials, and whether it's VRS (requires rover GGA upload) or single-reference (no GGA needed). Configure rover accordingly.
+
 ---
 
 ## Jakarta Software Status
