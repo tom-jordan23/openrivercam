@@ -12,12 +12,13 @@ that the daemon uses to process each incoming capture.
 - [What This Covers](#what-this-covers)
 - [Background](#background)
 - [Prerequisites](#prerequisites)
-- [Phase 1 — Field: Calibration Video](#phase-1--field-calibration-video)
-- [Phase 2 — Field: GPS Survey](#phase-2--field-gps-survey)
-- [Phase 3 — Office: Survey Data Prep](#phase-3--office-survey-data-prep)
-- [Phase 4 — ORC-OS UI: Author the Video Configuration](#phase-4--orc-os-ui-author-the-video-configuration)
-- [Phase 5 — Activate the Daemon](#phase-5--activate-the-daemon)
-- [Phase 6 — Validate](#phase-6--validate)
+- [Phase 1 — Field: Camera Profile Selection](#phase-1--field-camera-profile-selection)
+- [Phase 2 — Field: Calibration Video](#phase-2--field-calibration-video)
+- [Phase 3 — Field: GPS Survey](#phase-3--field-gps-survey)
+- [Phase 4 — Office: Survey Data Prep](#phase-4--office-survey-data-prep)
+- [Phase 5 — ORC-OS UI: Author the Video Configuration](#phase-5--orc-os-ui-author-the-video-configuration)
+- [Phase 6 — Activate the Daemon](#phase-6--activate-the-daemon)
+- [Phase 7 — Validate](#phase-7--validate)
 - [Profile Testing](#profile-testing)
 - [Troubleshooting](#troubleshooting)
 - [Glossary](#glossary)
@@ -132,11 +133,70 @@ Session directory contents after a full run:
 
 ---
 
-## Phase 1 — Field: Calibration Video
+## Phase 1 — Field: Camera Profile Selection
+
+Run the profile bake-off *before* the calibration capture so the
+calibration video lands on whichever profile performs best for ORC —
+not on the default, then redone. The bake-off evaluates each candidate
+profile against the actual scene at this station (lighting, turbidity,
+flow) and ranks them by PIV pass rate, which is what the downstream
+pipeline actually depends on.
+
+Full procedure is in [`CAMERA_PROFILE_TEST.md`](CAMERA_PROFILE_TEST.md).
+Quick version:
+
+1. SSH into the Pi. Maintenance mode must still be on.
+2. Run preflight. Fix any FAIL before proceeding:
+   ```bash
+   orc-calibration-preflight
+   ```
+3. Run the bake-off from the profiles directory on the Pi:
+   ```bash
+   cd ~/spring_2026_ID/camera/profiles
+   ./run_profile_test.sh
+   ```
+   The script pushes each candidate profile to the camera via
+   `camtool.py`, captures N videos per profile with `orc-capture`, runs
+   FFPIV on each set, and restores the baseline profile on exit.
+   Results land in `tests/camera_profiles_<ts>/` with a
+   `comparison.txt` cross-profile summary.
+4. Review `comparison.txt`. The winning profile should have, in order:
+   - Highest **combined PIV pass rate** (primary metric).
+   - Delivered bitrate ≥ 15 Mbps (hard floor — see decision gate in
+     Profile Testing below).
+   - Blockiness < 1.15.
+5. Push the winning profile back to the camera and confirm:
+   ```bash
+   python3 camtool.py push <station>-cam1 --profile <winner>
+   python3 camtool.py verify <station>-cam1
+   ```
+6. Update `orc-capture.conf` `EXPECTED_WIDTH` / `EXPECTED_HEIGHT` on
+   the Pi to match the winning profile's resolution, otherwise the
+   quality gate will reject every subsequent capture.
+7. Record the decision in `tests/<site>/profile_comparison.md`:
+   the winning profile name, the delta in PIV pass rate vs the runners-
+   up, and the scene conditions at test time. Future redeployments need
+   this to judge whether the winner still applies.
+
+> **Discovery note — bake-off is scene-dependent.** The test uses
+> whatever is in the camera frame at the time. Results may not transfer
+> to a different site, or to the same site under materially different
+> water conditions. Re-run before committing calibration effort if the
+> scene has changed since the last bake-off.
+
+From here on, Phase 2's calibration video, the surveys in Phase 3, and
+the video config in Phase 5 are all specific to the winning profile.
+Switching profile later means returning to this phase and redoing
+Phase 2 + Phase 5 — see the reuse table under Profile Testing.
+
+---
+
+## Phase 2 — Field: Calibration Video
 
 The calibration video must come from the station's own camera in its
-final mounted position. A handheld sample will not work — pose, focal
-length, and lens distortion must match the production captures.
+final mounted position, running the profile selected in Phase 1. A
+handheld sample will not work — pose, focal length, and lens distortion
+must match the production captures.
 
 1. Place GCP markers per `FIELD_SURVEY_GUIDE.md` Step 1. All 8–10 must
    be visible in the camera frame.
@@ -179,7 +239,7 @@ length, and lens distortion must match the production captures.
 
 ---
 
-## Phase 2 — Field: GPS Survey
+## Phase 3 — Field: GPS Survey
 
 Follow `FIELD_SURVEY_GUIDE.md` Steps 3–7 end-to-end. The survey
 produces 3D coordinates (east, north, elevation in meters) for every
@@ -202,7 +262,7 @@ data).
 
 ---
 
-## Phase 3 — Office: Survey Data Prep
+## Phase 4 — Office: Survey Data Prep
 
 Done on the field laptop. Use the helper script — it replaces manual
 QGIS reprojection and CSV splitting, applies pole-length correction,
@@ -262,7 +322,7 @@ Cross-checks the tool runs:
 | `--pole-length` outside [0.5, 4.0] m | WARN |
 | `--h-ref` outside [-500, 6000] m | WARN |
 
-Deliverables to carry into Phase 4:
+Deliverables to carry into Phase 5:
 
 | File | Used for |
 |------|----------|
@@ -275,7 +335,7 @@ Deliverables to carry into Phase 4:
 
 ---
 
-## Phase 4 — ORC-OS UI: Author the Video Configuration
+## Phase 5 — ORC-OS UI: Author the Video Configuration
 
 Connect the field laptop to the Pi's maintenance hotspot and open the
 ORC-OS web UI at `http://<station>.local`. Order matters — each step
@@ -369,10 +429,10 @@ feeds the next.
 
 ---
 
-## Phase 5 — Activate the Daemon
+## Phase 6 — Activate the Daemon
 
 36. Navigate to `/settings`.
-37. In **Video configurations**, select the config created in Phase 4.
+37. In **Video configurations**, select the config created in Phase 5.
 38. Confirm the **LiveORC Site ID** is set. **LiveORC** is the cloud
     server that aggregates results from all stations; the **Site ID**
     is the numeric identifier assigned to this station on that server.
@@ -388,7 +448,7 @@ feeds the next.
 
 ---
 
-## Phase 6 — Validate
+## Phase 7 — Validate
 
 41. Wait for the next 15-minute capture, or trigger one manually:
     ```bash
@@ -419,12 +479,20 @@ feeds the next.
 
 ## Profile Testing
 
-Per `TODO.md` Phase 5, multiple camera **profiles** (named encoding
+Profile *selection* happens in [Phase 1](#phase-1--field-camera-profile-selection)
+— the bake-off picks the winner before calibration. This section
+covers two things the selection phase doesn't: (1) the per-artifact
+reuse table for when you need to *change* the active profile after
+initial calibration, and (2) the top-level decision gate on whether
+the ANNKE C1200 camera class survives the test at all.
+
+Per `TODO.md` Phase 5, the candidate **profiles** (named encoding
 presets — combinations of resolution, codec, bitrate, and framerate
-stored as XML on the camera via ISAPI) are being tested: A (1080p /
-16 Mbps), B (720p / 20 Mbps), C (local SD-card recording). Each
-profile needs its own calibration-and-config run — but not everything
-is redone.
+stored as XML on the camera via ISAPI) under test are: baseline
+(1080p / 16 Mbps CBR), A (1080p / 20 Mbps CBR), B (720p / 20 Mbps
+CBR), C (1080p / 20 Mbps VBR, local SD-card), E (1080p / 12 Mbps
+H.265). Each profile change after initial calibration needs its own
+calibration-and-config run — but not everything is redone.
 
 | Artifact | Reuse across profiles? | Notes |
 |----------|-----------------------|-------|
@@ -438,14 +506,14 @@ is redone.
 | Processing recipe | Usually new | Tune per bitrate/resolution |
 | Video config | **New per profile** | This is the thing being compared |
 
-Workflow for a second profile:
+Workflow to switch to a different profile after initial calibration:
 
 1. Push the new camera profile via `camtool.py` (the ISAPI config
    management tool — see `camera/README.md`), e.g. Profile B 720p.
 2. Update `orc-capture.conf` `EXPECTED_WIDTH`/`EXPECTED_HEIGHT` to
    match.
-3. Repeat Phase 1 (calibration video at new resolution).
-4. Repeat Phase 4 start-to-finish. Name the config clearly (e.g.
+3. Repeat Phase 2 (calibration video at new resolution).
+4. Repeat Phase 5 start-to-finish. Name the config clearly (e.g.
    `sukabumi-profile-b-2026-04-18`).
 5. In `/settings`, swap the active video config to the new one.
 6. Capture 10 cycles per profile for comparison.
@@ -486,7 +554,7 @@ Record per-profile findings in a shared log. Suggested location:
 
 ### Video config not selectable in Daemon Settings
 
-- Config must be marked **finalized**. Return to Phase 4 and confirm
+- Config must be marked **finalized**. Return to Phase 5 and confirm
   every tab is green.
 - Reload `/settings` after finalizing.
 
