@@ -31,6 +31,7 @@
 #   orc-capture                    # normal operation
 #   orc-capture --dry-run          # capture and validate, don't deliver
 #   orc-capture --skip-relay       # don't toggle PoE (camera already on)
+#   orc-capture --force            # run even if the station is in maintenance mode
 #
 # Configuration:
 #   /etc/orc-capture.conf    — all capture settings (see file for docs)
@@ -38,16 +39,6 @@
 #   ORC_CAPTURE_CONF env var — point to alternate config file for testing
 
 set -o pipefail
-
-# ─── Maintenance mode check ─────────────────────────────────────────
-# When the station is in maintenance mode, skip capture entirely.
-# The flag file is created by orc-maintenance-check at boot and lives
-# on tmpfs, so it disappears on reboot back to production mode.
-
-if [ -f /run/orc-maintenance-mode ]; then
-    echo "$(date '+%Y-%m-%d %H:%M:%S') [orc-capture] MAINTENANCE MODE — skipping capture cycle"
-    exit 0
-fi
 
 # ─── Load configuration ─────────────────────────────────────────────
 # Config file is the single source of truth. To override for testing,
@@ -89,6 +80,7 @@ SUPPLEMENT_LIGHT_MODE="${SUPPLEMENT_LIGHT_MODE:-irLight}"
 
 DRY_RUN=0
 SKIP_RELAY=0
+FORCE=0
 
 # ─── Parse args ──────────────────────────────────────────────────────
 
@@ -96,12 +88,28 @@ for arg in "$@"; do
     case "$arg" in
         --dry-run)    DRY_RUN=1 ;;
         --skip-relay) SKIP_RELAY=1 ;;
+        --force)      FORCE=1 ;;
         --help|-h)
             sed -n '2,/^$/p' "$0" | sed 's/^# \?//'
             exit 0
             ;;
     esac
 done
+
+# ─── Maintenance mode check ─────────────────────────────────────────
+# When the station is in maintenance mode, skip capture entirely unless
+# --force is passed (for manual testing). The flag file is created by
+# orc-maintenance-check at boot and lives on tmpfs, so it disappears on
+# reboot back to production mode.
+
+if [ -f /run/orc-maintenance-mode ]; then
+    if [ "$FORCE" -eq 1 ]; then
+        echo "$(date '+%Y-%m-%d %H:%M:%S') [orc-capture] MAINTENANCE MODE — overriding via --force"
+    else
+        echo "$(date '+%Y-%m-%d %H:%M:%S') [orc-capture] MAINTENANCE MODE — skipping capture cycle"
+        exit 0
+    fi
+fi
 
 # ─── Logging ─────────────────────────────────────────────────────────
 
