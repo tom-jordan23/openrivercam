@@ -168,19 +168,82 @@ Quick version:
    - Delivered bitrate ≥ 15 Mbps (minimum acceptable — see decision
      gate in Profile Testing below).
    - Blockiness < 1.15.
-5. Push the selected profile back to the camera and confirm:
+5. **Push the selected profile to the camera.** The comparison test
+   restores the baseline profile on exit, so the camera is currently
+   running baseline regardless of which profile the comparison chose.
+   Push the selected profile's XML explicitly:
    ```bash
-   python3 camtool.py push <station>-cam1 --profile <selected>
-   python3 camtool.py verify <station>-cam1
+   cd ~/camera_profiles
+   python3 ~/code/openrivercam/spring_2026_ID/camera/camtool.py \
+       push <camera-name> --config <path-to-selected-profile-xml>
    ```
-6. Update `orc-capture.conf` `EXPECTED_WIDTH` / `EXPECTED_HEIGHT` on
-   the Pi to match the selected profile's resolution, otherwise the
-   quality gate will reject every subsequent capture.
-7. Record the decision in `tests/<site>/profile_comparison.md`: the
-   selected profile name, the difference in PIV pass rate compared to
-   the other profiles, and the scene conditions at test time. Future
-   redeployments need this to judge whether the selection still
-   applies.
+   `<camera-name>` is the entry from `cameras.json` (e.g.
+   `jakarta-cam1`). Profile XML paths, relative to the camera profile
+   directory (`~/camera_profiles/`):
+
+   | Profile | XML path |
+   |---------|----------|
+   | baseline | `common/streaming_101.xml` |
+   | A | `profiles/profile-a/streaming_101.xml` |
+   | B | `profiles/profile-b/streaming_101.xml` |
+   | C | `profiles/profile-c/streaming_101.xml` (SD-card capture — see Profile Testing) |
+   | E | `profiles/profile-e/streaming_101.xml` |
+
+   `push` automatically backs up the live config first; see
+   `camera/README.md` for backup/recovery details.
+
+6. **Verify the push applied.** Exit code 0 means the live camera
+   config matches the pushed XML:
+   ```bash
+   python3 ~/code/openrivercam/spring_2026_ID/camera/camtool.py \
+       verify <camera-name>
+   ```
+   If `verify` returns non-zero, inspect the drift with
+   `camtool.py diff <camera-name>` and push again. Do not proceed to
+   Phase 2 with the camera on the wrong profile — the calibration
+   video would be taken at the wrong encoding settings.
+
+7. **Update the capture quality gate if the resolution changed.** Of
+   the candidate profiles, only **B** changes resolution (720p
+   instead of 1080p). If the selected profile is B, edit
+   `/etc/orc-capture.conf` on the Pi and set:
+   ```
+   EXPECTED_WIDTH=1280
+   EXPECTED_HEIGHT=720
+   ```
+   For every other profile, the 1080p defaults stay correct and this
+   step is skipped. Forgetting this step on a profile B selection
+   makes every subsequent capture fail the quality gate; no video
+   reaches ORC-OS and Phase 2's calibration capture will fail
+   repeatedly with an unhelpful error.
+
+8. **Persist the selection in the site-specific camera config** so a
+   reinstalled Pi image, a factory-reset camera, or a replacement
+   camera receives the same profile automatically. The `camtool.py`
+   layering rule (see `camera/README.md` § Config Layering) is that
+   `<site>/<camera>/<endpoint>.xml` wins over `common/<endpoint>.xml`,
+   so placing the selected profile in the site directory makes it
+   this camera's new default:
+   ```bash
+   # On the Pi (runtime profile dir)
+   cp ~/camera_profiles/profiles/profile-<selected>/streaming_101.xml \
+      ~/camera_profiles/<site>/cam1/streaming_101.xml
+
+   # In the git-tracked repo (source of truth)
+   cp ~/camera_profiles/<site>/cam1/streaming_101.xml \
+      ~/code/openrivercam/spring_2026_ID/camera/<site>/cam1/
+   cd ~/code/openrivercam
+   git add spring_2026_ID/camera/<site>/cam1/streaming_101.xml
+   git commit -m "<site>: select profile <X> after on-site comparison test"
+   ```
+   Skip this step if the selected profile *is* baseline — no override
+   is needed, since `common/streaming_101.xml` is already the baseline.
+
+9. **Record the decision** in `tests/<site>/profile_comparison.md`:
+   the selected profile name, the difference in PIV pass rate
+   compared to the other profiles, and the scene conditions at test
+   time (turbidity, lighting, flow stage). Future redeployments need
+   this to judge whether the selection still applies.
 
 > **Discovery note — comparison test is scene-dependent.** The test
 > uses whatever is in the camera frame at the time. Results may not
