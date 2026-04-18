@@ -471,9 +471,20 @@ def main():
     parser.add_argument(
         "--test-color", nargs=3, type=int, metavar=("R", "G", "B"),
         help="Set a static color for 5 seconds (wiring test), then exit")
+    parser.add_argument(
+        "--off", action="store_true",
+        help="Turn the LED off and exit (used as systemd ExecStopPost backstop)")
     args = parser.parse_args()
 
     config = load_config(args.config)
+
+    if args.off:
+        led_cfg = config.get("led", {})
+        led = LedDriver(led_cfg.get("gpio_pin", 18),
+                         led_cfg.get("brightness", 200))
+        led.off()
+        log("LED off")
+        return
 
     if args.test_color:
         test_color(args, config)

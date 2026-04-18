@@ -1149,6 +1149,14 @@ run_config_checks() {
         fail "/etc/orc/led-status.yaml not found"
     fi
 
+    # LED-off backstop: ensure the service calls --off on stop, so the LED
+    # does not hold its last color when the Pi shuts down (externally powered).
+    if systemctl cat orc-led-status.service 2>/dev/null | grep -q "^ExecStopPost=.*--off"; then
+        pass "orc-led-status.service has ExecStopPost --off (LED clears on shutdown)"
+    else
+        fail "orc-led-status.service missing ExecStopPost --off (LED will hold last color after shutdown)"
+    fi
+
     # orc-sensors config
     if [ -d /etc/orc-sensors ] && ls /etc/orc-sensors/*.conf >/dev/null 2>&1; then
         local sensor_count

@@ -5,6 +5,7 @@ After=local-fs.target
 [Service]
 Type=simple
 ExecStart=/usr/local/bin/orc-led-status
+ExecStopPost=/usr/local/bin/orc-led-status --off
 Restart=on-failure
 RestartSec=5
 
