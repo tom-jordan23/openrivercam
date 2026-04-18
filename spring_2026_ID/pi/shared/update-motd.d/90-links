@@ -22,6 +22,7 @@ if [ -f "$LEASE_FILE" ]; then
 fi
 
 echo "  Preflight:  orc-preflight"
+echo "  Deploy:     orc-deploy"
 echo "  LED test:   sudo orc-led-test"
 echo "  LED config: /etc/orc/led-status.yaml"
 echo "  Capture:    /etc/orc-capture.conf"

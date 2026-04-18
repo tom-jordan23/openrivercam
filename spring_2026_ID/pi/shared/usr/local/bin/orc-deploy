@@ -1,0 +1,32 @@
+#!/bin/bash
+# orc-deploy — thin wrapper around deploy.sh
+#
+# Detects the site from hostname (orc-sukabumi → sukabumi, orc-jakarta → jakarta)
+# and runs deploy.sh. Any additional arguments are passed through
+# (e.g. --yes, --skip-packages, --check).
+#
+# Usage: orc-deploy [options]
+
+SCRIPT_DIR="/home/pi/code/git/openrivercam/spring_2026_ID/pi"
+
+# Detect site from hostname
+SITE=$(hostname | sed 's/^orc-//')
+
+case "$SITE" in
+    sukabumi|jakarta)
+        ;;
+    *)
+        echo "ERROR: Cannot determine site from hostname '$(hostname)'"
+        echo "Expected hostname like orc-sukabumi or orc-jakarta"
+        echo "Run deploy.sh directly: deploy.sh <site>"
+        exit 1
+        ;;
+esac
+
+if [ ! -f "$SCRIPT_DIR/deploy.sh" ]; then
+    echo "ERROR: deploy.sh not found at $SCRIPT_DIR/deploy.sh"
+    echo "Ensure the openrivercam repo is cloned at /home/pi/code/git/openrivercam"
+    exit 1
+fi
+
+exec bash "$SCRIPT_DIR/deploy.sh" "$SITE" "$@"

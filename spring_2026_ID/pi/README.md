@@ -54,6 +54,7 @@ contains a real file.
 | `shared/usr/local/bin/poe-relay` | `/usr/local/bin/poe-relay` | Control PoE switch relay (on/off/status) via GPIO 24 | Shared | No | No |
 | `shared/usr/local/bin/orc-capture` | `/usr/local/bin/orc-capture` | Capture 5s video from PoE camera via RTSP with quality gate | Shared | No | Yes |
 | `shared/usr/local/bin/orc-preflight` | `/usr/local/bin/orc-preflight` | Thin wrapper: runs `deploy.sh <site> --check` (auto-detects site from hostname) | Shared | No | No |
+| `shared/usr/local/bin/orc-deploy` | `/usr/local/bin/orc-deploy` | Thin wrapper: runs `deploy.sh <site>` (auto-detects site from hostname, passes through extra args) | Shared | No | No |
 | `shared/etc/systemd/system/orc-capture.service` | `/etc/systemd/system/orc-capture.service` | Oneshot service: runs orc-capture on each boot (conflicts with orc-gpio-relays) | Shared | No | No |
 | `shared/etc/orc-sensors/sht40.conf` | `/etc/orc-sensors/sht40.conf` | SHT40 sensor config (I2C addr, interval, log dir, CSV columns) | Shared | No | Yes |
 | `shared/etc/orc-sensors/rg15.conf` | `/etc/orc-sensors/rg15.conf` | RG-15 rain gauge config (UART port, baud, state file for delta calc) | Shared | No | Yes |
@@ -136,8 +137,10 @@ cd spring_2026_ID/pi
 ./deploy.sh <site> --skip-config-txt  # skip config.txt checks
 ```
 
-You can also run `orc-preflight` from anywhere — it auto-detects the site
-from the hostname and runs `deploy.sh <site> --check`.
+You can also run `orc-preflight` or `orc-deploy` from anywhere — both
+auto-detect the site from the hostname. `orc-preflight` runs
+`deploy.sh <site> --check`; `orc-deploy` runs `deploy.sh <site>` and passes
+through any extra arguments (e.g. `orc-deploy --yes`, `orc-deploy --check`).
 
 The script creates a backup of modified files at
 `/tmp/orc-deploy-backup-<timestamp>/` and a report at
