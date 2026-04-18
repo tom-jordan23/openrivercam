@@ -1,8 +1,14 @@
-# RIVER SURVEY PROCEDURE FOR OPENRIVERCAM DEPLOYMENTS
+# RIVER SURVEY PROCEDURE FOR OPENRIVERCAM DEPLOYMENTS — LOCAL BASE STATION WORKFLOW
 
-**Equipment:** ArduSimple RTK + Android + GNSS Master + SW Maps + **InaCORS NTRIP** (or base station fallback) + Leica Disto X6 P2P (optional, for cross-sections)
-**Target Accuracy:** Centimeter-level absolute positioning via NTRIP (~3-5cm); or ~0.25m absolute via PPP (base station fallback)
+**Equipment:** ArduSimple RTK base + rover + Android + GNSS Master + SW Maps + Leica Disto X6 P2P (optional, for cross-sections)
+**Target Accuracy:** 1-2cm relative accuracy in the field; ~0.5-1m absolute during the survey, improved to 2-5cm absolute after PPP post-processing
 **CRS:** UTM zone for your location (determine using instructions in Section 1)
+
+> **Which document is this?** This is the local base station workflow — use it when cellular coverage is **not** available at your site, so network RTK (NTRIP) cannot deliver corrections in real time. You will deploy your own base station, log raw observations throughout the day, and determine absolute coordinates via PPP post-processing after the field day.
+>
+> **If cell coverage is available at your site,** use `SURVEY_PROCESS_v3_ntrip.md` instead — it's a simpler workflow that does not require a base station deployment, a survey-in, or PPP post-processing.
+>
+> **Important:** Do not run NTRIP on the rover at the same time as a local base station. The rover must have exactly one correction source. Receiving corrections from both a local base (via radio) and NTRIP (via cell) simultaneously will confuse the rover and produce unreliable positions. If you want to cross-validate the two methods, run them on separate sessions (see the cross-validation note in the NTRIP document).
 
 ## HOW THIS WORKS: UNDERSTANDING THE APPROACH
 
@@ -12,32 +18,19 @@ River flow measurements from video rely on a precise chain of data transformatio
 
 Survey-grade positioning prevents this error cascade. When you measure ground control points with centimeter accuracy, you establish a foundation that maintains precision through the entire processing chain. The camera transformation becomes reliable. The velocity calculations stay within acceptable bounds. The discharge estimates support confident decision-making.
 
-### NTRIP: Network RTK Without a Base Station
+### The Base-Rover System
 
-Instead of deploying your own base station, you can connect to Indonesia's InaCORS network — a system of permanent GNSS reference stations operated by BIG (Badan Informasi Geospasial). The network provides real-time corrections via NTRIP (Networked Transport of RTCM via Internet Protocol), delivered to your rover over a cellular data connection.
-
-This is the **primary method** for Indonesia deployments where cell coverage is available (Sukabumi, Jakarta, and most of Java). Your rover receives corrections from the nearest CORS stations and achieves centimeter-accurate absolute positions directly in the field. No base station deployment, no survey-in, no multi-hour PPP post-processing. The positions you collect in the field are your final coordinates.
-
-The key requirement is a cellular data connection between your phone and the InaCORS server. Bandwidth needs are minimal — about 1-2 KB/second, or roughly 30-60 MB for a full survey day. A Telkomsel prepaid SIM with any data package works.
-
-### The Base-Rover System (Fallback)
-
-If cell coverage is unavailable at your survey site, the self-contained base-rover system provides the same centimeter-level relative accuracy without any network dependency. The base station sits at a known location, continuously receiving satellite signals and calculating what errors affect those signals. The rover moves to the points you want to measure. The base broadcasts corrections to the rover in real-time via radio. Common errors — atmospheric delays, satellite clock drift, orbital uncertainties — cancel out because both receivers experience nearly identical conditions.
+When cell coverage is unavailable at your survey site, a self-contained base-rover system provides centimeter-level relative accuracy without any network dependency. The base station sits at a known location, continuously receiving satellite signals and calculating what errors affect those signals. The rover moves to the points you want to measure. The base broadcasts corrections to the rover in real-time via radio. Common errors — atmospheric delays, satellite clock drift, orbital uncertainties — cancel out because both receivers experience nearly identical conditions.
 
 This approach works because proximity matters. When base and rover sit within 10-20 kilometers of each other, they look through essentially the same atmosphere to the same satellites. The errors affecting one receiver also affect the other. Subtract the base's known errors from the rover's measurements, and you achieve 1-2 cm horizontal accuracy, 2-3 cm vertical.
 
-With the base-rover system, RTK accuracy depends entirely on the base station's position accuracy. If your base coordinates are wrong by 30cm, your rover measurements will be wrong by 30cm. This is why base-rover surveys require Precise Point Positioning post-processing — a global correction service that provides 2-5 cm absolute accuracy anywhere on Earth. NTRIP eliminates this dependency because the CORS stations already have precisely known positions.
+With the base-rover system, RTK accuracy depends entirely on the base station's position accuracy. If your base coordinates are wrong by 30cm, your rover measurements will be wrong by 30cm. This is why base-rover surveys require Precise Point Positioning (PPP) post-processing — a global correction service that provides 2-5 cm absolute accuracy anywhere on Earth.
 
-### Using Both Methods for Cross-Validation
+### Survey-In: Establishing Base Station Quality
 
-For maximum confidence — especially on your first deployment — you can run both methods simultaneously:
+Survey-in is a procedure the base station runs at the start of the field day to calculate its own position. The base collects position fixes continuously and averages them; individual fixes are noisy, but averaging over 30-60 minutes converges toward a stable position with ~0.25-0.5m absolute accuracy. That stability is good enough to support real-time RTK corrections for the rover during the day. PPP post-processing later refines this to centimeter-level absolute coordinates.
 
-1. Connect the rover to InaCORS NTRIP for real-time absolute positions (primary workflow)
-2. Also deploy the base station, logging RINEX data throughout the day
-3. Post-process the base station data with AUSPOS/CSRS-PPP
-4. Compare NTRIP-derived positions against PPP-corrected positions at the same check points
-
-If the two independent methods agree within 3-5 cm, you have strong confirmation that both are working correctly. This "belt and suspenders" approach validates NTRIP against the established PPP workflow and builds trust in the simpler NTRIP-only workflow for future surveys.
+Survey-in applies only to the base station. It is not required when using NTRIP, because InaCORS reference stations already have precisely known coordinates — the NTRIP rover receives absolute positions directly.
 
 ### Laser Distance Measurement for Cross-Sections
 
@@ -59,11 +52,11 @@ This independent validation provides confidence that your system works correctly
 
 ### DAY-BEFORE SETUP
 1. [Software Setup](#1-software-setup)
-2. [NTRIP Setup](#2-ntrip-setup)
+2. [Base Station Preparation](#2-base-station-preparation)
 3. [Equipment Check](#3-equipment-check)
 
 ### FIELD DAY
-4. [RTK Corrections Setup](#4-rtk-corrections-setup)
+4. [Base Station Setup & Survey-In](#4-base-station-setup--survey-in)
 5. [Check Points](#5-check-points)
 6. [Camera & Control Points](#6-camera--control-points)
 7. [Water Level Survey](#7-water-level-survey)
@@ -83,7 +76,7 @@ This independent validation provides confidence that your system works correctly
 - [F. AUSPOS Submission](#appendix-f-auspos-submission)
 - [G. CSRS-PPP Submission](#appendix-g-csrs-ppp-submission)
 - [H. GAPS Submission](#appendix-h-gaps-submission)
-- [I. InaCORS Quick Reference Card](#appendix-i-inacors-quick-reference-card)
+- [I. Survey Equipment Rental in Jakarta](#appendix-i-survey-equipment-rental-in-jakarta)
 
 ---
 
@@ -92,11 +85,12 @@ This independent validation provides confidence that your system works correctly
 Every field day must meet these thresholds. Missing any single criterion compromises data quality and invalidates the survey. These are not suggestions — they are requirements derived from error propagation analysis in photogrammetric velocity measurements.
 
 - [ ] RTK FIX maintained throughout survey
-- [ ] Corrections active entire duration (NTRIP connection or base station online)
+- [ ] Base station online and transmitting RTCM corrections entire duration
 - [ ] Check point drift ≤3cm H, ≤4cm V
 - [ ] Min 12 satellites, PDOP ≤2.5
+- [ ] Base station logging RINEX continuously for PPP (minimum 2 hours, 6-8 hours recommended)
 
-**Why These Thresholds:** RTK FIX ensures centimeter accuracy. If the rover drops to FLOAT solution even briefly, that measurement degrades to 10-50cm accuracy. Correction interruptions — whether NTRIP disconnection or base station failure — force the rover back to autonomous mode (2-10 meter accuracy). Check point drift exceeding 3cm indicates systematic problems with corrections or atmospheric modeling. PDOP above 2.5 means poor satellite geometry that amplifies measurement errors. Fewer than 12 satellites reduces redundancy and increases vulnerability to signal obstructions.
+**Why These Thresholds:** RTK FIX ensures centimeter accuracy. If the rover drops to FLOAT solution even briefly, that measurement degrades to 10-50cm accuracy. Correction interruptions — base station failure, radio link loss — force the rover back to autonomous mode (2-10 meter accuracy). Check point drift exceeding 3cm indicates systematic problems with corrections or atmospheric modeling. PDOP above 2.5 means poor satellite geometry that amplifies measurement errors. Fewer than 12 satellites reduces redundancy and increases vulnerability to signal obstructions.
 
 ---
 
@@ -117,13 +111,13 @@ Every field day must meet these thresholds. Missing any single criterion comprom
 
 # DAY-BEFORE SETUP
 
-Testing at home prevents discovering problems in the field. Every connection point in this system can fail — USB cables, mock location permissions, coordinate system settings, quality threshold configurations, NTRIP credentials. Finding failures at your desk costs minutes. Finding them at a remote river site costs hours and potentially invalidates the field day.
+Testing at home prevents discovering problems in the field. Every connection point in this system can fail — USB cables, mock location permissions, coordinate system settings, quality threshold configurations, base station configuration, radio links. Finding failures at your desk costs minutes. Finding them at a remote river site costs hours and potentially invalidates the field day.
 
 ## 1) Software Setup
 
 ### Why This Matters
 
-The positioning chain flows from correction source (NTRIP or base station) through rover to GNSS Master to SW Maps. A misconfiguration anywhere in this chain breaks the entire system. USB debugging must be enabled or Android blocks the connection. Mock location must designate GNSS Master or the operating system ignores external GPS data. The coordinate system must match your processing workflow or points end up in the wrong location.
+The positioning chain flows from the base station through a radio link to the rover to GNSS Master to SW Maps. A misconfiguration anywhere in this chain breaks the entire system. USB debugging must be enabled or Android blocks the connection. Mock location must designate GNSS Master or the operating system ignores external GPS data. The coordinate system must match your processing workflow or points end up in the wrong location.
 
 Testing the full system integration reveals these problems before they matter. You want to discover that SW Maps doesn't recognize RTK FIX status while sitting at home with documentation available, not while standing in a river trying to remember obscure settings.
 
@@ -188,89 +182,65 @@ The Universal Transverse Mercator system divides Earth into 60 north-south zones
 
 ### Integration Test
 - [ ] Full system test: Rover → GNSS Master → SW Maps
-- [ ] Verify RTK status appears in SW Maps
+- [ ] Verify RTK status appears in SW Maps (once base station is running)
 - [ ] Test point collection with quality thresholds
 
-**Full System Verification:** Power on the rover, connect via USB, open GNSS Master, launch SW Maps. You should see satellite count, PDOP values, and precision estimates. Without corrections active (NTRIP or base station), you won't see RTK FIX — but you can verify that the data pipeline works end-to-end. Save a test point and verify all attributes populate correctly.
+**Full System Verification:** Power on the rover, connect via USB, open GNSS Master, launch SW Maps. You should see satellite count, PDOP values, and precision estimates. Without corrections active, you won't see RTK FIX — but you can verify that the data pipeline works end-to-end. Save a test point and verify all attributes populate correctly.
 
 **Quality Threshold Testing:** Configure SW Maps to reject points that don't meet your quality gates. This prevents accidentally recording poor-quality data when you're focused on field logistics rather than data validation screens.
 
 ---
 
-## 2) NTRIP Setup
+## 2) Base Station Preparation
 
 ### Why This Matters
 
-NTRIP replaces the physical base station with network-delivered corrections from InaCORS — Indonesia's national CORS network. Setting this up the day before ensures your credentials work, the connection is stable, and you won't waste field time debugging network issues.
+The base station is the foundation of your survey. Its position defines the reference frame for every rover measurement. Configuration errors, logging failures, or power problems at the base invalidate the entire survey day. Prepare and test the base station the day before to catch problems while you can still fix them.
 
-### InaCORS Registration
-- [ ] Register at http://nrtk.big.go.id/sbc/Account/Register (free)
-- [ ] Receive username and password via email
-- [ ] Log in to verify account is active: http://nrtk.big.go.id/sbc/
+### Base Station Configuration
+- [ ] Connect base receiver to computer via USB
+- [ ] Launch u-center → [Full configuration guide](#appendix-c-base-station-u-center-config)
+- [ ] Verify TMODE3 is set to Survey-in with appropriate time/accuracy thresholds
+- [ ] Verify RTCM3 output on UART2 is enabled with required messages
+- [ ] Verify raw data logging (UBX-RXM-RAWX, UBX-RXM-SFRBX) is enabled on USB
+- [ ] Save configuration to battery-backed RAM so it survives power cycling
 
-**Registration Timing:** Register at least 2-3 days before your field day. Account activation may take 1-2 business days. The portal is in Indonesian — use browser translation if needed. A local phone number (Telkomsel SIM) may be required for registration.
+**Why Pre-Configure:** Field time is expensive. Configuring the base in the field requires a laptop, cable, and concentration you can't spare while also setting up the rover, antenna, and radio link. Do it at home.
 
-### Check Coverage at Your Site
-- [ ] Visit https://srgi.big.go.id/page/service-check
-- [ ] Enter your site coordinates or browse the map
-- [ ] Verify your site is within InaCORS coverage (green zone)
+### Verify Required Message Logging
+- [ ] Confirm UBX-RXM-RAWX (raw carrier phase) is enabled — this is the critical message for PPP
+- [ ] Confirm UBX-RXM-SFRBX (satellite navigation data) is enabled
+- [ ] If either is missing, the UBX file will not convert to useful RINEX and PPP will be impossible
 
-**Coverage Assessment:** Both Sukabumi and Jakarta are in areas with excellent InaCORS coverage on Java. If your site shows poor coverage or no coverage, plan for the base station fallback method (Section 4, Path B).
+**Consequence of Skipping This Check:** Without RAWX/SFRBX logging, you can complete the survey, receive corrections all day, and return home with unusable raw data. You'd have no way to determine absolute coordinates for your base. Verify configuration before every field day.
 
-### NTRIP Client Configuration
+### Test Base-Rover Radio Link
+- [ ] Power on both base and rover with their respective antennas
+- [ ] Verify rover receives RTCM corrections over the radio link
+- [ ] Confirm correction age on the rover stays below 5 seconds
+- [ ] Test at realistic base-rover separation (at least tens of meters, ideally representative of field conditions)
 
-Configure the NTRIP client in **SW Maps** (preferred — simplest setup) or **GNSS Master**:
-
-| Setting | Value |
-|---------|-------|
-| **NTRIP Caster Host** | `nrtk.big.go.id` |
-| **Port** | `2001` (**not** 2101 — InaCORS uses a non-standard port) |
-| **Mountpoint** | `VRS` (primary) or `nearest` (fallback) |
-| **Username** | Your InaCORS username |
-| **Password** | Your InaCORS password |
-| **Send NMEA GGA** | **Yes** (required for VRS — the caster needs your position) |
-| **NTRIP Version** | 1.0 |
-
-**Port 2001:** This is the most common source of connection failure. Standard NTRIP port is 2101 — InaCORS uses 2001. If your client auto-fills 2101, change it manually.
-
-**VRS vs Nearest:** VRS (Virtual Reference Station) interpolates corrections from surrounding CORS stations tailored to your location — best accuracy. The "nearest" mountpoint connects to the single closest station — simpler but accuracy degrades with distance. Use VRS as primary, nearest as fallback.
-
-**Send NMEA GGA:** The VRS mountpoint needs your approximate position to generate corrections for your location. Your NTRIP client sends this automatically via NMEA GGA messages. If this is disabled, VRS won't work — you'll get an error or no corrections.
-
-### Cell Data Requirements
-- [ ] Working SIM with data plan (Telkomsel recommended for best rural coverage)
-- [ ] Verify 4G/LTE signal at or near your survey site
-- [ ] Budget: ~30-60 MB for a full survey day (minimal bandwidth)
-
-### Test the NTRIP Connection
-- [ ] Connect rover to phone via USB
-- [ ] Open GNSS Master → verify rover connected
-- [ ] Open SW Maps → start NTRIP client with InaCORS settings
-- [ ] Verify corrections flowing: correction age should update every 1-2 seconds
-- [ ] Wait for RTK FIX (may take 10-60 seconds with NTRIP)
-- [ ] If testing indoors: you may not achieve FIX, but verify the NTRIP connection establishes and correction data flows
-
-**What Success Looks Like:** SW Maps or GNSS Master shows "NTRIP Connected" (or similar), correction age counts up from 0-1 seconds, and if you're outdoors with good sky view, the solution transitions from FLOAT to FIX within 1-2 minutes.
+**Radio Range:** Radio range varies with terrain, vegetation, and frequency — typical range is 1-5 km for low-power radios, 10-30 km for higher-power systems. Confirm the link works at the distance you expect in the field.
 
 ---
 
 ## 3) Equipment Check
 
-Calculate your power budget conservatively — the rover runs 6-8 hours, the Android device 4-6 hours with screen on. With NTRIP, you don't need base station power. If running the base station as well (cross-validation or fallback), budget 8-12 hours for it.
+Calculate your power budget conservatively — the rover runs 6-8 hours, the Android device 4-6 hours with screen on, and the base station must run 8-12 hours (you want RINEX logging to cover the entire survey).
 
 **Power Systems:**
 - [ ] Rover: Full charge
-- [ ] Android: 100% + power bank (NTRIP uses continuous cell data, which drains battery faster)
+- [ ] Android: 100% + power bank
+- [ ] Base station: Full charge + backup battery (8-12 hour runtime)
 - [ ] All USB cables tested
-- [ ] If using base station: Full charge + backup battery
 
 **Cable Testing:** Test every cable you'll use by verifying data transfer, not just charging. A cable that charges a device might not support the USB serial communication the rover needs.
 
 **Physical Equipment:**
+- [ ] Base tripod, antenna cables, antenna
 - [ ] Survey poles (primary + backup), bipod if available
 - [ ] Steel tape measure, markers
 - [ ] Waterproof notebook, pencils
-- [ ] If using base station: Base tripod (if available), antenna cables
 - [ ] If using Disto X6 P2P: Verify complete P2P package (Disto X6 + DST 360-X + TRI 120 + GZM 3), battery charged, test P2P function
 
 **Redundancy Philosophy:** Bring backup survey poles. If you drop your primary pole in the river or damage it on rocks, you need a replacement immediately. The same applies to markers, notebooks, and anything else that's small, inexpensive, and critical to operations if lost.
@@ -279,43 +249,19 @@ Calculate your power budget conservatively — the rover runs 6-8 hours, the And
 
 # FIELD DAY
 
-## 4) RTK Corrections Setup
+## 4) Base Station Setup & Survey-In
 
-This section covers establishing your correction source — the foundation for all measurements that follow. Choose the path that matches your situation.
+This section establishes your correction source — the foundation for all measurements that follow. Deploy the base station first, start survey-in and RINEX logging, then move on to rover setup and check points once corrections are stable.
 
-### Path A: NTRIP (Primary — Use When Cell Coverage Available)
+**Do Not Connect the Rover to NTRIP Simultaneously:** If you run NTRIP on the rover at the same time as the local base station transmits RTCM, the rover will receive two conflicting correction streams. This produces unreliable positions. The rover must use exactly one correction source per session.
 
-No physical base station needed. Your rover receives corrections from InaCORS via your phone's cellular data connection.
-
-#### Setup
-- [ ] Power on rover, connect to phone via USB
-- [ ] Open GNSS Master, verify rover connected
-- [ ] Open SW Maps, start NTRIP client (settings from Section 2)
-- [ ] Verify NTRIP connected and corrections flowing (correction age updating)
-- [ ] Wait for RTK FIX — typically 10-60 seconds outdoors
-- [ ] Verify: RTK FIX, PDOP ≤2.5, Satellites ≥12
-
-**What to Monitor:** Correction age should stay below 5 seconds. If it climbs above 10 seconds, the NTRIP connection is intermittent. Above 30 seconds, the RTK solution will degrade to FLOAT. Watch for cell signal drops, especially near rivers in valleys.
-
-**If NTRIP Won't Connect:** Try the fallback mountpoint ("nearest" instead of "VRS"). If that fails, check cell signal. If cell coverage is genuinely unavailable, switch to Path B (base station fallback).
-
-#### If Cross-Validating with PPP (Recommended for First Deployment)
-- [ ] Also deploy the base station at a clear-sky location near the survey area
-- [ ] Start RINEX logging on the base station (same as Path B setup)
-- [ ] The base station runs passively — it only logs data, it doesn't provide corrections to the rover
-- [ ] You'll process this RINEX data after the survey to cross-check NTRIP positions
-
-### Path B: Local Base Station (Fallback — Use When Cell Coverage Unavailable)
-
-This is the original self-contained procedure. Use when NTRIP is not available.
-
-#### Why Site Selection Matters
+### Why Site Selection Matters
 
 Satellite signals travel from space at radio frequencies. These frequencies experience delays when passing through the atmosphere, reflections when bouncing off surfaces, and complete blockage when hitting solid objects. Your base station must receive clean signals from satellites distributed across the sky dome to calculate accurate corrections.
 
 Trees, buildings, vehicles, and terrain create reflections — multipath errors that show up as positions jumping around by several centimeters. Metal objects reflect signals particularly well. Water bodies can cause significant multipath. A poor site selection introduces errors that no amount of processing can remove.
 
-#### Site Selection
+### Site Selection
 - [ ] Open sky >15° above horizon, >10m from metal/vehicles
 - [ ] Stable ground, accessible for monitoring
 - [ ] For canals: High ground >20m from water (or as close as possible)
@@ -326,7 +272,7 @@ Trees, buildings, vehicles, and terrain create reflections — multipath errors 
 
 **Accessibility:** You need to monitor this base station periodically throughout the day. If RINEX logging stops, corrections halt, or power fails, you must know immediately. Place the base where you can check it without interrupting survey work.
 
-#### Setup Process
+### Setup Process
 - [ ] Connect antenna BEFORE powering base
 - [ ] Level tripod, mark exact point
 - [ ] Measure antenna height to ARP (3 measurements)
@@ -338,7 +284,7 @@ Trees, buildings, vehicles, and terrain create reflections — multipath errors 
 
 **Marking the Point:** You might need to return to this exact spot for future surveys or to verify position stability. A paint mark, labeled stake, or precisely described location in photos allows repositioning within centimeters.
 
-#### Survey-In Process
+### Survey-In Process
 - [ ] 30-60 minute survey-in for 0.25m accuracy
 - [ ] Monitor: PDOP ≤1.5, Satellites ≥15
 - [ ] Record final coordinates in your UTM zone
@@ -350,6 +296,16 @@ Trees, buildings, vehicles, and terrain create reflections — multipath errors 
 
 **RINEX Logging:** This raw data file enables PPP post-processing. The receiver saves every satellite observation — carrier phase measurements, pseudoranges, satellite ephemeris data — in a binary format. You'll convert this to RINEX format later for PPP processing. Start logging at the beginning of the day and stop at the end. The longer the observation session, the better the PPP accuracy.
 
+### Rover Setup
+- [ ] Power on rover, connect to phone via USB
+- [ ] Open GNSS Master, verify rover connected
+- [ ] Verify the rover is receiving RTCM corrections from the base over the radio link (correction age <5s)
+- [ ] Open SW Maps
+- [ ] Wait for RTK FIX — typically 10-60 seconds outdoors once corrections are flowing
+- [ ] Verify: RTK FIX, PDOP ≤2.5, Satellites ≥12
+
+**What to Monitor:** Correction age should stay below 5 seconds. If it climbs above 10 seconds, the radio link is intermittent. Above 30 seconds, the RTK solution will degrade to FLOAT. Check radio power, antenna connections, and obstructions between base and rover.
+
 ---
 
 ## 5) Check Points
@@ -360,7 +316,7 @@ Check points provide the only independent validation of your system accuracy. Wi
 
 Survey check points at the start of the day, after 4-6 hours, and at the end of the day. This temporal sequence reveals whether your correction source drifts or your RTK solution degrades over time. Atmospheric conditions change throughout the day — ionospheric delays follow solar activity patterns, tropospheric delays respond to temperature and humidity changes. These changing conditions can cause apparent position shifts.
 
-If your check point measurements agree within 3cm across the entire day, your system maintains stable accuracy. If drift exceeds 3cm, something changed — correction source problems, atmospheric modeling failure, or satellite geometry degradation. You need to identify and correct the problem before using that day's data.
+If your check point measurements agree within 3cm across the entire day, your system maintains stable accuracy. If drift exceeds 3cm, something changed — the base physically moved, correction link problems, atmospheric modeling failure, or satellite geometry degradation. You need to identify and correct the problem before using that day's data.
 
 ### Establish CP_START
 - [ ] 20-50m from survey area, stable high ground
@@ -384,9 +340,9 @@ If your check point measurements agree within 3cm across the entire day, your sy
 
 **Interpreting Drift:** Small drift (≤3cm) is normal and acceptable — atmospheric conditions change, satellite geometry evolves, receiver noise is random. Drift in this range doesn't compromise survey quality because it's smaller than your required accuracy threshold.
 
-Drift exceeding 3cm horizontal or 4cm vertical signals problems. With NTRIP, this could indicate CORS station issues, poor VRS interpolation, or intermittent corrections. With a base station, the base might have physically moved (tripod settling, ground instability) or the base position calculation might have been wrong. Investigate the cause and decide whether to continue surveying or restart.
+Drift exceeding 3cm horizontal or 4cm vertical signals problems. The base might have physically moved (tripod settling, ground instability) or the base position calculation might have been wrong. Investigate the cause and decide whether to continue surveying or restart.
 
-**What to Do If Drift Exceeds Limits:** Stop surveying. For NTRIP: verify corrections are flowing (correction age <5s), check cell signal stability, try switching from VRS to nearest mountpoint. For base station: return to the base and verify it hasn't moved physically, check the receiver display for RTCM output, satellite count, and position stability. If problems persist, consider restarting the correction setup or postponing the field day.
+**What to Do If Drift Exceeds Limits:** Stop surveying. Return to the base and verify it hasn't moved physically, check the receiver display for RTCM output, satellite count, and position stability. If problems persist, consider restarting the correction setup or postponing the field day.
 
 ---
 
@@ -644,20 +600,20 @@ The survey isn't complete until you've verified data quality, backed up files, a
 
 ### Final Checks
 - [ ] Re-measure CP_END, calculate total drift
-- [ ] If base station running: Stop RINEX logging, record end time
+- [ ] **Stop RINEX logging on the base station, record end time**
 - [ ] Export SW Maps data (CSV + geopackage)
 - [ ] Multiple backups on different devices
 - [ ] Document any deviations from protocol
 
 **Check Point Verification:** The CP_END measurement tells you whether your system maintained accuracy throughout the day. Compare it to CP_START coordinates. If drift exceeds 3cm horizontal or 4cm vertical, you have a problem that requires investigation. Don't wait until you're back at the office to discover this — check it while you're still on-site with the equipment available to diagnose issues.
 
-**RINEX Logging (if running base station):** Stop the logging and safely save the file. This raw data enables PPP processing to cross-check your NTRIP positions or, for base-station-only surveys, to determine accurate base coordinates. Handle the file carefully — it's irreplaceable.
+**RINEX Logging:** Stop the logging and safely save the file. This raw data enables PPP processing to determine accurate base coordinates. Handle the file carefully — it's irreplaceable.
 
 **Data Export:** SW Maps stores data in an internal database. Export it to CSV (human-readable, easy to process) and native GeoPackage format (preserves coordinate system metadata and attributes). Save both formats. CSV provides compatibility with generic processing tools. GeoPackage preserves spatial information correctly for GIS software.
 
 **Multiple Backups:** Copy the exported files to at least two separate devices immediately — Android storage, USB drive, laptop, cloud storage. Memory cards fail. Phones get dropped in rivers. Having multiple backups means no single failure loses your day's work. Don't wait until evening at the hotel — back up on-site before leaving.
 
-**Deviation Documentation:** If anything didn't go according to plan — abbreviated averaging times, relaxed quality thresholds, skipped check points, NTRIP disconnections, base station interruptions — document it in writing while the details are fresh. These notes explain data anomalies during processing and help assess whether the data remains usable for its intended purpose.
+**Deviation Documentation:** If anything didn't go according to plan — abbreviated averaging times, relaxed quality thresholds, skipped check points, base station interruptions, radio link loss — document it in writing while the details are fresh. These notes explain data anomalies during processing and help assess whether the data remains usable for its intended purpose.
 
 ---
 
@@ -665,48 +621,25 @@ The survey isn't complete until you've verified data quality, backed up files, a
 
 ## 11) Post-Processing & Coordinate Correction
 
-Post-processing requirements depend on which correction method you used in the field.
+With a local base station, you need PPP post-processing to transform your field data from local relative accuracy to global absolute accuracy. The base station survey-in process provided ~0.5-1 meter coordinates adequate for RTK corrections, but you need centimeter-level absolute coordinates for long-term monitoring and data integration with other surveys.
 
-### NTRIP Surveys: Simplified Workflow
-
-If you used InaCORS NTRIP for corrections, your field data already has centimeter-level absolute accuracy in SRGI2013/WGS84. **PPP post-processing is not required** — the positions you collected are your final coordinates.
-
-The simplified workflow:
-
-1. **Export from SW Maps** → GeoPackage + CSV
-2. **Import to QGIS** → verify CRS matches your UTM zone
-3. **Apply pole height corrections** → `bed_elevation = Z_coord - pole_height`
-4. **Export XYZ** for PtBox
-
-That's it. No UBX-to-RINEX conversion, no PPP submission, no coordinate translation. The NTRIP corrections already placed your points in absolute coordinates.
-
-#### Cross-Validation (If Base Station Was Also Running)
-
-If you ran the base station alongside NTRIP for cross-validation, process the base station RINEX data to verify:
-
-1. Convert UBX to RINEX (see [Step 1 below](#step-1-convert-ubx-to-rinex))
-2. Submit to AUSPOS/CSRS-PPP (see [Step 2 below](#step-2-precise-positioning-service-processing))
-3. Compare PPP-corrected base position against the RTK-surveyed position of that same point (from NTRIP)
-4. Agreement within 3-5cm confirms both methods are working correctly
-5. If disagreement exceeds 5cm, investigate: NTRIP configuration, base station antenna height, PPP processing issues
-
-This cross-validation is recommended for your first deployment and optional thereafter once you've confirmed the NTRIP workflow produces consistent results.
-
-### Base Station Surveys: Full PPP Workflow
-
-If you used a local base station (Path B) without NTRIP, you need PPP post-processing to transform your field data from local relative accuracy to global absolute accuracy. The base station survey-in process provided ~0.5-1 meter coordinates adequate for RTK corrections, but you need centimeter-level absolute coordinates for long-term monitoring and data integration with other surveys.
-
-#### Why Post-Processing Matters
+### Why Post-Processing Matters
 
 Precise positioning services use reference station networks and global satellite orbit and clock corrections to calculate your base station position within 2-5cm anywhere on Earth. This accuracy enables combining data from multiple surveys, integrating with existing geodetic infrastructure, and detecting long-term position changes at monitoring sites.
 
 Without post-processing correction, your survey has excellent internal consistency — points measured relative to each other are accurate to 1-2cm — but unknown absolute position. With precise positioning, the entire survey has known global coordinates that support integration with other datasets and temporal analysis.
 
+### Workflow Overview
+
+1. Convert the base station's UBX raw data file to RINEX
+2. Submit the RINEX file to a PPP service (AUSPOS recommended for Indonesia)
+3. Calculate the translation between the survey-in coordinates and the PPP-corrected coordinates
+4. Apply the translation to all rover points in QGIS, then subtract pole height for bed elevations
+5. Export XYZ for PtBox
+
 ---
 
 ## Step 1: Convert UBX to RINEX
-
-*Skip this section if you used NTRIP-only (no base station running).*
 
 Your base station recorded raw observations in u-blox UBX format. This proprietary binary format works with u-blox software but isn't compatible with PPP services. RINEX (Receiver Independent Exchange Format) provides a standardized format that all PPP services accept.
 
@@ -747,8 +680,6 @@ Your base station recorded raw observations in u-blox UBX format. This proprieta
 ---
 
 ## Step 2: Precise Positioning Service Processing
-
-*Skip this section if you used NTRIP-only (no base station running), unless cross-validating.*
 
 Precise positioning services process your base station observations to determine accurate global coordinates. These services use precise satellite orbit and clock products combined with reference station networks to achieve 2-5cm absolute accuracy. Make sure that you select a provider that serves your geographic area. AUSPOS is a service provided by the Australian Government that serves southeast Asia.
 
@@ -877,16 +808,7 @@ QGIS provides tools for spatial data management, coordinate transformation, and 
 
 **CRS Verification:** Check that QGIS recognized the coordinate system correctly. The project and all layers should show your UTM zone EPSG code (example: EPSG:32748 for UTM 48S). If you see EPSG:4326 (WGS84 geographic) or an unknown CRS, something went wrong during export or import. Fix this before proceeding — coordinate math only works when all data uses the same system.
 
-### For NTRIP Surveys: Apply Pole Height Corrections Only
-
-If you used NTRIP, no PPP translation is needed. Your coordinates are already absolute.
-
-- [ ] Open Field Calculator for cross-section layers
-- [ ] Calculate bed elevations: `bed_elevation = Z_coord - pole_height`
-- [ ] Save changes to GeoPackage
-- [ ] Validate: Check point repeatability should be ≤3cm
-
-### For Base Station Surveys: Apply PPP Translation + Pole Height
+### Apply PPP Translation + Pole Height
 
 - [ ] Open Field Calculator for each layer in GeoPackage
 - [ ] Create new fields: `E_corrected = "x_coord" + ΔE`, `N_corrected = "y_coord" + ΔN`, `Z_corrected = "z_coord" + ΔZ`
@@ -1047,8 +969,6 @@ Create these feature layers in your SW Maps project (all should be POINT geometr
 
 ## Appendix C: Base Station u-center Config
 
-*This appendix applies to base station surveys (Path B) and cross-validation setups.*
-
 u-center is u-blox's configuration software for their GNSS receivers. You'll use it to configure the base station for survey-in mode, enable RTCM correction output, and start raw data logging for PPP processing.
 
 ### Connection Setup
@@ -1134,27 +1054,16 @@ The sample video serves two purposes. First, it documents the flow conditions an
 
 ## Appendix E: Troubleshooting
 
-### NTRIP Connection Issues
-
-- **Connection refused:** Verify port is 2001 (not 2101), check hostname `nrtk.big.go.id`
-- **Authentication failed:** Log in at http://nrtk.big.go.id/sbc/ to verify account is active
-- **No corrections received:** Ensure "Send NMEA GGA" is enabled (required for VRS mountpoint)
-- **Intermittent connection:** Check cell signal strength, try moving to higher ground
-- **VRS mountpoint unavailable:** Switch to "nearest" mountpoint as fallback
-- **Correction age climbing:** NTRIP data stream is intermittent — check cell signal, consider switching to base station fallback
-
 ### No RTK FIX
 
-- Check correction source: NTRIP connected and corrections flowing, or base survey-in completed
+- Check correction source: base survey-in completed and RTCM corrections flowing over the radio link
 - Verify correction stream: correction age should be <5 seconds
 - Wait longer (up to 20 minutes for initial convergence)
 - Move to better sky view
 
-**Survey-In Completion (base station):** The base must finish its survey-in process before transmitting corrections. Check the base station display or u-center to confirm TMODE3 shows "Survey-in completed" or "Fixed" status. If the survey-in is still running, you'll receive corrections but they're based on an incomplete position calculation.
+**Survey-In Completion:** The base must finish its survey-in process before transmitting corrections. Check the base station display or u-center to confirm TMODE3 shows "Survey-in completed" or "Fixed" status. If the survey-in is still running, you'll receive corrections but they're based on an incomplete position calculation.
 
-**NTRIP Correction Flow:** Verify the NTRIP client shows corrections being received. SW Maps or GNSS Master should display correction age that resets every 1-2 seconds. If correction age climbs steadily, the data stream has stopped — check cell connection.
-
-**Radio Link (base station):** Verify the rover receives corrections. Most rover receivers display correction age and source. If correction age exceeds 60 seconds, the link is broken or intermittent. Check radio power, antenna connections, and distance between base and rover. Radio range varies with terrain, vegetation, and frequency — typical range is 1-5 km for low-power radios, 10-30 km for higher-power systems.
+**Radio Link:** Verify the rover receives corrections. Most rover receivers display correction age and source. If correction age exceeds 60 seconds, the link is broken or intermittent. Check radio power, antenna connections, and distance between base and rover. Radio range varies with terrain, vegetation, and frequency — typical range is 1-5 km for low-power radios, 10-30 km for higher-power systems.
 
 **Initialization Time:** RTK solutions require resolving integer ambiguities in the carrier phase measurements. This process can take seconds in ideal conditions or minutes in challenging conditions. Be patient. If FIX doesn't occur within 20 minutes, something is wrong — poor satellite geometry, weak signal quality, incorrect configuration, or excessive baseline distance.
 
@@ -1390,43 +1299,7 @@ GAPS provides true PPP with well-documented algorithms, ideal for cross-validati
 
 ---
 
-## Appendix I: InaCORS Quick Reference Card
-
-Print this card and keep it in your field notebook.
-
-```
-╔══════════════════════════════════════════════════════════╗
-║              InaCORS NTRIP QUICK REFERENCE               ║
-╠══════════════════════════════════════════════════════════╣
-║                                                          ║
-║  NTRIP Caster Host:  nrtk.big.go.id                     ║
-║  IP (fallback):      103.22.171.6                        ║
-║  Port:               2001  (NOT 2101!)                   ║
-║  Mountpoint:         VRS  (Java); nearest (fallback)     ║
-║  NTRIP Version:      1.0                                 ║
-║  Send NMEA GGA:      YES                                 ║
-║                                                          ║
-║  Registration:   http://nrtk.big.go.id/sbc/Account/      ║
-║                  Register                                ║
-║  Coverage check: https://srgi.big.go.id/page/            ║
-║                  service-check                           ║
-║                                                          ║
-║  Coordinate system:  SRGI2013 (≈ WGS84 for practical    ║
-║                      purposes)                           ║
-║                                                          ║
-║  Troubleshooting:                                        ║
-║  1. Check port is 2001                                   ║
-║  2. Check cell data connection                           ║
-║  3. Verify Send GGA = YES                                ║
-║  4. Try IP address if hostname fails                     ║
-║  5. Try "nearest" if VRS unavailable                     ║
-║                                                          ║
-╚══════════════════════════════════════════════════════════╝
-```
-
----
-
-## Appendix J: Survey Equipment Rental in Jakarta
+## Appendix I: Survey Equipment Rental in Jakarta
 
 If you don't have your own RTK GNSS equipment, several companies in the Jakarta area rent survey-grade instruments. WhatsApp is the primary communication channel for most of these companies — initiate contact there rather than email.
 
@@ -1481,7 +1354,8 @@ Weekly rates are typically 5-6x the daily rate. Most vendors require a 50% depos
 
 ---
 
-**Document Version:** 2026-03-04
+**Document Version:** 2026-04-19
 **Author:** Tom Jordan / OpenRiverCam Project
-**Purpose:** Field procedure documentation with explanatory context for non-expert users
-**Supersedes:** SURVEY_PROCESS_v2.md (base-station-only procedure — preserved as reference and fallback documentation)
+**Purpose:** Field procedure documentation — local base station + PPP workflow
+**Companion document:** `SURVEY_PROCESS_v3_ntrip.md` (NTRIP workflow, for sites with cell coverage)
+**Supersedes:** `SURVEY_PROCESS_v3.md` (combined NTRIP + base station document)

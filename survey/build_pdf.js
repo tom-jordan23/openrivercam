@@ -1,14 +1,22 @@
 #!/usr/bin/env node
-// Converts SURVEY_PROCESS_v3.md to a print-ready PDF using Chrome headless
+// Converts the survey process markdown files to print-ready PDFs using Chrome headless.
+// Builds both the NTRIP and base-station workflow docs.
 // Usage: node build_pdf.js
 
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
-const mdFile = path.join(__dirname, 'SURVEY_PROCESS_v3.md');
-const htmlFile = path.join(__dirname, 'SURVEY_PROCESS_v3.html');
-const pdfFile = path.join(__dirname, 'SURVEY_PROCESS_v3.pdf');
+const docs = [
+  {
+    base: 'SURVEY_PROCESS_v3_ntrip',
+    title: 'River Survey Procedure v3 (NTRIP) — OpenRiverCam',
+  },
+  {
+    base: 'SURVEY_PROCESS_v3_base',
+    title: 'River Survey Procedure v3 (Local Base Station) — OpenRiverCam',
+  },
+];
 
 // Simple markdown-to-HTML conversion (covers what we need)
 function mdToHtml(md) {
@@ -102,14 +110,19 @@ function mdToHtml(md) {
   return html;
 }
 
-const md = fs.readFileSync(mdFile, 'utf8');
-const body = mdToHtml(md);
+function buildDoc({ base, title }) {
+  const mdFile = path.join(__dirname, `${base}.md`);
+  const htmlFile = path.join(__dirname, `${base}.html`);
+  const pdfFile = path.join(__dirname, `${base}.pdf`);
 
-const htmlDoc = `<!DOCTYPE html>
+  const md = fs.readFileSync(mdFile, 'utf8');
+  const body = mdToHtml(md);
+
+  const htmlDoc = `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>River Survey Procedure v3 — OpenRiverCam</title>
+<title>${title}</title>
 <style>
   @page {
     size: A4;
@@ -275,30 +288,30 @@ ${body}
 </body>
 </html>`;
 
-fs.writeFileSync(htmlFile, htmlDoc);
-console.log(`HTML written to ${htmlFile}`);
+  fs.writeFileSync(htmlFile, htmlDoc);
+  console.log(`HTML written to ${htmlFile}`);
 
-// Generate PDF with Chrome headless
-try {
-  execSync(
-    `google-chrome --headless --disable-gpu --no-sandbox --print-to-pdf="${pdfFile}" --no-pdf-header-footer "${htmlFile}"`,
-    { stdio: 'inherit', timeout: 30000 }
-  );
-  console.log(`PDF written to ${pdfFile}`);
-} catch (err) {
-  // Try alternative flag names
+  // Generate PDF with Chrome headless
   try {
     execSync(
-      `google-chrome --headless=new --disable-gpu --no-sandbox --print-to-pdf="${pdfFile}" --no-pdf-header-footer "file://${htmlFile}"`,
+      `google-chrome --headless --disable-gpu --no-sandbox --print-to-pdf="${pdfFile}" --no-pdf-header-footer "${htmlFile}"`,
       { stdio: 'inherit', timeout: 30000 }
     );
     console.log(`PDF written to ${pdfFile}`);
-  } catch (err2) {
-    console.error('Chrome PDF generation failed:', err2.message);
-    console.log(`HTML file is available at ${htmlFile} — open in a browser and print to PDF.`);
-    process.exit(1);
+  } catch (err) {
+    // Try alternative flag names
+    try {
+      execSync(
+        `google-chrome --headless=new --disable-gpu --no-sandbox --print-to-pdf="${pdfFile}" --no-pdf-header-footer "file://${htmlFile}"`,
+        { stdio: 'inherit', timeout: 30000 }
+      );
+      console.log(`PDF written to ${pdfFile}`);
+    } catch (err2) {
+      console.error(`Chrome PDF generation failed for ${base}:`, err2.message);
+      console.log(`HTML file is available at ${htmlFile} — open in a browser and print to PDF.`);
+      process.exit(1);
+    }
   }
 }
 
-// Clean up HTML
-// fs.unlinkSync(htmlFile);  // keep for debugging
+docs.forEach(buildDoc);
