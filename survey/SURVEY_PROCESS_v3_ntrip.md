@@ -68,8 +68,8 @@ This independent validation provides confidence that your system works correctly
 9. [Cross-Section Survey](#9-cross-section-survey)
 10. [End of Day](#10-end-of-day)
 
-### POST-PROCESSING
-11. [Post-Processing & Coordinate Correction](#11-post-processing--coordinate-correction)
+### HAND-OFF
+11. [Hand-Off to the Video Configuration Workflow](#11-hand-off-to-the-video-configuration-workflow)
 
 ### APPENDICES
 - [A. GNSS Master Setup](#appendix-a-gnss-master-setup)
@@ -617,76 +617,26 @@ The survey isn't complete until you've verified data quality, backed up files, a
 
 # POST-PROCESSING
 
-## 11) Post-Processing & Coordinate Correction
+## 11) Hand-Off to the Video Configuration Workflow
 
-With NTRIP, your field data already has centimeter-level absolute accuracy in SRGI2013/WGS84. **PPP post-processing is not required** — the positions you collected are your final coordinates. No UBX-to-RINEX conversion, no PPP submission, no coordinate translation.
+With NTRIP, your field data already has centimeter-level absolute accuracy in SRGI2013 (≈ WGS84 for practical purposes). **No PPP post-processing, no coordinate translation, no QGIS work is required** — the positions you collected are your final coordinates.
 
-### Simplified Workflow
+From here, the survey procedure ends and the video configuration procedure takes over. Follow **Phase 4 of `../spring_2026_ID/docs/VIDEO_CONFIG_SETUP.md`** ("Office: Survey Data Prep"). Phase 4 drives the helper script `survey/orc_survey_prep.py`, which:
 
-1. **Export from SW Maps** → GeoPackage + CSV
-2. **Import to QGIS** → verify CRS matches your UTM zone
-3. **Apply pole height corrections** → `bed_elevation = Z_coord - pole_height`
-4. **Export XYZ** for PtBox
+- Reprojects the GeoJSON from WGS84 (lat/lon) to your target UTM zone
+- Subtracts pole length from GCP and cross-section elevations
+- Splits the export into `gcps.csv`, `cross_section.csv`, `camera_position.csv`, `water_level.csv`
+- Writes a `metadata.yaml` session record
+- Runs a battery of cross-checks (GCP count and spread, numbering gaps, duplicate points, camera elevation vs. `h_ref`, UTM bounds, etc.)
 
----
+### Hand-Off Checklist
 
-### Step 1: Import to QGIS
+- [ ] Export the survey from SW Maps as **GeoJSON** (EPSG:4326 WGS84 — the default)
+- [ ] Confirm every feature the ORC script will consume is named per the [Point Naming Convention](#point-naming-convention) (`GCP1`, `GCP2`, ...; `XS1`, `XS2`, ...; `WL1`, `WL2`; `CAM`)
+- [ ] Back up the GeoPackage as well (long-term archive — see [End of Day](#10-end-of-day))
+- [ ] Open `VIDEO_CONFIG_SETUP.md` and start at Phase 4 with the GeoJSON in hand
 
-QGIS provides tools for spatial data management, coordinate transformation, and quality control. The GeoPackage format SW Maps exports preserves all your coordinate system metadata and attribute information.
-
-#### Data Import
-- [ ] Open QGIS, create new project
-- [ ] Import SW Maps GeoPackage export (preserves CRS metadata)
-- [ ] Verify CRS matches your UTM zone EPSG code - should be automatic
-- [ ] Verify all survey points imported correctly with proper geometry
-
-**GeoPackage vs. CSV:** GeoPackage is a spatial database format that stores geometry, attributes, and coordinate system information together. CSV stores only coordinates and attributes — you must specify the coordinate system manually. Using GeoPackage eliminates coordinate system mistakes and preserves complex attribute types.
-
-**CRS Verification:** Check that QGIS recognized the coordinate system correctly. The project and all layers should show your UTM zone EPSG code (example: EPSG:32748 for UTM 48S). If you see EPSG:4326 (WGS84 geographic) or an unknown CRS, something went wrong during export or import. Fix this before proceeding — coordinate math only works when all data uses the same system.
-
-### Step 2: Apply Pole Height Corrections
-
-Your coordinates from NTRIP are already absolute, so no translation is needed. You only need to subtract pole height to convert rover positions to bed elevations.
-
-- [ ] Open Field Calculator for cross-section layers
-- [ ] Calculate bed elevations: `bed_elevation = Z_coord - pole_height`
-- [ ] Save changes to GeoPackage
-- [ ] Validate: Check point repeatability should be ≤3cm
-
-**Bed Elevation Calculation:** Your rover measured the pole tip position, not the bed. Subtract the pole height to get bed elevation. This calculation provides the critical data for cross-section analysis and discharge calculations. NOTE: If you took survey points without the pole, make sure that you do not correct those points.
-
-**Validation Check:** Open the check point layer. Calculate the difference between your three CP measurements (START, NOON, END). If the coordinates show drift ≤3cm, your data is consistent.
-
-### Step 3: Export for PtBox
-
-PtBox software processes the survey data to support velocity analysis and discharge calculations. It expects a simple XYZ format — three columns containing UTM coordinates (meters) and Elevation for each point.
-
-#### Create XYZ Point Cloud
-- [ ] Select cross-section and control point layers from GeoPackage
-- [ ] Right-click layer → Export → Save Features As
-- [ ] Format: "Comma Separated Value [CSV]"
-- [ ] Geometry: AS_XYZ (exports X,Y,Z coordinates)
-- [ ] Layer options: GEOMETRY=AS_XYZ, CREATE_CSVT=NO
-- [ ] Save as `site_name_YYYYMMDD_survey.csv` (will contain X,Y,Z columns)
-- [ ] Rename to `.xyz` extension if required by PtBox
-
-**Why XYZ Format:** This simple format works with almost all point cloud and photogrammetry software. Three columns: X (Easting), Y (Northing), Z (Elevation). Optional additional columns can contain attributes like point ID or point role. The simplicity makes it robust — no coordinate system confusion, no geometry interpretation issues.
-
-**File Naming:** Include site name and date in the filename. When you have dozens of surveys across multiple sites, this naming convention prevents confusion about which data comes from where and when.
-
-#### Archive and Quality Control
-- [ ] Save GeoPackage as `site_name_YYYYMMDD.gpkg`
-- [ ] Export backup as GeoJSON with CRS metadata
-- [ ] Verify coordinate ranges are reasonable for site location
-- [ ] Check elevation values match expected riverbed depths
-- [ ] Confirm XYZ file format compatible with PtBox import requirements
-- [ ] Test import with small subset if possible
-
-**Archive Strategy:** Keep the GeoPackage as your master dataset. It contains all attributes, metadata, and quality control information. The XYZ export is a derivative product optimized for PtBox. If you need to reprocess later or export in different formats, work from the GeoPackage.
-
-**Coordinate Range Check:** Look at the min/max values for Easting, Northing, and Elevation. Do they make sense for your site location? UTM coordinates should be ~200,000-800,000 for Easting and 0-10,000,000 for Northing depending on your zone and hemisphere. Elevations should match your site — river beds near sea level should have elevations near 0-100m, not 5000m or -1000m. Incorrect values indicate coordinate system problems.
-
-**Elevation Validation:** Compare your surveyed elevations to expected values from satellite imagery, topographic maps, or previous surveys. A 10m discrepancy means something went seriously wrong — wrong coordinate system, wrong antenna height. A 0.5-1m discrepancy might represent datum differences between your survey and the reference data. Sub-decimeter differences are good agreement.
+Phases 5–7 of `VIDEO_CONFIG_SETUP.md` cover authoring the ORC-OS video configuration, activating the daemon, and validating. This survey document ends once the GeoJSON is ready for Phase 4.
 
 ---
 
