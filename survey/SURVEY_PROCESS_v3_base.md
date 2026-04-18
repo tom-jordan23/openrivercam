@@ -178,7 +178,22 @@ The Universal Transverse Mercator system divides Earth into 60 north-south zones
 - Stay within the same zone for all related surveys
 - Record the EPSG code in your field notes for reference
 
-**Layer Attributes:** Define these before the field day. Creating attributes in the field slows collection and increases errors. Each layer needs specific attributes — point ID, measurement time, PDOP, satellite count, precision estimates, point role. Plan the attributes you'll need for quality control and processing.
+### Point Naming Convention
+
+The post-processing script (`orc_survey_prep.py`) classifies each feature by matching the point name prefix. Name points in SW Maps according to the table below so the exported GeoJSON feeds directly into the script without manual cleanup.
+
+| Point type | Name pattern | Examples |
+|------------|--------------|----------|
+| Ground control points | `GCP1`, `GCP2`, ... (sequential) | `GCP1` ... `GCP10` |
+| Discharge cross-section stations | `XS1`, `XS2`, ... (traversal order, LB → RB) | `XS1` ... `XS15` |
+| Water level edge points | `WL1`, `WL2`, ... (one per bank typical) | `WL1`, `WL2` |
+| Camera position | `CAM` (exactly one) | `CAM` |
+
+**Other points are ignored by the script** — check points (`CP_START`, `CP_NOON`, `CP_END`), camera FOV markers, and any second cross-section used only for water-level documentation. The script reports them as "unrecognized labels" warnings, which is expected. They stay in your GeoPackage for field records but do not flow into ORC processing.
+
+**Why the prefix matters:** the script sorts features into `gcps.csv`, `cross_section.csv`, `water_level.csv`, and `camera_position.csv` purely from the name prefix. A GCP saved as "Point 3" instead of `GCP3` is skipped with a warning and never reaches the ORC pose fit.
+
+**Numbering:** number sequentially without gaps. The script warns when it sees gaps (e.g. `GCP1, GCP2, GCP4`), because a gap usually means a point was lost or mislabeled.
 
 ### Integration Test
 - [ ] Full system test: Rover → GNSS Master → SW Maps
@@ -358,7 +373,7 @@ Photogrammetric transformation errors increase with distance from the nearest GC
 
 ### Camera Position
 - [ ] 5-10m height, 15-45° viewing angle
-- [ ] Survey camera position with rover
+- [ ] Survey camera position with rover — save the point named exactly `CAM`
 - [ ] Record height, direction, tilt angle
 
 **Why Survey Camera Position:** Knowing the camera's exact position and orientation helps to reconstruct the scene when sorting through GIS points later. Ensuring that you have points for the camera and field of view can help you spot any survey locations that are outside the camera's view, etc.
@@ -369,7 +384,7 @@ Photogrammetric transformation errors increase with distance from the nearest GC
 - [ ] Place 6+ visible targets in camera FOV
 - [ ] Take sample video → [Detailed procedure](#appendix-d-sample-video-collection)
 - [ ] Survey each control point after video
-- [ ] Use Ground Control Points layer
+- [ ] Save points to the **Ground Control Points** layer, named `GCP1`, `GCP2`, ... in the order you measure them ([naming convention](#point-naming-convention))
 
 **Minimum Six Points:** Photogrammetric transformation solves for camera position, orientation, and lens distortion. This requires at least 6 ground control points with known 3D coordinates. More points improve the solution robustness and allow detecting outliers. Aim for 8-10 GCPs for reliable transformation. Having extras also allows you to discard points that don't resolve well in configuration.
 
@@ -399,7 +414,7 @@ Discharge calculations integrate velocity across the cross-sectional area. Area 
 ### Measurement
 - [ ] Survey water surface elevation with rover pole
 - [ ] **Note depth on pole**, maintain RTK FIX
-- [ ] Record in Water Level layer with flow conditions
+- [ ] Save to the **Water Level** layer, named `WL1`, `WL2`, ... (one per bank typical — [naming convention](#point-naming-convention))
 - [ ] Take multiple measurements if water is moving
 - [ ] Document measurement method and accuracy
 
@@ -446,7 +461,7 @@ Don't shortcut the averaging time. The software might achieve FIX status after 1
 
 **Failure Recovery:** Sometimes a location has poor satellite visibility — tree cover, terrain shadowing, buildings. The receiver can't achieve FIX or maintains marginal quality. Wait 2 minutes to see if conditions improve as satellites move. If not, move 2-3 meters to escape multipath or obstruction issues. If problems persist, that location might not be measurable with your current setup — document it and consider an alternative GCP location.
 
-**Required Attributes:** Record point ID, measurement time, PDOP, satellite count, precision estimates, point role (GCP, check point, cross-section, etc.), and any notes about conditions. These attributes enable quality control during processing and provide documentation for your dataset.
+**What to record per point:** the only attribute you set by hand is the point name, using the [naming convention](#point-naming-convention). SW Maps automatically records measurement time, PDOP, satellite count, horizontal/vertical precision, and fix status with each save. Add a short note only when something unusual affects the measurement (e.g. partial obstruction, unstable footing).
 
 ---
 
@@ -478,7 +493,8 @@ RTK wading is the primary cross-section method — walk the transect with the ro
 - [ ] Walk LB → RB systematically
 - [ ] Capture all water levels at both banks
 - [ ] Each station: verify quality gates, 60-120s averaging
-- [ ] Record station number, point role, water depth
+- [ ] Save to the **Discharge Cross Section** layer, named `XS1`, `XS2`, ... in the order you walk them (LB → RB — [naming convention](#point-naming-convention))
+- [ ] Record water depth at each station (for cross-check against computed depth)
 - [ ] Measure pole height tip-to-ARP each shot
 
 **Systematic Traverse:** Start at left bank and walk toward right bank, measuring at planned intervals. Don't skip stations because they're difficult to reach or in deep water. Those difficult stations often represent important geometric features. If a station is truly impossible to measure safely using a pole, a bathymetric survey with sonar and GPS might be a better approach.
@@ -487,7 +503,7 @@ RTK wading is the primary cross-section method — walk the transect with the ro
 
 **Water Depth Recording:** At each station in the wetted channel, note the depth from the water surface to the bed. This provides redundant information — you're also calculating depth from the difference between water surface elevation and surveyed bed elevation. The two methods should agree within a few centimeters. If they don't, you've found a measurement error to investigate.
 
-**Station Numbering:** Use a consistent convention: 0 at left bank, increasing toward right bank. This makes processing easier and reduces mistakes. Record the station number as an attribute so you can reconstruct the sequence during analysis.
+**Station Numbering:** Walk left bank → right bank and number stations as you go (`XS1` at LB, increasing toward RB). The point name *is* the station number — no separate attribute needed. The script sorts by the numeric suffix, so `XS2` always comes before `XS10` even if you saved them out of order.
 
 ### Method B: Disto X6 P2P (Optional — When Wading Is Not Possible)
 
@@ -951,19 +967,21 @@ SW Maps provides field data collection with quality control features, attribute 
 
 ### Survey Layers
 
-Create these feature layers in your SW Maps project (all should be POINT geometry):
+Create these feature layers in your SW Maps project (all POINT geometry). The right column shows the name you give each point within that layer — this is what the post-processing script reads. See the full [Point Naming Convention](#point-naming-convention) in Section 1.
 
- - **Camera FOV**
- - **Camera Location**
- - **Check Point Location**
- - **Ground Control Points**
- - **Discharge Cross Section**
- - **Level Cross Section**
- - **Water Level**
+| Layer | Consumed by ORC script? | Point name |
+|-------|-------------------------|------------|
+| **Ground Control Points** | Yes | `GCP1`, `GCP2`, ... |
+| **Discharge Cross Section** | Yes | `XS1`, `XS2`, ... (LB → RB) |
+| **Water Level** | Yes | `WL1`, `WL2`, ... |
+| **Camera Location** | Yes (one point only) | `CAM` |
+| **Check Point Location** | No — survey QC only | `CP_START`, `CP_NOON`, `CP_END` |
+| **Level Cross Section** | No — field records only | free-form (e.g. `LXS1`, `LXS2`, ...) |
+| **Camera FOV** | No — field records only | free-form |
 
 **Layer Organization:** Separate layers for different point types simplify processing and prevent mistakes. You can apply different symbology, filtering, and export rules to each layer. During post-processing, you load only the layers you need for each analysis step.
 
-**Attribute Configuration:** Each layer needs specific attributes. Ground Control Points should include point_id, measurement_time, PDOP, satellite_count, horizontal_precision, vertical_precision, pole_height, and notes. Cross sections add station_number, water_depth, and bed_type. Define these attributes during project creation so they're ready for field use.
+**Attribute Configuration:** Keep attributes minimal. The only attribute you set by hand is the point **name** (per the naming convention above), and optionally a free-form **notes** field. SW Maps records measurement time, PDOP, satellite count, horizontal/vertical precision, and fix status on every saved point automatically — you do not need to define those as layer attributes.
 
 ---
 
