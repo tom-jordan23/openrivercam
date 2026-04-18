@@ -68,3 +68,13 @@ so quality analysis and cross-profile comparison work identically.
 - File search/download adds 5-10 seconds to each capture cycle
 - SD card wear (continuous write cycles) — use industrial-grade card
 - Sukabumi duty cycle needs to account for the extra download time
+
+## Status Note (2026-04-18)
+
+Profile C was abandoned for production because ANNKE firmware does not
+implement `GET /ISAPI/ContentMgmt/download` for video — only images. The
+RTSP-playback fallback in `camtool.py:_download_recording` preserves quality
+but negates Profile C's whole advantage (avoiding RTSP). If the RTSP-live
+path cannot meet the PIV pass-rate bar, cross-flashing to genuine Hikvision
+firmware is the documented backup plan — see
+`research/annke_hikvision_crossflash_research.md`.
