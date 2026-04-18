@@ -1019,6 +1019,7 @@ run_services() {
     _ensure_service_enabled chrony
     _ensure_service_enabled orc-sensors.timer
     _ensure_service_enabled orc-led-status.service
+    _ensure_service_enabled orc-led-off.service
     _ensure_service_enabled orc-boot-usb-log.service
     _ensure_service_enabled orc-maintenance-check.service
 
@@ -1027,7 +1028,10 @@ run_services() {
     _ensure_service_disabled orc-gpio-relays.service
 
     # Check running (services managed by ORC-OS or systemd — no auto-restart here)
-    for svc in orc-api orc-led-status dnsmasq NetworkManager ModemManager chrony; do
+    # orc-led-off is Type=oneshot with RemainAfterExit=yes: it must be "active
+    # (exited)" now so its ExecStop fires at shutdown. If enabled but never
+    # started since the last boot, the backstop won't run.
+    for svc in orc-api orc-led-status orc-led-off dnsmasq NetworkManager ModemManager chrony; do
         _check_service_running "$svc"
     done
 
@@ -1149,12 +1153,20 @@ run_config_checks() {
         fail "/etc/orc/led-status.yaml not found"
     fi
 
-    # LED-off backstop: ensure the service calls --off on stop, so the LED
-    # does not hold its last color when the Pi shuts down (externally powered).
+    # LED-off backstop: the WS2812B is on an always-on 5V rail, so the Pi
+    # must explicitly drive it to (0,0,0) on shutdown or it holds its last
+    # color indefinitely. Two layers:
+    #   1. orc-led-status.service — SIGTERM handler + ExecStopPost=--off
+    #   2. orc-led-off.service    — oneshot whose ExecStop runs last at shutdown
     if systemctl cat orc-led-status.service 2>/dev/null | grep -q "^ExecStopPost=.*--off"; then
-        pass "orc-led-status.service has ExecStopPost --off (LED clears on shutdown)"
+        pass "orc-led-status.service has ExecStopPost --off (primary LED-off path)"
     else
         fail "orc-led-status.service missing ExecStopPost --off (LED will hold last color after shutdown)"
+    fi
+    if systemctl cat orc-led-off.service 2>/dev/null | grep -q "^ExecStop=.*--off"; then
+        pass "orc-led-off.service has ExecStop --off (LED-off backstop)"
+    else
+        fail "orc-led-off.service missing ExecStop --off (no backstop if orc-led-status fails at shutdown)"
     fi
 
     # orc-sensors config

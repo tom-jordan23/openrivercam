@@ -1,0 +1,16 @@
+[Unit]
+Description=Turn off ORC status LED at shutdown (backstop for orc-led-status)
+# Before= on startup means this service starts BEFORE orc-led-status.
+# At shutdown systemd reverses order, so this unit stops AFTER orc-led-status —
+# which is what we want: our ExecStop is the last write to the WS2812B,
+# regardless of whether orc-led-status.service's own shutdown path ran.
+Before=orc-led-status.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/bin/true
+ExecStop=/usr/local/bin/orc-led-status --off
+
+[Install]
+WantedBy=multi-user.target

@@ -124,7 +124,10 @@ class LedDriver:
         self._strip = neopixel.NeoPixel(
             pin, 1, auto_write=False, brightness=brightness / 255.0,
         )
-        self._current = (0, 0, 0)
+        # None (not (0,0,0)) so the first set_color always writes — a fresh
+        # process can't know the real hardware state, and (0,0,0) would cause
+        # the `--off` backstop to silently no-op when the LED is actually lit.
+        self._current = None
 
     def set_color(self, r, g, b):
         if (r, g, b) != self._current:

@@ -78,6 +78,7 @@ contains a real file.
 | `shared/usr/local/lib/orc-led-status/led_status.py` | `/usr/local/lib/orc-led-status/led_status.py` | LED status daemon: polls health, drives WS2812B on GPIO 18 via RP1 PIO | Shared | No | Yes |
 | `shared/usr/local/bin/orc-led-test` | `/usr/local/bin/orc-led-test` | LED hardware test: cycles all status colors/patterns for visual verification | Shared | No | Yes |
 | `shared/etc/systemd/system/orc-led-status.service` | `/etc/systemd/system/orc-led-status.service` | Simple service: long-running LED daemon (requires root for /dev/pio0) | Shared | No | Yes |
+| `shared/etc/systemd/system/orc-led-off.service` | `/etc/systemd/system/orc-led-off.service` | Oneshot backstop: ExecStop drives WS2812B to (0,0,0) at shutdown (always-on 5V rail) | Shared | No | Yes |
 | `shared/etc/orc/led-status.yaml` | `/etc/orc/led-status.yaml` | LED status config: colors, patterns, error suppression, GPIO pin | Shared | No | Yes |
 | `sukabumi/etc/cloud/templates/hosts.debian.tmpl` | `/etc/cloud/templates/hosts.debian.tmpl` | Hosts file template with camera hostname | Sukabumi | No | No |
 | `sukabumi/etc/NetworkManager/system-connections/camera-net.nmconnection` | `/etc/NetworkManager/system-connections/camera-net.nmconnection` | Static IP (192.168.50.1) for eth0 camera network | Sukabumi | No | No |
