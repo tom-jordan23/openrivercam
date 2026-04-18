@@ -135,12 +135,14 @@ Session directory contents after a full run:
 
 ## Phase 1 — Field: Camera Profile Selection
 
-Run the profile bake-off *before* the calibration capture so the
-calibration video lands on whichever profile performs best for ORC —
-not on the default, then redone. The bake-off evaluates each candidate
-profile against the actual scene at this station (lighting, turbidity,
-flow) and ranks them by PIV pass rate, which is what the downstream
-pipeline actually depends on.
+Run the profile comparison test *before* the calibration capture so
+the calibration video uses the profile that performs best for ORC at
+this station. Capturing calibration on the default profile first, then
+repeating it if a different profile performs better, is wasted effort.
+The comparison test evaluates each candidate profile against the
+actual scene at this station (lighting, turbidity, flow) and ranks
+them by PIV pass rate, which is the metric the downstream pipeline
+depends on.
 
 Full procedure is in [`CAMERA_PROFILE_TEST.md`](CAMERA_PROFILE_TEST.md).
 Quick version:
@@ -150,7 +152,7 @@ Quick version:
    ```bash
    orc-calibration-preflight
    ```
-3. Run the bake-off from the profiles directory on the Pi:
+3. Run the comparison test from the profiles directory on the Pi:
    ```bash
    cd ~/spring_2026_ID/camera/profiles
    ./run_profile_test.sh
@@ -160,32 +162,34 @@ Quick version:
    FFPIV on each set, and restores the baseline profile on exit.
    Results land in `tests/camera_profiles_<ts>/` with a
    `comparison.txt` cross-profile summary.
-4. Review `comparison.txt`. The winning profile should have, in order:
+4. Review `comparison.txt`. The selected profile should have, in
+   order:
    - Highest **combined PIV pass rate** (primary metric).
-   - Delivered bitrate ≥ 15 Mbps (hard floor — see decision gate in
-     Profile Testing below).
+   - Delivered bitrate ≥ 15 Mbps (minimum acceptable — see decision
+     gate in Profile Testing below).
    - Blockiness < 1.15.
-5. Push the winning profile back to the camera and confirm:
+5. Push the selected profile back to the camera and confirm:
    ```bash
-   python3 camtool.py push <station>-cam1 --profile <winner>
+   python3 camtool.py push <station>-cam1 --profile <selected>
    python3 camtool.py verify <station>-cam1
    ```
 6. Update `orc-capture.conf` `EXPECTED_WIDTH` / `EXPECTED_HEIGHT` on
-   the Pi to match the winning profile's resolution, otherwise the
+   the Pi to match the selected profile's resolution, otherwise the
    quality gate will reject every subsequent capture.
-7. Record the decision in `tests/<site>/profile_comparison.md`:
-   the winning profile name, the delta in PIV pass rate vs the runners-
-   up, and the scene conditions at test time. Future redeployments need
-   this to judge whether the winner still applies.
+7. Record the decision in `tests/<site>/profile_comparison.md`: the
+   selected profile name, the difference in PIV pass rate compared to
+   the other profiles, and the scene conditions at test time. Future
+   redeployments need this to judge whether the selection still
+   applies.
 
-> **Discovery note — bake-off is scene-dependent.** The test uses
-> whatever is in the camera frame at the time. Results may not transfer
-> to a different site, or to the same site under materially different
-> water conditions. Re-run before committing calibration effort if the
-> scene has changed since the last bake-off.
+> **Discovery note — comparison test is scene-dependent.** The test
+> uses whatever is in the camera frame at the time. Results may not
+> transfer to a different site, or to the same site under materially
+> different water conditions. Re-run before committing calibration
+> effort if the scene has changed since the last comparison test.
 
 From here on, Phase 2's calibration video, the surveys in Phase 3, and
-the video config in Phase 5 are all specific to the winning profile.
+the video config in Phase 5 are all specific to the selected profile.
 Switching profile later means returning to this phase and redoing
 Phase 2 + Phase 5 — see the reuse table under Profile Testing.
 
@@ -480,11 +484,12 @@ feeds the next.
 ## Profile Testing
 
 Profile *selection* happens in [Phase 1](#phase-1--field-camera-profile-selection)
-— the bake-off picks the winner before calibration. This section
-covers two things the selection phase doesn't: (1) the per-artifact
-reuse table for when you need to *change* the active profile after
-initial calibration, and (2) the top-level decision gate on whether
-the ANNKE C1200 camera class survives the test at all.
+— the comparison test identifies the best-performing profile before
+calibration. This section covers two things the selection phase does
+not: (1) the per-artifact reuse table for when you need to *change*
+the active profile after initial calibration, and (2) the top-level
+decision gate on whether the ANNKE C1200 camera class is acceptable
+for deployment at all.
 
 Per `TODO.md` Phase 5, the candidate **profiles** (named encoding
 presets — combinations of resolution, codec, bitrate, and framerate
