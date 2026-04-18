@@ -127,9 +127,12 @@ CAMERA_IP="${CAMERA_IP:-}"
 CAMERA_USER="${CAMERA_USER:-admin}"
 RTSP_PORT="${RTSP_PORT:-554}"
 
-# Load credential file
+# Load credential file — always from pi's home (preflight is usually run under sudo,
+# so $HOME would be /root; credentials only ever live in pi's homedir).
 CRED_FILE=""
-for f in "$HOME/.orc_deploy_sukabumi" "$HOME/.orc_deploy_jakarta" "$HOME/.orc_deploy"; do
+PI_HOME=$(getent passwd pi | cut -d: -f6)
+PI_HOME="${PI_HOME:-/home/pi}"
+for f in "$PI_HOME"/.orc_deploy_*; do
     if [ -f "$f" ]; then
         CRED_FILE="$f"
         # shellcheck disable=SC1090

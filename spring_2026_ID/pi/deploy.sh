@@ -1073,21 +1073,22 @@ run_services() {
 run_credentials() {
     section "Credentials"
 
-    if ls ~/.orc_deploy_* 1>/dev/null 2>&1; then
+    # Always look in pi's home — deploy.sh typically runs under sudo so $HOME is /root.
+    if ls ~pi/.orc_deploy_* 1>/dev/null 2>&1; then
         local creds
-        creds=$(ls ~/.orc_deploy_* | tr '\n' ' ')
+        creds=$(ls ~pi/.orc_deploy_* | tr '\n' ' ')
         pass "Camera credentials found: $creds"
     else
-        warn "No camera credentials found (~/.orc_deploy_*)"
-        warn "  Create with: echo 'BASE_PASSWD=<camera_password>' > ~/.orc_deploy_$SITE"
+        warn "No camera credentials found (~pi/.orc_deploy_*)"
+        warn "  Create with: echo 'BASE_PASSWD=<camera_password>' > ~pi/.orc_deploy_$SITE"
     fi
 
-    if [ -f ~/.ssh/authorized_keys ]; then
+    if [ -f ~pi/.ssh/authorized_keys ]; then
         local key_count
-        key_count=$(grep -c "^ssh-" ~/.ssh/authorized_keys 2>/dev/null || echo "0")
-        pass "~/.ssh/authorized_keys exists ($key_count key(s))"
+        key_count=$(grep -c "^ssh-" ~pi/.ssh/authorized_keys 2>/dev/null || echo "0")
+        pass "~pi/.ssh/authorized_keys exists ($key_count key(s))"
     else
-        warn "~/.ssh/authorized_keys not found (SSH key login unavailable)"
+        warn "~pi/.ssh/authorized_keys not found (SSH key login unavailable)"
     fi
 }
 
@@ -1395,7 +1396,7 @@ run_network() {
 
         # Camera supplement light check (ANNKE C1200 reverts to eventIntelligence on power cycle)
         local cam_pass=""
-        for f in ~/.orc_deploy_*; do
+        for f in ~pi/.orc_deploy_*; do
             [ -f "$f" ] || continue
             cam_pass=$(grep "^BASE_PASSWD=" "$f" 2>/dev/null | cut -d= -f2 || true)
             break
@@ -1445,10 +1446,20 @@ run_orc_os() {
 run_remote_access() {
     section "Remote Access"
 
+    # deploy.sh typically runs under sudo, whose PATH excludes pi's ~/.local/bin etc.
+    # Check current PATH, then look in pi's home directly.
+    local newt_path=""
     if command -v newt >/dev/null 2>&1; then
-        pass "newt binary available ($(command -v newt))"
+        newt_path=$(command -v newt)
     else
-        warn "newt not found in PATH (Pangolin remote access unavailable)"
+        for p in ~pi/.local/bin/newt ~pi/bin/newt /opt/newt/newt; do
+            if [ -x "$p" ]; then newt_path="$p"; break; fi
+        done
+    fi
+    if [ -n "$newt_path" ]; then
+        pass "newt binary available ($newt_path)"
+    else
+        warn "newt not found (Pangolin remote access unavailable)"
     fi
 }
 
@@ -1579,7 +1590,7 @@ echo "Report: $REPORT_FILE" | tee -a "$REPORT_FILE"
 echo "" | tee -a "$REPORT_FILE"
 echo "Next steps:" | tee -a "$REPORT_FILE"
 echo "  1. Set root password: sudo passwd root" | tee -a "$REPORT_FILE"
-echo "  2. Set camera credentials: echo 'BASE_PASSWD=<password>' > ~/.orc_deploy_$SITE" | tee -a "$REPORT_FILE"
+echo "  2. Set camera credentials (as pi user): echo 'BASE_PASSWD=<password>' > ~pi/.orc_deploy_$SITE" | tee -a "$REPORT_FILE"
 echo "  3. Verify camera network: ping 192.168.50.100 (after PoE relay on)" | tee -a "$REPORT_FILE"
 echo "  4. Configure camera via camtool.py (if camera replaced)" | tee -a "$REPORT_FILE"
 echo "  5. Open ORC-OS web UI and configure:" | tee -a "$REPORT_FILE"
