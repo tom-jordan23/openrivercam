@@ -53,6 +53,16 @@ Check points:
 
 Usage:
 
+    # Common: let --h-ref default to the mean of the pole-adjusted
+    # WL survey points. Use this when the WL points were surveyed
+    # at (or very near) calibration-video time.
+    orc_survey_prep.py SURVEY.geojson \\
+        --site sukabumi \\
+        --pole-length 1.80
+
+    # Override when the calibration video was captured at a different
+    # time/stage than the WL survey. The script warns if a user-supplied
+    # --h-ref disagrees with the WL mean by more than 0.5 m.
     orc_survey_prep.py SURVEY.geojson \\
         --site sukabumi \\
         --pole-length 1.80 \\
@@ -229,8 +239,10 @@ def main() -> int:
     ap.add_argument("--site", required=True, help="Site name for metadata (sukabumi, jakarta)")
     ap.add_argument("--pole-length", type=float, required=True,
                     help="Rover pole length in meters (subtracted from GCP & XS z)")
-    ap.add_argument("--h-ref", type=float, required=True,
-                    help="Water level at calibration-video time, in meters")
+    ap.add_argument("--h-ref", type=float, default=None,
+                    help="Water level at calibration-video time, in meters. "
+                         "If omitted, defaults to the mean elevation of the "
+                         "pole-adjusted WL survey points.")
     ap.add_argument("--output-dir", type=Path, default=Path.cwd(),
                     help="Where to write CSVs and metadata.yaml (default: cwd)")
     ap.add_argument("--source-crs", default="EPSG:4326",
@@ -247,7 +259,7 @@ def main() -> int:
         arg_warnings.append(
             f"pole-length {args.pole_length} m is outside plausible range "
             f"[0.5, 4.0] — double-check")
-    if not (-500.0 <= args.h_ref <= 6000.0):
+    if args.h_ref is not None and not (-500.0 <= args.h_ref <= 6000.0):
         arg_warnings.append(
             f"h-ref {args.h_ref} m is outside plausible elevation range "
             f"[-500, 6000] — double-check datum / units")
@@ -385,6 +397,25 @@ def main() -> int:
         if flagged_in_scope:
             print(f"INFO: no-pole marker honored for {len(flagged_in_scope)} "
                   f"point(s): {', '.join(flagged_in_scope)}", file=sys.stderr)
+
+    # Default --h-ref to the mean of the pole-adjusted WL points when the
+    # user didn't supply one. h_ref and WL measure the same water surface,
+    # so if the WL survey is captured near calibration-video time they
+    # should coincide and we can skip the argument. Fail loudly if no WL
+    # points are available — there is no sensible fallback in that case.
+    h_ref_source = "user-supplied"
+    if args.h_ref is None:
+        if not projected["wl"]:
+            print("ERROR: --h-ref not supplied and no WL points found — "
+                  "pass --h-ref explicitly or include at least one WLn "
+                  "point in the survey.", file=sys.stderr)
+            return 1
+        wl_z_all = [z for _, (_, _, z) in projected["wl"]]
+        args.h_ref = sum(wl_z_all) / len(wl_z_all)
+        h_ref_source = "derived-from-wl-mean"
+        print(f"INFO: --h-ref not provided — defaulted to mean of "
+              f"{len(wl_z_all)} WL point(s): {args.h_ref:.3f} m",
+              file=sys.stderr)
 
     # ── Cross-checks: warnings ─────────────────────────────────────
     warnings = list(arg_warnings)
@@ -543,6 +574,7 @@ def main() -> int:
         f.write(f"processed_at: {datetime.now(timezone.utc).isoformat()}\n")
         f.write(f"source_geojson: {args.geojson.name}\n")
         f.write(f"h_ref: {args.h_ref}\n")
+        f.write(f"h_ref_source: {h_ref_source}\n")
         f.write(f"pole_length: {args.pole_length}\n")
         f.write(f"source_crs: {args.source_crs}\n")
         f.write(f"target_crs: {args.target_crs}\n")

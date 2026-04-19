@@ -420,7 +420,7 @@ Photogrammetric transformation errors increase with distance from the nearest GC
 
 Water surface elevation provides the reference datum for all cross-section measurements and enables converting surveyed bed elevations into flow depths. This simple measurement is surprisingly important — a 2cm error in water level produces a 2cm error in calculated depth for every point in the cross-section.
 
-**Relationship to `h_ref`:** The water level measured at (or as close as possible to) the time of the calibration video capture becomes `h_ref` in the video configuration — the water-surface elevation that ORC-OS anchors the cross-section to. Phase 4 of `VIDEO_CONFIG_SETUP.md` takes `h_ref` as a CLI argument to `orc_survey_prep.py`. If the water level drifts materially between the calibration video capture and this survey, re-measure at a time closer to the video.
+**Relationship to `h_ref`:** The water level measured at (or as close as possible to) the time of the calibration video capture becomes `h_ref` in the video configuration — the water-surface elevation that ORC-OS anchors the cross-section to. In Phase 4, `orc_survey_prep.py` derives `h_ref` by averaging the pole-adjusted `WL` survey points automatically, so the WL points you measure here *are* `h_ref` — no separate reading or CLI argument is needed as long as the WL survey is captured near video time. Pass `--h-ref` to the script explicitly only when the video was captured at a different stage than the WL survey (the script will warn if a user-supplied `--h-ref` diverges from the WL mean by more than 0.5 m). If the water level drifts materially between the calibration video capture and this survey, re-measure at a time closer to the video.
 
 ### Why Water Level Accuracy Matters
 

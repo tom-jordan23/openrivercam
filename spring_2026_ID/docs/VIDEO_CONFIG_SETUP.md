@@ -317,9 +317,13 @@ physical point that ORC-OS needs to know about.
       enough for pose solving).
 - [ ] Cross-section surveyed (step 4).
 - [ ] Water level at time of calibration video recorded (step 5) —
-      this number is `h_ref` (the water-surface elevation at the
-      moment the calibration video was captured, in meters, in the
-      same vertical datum as the GCPs).
+      survey one or more `WL` points at the water's edge near
+      calibration-video time. These WL points *are* `h_ref` (the
+      water-surface elevation at the moment the calibration video
+      was captured, in meters, in the same vertical datum as the
+      GCPs) — the prep tool in Phase 4 averages them into `h_ref`
+      automatically. Only record a standalone `h_ref` number if the
+      video was captured at a different stage than the WL survey.
 - [ ] Camera position surveyed (step 6).
 - [ ] Check points re-measured (step 7) — drift <3 cm H, <4 cm V.
 
@@ -351,7 +355,6 @@ and runs a battery of cross-checks on the data.
     python3 survey/orc_survey_prep.py survey_20260417.geojson \
         --site sukabumi \
         --pole-length 1.80 \
-        --h-ref 12.34 \
         --output-dir ./calibration/
     ```
     The tool reprojects the survey from **WGS84** (the global lat/lon
@@ -363,6 +366,13 @@ and runs a battery of cross-checks on the data.
     we subtract pole length to get the elevation of the point itself).
     Outputs: `gcps.csv`, `cross_section.csv`, `camera_position.csv`,
     `water_level.csv`, and `metadata.yaml`.
+
+    `--h-ref` is optional. If omitted, the tool averages the pole-adjusted
+    `WL` points and records `h_ref_source: derived-from-wl-mean` in
+    `metadata.yaml`. Pass `--h-ref` explicitly only when the calibration
+    video was captured at a different stage than the WL survey — the tool
+    will warn if a user-supplied `--h-ref` diverges from the WL mean by
+    more than 0.5 m.
 12. Review tool output. A hard FAIL stops the run; review the error and
     fix either the survey export, the label convention, or the CLI
     arguments. WARN lines are informational — read each one and decide
@@ -383,11 +393,12 @@ Cross-checks the tool runs:
 | Two points within 10 cm (likely duplicate measurement) | WARN |
 | Camera elevation at or below h_ref | WARN |
 | Camera less than 1 m above h_ref | WARN |
-| h_ref disagrees with WL mean by > 0.5 m | WARN |
+| h_ref disagrees with WL mean by > 0.5 m (only when `--h-ref` supplied) | WARN |
 | h_ref outside XS elevation range (bed or banks missing) | WARN |
 | WL point count < 2 | WARN |
+| `--h-ref` not supplied and no WL points to derive it from | FAIL |
 | `--pole-length` outside [0.5, 4.0] m | WARN |
-| `--h-ref` outside [-500, 6000] m | WARN |
+| `--h-ref` outside [-500, 6000] m (only when supplied) | WARN |
 
 Deliverables to carry into Phase 5:
 
@@ -398,7 +409,7 @@ Deliverables to carry into Phase 5:
 | `cross_section.csv` | Discharge integration geometry |
 | `camera_position.csv` | Camera XYZ for AOI reprojection |
 | `water_level.csv` | (reference only — `h_ref` is the number ORC-OS uses) |
-| `metadata.yaml` | Session record: h_ref, pole length, CRS, warnings |
+| `metadata.yaml` | Session record: h_ref (+ source), pole length, CRS, warnings |
 
 ---
 

@@ -24,8 +24,14 @@ spring_2026_ID/docs/.venv/
 # Build photos (large, not version controlled)
 spring_2026_ID/build_photos/
 
+# Survey exports (real GPS coordinates of deployment sites)
+spring_2026_ID/survey_data/
+
 # Video files (large binaries)
 *.mp4
 
 # PDFs are tracked in git for easy access by non-technical users.
 # Rebuild with: cd spring_2026_ID/docs && ./build_pdf.sh
+
+# macOS Finder metadata
+.DS_Store
