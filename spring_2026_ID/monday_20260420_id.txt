@@ -1,0 +1,64 @@
+Selamat pagi tim!
+
+Kita punya banyak hal yang harus diselesaikan hari ini, jadi saya menyusun rencana berikut:
+
+1. Tiba di lokasi - Tom memulai stasiun ORC sementara Niken dan Dedi (dan yang lain yang dapat membantu) menyiapkan peralatan RTK.
+
+2. Tom akan mengambil gambar video dan membagikannya di grup WhatsApp agar semua orang dapat melihat apa yang dilihat kamera.
+
+3. Tom akan mengerjakan konfigurasi video sementara tim survei menempatkan objek di tepi adegan kamera untuk mengingatkan kita tentang batas pandangan kamera saat kita bekerja.
+
+4. Tim menetapkan 10-12 titik kontrol tanah (kotak-kotak) di kedua tepi sungai, pada semua kemungkinan ketinggian air, dan didistribusikan secara merata dengan beberapa di dekat tepi batas kamera. Tim juga akan memilih Titik Kontrol di luar adegan kamera yang akan kita gunakan untuk memantau akurasi survei.
+
+5. Setelah titik kontrol tanah ditetapkan, Tom akan mengambil video kalibrasi dan Niken/Dedi akan mendapatkan pengukuran RTK dari ketinggian air saat ini (dalam meter). Kami mencatat nilai ini untuk berjaga-jaga jika permukaan air berubah selama survei kami.
+
+6. Tom akan dilatih secara singkat tentang cara memasukkan catatan pada titik-titik di SWMaps. Ini sangat penting karena Tom menulis perangkat lunak untuk menyederhanakan pemrosesan data survei, tetapi hal ini bergantung pada format catatan sebagai berikut:
+
+FOV = Bidang Pandang Kamera
+CP = Titik Kontrol
+GCP = Titik Kontrol Tanah (kotak-kotak berpola)
+XS = Penampang Aliran (menyeberangi sungai dengan tiang untuk mendapatkan kedalaman)
+WL = Permukaan Air (menggunakan tiang atau memegang antena dasar di permukaan air di tepi sungai)
+CAM = Kamera (seharusnya hanya ada satu)
+
+Setiap titik survei juga harus memiliki nomor (GCP1, GCP2, GCP3), dan kita menambahkan tanda bintang (*) jika kita tidak menggunakan tiang (misalnya GCP1* jika kita tidak menggunakan tiang pada titik kontrol tanah pertama)
+
+Perangkat lunak Tom akan menerapkan beberapa pemeriksaan untuk mendeteksi kemungkinan kesalahan (dua GCP yang sangat dekat kemungkinan memerlukan penekanan tombol tambahan, kamera tidak boleh berada di bawah permukaan air, dll.) dan akan melakukan konversi yang kita lakukan di QGIS secara manual terakhir kali.
+
+**Harap berhati-hati untuk memastikan Anda memberi nama setiap titik dengan benar. Perangkat lunak Tom dapat mendeteksi kesalahan tetapi tidak dapat memperbaikinya.**
+
+Saat kami mengambil setiap titik, kami akan melakukan averaging minimal 30 detik jika kami memiliki fix RTK yang baik di titik tersebut. Jika fix RTK tidak stabil, kami akan melakukan averaging selama 60+ detik. Jika kami kehilangan fix RTK selama averaging, kami harus memulai dari awal di titik tersebut. Jika kami tidak dapat memperoleh fix RTK di titik tertentu, kami akan membuangnya dan melanjutkan. Kami menempatkan titik kontrol tanah tambahan untuk berjaga-jaga jika hal ini terjadi.
+
+6. Setelah kita memiliki video kalibrasi dan Tom telah menguji kualitasnya, kita akan menggunakan peralatan RTK untuk mensurvei semua titik dalam urutan ini:
+
+6a - Titik Kontrol (CP_start)
+
+6b - Bidang Pandang (FOV1, FOV2, FOV3, FOV4)
+
+6d - Titik Kontrol Tanah (GCP1, GCP2, GCP3, GCP4, dll.)
+
+6e - Titik Kontrol (CP_mid)
+
+6f - Penampang Aliran (XS1, XS2, XS3, XS4, XS5, dll.)
+
+6g - Lokasi Kamera (CAM)
+
+6h - Titik Kontrol (CP_end)
+
+7. Setelah survei selesai, bagikan proyek SWMaps ke grup Whatsapp sebagai file GeoJSON. Tom akan menjalankan pemeriksaan kualitas untuk memastikan tidak ada kesalahan yang jelas pada data.
+
+8. Tom akan menjalankan file tersebut melalui perangkat lunaknya untuk mengkonversi dari sistem koordinat yang digunakan SWMaps (WGS84 dalam derajat lintang/bujur) ke sistem koordinat yang diharapkan oleh sistem ORC (UTM48 dalam meter). Perangkat lunak tersebut akan membuat file CSV untuk berbagai survei (GCP.csv, XS.csv, dll.) yang kita impor ke ORC.
+
+9. Kita akan mengkonfigurasi perangkat lunak ORC dengan data survei yang telah kita kumpulkan, dan menguji apakah perangkat lunak tersebut dapat menyelesaikan adegan kamera dengan benar dan menghitung debit dan ketinggian air.
+
+10. Tom akan mengkonfigurasi perangkat lunak stasiun untuk mode produksi:
+
+- Memastikan data diunggah ke server LiveORC kita di cloud
+- Mengatur jadwal daya Witty Pi (RTC) menjadi siklus 15 menit
+- Mengaktifkan layanan pengambilan ORC di ORC-OS
+- Mengaktifkan layanan daemon ORC di ORC-OS
+- Mengamati stasiun selama beberapa siklus untuk memastikan bahwa stasiun tersebut beroperasi, mengambil data, dan mengunggah sesuai harapan.
+
+11. Kita akan mematikan stasiun, memindahkannya dari catu daya AC ke terminal beban 12V pengisi daya surya, dan menghidupkan kembali stasiun.
+
+12. Kita akan mengamati beberapa siklus penangkapan lagi untuk memastikan semuanya berjalan sesuai harapan sementara kita membereskan lokasi dan bersiap untuk pergi.

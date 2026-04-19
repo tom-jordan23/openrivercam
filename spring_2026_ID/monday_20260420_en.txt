@@ -1,0 +1,60 @@
+Good morning team!
+
+We have lots to accomplish today, so I put together the below plan:
+
+1. Arrive on site - Tom starts the ORC station while Niken and Dedi (and others that can help) set up the RTK equipment.
+
+2. Tom will capture the video picture and share it in the WhatsApp group so everyone can see what the camera sees.
+
+3. Tom will work on video configuration while the survey team sets objects at the edges of the camera scene to remind us about camera view boundaries while we work.
+
+4. The team sets 10-12 ground control points (checkered squares) on both banks of the river, at all possible water levels, and evenly distributed with a few near the edges of the camera boundaries. The team will also pick a Control Point outside the camera scene that we will use to monitor the accuracy of the survey.
+
+5. Once ground control points are set, Tom will take a calibration video and Niken / Dedi will get an RTK measurement of the current water level (in meters). We are recording this value in case the water level changes during our survey.
+
+6. Tom will train briefly on how to enter remarks on points in SWMaps. This is very important because Tom wrote software to simplify the survey post processing, but it depends on the remarks being formatted the following way:
+
+	FOV = Camera Field of View
+	CP = control point
+	GCP = Ground Control Point (the checkered squares)
+	XS = Discharge cross section (wading the river with the pole to get depth)\
+	WL = Water level (using the pole or holding the base antenna at water level at the edge)
+	CAM = Camera (should only have one)
+
+	Each survey point should also have a number (GCP1, GCP2, GCP3), and we add an asterisk (*) if we do not use the pole (e.g. GCP1* if we did not use the pole on the first ground control point)
+
+	Tom's software will apply some checks to catch possible errors (two GCPs very close together is likely an extra button press, camera should not be below the surface of the water, etc) and will do the conversions that we did in QGIS by hand last time. 
+
+	** Please be very careful to ensure you name each point correctly. Tom's software can catch errors but it cannot correct them. **
+
+	When we take each point, we will average for a minimum of 30 seconds if we have a good RTK fix at that point. If the RTK fix is unstable, we average for 60+ seconds. If we lose RTK fix during averaging we must start over on that point. If we cannot get an RTK fix on a particular point, we will discard it and move on. We are placing extra ground control points just in case this happens.
+
+6. Once we have the calibration video and Tom has tested its quality, we will use the RTK equipment to survey all points in this order:
+
+	6a - Control Point (CP_start)
+	6b - Field of View (FOV1, FOV2, FOV3, FOV4)
+	6d - Ground Control Points (GCP1, GCP2, GCP3, GCP4, etc)
+	6e - Control Point (CP_mid)
+	6f - Discharge Cross Section (XS1, XS2, XS3, XS4, XS5, etc)
+	6g - Camera location (CAM)
+	6h - Control Point (CP_end)
+
+7. Once the survey is complete, share the SWMaps project to the Whatsapp group as a GeoJSON file. Tom will run a quality check to make sure there are no obvious errors with the data.
+
+8. Tom will run that file through his software to convert from the coordinate system that SWMaps uses (WGS84 in degrees of lat/lon) to the coordinate system that the ORC system expects (UTM48s in meters). The software will create CSV files for the different surveys (GCP.csv, XS.csv, etc) that we import into ORC.
+
+9. We will configure the ORC software with the survey data we collected, and test that it can resolve the camera scene properly and calculate discharge and water level.
+
+10. Tom will configure the station software for production mode:
+	- Ensure data is uploading to our LiveORC server in the cloud
+	- Set the Witty Pi (RTC) power schedule to 15 minute cycling
+	- Enable the ORC capture service in ORC-OS
+	- Enable the ORC daemon service in ORC-OS
+	- Observe the station for a few cycles to ensure that it is cycling, capturing, and uploading as we expect.
+
+11. We will power down the station, move it from the AC power supply to the solar charger's 12v load terminals, and restart the station.
+
+12. We will observe a few more capture cycles to make sure things are running as expected while we pack up the site and get ready to leave.
+
+
+
