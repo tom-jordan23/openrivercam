@@ -42,6 +42,15 @@ Validation:
     - WARN if < 8 GCPs, GCP bounding box aspect ratio < 0.2
       (markers look colinear), fewer than 2 water-level points.
 
+Check points:
+
+    - Any feature whose label starts with 'CP' (e.g. CP_START, CP_NOON,
+      CP_END) is treated as a check point and excluded from the ORC
+      CSVs. The script prints a spread report — horizontal and vertical
+      spread across all CP points and pairwise distances between them —
+      so you can verify repeatability without doing the math by hand.
+      WARNs if spread exceeds 3 cm H / 4 cm V.
+
 Usage:
 
     orc_survey_prep.py SURVEY.geojson \\
@@ -55,6 +64,7 @@ Dependencies:  pip install pyproj
 import argparse
 import csv
 import json
+import math
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -80,7 +90,7 @@ class Problem(Exception):
 
 
 def classify(label: str) -> str:
-    """Return one of: gcp, xs, wl, cam, unknown."""
+    """Return one of: gcp, xs, wl, cam, cp, unknown."""
     up = label.strip().upper()
     if up.startswith("GCP"):
         return "gcp"
@@ -90,6 +100,8 @@ def classify(label: str) -> str:
         return "wl"
     if up in ("CAM", "CAMERA"):
         return "cam"
+    if up.startswith("CP"):
+        return "cp"
     return "unknown"
 
 
@@ -124,6 +136,80 @@ def bbox_aspect_ratio(points: list) -> float:
     h = max(ys) - min(ys)
     short, long_ = sorted((w, h))
     return (short / long_) if long_ > 0 else 0.0
+
+
+# Check-point drift gate, from the survey docs' Success Criteria.
+# If horizontal spread > 3 cm or vertical spread > 4 cm across the CP
+# readings, something changed during the day (base moved, NTRIP shift,
+# atmospheric drift) and the data should be treated with suspicion.
+CP_HORIZONTAL_GATE_M = 0.03
+CP_VERTICAL_GATE_M = 0.04
+
+
+def check_point_report(cp_items: list) -> tuple:
+    """Analyse variation across CP-prefixed points.
+
+    Returns (report_lines: list[str], warnings: list[str], spread: dict or None).
+    `spread` is None when fewer than 2 CP points are present.
+    """
+    if not cp_items:
+        return [], [], None
+
+    labels = [label for label, _ in cp_items]
+    lines = [f"CHECK POINTS: {len(cp_items)} point(s) — {', '.join(labels)}"]
+    warnings: list = []
+
+    if len(cp_items) < 2:
+        lines.append("  Need at least 2 points to compute variation.")
+        return lines, warnings, None
+
+    xs = [p[0] for _, p in cp_items]
+    ys = [p[1] for _, p in cp_items]
+    zs = [p[2] for _, p in cp_items]
+    dx = max(xs) - min(xs)
+    dy = max(ys) - min(ys)
+    spread_h = math.hypot(dx, dy)
+    spread_v = max(zs) - min(zs)
+
+    status = (
+        "OK"
+        if spread_h <= CP_HORIZONTAL_GATE_M and spread_v <= CP_VERTICAL_GATE_M
+        else "EXCEEDS GATE"
+    )
+    lines.append(
+        f"  Spread: {spread_h * 100:.1f} cm H, {spread_v * 100:.1f} cm V  "
+        f"(gate: ≤{CP_HORIZONTAL_GATE_M * 100:.0f} cm H / "
+        f"≤{CP_VERTICAL_GATE_M * 100:.0f} cm V → {status})"
+    )
+
+    if status == "EXCEEDS GATE":
+        warnings.append(
+            f"check-point spread {spread_h * 100:.1f} cm H / "
+            f"{spread_v * 100:.1f} cm V exceeds the "
+            f"{CP_HORIZONTAL_GATE_M * 100:.0f} cm H / "
+            f"{CP_VERTICAL_GATE_M * 100:.0f} cm V gate — investigate "
+            f"system stability before trusting the survey"
+        )
+
+    lines.append("  Pairwise:")
+    width = max(len(label) for label in labels)
+    for i in range(len(cp_items)):
+        for j in range(i + 1, len(cp_items)):
+            la, (xa, ya, za) = cp_items[i]
+            lb, (xb, yb, zb) = cp_items[j]
+            ph = math.hypot(xa - xb, ya - yb)
+            pv = abs(za - zb)
+            lines.append(
+                f"    {la:<{width}} ↔ {lb:<{width}}: "
+                f"{ph * 100:.1f} cm H, {pv * 100:.1f} cm V"
+            )
+
+    spread = {
+        "horizontal_m": round(spread_h, 4),
+        "vertical_m": round(spread_v, 4),
+        "gate_status": status,
+    }
+    return lines, warnings, spread
 
 
 def write_csv(path: Path, header: list, rows: list) -> None:
@@ -182,7 +268,7 @@ def main() -> int:
     # (antenna placed directly on the target — don't subtract pole length).
     # The '*' is stripped before storing; the clean label is used
     # everywhere downstream (sorting, duplicates, output).
-    buckets = {"gcp": [], "xs": [], "wl": [], "cam": [], "unknown": []}
+    buckets = {"gcp": [], "xs": [], "wl": [], "cam": [], "cp": [], "unknown": []}
     no_pole_labels: set = set()
     skipped = 0
     for feat in features:
@@ -219,6 +305,7 @@ def main() -> int:
     buckets["gcp"].sort(key=lambda x: sort_key(x[0]))
     buckets["xs"].sort(key=lambda x: sort_key(x[0]))
     buckets["wl"].sort(key=lambda x: sort_key(x[0]))
+    buckets["cp"].sort(key=lambda x: x[0])  # alphabetical — CP_END, CP_NOON, CP_START
 
     # ── Cross-checks: hard fails ───────────────────────────────────
     fails = []
@@ -235,7 +322,7 @@ def main() -> int:
         fails.append("no cross-section points found (expected labels XS1, XS2, ...)")
 
     # Duplicate labels within a bucket (silent data loss if we wrote out)
-    for kind in ("gcp", "xs", "wl", "cam"):
+    for kind in ("gcp", "xs", "wl", "cam", "cp"):
         seen = {}
         for label, coords in buckets[kind]:
             if label in seen:
@@ -247,7 +334,7 @@ def main() -> int:
     # SW Maps sometimes exports with swapped ordering or already-projected coords;
     # catch those before reprojection produces nonsense.
     if args.source_crs.upper() in ("EPSG:4326", "WGS84"):
-        for kind in ("gcp", "xs", "wl", "cam"):
+        for kind in ("gcp", "xs", "wl", "cam", "cp"):
             for label, (lon, lat, _z) in buckets[kind]:
                 if not (-180 <= lon <= 180) or not (-90 <= lat <= 90):
                     fails.append(f"{label}: coordinates ({lon}, {lat}) are not valid "
@@ -272,26 +359,26 @@ def main() -> int:
         return label, (x, y, z)
 
     projected = {k: [project(lc) for lc in buckets[k]]
-                 for k in ("gcp", "xs", "wl", "cam")}
+                 for k in ("gcp", "xs", "wl", "cam", "cp")}
 
     # Apply pole-length correction to every point, EXCEPT those flagged
     # with the '*' no-pole marker in the source GeoJSON. Pole subtraction
     # is the default for every bucket — GCPs, cross-section stations,
-    # water-level points, and the camera position alike. The '*' suffix
-    # is the only way to bypass it; there are no implicit exemptions.
+    # water-level points, the camera position, and check points alike.
+    # The '*' suffix is the only way to bypass it; no implicit exemptions.
     def subtract_pole(items):
         return [
             (label, (x, y, z if label in no_pole_labels else z - args.pole_length))
             for label, (x, y, z) in items
         ]
 
-    for bucket in ("gcp", "xs", "wl", "cam"):
+    for bucket in ("gcp", "xs", "wl", "cam", "cp"):
         projected[bucket] = subtract_pole(projected[bucket])
 
     if no_pole_labels:
         all_labels = {
             label
-            for bucket in ("gcp", "xs", "wl", "cam")
+            for bucket in ("gcp", "xs", "wl", "cam", "cp")
             for label, _ in projected[bucket]
         }
         flagged_in_scope = sorted(no_pole_labels & all_labels)
@@ -413,6 +500,13 @@ def main() -> int:
                         f"typical Indonesia range [9.0M, 10.1M] — wrong zone?")
                     break
 
+    # Check-point variation report (printed to stderr; warnings appended to
+    # the main warnings list; spread recorded in metadata.yaml below).
+    cp_report_lines, cp_warnings, cp_spread = check_point_report(projected["cp"])
+    if cp_report_lines:
+        print("\n" + "\n".join(cp_report_lines), file=sys.stderr)
+    warnings.extend(cp_warnings)
+
     # Prepare output
     args.output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -457,6 +551,12 @@ def main() -> int:
         f.write(f"  cross_section: {len(projected['xs'])}\n")
         f.write(f"  water_level: {len(projected['wl'])}\n")
         f.write(f"  camera: {len(projected['cam'])}\n")
+        f.write(f"  check_points: {len(projected['cp'])}\n")
+        if cp_spread is not None:
+            f.write("check_point_spread:\n")
+            f.write(f"  horizontal_m: {cp_spread['horizontal_m']}\n")
+            f.write(f"  vertical_m: {cp_spread['vertical_m']}\n")
+            f.write(f"  gate_status: {cp_spread['gate_status']}\n")
         if warnings:
             f.write("warnings:\n")
             for w in warnings:

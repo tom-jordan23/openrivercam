@@ -187,7 +187,9 @@ The post-processing script (`orc_survey_prep.py`) classifies each feature by mat
 
 The default for every point — GCP, XS, WL, or CAM — is that it **was** measured with the pole, so pole length is subtracted from its elevation. The `*` marker is the only way to bypass pole subtraction. If you measured the camera position with the antenna placed directly at the camera mount, save it as `CAM*`; if you measured some reference point at ground level below the camera (and you'll add the mount height later by hand), save it as `CAM`.
 
-**Other points are ignored by the script** — check points (`CP_START`, `CP_NOON`, `CP_END`), camera FOV markers, and any second cross-section used only for water-level documentation. The script reports them as "unrecognized labels" warnings, which is expected. They stay in your GeoPackage for field records but do not flow into ORC processing.
+**Check points** (`CP_START`, `CP_NOON`, `CP_END`, or any label starting with `CP`) **are handled specially:** they do not flow into ORC processing (no CSV), but the script automatically reports their horizontal and vertical spread and pairwise distances as a repeatability check — see [Computing the Drift Automatically](#computing-the-drift-automatically) in Section 5.
+
+**Other points are ignored by the script** — camera FOV markers, and any second cross-section used only for water-level documentation. The script reports them as "unrecognized labels" warnings, which is expected. They stay in your GeoPackage for field records but do not flow into ORC processing.
 
 **Why the prefix matters:** the script sorts features into `gcps.csv`, `cross_section.csv`, `water_level.csv`, and `camera_position.csv` purely from the label prefix. A GCP whose Remarks says "Point 3" instead of `GCP3` is skipped with a warning and never reaches the ORC pose fit.
 
@@ -355,6 +357,16 @@ If your check point measurements agree within 3cm across the entire day, your sy
 Drift exceeding 3cm horizontal or 4cm vertical signals problems. The base might have physically moved (tripod settling, ground instability) or the base position calculation might have been wrong. Investigate the cause and decide whether to continue surveying or restart.
 
 **What to Do If Drift Exceeds Limits:** Stop surveying. Return to the base and verify it hasn't moved physically, check the receiver display for RTCM output, satellite count, and position stability. If problems persist, consider restarting the correction setup or postponing the field day.
+
+### Computing the Drift Automatically
+
+You don't have to do the distance math by hand. When the post-processing script (`orc_survey_prep.py`, Phase 4 of `VIDEO_CONFIG_SETUP.md`) sees any points whose label starts with `CP` (e.g. `CP_START`, `CP_NOON`, `CP_END`, or the three individual repeatability measurements you take at CP_START), it automatically reports:
+
+- Total spread: horizontal (`√(ΔE² + ΔN²)` across all CP points) and vertical (max Z − min Z)
+- Pairwise distances between every pair of CP points
+- A pass/fail against the 3 cm H / 4 cm V gate (prints `OK` or `EXCEEDS GATE`)
+
+The spread values also land in `metadata.yaml` under `check_point_spread` for audit. Note: the 3 cm / 4 cm gate is evaluated on the **raw** survey-in-based coordinates, before the PPP translation — which is correct, because a constant translation shifts all CPs equally and does not change their relative spread. If you want to verify repeatability in the field before leaving the site, you can run the script on a SW Maps export of just the CP points. Otherwise the drift check happens automatically when you run the full script back at the office.
 
 ---
 
@@ -851,7 +863,7 @@ Create these feature layers in your SW Maps project (all POINT geometry). The ri
 | **Discharge Cross Section** | Yes | `XS1`, `XS2`, ... (LB → RB) |
 | **Water Level** | Yes | `WL1`, `WL2`, ... |
 | **Camera Location** | Yes (one point only) | `CAM` |
-| **Check Point Location** | No — survey QC only | `CP_START`, `CP_NOON`, `CP_END` |
+| **Check Point Location** | Spread report only (no CSV) | `CP_START`, `CP_NOON`, `CP_END` |
 | **Level Cross Section** | No — field records only | free-form (e.g. `LXS1`, `LXS2`, ...) |
 | **Camera FOV** | No — field records only | free-form |
 
