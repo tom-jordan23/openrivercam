@@ -1,6 +1,6 @@
 # RIVER SURVEY PROCEDURE FOR OPENRIVERCAM DEPLOYMENTS — LOCAL BASE STATION WORKFLOW
 
-**Equipment:** ArduSimple RTK base + rover + Android + GNSS Master + SW Maps + Leica Disto X6 P2P (optional, for cross-sections)
+**Equipment:** ArduSimple RTK base + rover + Android + GNSS Master + SW Maps
 **Target Accuracy:** 1-2cm relative accuracy in the field; ~0.5-1m absolute during the survey, improved to 2-5cm absolute after PPP post-processing
 **CRS:** UTM zone for your location (determine using instructions in Section 1)
 
@@ -31,12 +31,6 @@ With the base-rover system, RTK accuracy depends entirely on the base station's 
 Survey-in is a procedure the base station runs at the start of the field day to calculate its own position. The base collects position fixes continuously and averages them; individual fixes are noisy, but averaging over 30-60 minutes converges toward a stable position with ~0.25-0.5m absolute accuracy. That stability is good enough to support real-time RTK corrections for the rover during the day. PPP post-processing later refines this to centimeter-level absolute coordinates.
 
 Survey-in applies only to the base station. It is not required when using NTRIP, because InaCORS reference stations already have precisely known coordinates — the NTRIP rover receives absolute positions directly.
-
-### Laser Distance Measurement for Cross-Sections
-
-The Leica Disto X6 with DST 360-X adapter (P2P mode) provides an alternative method for measuring river cross-sections when RTK wading is not possible. From a single instrument station on one bank, you can measure distances and height differences to points on the opposite bank — up to 200m range (400m with reflector target).
-
-This complements RTK wading for rivers that are too deep, too fast, or too dangerous to cross on foot. The Disto measures bank geometry and exposed features; it cannot target the water surface directly. For submerged bed topography in deep rivers, other methods (acoustic sounding, estimation) are still needed.
 
 ### Quality Control Through Check Points
 
@@ -71,7 +65,7 @@ This independent validation provides confidence that your system works correctly
 - [A. GNSS Master Setup](#appendix-a-gnss-master-setup)
 - [B. SW Maps Configuration](#appendix-b-sw-maps-configuration)
 - [C. Base Station u-center Config](#appendix-c-base-station-u-center-config)
-- [D. Sample Video Collection](#appendix-d-sample-video-collection)
+- [D. Calibration Video and GCP Reference Photo](#appendix-d-calibration-video-and-gcp-reference-photo)
 - [E. Troubleshooting](#appendix-e-troubleshooting)
 - [F. AUSPOS Submission](#appendix-f-auspos-submission)
 - [G. CSRS-PPP Submission](#appendix-g-csrs-ppp-submission)
@@ -180,18 +174,22 @@ The Universal Transverse Mercator system divides Earth into 60 north-south zones
 
 ### Point Naming Convention
 
-The post-processing script (`orc_survey_prep.py`) classifies each feature by matching the point name prefix. Name points in SW Maps according to the table below so the exported GeoJSON feeds directly into the script without manual cleanup.
+The post-processing script (`orc_survey_prep.py`) classifies each feature by matching a label prefix. **In SW Maps, type the label into the Remarks field of the point** — SW Maps does not expose a per-feature Name field for POINT features, so Remarks is where the label lives. On GeoJSON export, the Remarks value travels into the feature's properties (as `remarks` / `Remarks` / `description` depending on the SW Maps version), and the script picks it up from there.
 
-| Point type | Name pattern | Examples |
-|------------|--------------|----------|
+| Point type | Label pattern | Examples |
+|------------|---------------|----------|
 | Ground control points | `GCP1`, `GCP2`, ... (sequential) | `GCP1` ... `GCP10` |
 | Discharge cross-section stations | `XS1`, `XS2`, ... (traversal order, LB → RB) | `XS1` ... `XS15` |
 | Water level edge points | `WL1`, `WL2`, ... (one per bank typical) | `WL1`, `WL2` |
 | Camera position | `CAM` (exactly one) | `CAM` |
 
+**No-pole marker (`*` suffix):** append `*` to the label when the point was measured **without** the survey pole — for example, an antenna tapped directly against an elevated GCP target, or the camera position read at the camera mount itself rather than at ground level below it. The prep script strips the `*` and skips pole-length subtraction for that one point. Examples: `GCP5*`, `CAM*`.
+
+The default for every point — GCP, XS, WL, or CAM — is that it **was** measured with the pole, so pole length is subtracted from its elevation. The `*` marker is the only way to bypass pole subtraction. If you measured the camera position with the antenna placed directly at the camera mount, save it as `CAM*`; if you measured some reference point at ground level below the camera (and you'll add the mount height later by hand), save it as `CAM`.
+
 **Other points are ignored by the script** — check points (`CP_START`, `CP_NOON`, `CP_END`), camera FOV markers, and any second cross-section used only for water-level documentation. The script reports them as "unrecognized labels" warnings, which is expected. They stay in your GeoPackage for field records but do not flow into ORC processing.
 
-**Why the prefix matters:** the script sorts features into `gcps.csv`, `cross_section.csv`, `water_level.csv`, and `camera_position.csv` purely from the name prefix. A GCP saved as "Point 3" instead of `GCP3` is skipped with a warning and never reaches the ORC pose fit.
+**Why the prefix matters:** the script sorts features into `gcps.csv`, `cross_section.csv`, `water_level.csv`, and `camera_position.csv` purely from the label prefix. A GCP whose Remarks says "Point 3" instead of `GCP3` is skipped with a warning and never reaches the ORC pose fit.
 
 **Numbering:** number sequentially without gaps. The script warns when it sees gaps (e.g. `GCP1, GCP2, GCP4`), because a gap usually means a point was lost or mislabeled.
 
@@ -256,7 +254,6 @@ Calculate your power budget conservatively — the rover runs 6-8 hours, the And
 - [ ] Survey poles (primary + backup), bipod if available
 - [ ] Steel tape measure, markers
 - [ ] Waterproof notebook, pencils
-- [ ] If using Disto X6 P2P: Verify complete P2P package (Disto X6 + DST 360-X + TRI 120 + GZM 3), battery charged, test P2P function
 
 **Redundancy Philosophy:** Bring backup survey poles. If you drop your primary pole in the river or damage it on rocks, you need a replacement immediately. The same applies to markers, notebooks, and anything else that's small, inexpensive, and critical to operations if lost.
 
@@ -342,7 +339,7 @@ If your check point measurements agree within 3cm across the entire day, your sy
 
 **Distance from Survey Area:** Check points should be in representative conditions — similar satellite visibility and multipath environment as your survey points. The 20-50m range achieves this balance. Too close to obstructions and you're not testing real survey conditions. Too far and you might encounter different local conditions.
 
-**Three Independent Measurements:** Measure the point, move the pole completely off the mark, then remeasure. Do this three times with 60 seconds of occupation each time. Calculate the spread in coordinates. If the three measurements don't agree within 1cm horizontal and 2cm vertical, your RTK solution is unstable — either poor satellite geometry, multipath contamination, or insufficient convergence time. Don't proceed with surveying until you resolve this.
+**Three Independent Measurements:** Measure the point, move the pole completely off the mark, then remeasure. Do this three times, averaging for the site-appropriate duration each time (30s open sky with steady FIX, 60s with partial obstructions, 120s marginal). Calculate the spread in coordinates. If the three measurements don't agree within 1cm horizontal and 2cm vertical, your RTK solution is unstable — either poor satellite geometry, multipath contamination, or insufficient convergence time. Don't proceed with surveying until you resolve this.
 
 **Why This Agreement Matters:** You're testing repeatability — the receiver's ability to measure the same point consistently. If you can't measure one point three times with centimeter agreement, you can't trust any individual measurement to be correct within centimeters. This test validates that your system delivers the precision you need before you invest hours measuring ground control points.
 
@@ -365,6 +362,17 @@ Drift exceeding 3cm horizontal or 4cm vertical signals problems. The base might 
 
 Ground control points tie the camera's pixel coordinate system to real-world UTM coordinates. The transformation quality depends on having well-distributed points with accurately known positions. Poor GCP distribution — clustering in one area or all at similar distances from the camera — creates a weak geometric solution that increases velocity uncertainty.
 
+### Sequence of Operations
+
+Camera profile selection, calibration video capture, and the GPS survey of this section must happen in this order:
+
+1. **Pick the camera profile** — run the on-scene profile comparison test and push the winning profile to the camera. Follow **Phase 1 of `../spring_2026_ID/docs/VIDEO_CONFIG_SETUP.md`**.
+2. **Place the GCP markers** in the camera's field of view (Control Points subsection below).
+3. **Capture the calibration video** using the profile selected in step 1 and the ORC-OS helper script `orc-calibration-capture`. Follow **Phase 2 of `VIDEO_CONFIG_SETUP.md`**.
+4. **Survey the camera position and every GCP marker** with the rover (this section).
+
+Capture the calibration video *before* the GPS survey of the markers, for two reasons: the video must show the markers in their final positions, and you cannot keep the camera running for the hours the GPS survey will take (60+ seconds per point × 8-10 points, plus water level and cross-section work).
+
 ### Why GCP Distribution Matters
 
 Imagine trying to level a table using only three points, all on one side. The other side remains unconstrained. GCP distribution follows the same principle. Points around the perimeter of the camera view constrain the transformation across the entire image. Points clustered in one area leave other regions poorly constrained.
@@ -373,7 +381,7 @@ Photogrammetric transformation errors increase with distance from the nearest GC
 
 ### Camera Position
 - [ ] 5-10m height, 15-45° viewing angle
-- [ ] Survey camera position with rover — save the point named exactly `CAM`
+- [ ] Survey camera position with rover — put `CAM` in the point's Remarks field (exactly one CAM point in the project)
 - [ ] Record height, direction, tilt angle
 
 **Why Survey Camera Position:** Knowing the camera's exact position and orientation helps to reconstruct the scene when sorting through GIS points later. Ensuring that you have points for the camera and field of view can help you spot any survey locations that are outside the camera's view, etc.
@@ -381,14 +389,16 @@ Photogrammetric transformation errors increase with distance from the nearest GC
 **Recording Geometry:** Note the camera height above ground, compass direction it faces, and tilt angle. These parameters help reconstruct the viewing geometry during processing and support quality control checks. If calculated GCP positions don't align with observed camera geometry, something went wrong — either the GCP measurements or the processing.
 
 ### Control Points
-- [ ] Place 6+ visible targets in camera FOV
-- [ ] Take sample video → [Detailed procedure](#appendix-d-sample-video-collection)
-- [ ] Survey each control point after video
-- [ ] Save points to the **Ground Control Points** layer, named `GCP1`, `GCP2`, ... in the order you measure them ([naming convention](#point-naming-convention))
+- [ ] Confirm the selected camera profile is live on the camera (Phase 1 of `VIDEO_CONFIG_SETUP.md` complete)
+- [ ] Place 6+ visible targets in camera FOV (aim for 8-10 for a robust pose fit)
+- [ ] Take a numbered reference photo of the markers (used later for GCP-to-pixel matching — see [Appendix D](#appendix-d-calibration-video-and-gcp-reference-photo))
+- [ ] Capture the calibration video via **Phase 2 of `VIDEO_CONFIG_SETUP.md`** — do this before surveying the markers
+- [ ] Survey each marker with the rover after the calibration video is in hand
+- [ ] Save each marker to the **Ground Control Points** layer. Put the label (`GCP1`, `GCP2`, ...) in the point's Remarks field, in the order you measure them, matching the numbering on the reference photo. Append `*` to the label if the point was measured without the pole ([naming convention](#point-naming-convention))
 
 **Minimum Six Points:** Photogrammetric transformation solves for camera position, orientation, and lens distortion. This requires at least 6 ground control points with known 3D coordinates. More points improve the solution robustness and allow detecting outliers. Aim for 8-10 GCPs for reliable transformation. Having extras also allows you to discard points that don't resolve well in configuration.
 
-**Survey After Video:** You need the video to show where the targets are positioned while the water is flowing. Survey the targets after recording because you'll spend 60+ seconds per point and can't leave the camera running that long. This sequence ensures the video captures representative flow conditions while the survey achieves required precision.
+**Survey After the Calibration Video:** The calibration video must show the markers in their final positions. Survey the targets after recording because you'll spend 60+ seconds per point and can't leave the camera running that long. This sequence also ensures the video captures representative flow conditions while the survey achieves required precision.
 
 **Target Visibility:** Each target must be clearly identifiable in the video and accurately measurable in the field. High-contrast colored panels (orange, white, or checkerboard patterns) work well. Retroreflective tape improves visibility. Position targets on stable surfaces — rocks, concrete, driven stakes — not vegetation that might move in the wind.
 
@@ -397,6 +407,8 @@ Photogrammetric transformation errors increase with distance from the nearest GC
 ## 7) Water Level Survey
 
 Water surface elevation provides the reference datum for all cross-section measurements and enables converting surveyed bed elevations into flow depths. This simple measurement is surprisingly important — a 2cm error in water level produces a 2cm error in calculated depth for every point in the cross-section.
+
+**Relationship to `h_ref`:** The water level measured at (or as close as possible to) the time of the calibration video capture becomes `h_ref` in the video configuration — the water-surface elevation that ORC-OS anchors the cross-section to. Phase 4 of `VIDEO_CONFIG_SETUP.md` takes `h_ref` as a CLI argument to `orc_survey_prep.py`. If the water level drifts materially between the calibration video capture and this survey, re-measure at a time closer to the video.
 
 ### Why Water Level Accuracy Matters
 
@@ -414,7 +426,7 @@ Discharge calculations integrate velocity across the cross-sectional area. Area 
 ### Measurement
 - [ ] Survey water surface elevation with rover pole
 - [ ] **Note depth on pole**, maintain RTK FIX
-- [ ] Save to the **Water Level** layer, named `WL1`, `WL2`, ... (one per bank typical — [naming convention](#point-naming-convention))
+- [ ] Save to the **Water Level** layer with `WL1`, `WL2`, ... in the Remarks field (one per bank typical — [naming convention](#point-naming-convention))
 - [ ] Take multiple measurements if water is moving
 - [ ] Document measurement method and accuracy
 
@@ -422,7 +434,7 @@ Discharge calculations integrate velocity across the cross-sectional area. Area 
 
 Calculate the water level in azimuthal altitude (meters): `Water_Surface_Elevation = GPS_Position_Z - Pole_Height + Depth_Below_Surface`. Altitude (Z) will be displayed by default in Azimuth meters in SWMaps, so you can just subtract the pole height and then add back the submerged pole depth to get water surface level.
 
-**RTK FIX Requirement:** This measurement needs the same accuracy as ground control points. Wait for stable RTK FIX, verify PDOP ≤2.5 and satellites ≥12, then occupy the position for 60 seconds. Don't shortcut this measurement because it affects every depth calculation.
+**RTK FIX Requirement:** This measurement needs the same accuracy as ground control points. Wait for stable RTK FIX, verify PDOP ≤2.5 and satellites ≥12, then average for the site-appropriate duration (30s open sky with steady FIX, 60s partial obstructions, 120s marginal). Don't shortcut this measurement because it affects every depth calculation.
 
 **Multiple Measurements:** If the water surface moves (waves, turbulence, fluctuations), take 3-5 measurements and average them. This reduces the impact of instantaneous surface variations. Note the range of measurements as an uncertainty estimate.
 
@@ -440,12 +452,12 @@ Quality gates enforce these checks. Configure SW Maps to require RTK FIX, PDOP �
 
 ### Quality Requirements
 - [ ] All quality gates met (see top of document)
-- [ ] Averaging times: 60s standard, 120s canal
+- [ ] **Averaging is active in SW Maps and set to the correct duration:** 30s open sky with a steady FIX; 60s in canal environments or with partial obstructions; 120s in marginal conditions. Verify on the first point of the day and any time you change the project configuration; the SW Maps setting is in Appendix B. Do not tap Save until the full averaging period has elapsed — don't shortcut when FIX status appears early.
 - [ ] Pole bubble centered, measure height each shot
 
-**Averaging Time:** RTK positions jump around by ±1-2cm even in FIX mode due to remaining atmospheric noise, multipath, and receiver noise. Averaging over 60 seconds reduces this scatter and provides a more stable position. Longer averaging (120s) helps in challenging environments where signal quality is marginal.
+**Averaging Time:** RTK positions jump around by ±1-2cm even in FIX mode due to remaining atmospheric noise, multipath, and receiver noise. Averaging reduces this scatter by roughly a factor of `sqrt(N)` over N samples — so going from 30s to 60s buys about 0.3cm of noise reduction, which is well below RTK's baseline precision. In open-sky conditions with a FIX that has already been stable for 10+ seconds, 30s of averaging is sufficient. Step up to 60s in canal environments or sites with partial obstructions, and 120s only when conditions are marginal (poor PDOP, borderline satellite count, known multipath).
 
-Don't shortcut the averaging time. The software might achieve FIX status after 10 seconds, but that doesn't mean the position is fully converged. The full averaging period ensures the solution stabilizes and produces repeatable results.
+Don't shortcut the averaging time. The software might achieve FIX status after a few seconds, but the full averaging period is what keeps results repeatable — it's also what protects you against a flaky fix you haven't noticed yet.
 
 **Pole Bubble:** Survey poles include a bubble level. Center it precisely before saving the point. A tilted pole introduces horizontal position error and elevation error. A 2m pole tilted 5° displaces the tip by ~17cm horizontally — far beyond your accuracy target. Keep the pole vertical.
 
@@ -461,7 +473,7 @@ Don't shortcut the averaging time. The software might achieve FIX status after 1
 
 **Failure Recovery:** Sometimes a location has poor satellite visibility — tree cover, terrain shadowing, buildings. The receiver can't achieve FIX or maintains marginal quality. Wait 2 minutes to see if conditions improve as satellites move. If not, move 2-3 meters to escape multipath or obstruction issues. If problems persist, that location might not be measurable with your current setup — document it and consider an alternative GCP location.
 
-**What to record per point:** the only attribute you set by hand is the point name, using the [naming convention](#point-naming-convention). SW Maps automatically records measurement time, PDOP, satellite count, horizontal/vertical precision, and fix status with each save. Add a short note only when something unusual affects the measurement (e.g. partial obstruction, unstable footing).
+**What to record per point:** the only field you fill in by hand is the point's **Remarks** value — the label from the [naming convention](#point-naming-convention), with a trailing `*` if the point was measured without the pole. SW Maps automatically records measurement time, PDOP, satellite count, horizontal/vertical precision, and fix status with each save.
 
 ---
 
@@ -485,128 +497,25 @@ You're creating a spatial model of the channel bed. Models work best with evenly
 
 **Flow Conditions:** Record whether the water is low, medium, or high flow, and whether it's rising or falling. This context helps interpret the discharge measurements and relate them to other hydrological data. Note any unusual conditions — debris accumulation, ice, aquatic vegetation — that might affect either the survey or the flow.
 
-### Method A: RTK Wading (Primary Method)
+### Collection Method: RTK Wading
 
-RTK wading is the primary cross-section method — walk the transect with the rover pole, measuring bed elevation at each station. Use this for shallow, safe rivers where you can wade across.
+The cross-section method used here is RTK wading — walk the transect with the rover pole, measuring bed elevation at each station. Use this for shallow, safe rivers where you can wade across. If the river is too deep, fast, or dangerous to wade, use the instrumented **shuttle** instead of the RTK rover for the cross-section; this document does not cover shuttle operation.
 
 #### Collection
 - [ ] Walk LB → RB systematically
 - [ ] Capture all water levels at both banks
-- [ ] Each station: verify quality gates, 60-120s averaging
-- [ ] Save to the **Discharge Cross Section** layer, named `XS1`, `XS2`, ... in the order you walk them (LB → RB — [naming convention](#point-naming-convention))
+- [ ] Each station: verify quality gates, then average for the site-appropriate duration (30s open sky with steady FIX, 60s partial obstructions, 120s marginal)
+- [ ] Save to the **Discharge Cross Section** layer with `XS1`, `XS2`, ... in the Remarks field, in the order you walk them (LB → RB). Append `*` to the label if the point was measured without the pole ([naming convention](#point-naming-convention))
 - [ ] Record water depth at each station (for cross-check against computed depth)
 - [ ] Measure pole height tip-to-ARP each shot
 
-**Systematic Traverse:** Start at left bank and walk toward right bank, measuring at planned intervals. Don't skip stations because they're difficult to reach or in deep water. Those difficult stations often represent important geometric features. If a station is truly impossible to measure safely using a pole, a bathymetric survey with sonar and GPS might be a better approach.
+**Systematic Traverse:** Start at left bank and walk toward right bank, measuring at planned intervals. Don't skip stations because they're difficult to reach or in deep water. Those difficult stations often represent important geometric features. If a station is truly impossible to measure safely using the pole, switch the whole cross-section to the shuttle rather than mixing methods.
 
 **Quality Verification:** Check RTK FIX status, PDOP, and satellite count before every point. Don't assume conditions remain good just because the previous point worked. Satellite geometry changes continuously, and local obstructions affect each position differently.
 
 **Water Depth Recording:** At each station in the wetted channel, note the depth from the water surface to the bed. This provides redundant information — you're also calculating depth from the difference between water surface elevation and surveyed bed elevation. The two methods should agree within a few centimeters. If they don't, you've found a measurement error to investigate.
 
 **Station Numbering:** Walk left bank → right bank and number stations as you go (`XS1` at LB, increasing toward RB). The point name *is* the station number — no separate attribute needed. The script sorts by the numeric suffix, so `XS2` always comes before `XS10` even if you saved them out of order.
-
-### Method B: Disto X6 P2P (Optional — When Wading Is Not Possible)
-
-If a Leica Disto X6 P2P is available, use it to measure cross-section points on rivers that are too deep, fast, or dangerous to wade. This method measures from one bank; it does not replace RTK wading where wading is feasible.
-
-#### When to Use Disto P2P vs RTK Wading
-
-| Condition | Method |
-|-----------|--------|
-| Shallow, safe river you can walk across | **RTK wading** (primary) |
-| River too deep or fast to wade safely | **Disto P2P** (if available) |
-| Need submerged bed topography | **RTK wading** (Disto can't target water surface) |
-| Measuring bank geometry from a distance | **Disto P2P** |
-| Both banks accessible on foot | **RTK wading** (higher accuracy) |
-
-#### Equipment Required
-
-The complete P2P package (SKU 950878):
-- [ ] Leica Disto X6 — laser distance meter
-- [ ] DST 360-X — precision tilt/pan adapter
-- [ ] TRI 120 — tripod
-- [ ] GZM 3 — reflective target plate (for targets >60m in bright conditions)
-
-#### Setup
-
-1. **Choose instrument station on one bank:**
-   - Clear line of sight across the full cross-section
-   - Stable ground (not soft mud or sand)
-   - 2-5m back from bank edge for stability
-
-2. **Set up tripod and mount Disto:**
-   - Extend TRI 120 tripod legs, press firmly into ground
-   - Mount DST 360-X adapter (5/8" thread)
-   - Attach Disto X6 to adapter
-   - Power on, allow compensator to self-level
-   - Verify level indicator shows centered
-
-3. **RTK-survey the instrument station position:**
-   - Place rover pole adjacent to the tripod center
-   - Survey with standard quality gates (60s, RTK FIX)
-   - Record instrument height (tripod top to ground)
-   - This gives the Disto an absolute position in UTM
-
-4. **RTK-survey a reference direction point:**
-   - Survey a second visible point 20+ meters away
-   - This establishes the azimuth orientation for converting Disto angles to UTM bearings
-   - Calculate bearing: `azimuth = atan2(ΔE, ΔN)` from instrument to reference point
-
-#### Measurement Procedure
-
-1. **Select P2P mode** on the Disto X6 (Menu → P2P)
-
-2. **Aim at reference direction point first** to establish orientation
-
-3. **Measure cross-section points systematically (LB → RB):**
-   - Aim at each visible feature along the cross-section
-   - Fire laser — record horizontal distance and height difference
-   - Work systematically from left bank to right bank
-
-4. **Use GZM 3 reflector plate for distant targets:**
-   - Targets >60m in bright sunlight may not return enough signal
-   - Have an assistant hold the reflector plate at the target point
-   - Extends effective range to ~400m
-
-5. **Take 3-5 repeat measurements per point and average:**
-   - Discard obvious outliers (>3× typical spread)
-   - Averaging reduces random angular error
-
-#### Accuracy Expectations
-
-| Target Distance | Lateral Accuracy (±0.1° angle) | Distance Accuracy |
-|-----------------|-------------------------------|-------------------|
-| 20 m | ±35 mm | ±1 mm |
-| 50 m | ±87 mm | ±1 mm |
-| 100 m | ±175 mm | ±1 mm |
-
-- Adequate for monitoring-grade cross-sections on rivers up to ~50m wide
-- Not sufficient for hydraulic model calibration requiring <2cm accuracy
-- Distance accuracy (±1-2mm) is excellent regardless of range — angle is the limiting factor
-
-#### Combining Disto Data with RTK Data
-
-1. **Instrument station position** from RTK provides the absolute reference (E₀, N₀, Z₀)
-2. **Reference direction** from RTK provides azimuth orientation
-3. **For each Disto point**, convert polar to UTM:
-   ```
-   E = E₀ + horizontal_distance × sin(reference_azimuth + relative_angle)
-   N = N₀ + horizontal_distance × cos(reference_azimuth + relative_angle)
-   Z = Z₀ + height_difference
-   ```
-4. Combined accuracy: RTK station error (~3cm) + Disto angular error (distance-dependent)
-
-#### Field Tips for Indonesia
-
-- **Measure early morning or late afternoon** — avoid noon sun (heat shimmer distorts laser, bright light reduces dot visibility)
-- **Cannot target water surface directly** — aim at bank features, stakes, or reflector plate held by an assistant
-- **IP65 rated** — fine in light rain, but wipe lens if water droplets form; avoid heavy downpours
-- **Battery lasts ~8 hours** — USB-C rechargeable, bring a power bank
-- **Overcast days are ideal** for laser measurement — consistent lighting, less shimmer
-
-#### Rental Note
-
-Contact **Leica Store Jakarta** (Plaza Senayan, 3rd floor) or **Indosurta Group** for P2P package rental. Verify the complete package: Disto X6 + DST 360-X + TRI 120 + GZM 3. Test P2P function before leaving the shop. Alternative: rent a total station if the Disto P2P package is unavailable.
 
 ---
 
@@ -923,7 +832,7 @@ SW Maps provides field data collection with quality control features, attribute 
 
 - GPS Source: Device internal GPS
 - Averaging Method: By Time
-- Default times: 60s standard, 120s canal
+- Default times: 30s open sky with steady FIX; 60s canal or partial obstructions; 120s marginal conditions
 - Precision thresholds: H=2cm/V=3cm (std), H=4cm/V=6cm (canal)
 
 **Device Internal GPS:** This seems counterintuitive when you're using an external receiver, but GNSS Master feeds the external receiver data through the Android internal GPS interface via mock location. SW Maps reads the "internal GPS" and receives the high-accuracy external data.
@@ -934,10 +843,10 @@ SW Maps provides field data collection with quality control features, attribute 
 
 ### Survey Layers
 
-Create these feature layers in your SW Maps project (all POINT geometry). The right column shows the name you give each point within that layer — this is what the post-processing script reads. See the full [Point Naming Convention](#point-naming-convention) in Section 1.
+Create these feature layers in your SW Maps project (all POINT geometry). The right column shows the label you type into the point's **Remarks** field — this is what the post-processing script reads. See the full [Point Naming Convention](#point-naming-convention) in Section 1, including the `*` no-pole marker.
 
-| Layer | Consumed by ORC script? | Point name |
-|-------|-------------------------|------------|
+| Layer | Consumed by ORC script? | Remarks value |
+|-------|-------------------------|---------------|
 | **Ground Control Points** | Yes | `GCP1`, `GCP2`, ... |
 | **Discharge Cross Section** | Yes | `XS1`, `XS2`, ... (LB → RB) |
 | **Water Level** | Yes | `WL1`, `WL2`, ... |
@@ -946,9 +855,11 @@ Create these feature layers in your SW Maps project (all POINT geometry). The ri
 | **Level Cross Section** | No — field records only | free-form (e.g. `LXS1`, `LXS2`, ...) |
 | **Camera FOV** | No — field records only | free-form |
 
+Append a trailing `*` to any label (`GCP5*`, `CAM*`, etc.) if that specific point was measured without the pole. The script applies pole-length subtraction to every ORC-consumed point by default; the `*` is the only way to bypass it.
+
 **Layer Organization:** Separate layers for different point types simplify processing and prevent mistakes. You can apply different symbology, filtering, and export rules to each layer. During post-processing, you load only the layers you need for each analysis step.
 
-**Attribute Configuration:** Keep attributes minimal. The only attribute you set by hand is the point **name** (per the naming convention above), and optionally a free-form **notes** field. SW Maps records measurement time, PDOP, satellite count, horizontal/vertical precision, and fix status on every saved point automatically — you do not need to define those as layer attributes.
+**Attribute Configuration:** Keep attributes minimal. The only attribute you fill in by hand is the point's **Remarks** field (per the naming convention above). SW Maps records measurement time, PDOP, satellite count, horizontal/vertical precision, and fix status on every saved point automatically — you do not need to define those as layer attributes.
 
 ---
 
@@ -1015,25 +926,25 @@ u-center is u-blox's configuration software for their GNSS receivers. You'll use
 
 ---
 
-## Appendix D: Sample Video Collection
+## Appendix D: Calibration Video and GCP Reference Photo
 
-The sample video serves two purposes. First, it documents the flow conditions and visible features during your survey. Second, it provides the reference frame for identifying ground control points within the camera view.
+The calibration video is captured from the station's own camera in its final mounted position. Procedure for capturing it — camera-profile preflight, the `orc-calibration-capture` helper script, validation of the resulting MP4 and sidecar JSON — lives in **Phase 2 of `../spring_2026_ID/docs/VIDEO_CONFIG_SETUP.md`**. This appendix covers the field-side work that complements Phase 2.
 
-### Connect to PtBox
+### Before the Calibration Video
 
- - Put the PtBox in Maintenance Mode using the FTP service
- - Wait for the PtBox to come online again, and log in
- - Select "Aim the camera in the field"
- - Take a 5 second video and note the video name and timestamp
- - Ensure that all control points are visible in the video. Adjust if needed and take a new video.
- - Also take a photo, and use the photo to number the control points so that you have a reference to use when entering the control points into the PtBox software later.
- - **NOTE:** Do not try to start the cameras in this view. This PtBox has a bad camera, and attempting to start the bad camera will cause the PtBox to lock up.
+- Camera profile test complete and winning profile pushed to the camera (Phase 1 of `VIDEO_CONFIG_SETUP.md`).
+- GCP markers placed in their final positions within the camera's field of view.
+- Scene clear: no people, boats, vehicles, or waved markers during the capture.
 
-**Video Duration:** Five seconds provides enough frames to identify features clearly without consuming excessive storage. If flow conditions are highly variable (turbulent flow, changing light), consider 10-15 seconds to capture representative conditions.
+**GCP Visibility:** Every GCP you intend to survey must be visible in the calibration video. If a marker is outside the camera's field of view or occluded by vegetation or terrain, it cannot be used for photogrammetric processing. Check visibility before you capture the video — moving a marker after the capture invalidates the video.
 
-**GCP Visibility:** Every ground control point you survey must be visible in the video. If a GCP is outside the camera field of view or occluded by vegetation or terrain, it cannot be used for photogrammetric processing. Check visibility before finalizing GCP locations.
+### GCP Reference Photo
 
-**Photo for Numbering:** Take a still photo and annotate it with GCP numbers. This reference prevents mixing up control points during processing. Print the photo or keep it open on a screen while entering GCP coordinates in PtBox — visual confirmation prevents data entry errors.
+In addition to the calibration video itself, take a **numbered reference photo** of the markers — either a separate still photo or a frame grab from the video, annotated with the GCP labels (`GCP1`, `GCP2`, ...) you will use during the GPS survey.
+
+**Why:** in Phase 5 of `VIDEO_CONFIG_SETUP.md` you upload `gcps.csv` into the ORC-OS UI and click each GCP's pixel location in the video frame. The click order must match the CSV's label order. The reference photo is your lookup: which physical marker corresponds to `GCP1`? `GCP2`? The photo prevents mixing them up — a mismatch between clicked pixel location and labeled CSV row produces a garbage pose fit with no obvious error, only a bad RMS reprojection number down the line.
+
+Print the photo or keep it open on the field laptop while you author the video configuration in Phase 5.
 
 ---
 
@@ -1067,7 +978,7 @@ The sample video serves two purposes. First, it documents the flow conditions an
 
 **Pole Stability:** Hand-holding a 2m pole introduces centimeter-level position variations from hand shake and wind. A bipod or fixed mount eliminates these variations. If you must hand-hold, brace the pole against your body and take shallow breaths during measurement.
 
-**Averaging Time:** Extended averaging (120s instead of 60s) helps in marginal conditions by averaging over more satellite geometry variations and atmospheric fluctuations. This can't fix systematic problems like multipath or poor PDOP, but it reduces random noise.
+**Averaging Time:** In marginal conditions — borderline PDOP, fewer satellites, known multipath — step up from 30s to 60s, and up to 120s if conditions are genuinely poor. Extra averaging reduces random noise and buys protection against a flaky FIX, but it cannot fix systematic problems (multipath, poor PDOP).
 
 ### USB Connection Issues
 
@@ -1292,7 +1203,7 @@ If you don't have your own RTK GNSS equipment, several companies in the Jakarta 
 
 | Company | Phone / WhatsApp | Email | Location | Equipment |
 |---------|-----------------|-------|----------|-----------|
-| **Indosurta Group** | 021-5315-8019 / 0853-1204-2324 | info@indosurta.co.id | BSD City, Tangerang Selatan | GPS RTK, total station, **Leica Disto D510/X3/D2** |
+| **Indosurta Group** | 021-5315-8019 / 0853-1204-2324 | info@indosurta.co.id | BSD City, Tangerang Selatan | GPS RTK, total station |
 | **Dinar Geoinstrument** | +62 878-7521-4418 / +62 822-2026-6662 | marketing@dinargeo.co.id | Pondok Kelapa, Jakarta Timur | GPS RTK, total station, theodolite |
 | **CV. AMS** | 0812-8811-1186 (Susep) | admin@akurasimisisurvey.co.id | Jl. Salman 103, Kebon Jeruk, Jakarta Barat | GPS RTK, total station, theodolite |
 | **Trans Survey** | 021-22544580 / 082119696710 | transsurvey1@gmail.com | Jl. Joglo Raya 27A, Jakarta Barat | GPS RTK, total station |
@@ -1317,13 +1228,11 @@ If you don't have your own RTK GNSS equipment, several companies in the Jakarta 
 | GNSS RTK rover (mid-range, e.g. Emlid RS2) | 1,000,000 - 1,700,000 | $61 - 105 |
 | GNSS RTK rover (high-end, e.g. Trimble/Leica) | 1,500,000 - 2,000,000+ | $92 - 125+ |
 | Total station (reflectorless) | 600,000 - 1,200,000 | $37 - 74 |
-| Leica Disto laser distance meter | Contact Indosurta or Sewatotalstation directly | — |
 
 Weekly rates are typically 5-6x the daily rate. Most vendors require a 50% deposit.
 
 ### Notes
 
-- **For Leica Disto rental specifically:** Indosurta Group is the best confirmed source (they list Disto D510, X3, D2 on their rental pages). Sewatotalstation.com and PT Duta Basis Dataprima are also worth contacting.
 - **English-speaking service:** MSDI (msdi.co.id) and PT Duta Basis Dataprima (dutabasis.com) have the most professional English-language websites. Indosurta has partial English content.
 - **Rental process:** Most transactions start via WhatsApp message. Expect to provide ID and a deposit. Larger companies (Indosurta, Duta Basis) provide formal rental agreements.
 - **Delivery:** Many companies will deliver equipment to your project site within Jabodetabek (Jakarta, Bogor, Depok, Tangerang, Bekasi).

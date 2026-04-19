@@ -5,21 +5,36 @@ Takes a SW Maps GeoJSON point export and produces the CSV files needed
 for Phase 4 of VIDEO_CONFIG_SETUP.md: GCPs, cross-section, camera
 position, water level, plus a metadata.yaml summary.
 
-Label convention (case-insensitive prefix match on the "name" /
-"Name" / "label" property of each feature):
+Label convention (case-insensitive prefix match). The label is
+pulled from the first property present out of: remarks, Remarks,
+REMARKS, description, Description, name, Name, label, Label (SW
+Maps stores the label in the per-point Remarks field, which is
+exported into these properties depending on the SW Maps version).
 
     GCPn        ground control points (GCP1, GCP2, ...)
     XSn / CSn   cross-section points (XS1, XS2, ... in traversal order)
     WLn         water-level edge points
     CAM         camera position (exactly one expected)
 
+No-pole marker:
+
+    Append a trailing '*' to the label (e.g. GCP5*, CAM*) to flag a
+    point that was measured WITHOUT the survey pole — the antenna was
+    placed directly at the target. The script strips the '*' from the
+    output label and skips pole-length subtraction for that point.
+    The '*' marker applies uniformly to every label type — there is
+    no bucket that is implicitly exempted from pole subtraction.
+
 Transformations:
 
     - Reproject from --source-crs (default EPSG:4326) to --target-crs
       (default EPSG:32748 = UTM 48S for Java / Bali / Sumatra).
-    - Subtract --pole-length from GCP and XS elevations (rover antenna
-      sits on top of the pole). Camera and water-level points are
-      written as-is — assumed measured at the relevant surface.
+    - Subtract --pole-length from every point's elevation, EXCEPT for
+      points flagged with the '*' no-pole marker. This applies to
+      GCPs, cross-section stations, water-level points, and the camera
+      position alike: the default assumption is that every point was
+      measured with the rover pole, and you must explicitly mark
+      no-pole points with '*'.
 
 Validation:
 
@@ -51,7 +66,13 @@ except ImportError:
     sys.exit(2)
 
 
-LABEL_PROPERTIES = ("name", "Name", "label", "Label", "NAME", "LABEL")
+LABEL_PROPERTIES = (
+    "name", "Name", "NAME",
+    "label", "Label", "LABEL",
+    "remarks", "Remarks", "REMARKS",
+    "remark", "Remark", "REMARK",
+    "description", "Description", "DESCRIPTION",
+)
 
 
 class Problem(Exception):
@@ -157,8 +178,12 @@ def main() -> int:
         print("ERROR: GeoJSON contains no features", file=sys.stderr)
         return 1
 
-    # Classify by label
+    # Classify by label. Labels ending in '*' are flagged as no-pole
+    # (antenna placed directly on the target — don't subtract pole length).
+    # The '*' is stripped before storing; the clean label is used
+    # everywhere downstream (sorting, duplicates, output).
     buckets = {"gcp": [], "xs": [], "wl": [], "cam": [], "unknown": []}
+    no_pole_labels: set = set()
     skipped = 0
     for feat in features:
         if feat.get("geometry", {}).get("type") != "Point":
@@ -170,12 +195,17 @@ def main() -> int:
                   file=sys.stderr)
             skipped += 1
             continue
-        label = extract_label(feat.get("properties", {}))
-        if not label:
-            print(f"WARN: feature missing name/label property; skipping {coords}",
+        raw_label = extract_label(feat.get("properties", {})).strip()
+        if not raw_label:
+            print(f"WARN: feature missing name/label/remarks property; skipping {coords}",
                   file=sys.stderr)
             skipped += 1
             continue
+        if raw_label.endswith("*"):
+            label = raw_label[:-1].rstrip()
+            no_pole_labels.add(label)
+        else:
+            label = raw_label
         kind = classify(label)
         buckets[kind].append((label, coords))
 
@@ -244,13 +274,30 @@ def main() -> int:
     projected = {k: [project(lc) for lc in buckets[k]]
                  for k in ("gcp", "xs", "wl", "cam")}
 
-    # Apply pole-length correction to GCPs and XS
+    # Apply pole-length correction to every point, EXCEPT those flagged
+    # with the '*' no-pole marker in the source GeoJSON. Pole subtraction
+    # is the default for every bucket — GCPs, cross-section stations,
+    # water-level points, and the camera position alike. The '*' suffix
+    # is the only way to bypass it; there are no implicit exemptions.
     def subtract_pole(items):
-        return [(label, (x, y, z - args.pole_length))
-                for label, (x, y, z) in items]
+        return [
+            (label, (x, y, z if label in no_pole_labels else z - args.pole_length))
+            for label, (x, y, z) in items
+        ]
 
-    projected["gcp"] = subtract_pole(projected["gcp"])
-    projected["xs"] = subtract_pole(projected["xs"])
+    for bucket in ("gcp", "xs", "wl", "cam"):
+        projected[bucket] = subtract_pole(projected[bucket])
+
+    if no_pole_labels:
+        all_labels = {
+            label
+            for bucket in ("gcp", "xs", "wl", "cam")
+            for label, _ in projected[bucket]
+        }
+        flagged_in_scope = sorted(no_pole_labels & all_labels)
+        if flagged_in_scope:
+            print(f"INFO: no-pole marker honored for {len(flagged_in_scope)} "
+                  f"point(s): {', '.join(flagged_in_scope)}", file=sys.stderr)
 
     # ── Cross-checks: warnings ─────────────────────────────────────
     warnings = list(arg_warnings)
