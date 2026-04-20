@@ -536,7 +536,7 @@ run_config_txt() {
         "dtoverlay=disable-bt:Free UART0 from Bluetooth contention"
         "dtparam=i2c_arm=on:I2C for SHT40 sensor"
         "dtoverlay=w1-gpio:1-Wire for DS18B20 temperature probe (GPIO 4)"
-        "usb_max_current_enable=1:USB current limit for Quectel modem"
+        "usb_max_current_enable=1:Raise USB port current limit for LTE modem"
     )
 
     for entry in "${lines[@]}"; do
@@ -557,7 +557,7 @@ run_config_txt() {
 
     # cmdline.txt — Samsung FIT Plus UAS quirk
     # The UAS driver causes boot-time USB enumeration storms when the Samsung
-    # FIT Plus (0781:5583) is plugged in alongside the Quectel modem. Both uas
+    # FIT Plus (0781:5583) is plugged in alongside the LTE modem. Both uas
     # and usb-storage are kernel built-ins, so modprobe.d quirks don't work —
     # cmdline.txt is the only option. This MUST be applied BEFORE inserting the
     # USB drive. See BOOT_FAILURE_ANALYSIS.md and TODO-015.
@@ -1313,13 +1313,23 @@ run_hardware() {
         warn "No USB storage device detected"
     fi
 
-    # LTE modem (Quectel EG25-G)
-    if mmcli -L 2>/dev/null | grep -qi "quectel\|EG25"; then
+    # LTE modem — deployed: Huawei ME906s (12d1:15c1); spare: Quectel EG25-G (2c7c:0125)
+    local mm_list
+    mm_list=$(mmcli -L 2>/dev/null || true)
+    local lsusb_out
+    lsusb_out=$(lsusb 2>/dev/null || true)
+    if echo "$mm_list" | grep -qi "huawei\|ME906"; then
+        pass "LTE modem detected (Huawei ME906s)"
+    elif echo "$mm_list" | grep -qi "quectel\|EG25"; then
         pass "LTE modem detected (Quectel EG25-G)"
-    elif lsusb 2>/dev/null | grep -qi "quectel\|2c7c"; then
+    elif echo "$mm_list" | grep -q "/Modem/"; then
+        pass "LTE modem detected via ModemManager ($(echo "$mm_list" | head -1 | xargs))"
+    elif echo "$lsusb_out" | grep -qi "12d1:15c1\|huawei"; then
+        warn "Huawei USB device found but ModemManager doesn't see it yet"
+    elif echo "$lsusb_out" | grep -qi "2c7c\|quectel"; then
         warn "Quectel USB device found but ModemManager doesn't see it yet"
     else
-        fail "LTE modem not detected (Quectel EG25-G)"
+        fail "LTE modem not detected (expected Huawei ME906s or Quectel EG25-G)"
     fi
 
     # I2C bus + sensors

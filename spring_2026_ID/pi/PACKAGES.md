@@ -12,7 +12,7 @@ that the base image does not provide.
 | Package | Purpose | Required by | Notes |
 |---------|---------|-------------|-------|
 | `dnsmasq` | DHCP server for camera PoE network on eth0 | Camera network | Assigns IP to camera on 192.168.50.0/24 subnet |
-| `modemmanager` | LTE modem management (Quectel EG25-G) | Cellular data | Pulls libqmi-utils, libmbim-utils as dependencies |
+| `modemmanager` | LTE modem management (Huawei ME906s deployed; Quectel EG25-G spare) | Cellular data | Pulls libqmi-utils, libmbim-utils as dependencies |
 | `gpiod` | GPIO tools (`gpioset`, `gpioget`) for relay/LED control | Relay control, LED testing | Also installs `python3-libgpiod` |
 | `minicom` | Serial terminal for modem/rain gauge diagnostics | Debugging only | Optional — only needed for manual AT commands or UART testing |
 | `chrony` | NTP server for camera time sync | Camera network | Pi serves NTP to cameras on isolated 192.168.50.0/24 network |

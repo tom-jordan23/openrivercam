@@ -67,6 +67,24 @@ mkdir -p "$SESSION_DIR" 2>/dev/null || {
     exit 1
 }
 
+# If we're running as root (typical via sudo), make sure anything we create
+# under /home/pi stays owned by pi so subsequent pi-user runs can write to it.
+if [ "$(id -u)" -eq 0 ]; then
+    PI_UID=$(id -u pi 2>/dev/null || echo "")
+    PI_GID=$(id -g pi 2>/dev/null || echo "")
+    if [ -n "$PI_UID" ] && [ -n "$PI_GID" ]; then
+        case "$OUTPUT_DIR" in
+            /home/pi/*|/home/pi)
+                chown "$PI_UID:$PI_GID" "$OUTPUT_DIR" "$SESSION_DIR" 2>/dev/null || true
+                ;;
+        esac
+    fi
+fi
+touch "$LOG_FILE" 2>/dev/null || true
+if [ "$(id -u)" -eq 0 ] && [ -n "${PI_UID:-}" ]; then
+    chown "$PI_UID:$PI_GID" "$LOG_FILE" 2>/dev/null || true
+fi
+
 # ─── Reporting ─────────────────────────────────────────────────────
 PASS=0
 FAIL=0
@@ -183,11 +201,19 @@ else
         fail "ISAPI port 80/tcp not reachable"
     fi
 
-    # Authenticated ISAPI probe — fetch deviceInfo
+    # Authenticated ISAPI probe — fetch deviceInfo. Capture HTTP status
+    # separately so we don't misread a substring in the response body as
+    # a "401" (the camera's device UUID can contain the digits "401").
     if [ -n "$CAMERA_PASS" ] && command -v curl >/dev/null 2>&1; then
-        DEV_XML="$(curl -s --max-time 5 --digest -u "${CAMERA_USER}:${CAMERA_PASS}" \
-            "http://${CAMERA_IP}/ISAPI/System/deviceInfo" 2>/dev/null || true)"
-        if echo "$DEV_XML" | grep -q "<deviceInfo"; then
+        DEV_BODY_FILE=$(mktemp)
+        DEV_HTTP=$(curl -s --max-time 5 --digest -u "${CAMERA_USER}:${CAMERA_PASS}" \
+            -o "$DEV_BODY_FILE" -w "%{http_code}" \
+            "http://${CAMERA_IP}/ISAPI/System/deviceInfo" 2>/dev/null || echo "000")
+        DEV_XML="$(cat "$DEV_BODY_FILE" 2>/dev/null || true)"
+        rm -f "$DEV_BODY_FILE"
+
+        # Match tag case-insensitively — camera returns <DeviceInfo>, not <deviceInfo>.
+        if [ "$DEV_HTTP" = "200" ] && echo "$DEV_XML" | grep -qi "<deviceinfo"; then
             pass "ISAPI /System/deviceInfo returned device info"
             MODEL="$(echo "$DEV_XML" | grep -oE "<model>[^<]+" | head -n1 | sed 's/<model>//')"
             if [ -n "$MODEL" ]; then
@@ -213,10 +239,10 @@ else
                     fi
                 fi
             fi
-        elif echo "$DEV_XML" | grep -qi "401\|Unauthorized"; then
-            fail "ISAPI auth failed — check CAMERA_PASS in credentials file"
+        elif [ "$DEV_HTTP" = "401" ]; then
+            fail "ISAPI auth failed (HTTP 401) — check CAMERA_PASS in credentials file"
         else
-            fail "ISAPI /System/deviceInfo did not return expected XML"
+            fail "ISAPI /System/deviceInfo unexpected response (HTTP $DEV_HTTP)"
         fi
     fi
 fi
