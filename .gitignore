@@ -21,6 +21,12 @@ spring_2026_ID/camera/**/*.local
 # Python venv for doc tools (translation)
 spring_2026_ID/docs/.venv/
 
+# Python venvs anywhere in the repo (created for pyorc etc.)
+.venv/
+venv/
+__pycache__/
+*.pyc
+
 # Build photos (large, not version controlled)
 spring_2026_ID/build_photos/
 
