@@ -127,9 +127,23 @@ restore_state() {
         sudo touch /run/orc-maintenance-mode || \
             err "failed to restore maintenance flag — recreate manually"
     fi
+    # Note: PoE relay is intentionally left ON. Calibration is interactive —
+    # the user typically re-runs this script several times back-to-back to
+    # test different framings. Power-cycling PoE between runs wastes ~60s
+    # of camera boot time per iteration. Use 'poe-relay off' manually when
+    # done, or let the next orc-capture.timer cycle handle it.
     exit "$rc"
 }
 trap restore_state EXIT INT TERM
+
+# ─── Keep PoE on for the whole session ─────────────────────────────
+# Assert the relay on ourselves, then pass --skip-relay to orc-capture so
+# it does not toggle the relay off at the end of its cycle.
+log "powering PoE on (will remain on after this script exits)"
+if ! poe-relay on >/dev/null; then
+    err "failed to power on PoE relay"
+    exit 1
+fi
 
 # ─── Suspend timer + lift maintenance gate ─────────────────────────
 if systemctl is-active --quiet orc-capture.timer; then
@@ -151,8 +165,10 @@ rm -f /tmp/orc_capture_*
 log "starting calibration capture (session=$SESSION${LABEL:+, label=$LABEL})"
 log "scene must be clear of people/boats; all GCP markers in frame"
 
-# Tee orc-capture output into session log for later audit
-if ! orc-capture --dry-run 2>&1 | tee -a "$SESSION_LOG"; then
+# Tee orc-capture output into session log for later audit.
+# --skip-relay: we manage the PoE relay in this script so it stays on
+# across multiple back-to-back calibration runs.
+if ! orc-capture --dry-run --skip-relay 2>&1 | tee -a "$SESSION_LOG"; then
     # Note: pipefail — non-zero from orc-capture propagates here
     err "orc-capture failed — see output above"
     exit 1
