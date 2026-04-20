@@ -425,7 +425,6 @@ main() {
     if [ "$success" -eq 1 ]; then
         if [ "$DRY_RUN" -eq 1 ]; then
             log "Dry run — not delivering. File at: $tmpfile"
-            rm -f "$tmpfile"
         else
             mv "$tmpfile" "${INCOMING_DIR}/${filename}"
             log "Delivered: ${INCOMING_DIR}/${filename}"
