@@ -208,7 +208,9 @@ for profile in "${PROFILES[@]}"; do
                     val="${kv#*=}"
                     sed -i "s/^${key}=.*/${key}=${val}/" "$capture_conf"
                 done
-                ORC_CAPTURE_CONF="$capture_conf" "$ORC_CAPTURE" --skip-relay 2>&1 | tail -1
+                # --force overrides maintenance mode; profile tests only run
+                # against a station in maintenance, never in production.
+                ORC_CAPTURE_CONF="$capture_conf" "$ORC_CAPTURE" --skip-relay --force 2>&1 | tail -1
 
                 # Move the captured file to profile directory
                 latest=$(ls -t /home/pi/Videos/*.mp4 2>/dev/null | head -1)
