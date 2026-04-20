@@ -1018,6 +1018,7 @@ run_services() {
     _ensure_service_enabled dnsmasq
     _ensure_service_enabled chrony
     _ensure_service_enabled orc-sensors.timer
+    _ensure_service_enabled orc-sensors-upload.timer
     _ensure_service_enabled orc-led-status.service
     _ensure_service_enabled orc-led-off.service
     _ensure_service_enabled orc-boot-usb-log.service
@@ -1093,6 +1094,62 @@ run_credentials() {
         pass "~pi/.ssh/authorized_keys exists ($key_count key(s))"
     else
         warn "~pi/.ssh/authorized_keys not found (SSH key login unavailable)"
+    fi
+
+    # Sensor upload credentials (out-of-band — deploy.sh will not generate keys)
+    local upload_conf=/etc/orc/sensors-upload.conf
+    if [ -f "$upload_conf" ]; then
+        # shellcheck source=/dev/null
+        local upload_enabled="" upload_key="" upload_known="" upload_host=""
+        # Read values in a subshell so sourcing doesn't leak
+        eval "$(
+            . "$upload_conf"
+            printf 'upload_enabled=%q\n' "${ENABLED:-0}"
+            printf 'upload_key=%q\n'     "${SSH_KEY:-}"
+            printf 'upload_known=%q\n'   "${KNOWN_HOSTS:-/home/pi/.ssh/known_hosts}"
+            printf 'upload_host=%q\n'    "${REMOTE_HOST:-}"
+        )"
+
+        if [ "$upload_enabled" != "1" ]; then
+            warn "sensors-upload disabled in $upload_conf (set ENABLED=1 after key + server setup)"
+        else
+            # SSH key file — warn (not fail) and do not auto-create
+            if [ -z "$upload_key" ]; then
+                fail "sensors-upload: SSH_KEY not set in $upload_conf"
+            elif [ ! -f "$upload_key" ]; then
+                warn "sensors-upload: SSH key $upload_key missing — generate with:"
+                warn "  sudo -u pi ssh-keygen -t ed25519 -N '' -C orc-sensors-upload@\$(hostname) -f $upload_key"
+            else
+                pass "sensors-upload: SSH key $upload_key present"
+                local key_mode key_owner
+                key_mode=$(stat -c '%a' "$upload_key" 2>/dev/null || echo "")
+                key_owner=$(stat -c '%U' "$upload_key" 2>/dev/null || echo "")
+                if [ "$key_mode" = "600" ] && [ "$key_owner" = "pi" ]; then
+                    pass "sensors-upload: SSH key mode 600 pi:pi"
+                else
+                    if [ "$FIXING" -eq 1 ]; then
+                        sudo chmod 600 "$upload_key"
+                        sudo chown pi:pi "$upload_key"
+                        fixed "sensors-upload: SSH key perms set to 600 pi:pi"
+                    else
+                        fail "sensors-upload: SSH key has mode=$key_mode owner=$key_owner (want 600 pi)"
+                    fi
+                fi
+            fi
+
+            # known_hosts entry for REMOTE_HOST
+            if [ -n "$upload_host" ] && [ -f "$upload_known" ]; then
+                if grep -q -E "(^|,)$upload_host([ ,]|$)" "$upload_known" 2>/dev/null \
+                   || ssh-keygen -F "$upload_host" -f "$upload_known" >/dev/null 2>&1; then
+                    pass "sensors-upload: known_hosts has $upload_host"
+                else
+                    warn "sensors-upload: $upload_host not in $upload_known — prime with:"
+                    warn "  sudo -u pi ssh-keyscan -H $upload_host >> $upload_known"
+                fi
+            elif [ -n "$upload_host" ]; then
+                warn "sensors-upload: $upload_known missing (first scp will accept host key on TOFU)"
+            fi
+        fi
     fi
 }
 

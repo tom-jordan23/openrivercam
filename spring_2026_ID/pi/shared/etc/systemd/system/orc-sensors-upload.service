@@ -1,0 +1,13 @@
+[Unit]
+Description=Upload new sensor CSVs to remote host
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=pi
+ExecStart=/usr/local/bin/orc-sensors-upload
+TimeoutStartSec=300
+
+[Install]
+WantedBy=multi-user.target

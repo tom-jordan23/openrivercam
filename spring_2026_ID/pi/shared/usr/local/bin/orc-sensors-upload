@@ -1,0 +1,110 @@
+#!/bin/bash
+# orc-sensors-upload — push new sensor CSVs to a remote host
+#
+# Reads /etc/orc/sensors-upload.conf, finds files under LOG_DIR that
+# changed since the last successful upload (tracked via STATE_FILE
+# mtime), and scps them to REMOTE_USER@REMOTE_HOST:REMOTE_PATH_BASE/<station>/.
+#
+# The "station" component is derived from the hostname (e.g.,
+# orc-sukabumi -> sukabumi) so both sites can share one config file
+# without overwriting each other's uploads on the server.
+#
+# Watermark semantics:
+#   - A temp file is touched before the find, capturing "now".
+#   - If all scps succeed, the temp file replaces STATE_FILE atomically.
+#   - If any scp fails, the old watermark stays, and the next run retries.
+#
+# Designed for oneshot use from orc-sensors-upload.service (+ timer).
+
+set -euo pipefail
+
+TAG="orc-sensors-upload"
+CONF="/etc/orc/sensors-upload.conf"
+
+log() { logger -t "$TAG" -- "$1"; echo "[$TAG] $1"; }
+
+if [ ! -f "$CONF" ]; then
+    log "config $CONF missing — nothing to do"
+    exit 0
+fi
+# shellcheck source=/dev/null
+. "$CONF"
+
+if [ "${ENABLED:-0}" != "1" ]; then
+    log "disabled (ENABLED != 1) — skipping"
+    exit 0
+fi
+
+for v in REMOTE_HOST REMOTE_USER REMOTE_PATH_BASE SSH_KEY LOG_DIR STATE_FILE; do
+    if [ -z "${!v:-}" ]; then
+        log "ERROR: $v not set in $CONF"
+        exit 1
+    fi
+done
+
+if [ ! -d "$LOG_DIR" ]; then
+    log "LOG_DIR $LOG_DIR missing — nothing to do"
+    exit 0
+fi
+
+if [ ! -r "$SSH_KEY" ]; then
+    log "ERROR: SSH_KEY $SSH_KEY not readable"
+    exit 1
+fi
+
+STATION="$(hostname | sed 's/^orc-//')"
+if [ -z "$STATION" ]; then
+    log "ERROR: could not derive station from hostname"
+    exit 1
+fi
+
+REMOTE_DEST="${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_PATH_BASE%/}/${STATION}/"
+
+# Make sure STATE_FILE parent exists (on first run it may not)
+mkdir -p "$(dirname "$STATE_FILE")"
+
+# Capture "now" before scanning — anything modified after this point
+# will be caught on the next run.
+NEW_WATERMARK="$(mktemp)"
+trap 'rm -f "$NEW_WATERMARK"' EXIT
+
+find_args=()
+if [ -f "$STATE_FILE" ]; then
+    find_args=(-newer "$STATE_FILE")
+fi
+
+# Read NUL-delimited file list into an array
+mapfile -d '' files < <(find "$LOG_DIR" -type f "${find_args[@]}" -print0 | sort -z)
+
+if [ "${#files[@]}" -eq 0 ]; then
+    log "no new files since last upload — advancing watermark"
+    mv "$NEW_WATERMARK" "$STATE_FILE"
+    trap - EXIT
+    exit 0
+fi
+
+SSH_OPTS=(
+    -i "$SSH_KEY"
+    -o BatchMode=yes
+    -o ConnectTimeout="${CONNECT_TIMEOUT:-15}"
+    -o StrictHostKeyChecking=accept-new
+    -o UserKnownHostsFile="${KNOWN_HOSTS:-/home/pi/.ssh/known_hosts}"
+)
+if [ -n "${REMOTE_PORT:-}" ]; then
+    SSH_OPTS+=(-P "$REMOTE_PORT")
+fi
+
+log "uploading ${#files[@]} file(s) to ${REMOTE_DEST}"
+ok=0
+for f in "${files[@]}"; do
+    if scp -p -q "${SSH_OPTS[@]}" "$f" "$REMOTE_DEST"; then
+        ok=$((ok+1))
+    else
+        log "ERROR: scp failed for $f after $ok successful upload(s) — watermark not advanced"
+        exit 1
+    fi
+done
+
+mv "$NEW_WATERMARK" "$STATE_FILE"
+trap - EXIT
+log "uploaded $ok file(s); watermark advanced"

@@ -1,0 +1,14 @@
+[Unit]
+Description=Periodic sensor CSV upload
+# On duty-cycled sites (Sukabumi) the Pi reboots every ~15 min, so
+# OnBootSec alone triggers an upload every cycle. On always-on sites
+# (Jakarta) OnUnitActiveSec fires an hourly upload between reboots.
+
+[Timer]
+OnBootSec=30s
+OnUnitActiveSec=1h
+AccuracySec=30s
+Persistent=false
+
+[Install]
+WantedBy=timers.target

@@ -42,7 +42,7 @@ testing. Jakarta wiring is underway. Departure ~April 15, 2026.
 - **Assembly docs:** Comprehensive step-by-step guides with build photos, continuity checklists, door sheets, and bilingual exterior placards
 - **Sukabumi hardware:** Mounted, wired, powered on, relay tested, RTC and SHT40 installed. ORC-OS software integration in progress.
 - **Jakarta hardware:** AC power chain complete (surge suppressor → PSU → 12V distribution). 5V buck converter trimmed and wired to Pi. Relay 5V side wired. CH1 PoE path wired. First boot successful.
-- **Software:** `orc-capture` script with quality gate, `poe-relay` control, `orc-sensors` for SHT40, `orc-preflight` checks. Site-specific config via `RELAY_MODE` (cycle for solar, always for AC).
+- **Software:** `orc-capture` script with quality gate, `poe-relay` control, `orc-sensors` for SHT40, `orc-sensors-upload` (incremental scp of sensor CSVs to LiveORC on every boot / hourly), `orc-preflight` checks. Site-specific config via `RELAY_MODE` (cycle for solar, always for AC).
 - **Remaining:** LED decision (ISS-005), rain gauge external wiring, J2 power buttons, conformal coating, final integration testing, Jakarta battery+charger (sourced in-country)
 
 ## Repository Structure
