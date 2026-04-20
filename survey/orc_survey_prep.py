@@ -251,6 +251,13 @@ def main() -> int:
                     help="Target CRS for outputs (default: EPSG:32748 = UTM 48S)")
     ap.add_argument("--force", action="store_true",
                     help="Overwrite existing output files")
+    ap.add_argument("--allow-missing-cam", action="store_true",
+                    help="Downgrade the 'no camera position' fatal error "
+                         "to a warning. Use this to dry-run the pipeline "
+                         "before the camera position has been surveyed; "
+                         "camera_position.csv is skipped in this mode, and "
+                         "downstream ORC calibration will have no pose "
+                         "until CAM is surveyed and the run is repeated.")
     args = ap.parse_args()
 
     # Input-argument sanity (don't fail, just warn on implausible values)
@@ -325,8 +332,9 @@ def main() -> int:
     # Bucket counts
     if len(buckets["gcp"]) < 4:
         fails.append(f"need >= 4 GCPs, got {len(buckets['gcp'])}")
-    if len(buckets["cam"]) == 0:
-        fails.append("no camera position found (expected label CAM)")
+    if len(buckets["cam"]) == 0 and not args.allow_missing_cam:
+        fails.append("no camera position found (expected label CAM). "
+                     "Pass --allow-missing-cam to dry-run without it.")
     if len(buckets["cam"]) > 1:
         fails.append(f"multiple camera positions found ({len(buckets['cam'])}); "
                      "expected exactly 1")
@@ -419,6 +427,16 @@ def main() -> int:
 
     # ── Cross-checks: warnings ─────────────────────────────────────
     warnings = list(arg_warnings)
+
+    # CAM absence: downgraded from a fail only when --allow-missing-cam
+    # was passed. Record the downgrade loudly so the output isn't
+    # mistaken for a complete run.
+    if len(buckets["cam"]) == 0 and args.allow_missing_cam:
+        warnings.append(
+            "no camera position found — downgraded by --allow-missing-cam; "
+            "camera_position.csv skipped, ORC calibration cannot be "
+            "completed until CAM is surveyed and this script is re-run"
+        )
 
     # GCP count
     if len(projected["gcp"]) < 8:
@@ -561,8 +579,11 @@ def main() -> int:
             else:
                 rows.append([f"{x:.4f}", f"{y:.4f}", f"{z:.4f}"])
         path = args.output_dir / filename
-        if not rows and kind == "wl":
-            # Skip empty water-level file rather than write a headers-only file
+        if not rows and kind in ("wl", "cam"):
+            # Skip empty optional outputs rather than write a headers-only file.
+            # wl is always optional; cam becomes optional only under
+            # --allow-missing-cam (otherwise a missing CAM would have already
+            # failed validation above).
             continue
         write_csv(path, header, rows)
         print(f"wrote {path}  ({len(rows)} row(s))")

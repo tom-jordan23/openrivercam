@@ -92,11 +92,25 @@ def find_label_property(properties: dict) -> tuple:
 
 
 def load_pole_lengths(csv_path: Path) -> dict:
-    """Parse the pole-length CSV into {normalised_station: pole_length_m}.
+    """Parse the pole-length CSV into {normalised_station: (station, pole_m, water_m)}.
+
+    Required columns: Station, Pole_Len_Cm.
+    Optional column:  Water_On_Pole_Cm — for rover readings where the
+                      pole tip was below the water surface and the
+                      water level was observed partway up the pole.
+                      Populating this column lands the corrected z on
+                      the water surface rather than the ground beneath
+                      the tip, so that water-reference points (WL/HREF)
+                      carry the water-surface elevation downstream.
+                      Blank = no water offset (normal ground-ref point).
+
+    Correction applied downstream:  new_z = old_z − pole_m + water_m.
 
     Fails on: missing required columns, duplicate stations, blank or
-    non-numeric pole length. Implausible values (outside 0.3-5.0 m) are
-    warned about but not rejected.
+    non-numeric Pole_Len_Cm, non-numeric Water_On_Pole_Cm, negative
+    Water_On_Pole_Cm, Water_On_Pole_Cm greater than Pole_Len_Cm
+    (physically impossible). Implausible pole lengths (outside 0.3–5.0
+    m) are warned about but not rejected.
     """
     required = {"station", "pole_len_cm"}
     mapping: dict = {}
@@ -114,10 +128,14 @@ def load_pole_lengths(csv_path: Path) -> dict:
             )
         station_col = header_map["station"]
         length_col = header_map["pole_len_cm"]
+        water_col = header_map.get("water_on_pole_cm")  # optional
         for row_num, row in enumerate(reader, start=2):
             station_raw = (row.get(station_col) or "").strip()
             length_raw = (row.get(length_col) or "").strip()
-            if not station_raw and not length_raw:
+            water_raw = ""
+            if water_col:
+                water_raw = (row.get(water_col) or "").strip()
+            if not station_raw and not length_raw and not water_raw:
                 continue  # tolerate blank rows
             if not station_raw:
                 raise ValueError(
@@ -135,12 +153,32 @@ def load_pole_lengths(csv_path: Path) -> dict:
                     f"{csv_path}:{row_num} station {station_raw!r} has "
                     f"non-numeric Pole_Len_Cm {length_raw!r}"
                 )
+            water_cm = 0.0
+            if water_raw:
+                try:
+                    water_cm = float(water_raw)
+                except ValueError:
+                    raise ValueError(
+                        f"{csv_path}:{row_num} station {station_raw!r} has "
+                        f"non-numeric Water_On_Pole_Cm {water_raw!r}"
+                    )
+                if water_cm < 0:
+                    raise ValueError(
+                        f"{csv_path}:{row_num} station {station_raw!r} has "
+                        f"negative Water_On_Pole_Cm {water_cm}"
+                    )
+                if water_cm > cm:
+                    raise ValueError(
+                        f"{csv_path}:{row_num} station {station_raw!r} has "
+                        f"Water_On_Pole_Cm {water_cm} > Pole_Len_Cm {cm} — "
+                        f"water cannot be above the antenna"
+                    )
             key = normalise(station_raw)
             if key in mapping:
                 raise ValueError(
                     f"{csv_path}:{row_num} duplicate Station {station_raw!r}"
                 )
-            mapping[key] = (station_raw, cm / 100.0)
+            mapping[key] = (station_raw, cm / 100.0, water_cm / 100.0)
     if not mapping:
         raise ValueError(f"{csv_path} contains no data rows")
     return mapping
@@ -177,11 +215,15 @@ def main() -> int:
         return 1
 
     # Plausibility check on pole lengths (warn, don't reject)
-    for key, (station, pole_m) in mapping.items():
+    for key, (station, pole_m, water_m) in mapping.items():
         if not (0.3 <= pole_m <= 5.0):
             print(f"WARN: {station!r} pole length {pole_m:.2f} m is outside "
                   f"the plausible range [0.3, 5.0] — check units (CSV is in cm)",
                   file=sys.stderr)
+        if water_m > 0 and water_m >= pole_m * 0.9:
+            print(f"WARN: {station!r} water_on_pole {water_m:.2f} m is "
+                  f">= 90% of pole length {pole_m:.2f} m — pole was nearly "
+                  f"fully submerged; verify the reading", file=sys.stderr)
 
     try:
         with open(args.geojson) as f:
@@ -226,13 +268,19 @@ def main() -> int:
                 f"{args.csv.name}"
             )
             continue
-        station, pole_m = mapping[norm]
+        station, pole_m, water_m = mapping[norm]
         matched_keys.add(norm)
         old_z = float(coords[2])
-        # Round to 4 decimals (0.1 mm) to avoid float representation
+        # Correction: subtract the physical pole length, then add any
+        # water_on_pole offset back. For normal ground-reference points,
+        # water_m is 0 and this collapses to a plain pole subtraction.
+        # For water-reference points where the tip was submerged, the
+        # result lands on the water surface rather than the ground
+        # beneath the tip.
+        # Rounded to 4 decimals (0.1 mm) to avoid float representation
         # artifacts like 622.6510000000001 in the output. Survey
         # precision is mm at best, so this loses no real information.
-        new_z = round(old_z - pole_m, 4)
+        new_z = round(old_z - pole_m + water_m, 4)
         # Update coordinates in-place (preserve lon/lat precision)
         coords[2] = new_z
         # Append '*' no-pole marker to the label so downstream
@@ -240,7 +288,7 @@ def main() -> int:
         # if the input already had '*'.
         if not raw_label.rstrip().endswith("*"):
             props[label_key] = clean_label + "*"
-        updates.append((clean_label, pole_m, old_z, new_z))
+        updates.append((clean_label, pole_m, water_m, old_z, new_z))
 
     if errors:
         print("ERROR: could not process all features:", file=sys.stderr)
@@ -288,11 +336,12 @@ def main() -> int:
             {
                 "label": label,
                 "pole_length_m": round(pole_m, 4),
+                "water_on_pole_m": round(water_m, 4),
                 "z_before_m": round(old_z, 4),
                 "z_after_m": round(new_z, 4),
                 "delta_m": round(new_z - old_z, 4),
             }
-            for label, pole_m, old_z, new_z in updates
+            for label, pole_m, water_m, old_z, new_z in updates
         ],
     }
     if unused:
@@ -313,8 +362,11 @@ def main() -> int:
     # Summary
     print(f"wrote {args.output}  ({len(updates)} point(s) adjusted)")
     width = max(len(label) for label, *_ in updates)
-    for label, pole_m, old_z, new_z in updates:
-        print(f"  {label:<{width}}  pole {pole_m:.2f} m   "
+    for label, pole_m, water_m, old_z, new_z in updates:
+        water_note = ""
+        if water_m > 0:
+            water_note = f" +water {water_m:.2f} m"
+        print(f"  {label:<{width}}  pole {pole_m:.2f} m{water_note}   "
               f"z {old_z:.3f} → {new_z:.3f} m")
     print("\nNext: run orc_survey_prep.py on the adjusted GeoJSON. "
           "Any --pole-length\n      value will be ignored because every "
