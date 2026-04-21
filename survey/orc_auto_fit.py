@@ -252,6 +252,97 @@ def save_clicks_json(path: Path, clicks: dict[str, tuple[float, float]]) -> None
     )
 
 
+def emit_camera_config(
+    output_path: Path,
+    subset_ids: list[str],
+    pixel_by_id: dict[str, tuple[float, float]],
+    world_by_id: dict,
+    K: "np.ndarray",
+    dist_coeffs: "np.ndarray",
+    camera_xyz: "np.ndarray",
+    z_0: float,
+    frame_width: int,
+    frame_height: int,
+    crs: str,
+    certification_status: str = "ok",
+    resolvability_note: str | None = None,
+) -> dict:
+    """Build a pyorc.CameraConfig from the best-subset correspondences and
+    write it to JSON. Returns a small dict of round-trip verification
+    results for the audit log.
+
+    Intrinsics are pre-set before set_gcps so pyorc does not re-optimize
+    them on reload (per Explore agent finding on pyorc internals:
+    byte-equal round-trip requires explicit camera_matrix + dist_coeffs
+    in the kwargs).
+
+    The emitted JSON is post-processed to carry a top-level
+    'certification_status' field which pyorc does not itself emit — this
+    is the marker downstream ORC components can check to refuse
+    publishing flow-rate numbers from a demo-only fit.
+    """
+    import pyorc  # local import: only emission needs it
+
+    src = [[float(pixel_by_id[g][0]), float(pixel_by_id[g][1])] for g in subset_ids]
+    dst = [[float(v) for v in world_by_id[g]] for g in subset_ids]
+
+    # Build CameraConfig with intrinsics AND gcps passed in __init__ so
+    # pyorc's internal calibrate() has everything it needs in one shot
+    # and does NOT re-optimize intrinsics (which would break the A3
+    # byte-equal round-trip guarantee). Passing intrinsics without gcps
+    # makes calibrate() call get_extrinsic() with no GCPs → crash.
+    cfg = pyorc.CameraConfig(
+        height=int(frame_height),
+        width=int(frame_width),
+        crs=crs,
+        camera_matrix=[list(map(float, row)) for row in K],
+        dist_coeffs=[list(map(float, dist_coeffs.flatten()))],
+        lens_position=[float(v) for v in camera_xyz],
+        gcps={"src": src, "dst": dst, "z_0": float(z_0)},
+    )
+
+    cfg.to_file(str(output_path))
+
+    # Certification metadata goes in a sibling file, not in the main
+    # CameraConfig JSON — pyorc.load_camera_config uses strict kwargs
+    # and rejects unknown top-level fields. Downstream ORC-OS consumers
+    # can read the cert directly from this sibling.
+    cert_path = output_path.parent / (output_path.stem + "_cert.json")
+    cert_doc = {
+        "camera_config_file": output_path.name,
+        "certification_status": certification_status,
+    }
+    if resolvability_note:
+        cert_doc["resolvability_note"] = resolvability_note
+    cert_path.write_text(json.dumps(cert_doc, indent=2) + "\n")
+
+    # Verify round-trip through the real pyorc loader — proves A3 (the
+    # emitted JSON is pyorc-consumable unchanged).
+    reload_roundtrip_ok = True
+    mismatches: list[str] = []
+    try:
+        loaded = pyorc.load_camera_config(str(output_path))
+        if len(loaded.gcps.get("src", [])) != len(src):
+            mismatches.append("gcps.src count changed on reload")
+        if abs(float(loaded.gcps.get("z_0")) - float(z_0)) > 1e-6:
+            mismatches.append(f"z_0 mismatch on reload: {loaded.gcps.get('z_0')} vs {z_0}")
+    except Exception as exc:  # noqa: BLE001
+        reload_roundtrip_ok = False
+        mismatches.append(f"reload exception: {exc}")
+    reload_roundtrip_ok = reload_roundtrip_ok and not mismatches
+
+    return {
+        "path": str(output_path),
+        "cert_path": str(cert_path),
+        "subset_size": len(subset_ids),
+        "subset_ids": list(subset_ids),
+        "z_0": float(z_0),
+        "certification_status": certification_status,
+        "roundtrip_ok": reload_roundtrip_ok,
+        "roundtrip_mismatches": mismatches,
+    }
+
+
 def make_run_dir(base: Path, site: str, tag: str) -> Path:
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     tag_clean = tag.replace(" ", "_")
@@ -270,7 +361,13 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--gcps", type=Path, required=True)
     ap.add_argument("--camera-position", type=Path, required=True)
     ap.add_argument("--water-level", type=Path,
-                    help="water_level.csv for z_0 (not required for MVP)")
+                    help="water_level.csv for z_0; required to emit a "
+                         "CameraConfig (without it, the driver stops "
+                         "at labels/report and does not write a "
+                         "pyorc-loadable config).")
+    ap.add_argument("--crs", type=str, default="EPSG:32748",
+                    help="CRS string passed to the emitted CameraConfig "
+                         "(default EPSG:32748 = UTM 48S, correct for Sukabumi).")
     ap.add_argument("--gt-clicks", type=Path,
                     help="Phase 0 ground-truth clicks JSON; if supplied, A1 is evaluated")
     ap.add_argument("--frame-index", type=int, default=0,
@@ -538,6 +635,7 @@ def main(argv: list[str] | None = None) -> int:
 
     # --- Stage 3: subset search (optional) --------------------------------
     subset_result = None
+    cam_cfg_info = None
     if args.subset_search:
         print()
         print("running subset search (greedy drop-one + exhaustive)...")
@@ -650,6 +748,50 @@ def main(argv: list[str] | None = None) -> int:
                     "these are different physical points; `.2` label is a field mislabel"
                 )
 
+        # --- Emit pyorc CameraConfig JSON ---------------------------------
+        # This is the "operational handoff" step: turns the best-subset
+        # fit into a file ORC-OS can load.
+        cam_cfg_info = None
+        if args.water_level and args.water_level.exists():
+            z_0 = load_water_level(args.water_level)
+            # Certification status: "ok" if the chosen subset meets the
+            # A1 target; otherwise flagged. (Gate enforcement + the
+            # _DEMO_UNCERTIFIED filename suffix are part of the follow-on
+            # --demo-override task.)
+            meets_gate = b.rmse_m <= args.a1_target_m
+            cert = "ok" if meets_gate else "below_quality_gate"
+            note = None if meets_gate else (
+                f"Subset RMSE {b.rmse_m*100:.2f} cm exceeds the "
+                f"{args.a1_target_m*100:.0f} cm A1 target. "
+                "This config must not be used for certified flow or "
+                "water-level measurements. See survey/Methodology.md "
+                "Decision 6 for the demo-override mechanism."
+            )
+            cfg_path = run_dir / "sukabumi_auto_fit.json"
+            cam_cfg_info = emit_camera_config(
+                output_path=cfg_path,
+                subset_ids=list(b.ids),
+                pixel_by_id=pixel_by_id,
+                world_by_id=world_by_id,
+                K=K,
+                dist_coeffs=dist,
+                camera_xyz=camera_xyz,
+                z_0=z_0,
+                frame_width=frame_w,
+                frame_height=frame_h,
+                crs=args.crs,
+                certification_status=cert,
+                resolvability_note=note,
+            )
+            print(f"  camera config: {cfg_path}  "
+                  f"(status={cert}, roundtrip_ok={cam_cfg_info['roundtrip_ok']})")
+            if cam_cfg_info["roundtrip_mismatches"]:
+                for m in cam_cfg_info["roundtrip_mismatches"]:
+                    print(f"    roundtrip mismatch: {m}")
+        else:
+            print("  camera config: not emitted (pass --water-level to write "
+                  "a pyorc-loadable sukabumi_auto_fit.json)")
+
     # --- Evaluate A1 if ground truth supplied -----------------------------
     a1_info: dict
     if gt_clicks is not None:
@@ -723,6 +865,8 @@ def main(argv: list[str] | None = None) -> int:
         },
         "a1": a1_info,
     }
+    if cam_cfg_info is not None:
+        audit["camera_config"] = cam_cfg_info
     if subset_result is not None:
         audit["subset_search"] = {
             "constraints": subset_result.constraints,
