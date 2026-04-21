@@ -2,6 +2,22 @@
 
 *Pick-up brief for the next session. Read this first if you're resuming the Sukabumi fitment work cold.*
 
+## End-of-day 2026-04-21 — paused for team review
+
+Stopped today to memorialize state. Tom will walk the team through the
+auto-fit approach tomorrow using `survey/Methodology.md` (team-facing
+doc written today). Any changes after that review get folded into
+v0.3 of `survey/AUTO_FIT_DESIGN.md` before Phase 1 starts.
+
+**If resuming with no changes from the team review**, the next action
+is for Tom to run the Phase 0 ground-truth clicker (one-time 30 min
+session). Command under "Commands — ready to run" below.
+
+**If the team requests changes**, update `AUTO_FIT_DESIGN.md` first
+(bump to v0.3, add a decision-record entry for what changed and
+why), then reconsider whether the Phase 0 fixture needs to be
+re-done.
+
 ## Status as of 2026-04-21 end-of-day
 
 **Day-2 rerun complete.** The correction pipeline ran end-to-end
@@ -93,7 +109,32 @@ of ad-hoc X-marks. One OpenCV call replaces Stages 1+2. See
 | **2** | `subset_search.py` + `audit.py` + `auto_fit_audit.json` output | A2: auto RMSE ≤ hand-trimmed |
 | **3** | `survey/tests/`, `pytest.ini`, `orc_build_camera_config.py --from-auto`, `AUTO_FIT_USAGE.md` | A3: pyorc round-trip byte-identical; tests green |
 
-Phase 0 is a prerequisite — A1 cannot be evaluated without it.
+Phase 0 is a prerequisite — A1 cannot be evaluated without it. The
+Phase 0 clicker tool has been built and smoke-tested; the operator
+just needs to run it and click.
+
+## Commands — ready to run
+
+```bash
+cd /Users/tjordan/code/git/openrivercam
+source .venv/bin/activate
+
+# Phase 0 — one-time 20-GCP click (operator needs a screen; macOS native window)
+python3 survey/auto_fit/ground_truth_click.py \
+    --video spring_2026_ID/survey_data/source_data/20260420T034813.mp4 \
+    --gcps spring_2026_ID/survey_data/output/gcps.csv \
+    --camera-position spring_2026_ID/survey_data/output/camera_position.csv \
+    --site sukabumi \
+    --collected-by "Tom Jordan" \
+    -o survey/tests/fixtures/sukabumi_gt_clicks_v1.json
+```
+
+## Team review doc
+
+`survey/Methodology.md` — plain-English walkthrough of the approach,
+written for the PMI-plus-hydrologist team. Lists five concrete
+decisions for the team to weigh in on. Any changes from that review
+get folded into AUTO_FIT_DESIGN.md v0.3 before Phase 1 starts.
 
 ## Command cheat sheet — 2026-04-21 rerun
 
