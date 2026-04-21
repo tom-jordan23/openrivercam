@@ -2,55 +2,158 @@
 
 *Pick-up brief for the next session. Read this first if you're resuming the Sukabumi fitment work cold.*
 
-## Current Blocker
+## Status as of 2026-04-21 end-of-day
 
-Waiting on an **updated survey geojson that includes the camera position (CAM* point)**. The previous survey round shipped `spring_2026_ID/survey_data/output/metadata.yaml` with this warning:
+**Day-2 rerun complete.** The correction pipeline ran end-to-end
+against the day-2 export (`20260421_sukabumi_with_cam.geojson`,
+SHA `8c844092…`) and produced a full `spring_2026_ID/survey_data/output/`:
 
-> no camera position found — downgraded by --allow-missing-cam; camera_position.csv skipped, ORC calibration cannot be completed until CAM is surveyed and this script is re-run
+| Output | Count | Notes |
+|---|---|---|
+| `gcps.csv` | 20 | GCP1–14, 17, 18, plus GCP1.2/2.2/3.2/4.2 re-shoots |
+| `cross_section.csv` | 21 | XS1 anchor-start, 17 bed points (extrapolated from tape depths), XS19 anchor-end, plus XS1.2/XS2.2 re-shoots |
+| `water_level.csv` | 1 | WL1 at z=617.065 m |
+| `camera_position.csv` | 1 | CAM at z=624.449 m (after 40 cm pole correction) |
+| `metadata.yaml` | — | `counts.camera: 1` — day-1 blocker cleared |
 
-No forward progress is possible on a real fit until that point is measured and delivered.
+**Check-point gate still fires (98.6 cm H / 138.8 cm V).** That is
+on purpose — the CP_start/CP_mid interpretation decision (see
+`20260421_rerun_plan.md` → "Open questions resolved") treats these
+as genuine drift-check failures, not label artifacts. We are in
+**salvage mode**: running the fit to quantify how far the existing
+noisy data can be pushed before escalating to the
+professional-surveyor fallback (`survey/research/professional_surveyor_and_escape_hatch.md`).
 
-## Data Flow Once the Updated Geojson Arrives
+**Tool changes landed this session:**
+- `survey/orc_rename_points.py` → v1.1: supports `OLD@INDEX=NEW` to
+  disambiguate duplicate labels (used on the day-2 duplicate `GCP3`).
+  Smoke-tested; see the module docstring for syntax.
 
-1. **Drop the new geojson into `spring_2026_ID/survey_data/`** (alongside or replacing the existing `sukabumi_survey_adjusted_wl.geojson`).
-2. **Run the corrections pipeline** — applies pole-length adjustments, renames points to canonical IDs, reconciles water-level shots. Scripts live in `survey/`:
-   - `orc_rename_points.py`
-   - `orc_apply_pole_lengths.py`
-   - Reference: `spring_2026_ID/survey_data/corrections.md`
-3. **Run survey prep** — converts the corrected geojson to the CSVs ORC-OS needs:
-   - `python survey/orc_survey_prep.py` → regenerates `spring_2026_ID/survey_data/output/gcps.csv`, `water_level.csv`, `cross_section.csv`, and (this time) `camera_position.csv`.
-   - Reference: `survey/orc_survey_prep.md`.
-4. **Verify `metadata.yaml` warnings have cleared** — especially the camera-position warning and the check-point spread gate. If the gate still exceeds 3 cm H / 4 cm V, return to `survey/ORC_FIT_STRATEGY.md` Section 5.
+**Decisions recorded in `corrections.md` (three new entries dated 2026-04-21):**
+1. Day-2 export ingest (zip → ISO-named archive; working rename).
+2. `pole_lengths.csv` day-2 points added (12 rows, all 120 cm).
+3. `pole_lengths.csv` CAM row added (40 cm).
 
-## Docker Station Iteration Loop
+Plus the full decision-by-decision rationale for the duplicate-GCP3
+resolution and the CP_start/CP_mid salvage-mode call lives in
+`spring_2026_ID/survey_data/20260421_rerun_plan.md`.
 
-The ORC-OS docker station at `rainbow-sensing/orc-os/` (see `survey/ORC_OS_DOCKER.md`) is already bootstrapped with a device, daemon settings, skeleton camera config (id=1, "Sukabumi Site H"), and the auto-ingested scene video (id=1). To try the updated survey data:
+## Where to resume
 
-1. Re-POST the camera config with updated `height`/`width`/CRS if anything changed (usually not).
-2. Use the dashboard to:
-   - Add the new control points (paste from fresh `gcps.csv`) and z_0 from `water_level.csv`.
-   - Click GCP pixel positions on a frame from video id=1.
-   - Run `/control_points/fit_perspective/` via the UI's Fit button.
-3. Read the residuals. Apply the drop-one loop from `ORC_FIT_STRATEGY.md` Section 5.
-4. If residuals settle within the physical floor for the survey noise (see the floor formula in `ORC_FIT_STRATEGY.md` Section 4), the dataset is good.
-5. If not, escalate per `survey/outsourced_survey_brief.md` and `survey/research/professional_surveyor_and_escape_hatch.md`.
+**Fit decision is the next action.** The pickup options we left on
+the table were:
 
-## Exit Criterion
+- **A. `survey/orc_build_camera_config.py`** against the new outputs —
+  opens the click UI on `spring_2026_ID/survey_data/source_data/20260420T034813.mp4`,
+  produces per-GCP residuals sorted worst-first. Fastest salvage
+  judgement path. Save clicks with `--save-clicks` for replay.
+- **B. ORC-OS Docker dashboard Fit button** — paste the new CSVs,
+  click pixel positions in the UI. Exercises the real operational
+  path; same pyorc fit under the hood.
+- **C. Both** — A first for residuals, then B to verify the
+  operational path.
 
-A "working set of data" means: a saved camera config in ORC-OS with GCPs fitted, residual RMSE within the physical floor for the known survey noise, and the video ready to run in a `video_config`. That dataset then gets copied to the live station (the real Pi in the field) as the reference configuration.
+Default was **A** (salvage-mode residuals first).
 
-## Known Traps (from the current session)
+## Auto-fit thread — design frozen, ready to build
 
-- **PyPI package name:** OpenRiverCam installs as `pyopenrivercam`, NOT `pyorc` (the short name is an unrelated Apache ORC reader). See `memory/reference_pyorc_pypi_name.md`.
-- **Dockerfile patch:** the local clone at `rainbow-sensing/orc-os/` has two patches — `setuptools<70` via PIP_CONSTRAINT, and a deduplicated rasterio specifier in `pyproject.toml`. Re-apply if re-cloning. See `survey/ORC_OS_DOCKER.md` → "Local Patches Applied to the Clone".
-- **Daemon filename template:** videos dropped in `uploads/incoming/` must match `{%Y%m%dT%H%M%S}.mp4`. Anything else (e.g., `calibration_a.mp4`) gets moved to `tmp/` and can look like it "disappeared". Keep non-timestamped files under `~/.ORC-OS/calibration/` or similar, outside the scan path.
-- **Camera config can't be registered with only `dst`:** pyorc's `set_gcps` requires `src` too, so skeleton configs go in with no GCPs; the UI click workflow populates both at once.
-- **Lens calibration from `calibration_a.mp4` currently fails:** pyorc's `set_lens_calibration` looks for a 9×6 **chessboard**, not a 5×7 charuco. Either re-shoot with the right pattern or skip lens intrinsics for now.
+**Design doc:** `survey/AUTO_FIT_DESIGN.md` (v0.2, spike + four-agent-review informed).
 
-## Cross-References
+Goal: automate GCP detection in the calibration video and the
+minimum-RMSE subset search, targeting ≤5 cm world-space registration
+error on ≥70 % of GCPs.
 
-- `survey/ORC_FIT_STRATEGY.md` — how to read fit residuals and what to do about them
-- `survey/ORC_OS_DOCKER.md` — Docker station setup, ports, patches, current state
-- `survey/orc_build_camera_config.py` — Python-API fast-path for residual analysis outside the UI
-- `survey/outsourced_survey_brief.md` — hire-a-surveyor fallback for the team
+**Key design decisions (v0.2):**
+- Project-then-detect-locally (not global detection + separate labelling).
+- Photos held in reserve as a **Phase 1.5 pose-prior** — only used
+  if Phase 1 MVP misses the 5 cm bar.
+- `cv2.solvePnPRansac(flags=cv2.USAC_MAGSAC)` for PnP — MAGSAC++
+  soft-weighting handles Gaussian survey noise; pyorc itself does
+  no outlier rejection, confirmed by Explore review of
+  `pyorc/cv.py:505-546`.
+- Subset search inner loop bypasses pyorc's calibration machinery —
+  frozen intrinsics + direct `cv2.solvePnP` keeps each iteration at
+  ~1 ms instead of seconds.
+- Error metric is **metres** (world-ground units), not pixels —
+  a v0.1 mistake caught by the Explore review.
+- Frame index pinned to 0; SHA-256 recorded everywhere for audit.
+
+**For Jakarta and future sites:** deploy ArUco 4×4 targets instead
+of ad-hoc X-marks. One OpenCV call replaces Stages 1+2. See
+`AUTO_FIT_DESIGN.md` §11 and the SOTA review at
+`/tmp/auto_fit_review/sota_research.md`.
+
+**Phase plan (2.5–3 days realistic):**
+
+| Phase | Deliverable | Checkpoint |
+|---|---|---|
+| **0** | `sukabumi_gt_clicks_v1.json` — manual click of all 20 GCPs in frame 0 | Fixture file committed with schema per §9.1 |
+| **1** | `survey/auto_fit/{bootstrap,detect_local,refine}.py` + `orc_auto_fit.py` CLI | A1: ≥70 % of GCPs within 5 cm of ground truth |
+| **1.5** | `survey/auto_fit/photo_prior.py` (conditional on A1 fail) | A1 after re-run |
+| **2** | `subset_search.py` + `audit.py` + `auto_fit_audit.json` output | A2: auto RMSE ≤ hand-trimmed |
+| **3** | `survey/tests/`, `pytest.ini`, `orc_build_camera_config.py --from-auto`, `AUTO_FIT_USAGE.md` | A3: pyorc round-trip byte-identical; tests green |
+
+Phase 0 is a prerequisite — A1 cannot be evaluated without it.
+
+## Command cheat sheet — 2026-04-21 rerun
+
+Full command block is in `spring_2026_ID/survey_data/20260421_rerun_plan.md`.
+In case of re-runs from scratch:
+
+```bash
+cd /Users/tjordan/code/git/openrivercam
+source .venv/bin/activate
+
+# Step 3: pre-pole rename
+python3 survey/orc_rename_points.py \
+    spring_2026_ID/survey_data/sukabumi_survey_20260421.geojson \
+    --rename CP2=GCP2 \
+    --rename 'GCP3@1=GCP3.2' \
+    --reason "..." \
+    -o spring_2026_ID/survey_data/sukabumi_survey_20260421_corrected.geojson
+
+# Step 4: pole-length correction
+python3 survey/orc_apply_pole_lengths.py \
+    spring_2026_ID/survey_data/sukabumi_survey_20260421_corrected.geojson \
+    spring_2026_ID/survey_data/pole_lengths.csv \
+    -o spring_2026_ID/survey_data/sukabumi_survey_20260421_adjusted.geojson
+
+# Step 5: post-pole rename
+python3 survey/orc_rename_points.py \
+    spring_2026_ID/survey_data/sukabumi_survey_20260421_adjusted.geojson \
+    --rename HREF=WL1 \
+    --reason "..." \
+    -o spring_2026_ID/survey_data/sukabumi_survey_20260421_adjusted_wl.geojson
+
+# Step 6: bed-point extrapolation
+python3 survey/orc_xs_from_depths.py \
+    spring_2026_ID/survey_data/sukabumi_survey_20260421_adjusted_wl.geojson \
+    spring_2026_ID/survey_data/xs_depths.csv \
+    --anchor-start XS1 --anchor-end XS2 \
+    --water-surface-z 617.065 \
+    -o spring_2026_ID/survey_data/sukabumi_survey_20260421_with_bed.geojson
+
+# Step 7: final ORC-OS inputs
+python3 survey/orc_survey_prep.py \
+    spring_2026_ID/survey_data/sukabumi_survey_20260421_with_bed.geojson \
+    --site sukabumi --pole-length 0 \
+    --output-dir spring_2026_ID/survey_data/output \
+    --force
+```
+
+## Known traps (still valid)
+
+- **PyPI package name:** OpenRiverCam installs as `pyopenrivercam`, NOT `pyorc` (the short name is an unrelated Apache ORC reader).
+- **Dockerfile patches:** `rainbow-sensing/orc-os/` has `setuptools<70` via PIP_CONSTRAINT and a deduplicated rasterio specifier.
+- **Daemon filename template:** videos dropped in `uploads/incoming/` must match `{%Y%m%dT%H%M%S}.mp4`. Non-timestamped files get moved to `tmp/`.
+- **Lens calibration from `calibration_a.mp4` currently fails:** pyorc's `set_lens_calibration` looks for a 9×6 chessboard, not a 5×7 charuco. Re-shoot or skip lens intrinsics.
+
+## Cross-references
+
+- `survey/ORC_FIT_STRATEGY.md` — how to read fit residuals, physical floor calc, drop-one loop
+- `survey/ORC_OS_DOCKER.md` — Docker station setup, ports, patches
+- `spring_2026_ID/survey_data/20260421_rerun_plan.md` — the command sequence and decision record for today's run
+- `spring_2026_ID/survey_data/corrections.md` — append-only correction log; baseline SHAs at top
+- `survey/orc_build_camera_config.py` — Python-API fast-path for residual analysis
+- `survey/outsourced_survey_brief.md` — hire-a-surveyor fallback
 - `survey/research/professional_surveyor_and_escape_hatch.md` — deep research on fallback options A–G

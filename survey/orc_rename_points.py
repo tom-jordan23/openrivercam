@@ -19,23 +19,40 @@ tolerates a trailing '*' no-pole marker on either side — the '*' status
 of the original feature is preserved on the renamed output. All other
 feature properties are left untouched.
 
+Duplicate source labels (OLD@INDEX):
+
+    When the same label appears more than once in a GeoJSON (e.g. a
+    rover operator re-occupied a point under its original name instead
+    of a suffixed name), a plain --rename OLD=NEW is ambiguous and the
+    script will refuse to run. Use an inline index disambiguator to
+    target a specific occurrence:
+
+        --rename GCP3@1=GCP3.2
+
+    The index is 0-based over the order the features appear in the
+    input GeoJSON. --rename GCP3@0=... targets the first GCP3, @1 the
+    second, and so on. The chosen index is recorded in the provenance
+    chain so a later reader can tell which duplicate was renamed.
+
 Fails on:
 
     - OLD label not found in the GeoJSON
-    - OLD matches more than one feature (ambiguous — GeoJSON should
-      have unique labels)
-    - NEW label already exists as a different feature (would create a
-      duplicate)
-    - Two --rename flags that share the same OLD (conflict)
+    - OLD matches more than one feature and no @INDEX was given
+    - OLD@INDEX out of range for the number of matches
+    - NEW label already exists on a feature that is not being renamed
+      away (would create a duplicate)
+    - Two --rename flags with the same OLD[@INDEX] (conflict)
+    - Two --rename flags writing to the same NEW (conflict)
     - --reason is empty
 
 Audit trail:
 
     The output GeoJSON gets a new entry appended to its top-level
     `metadata.provenance_chain` array, recording the generator, input
-    SHA-256, the renames applied, and the --reason string. The reason
-    should reference the matching entry in the corrections.md log so a
-    reader can trace why the rename happened, not just that it did.
+    SHA-256, the renames applied (including each match_index when one
+    was used), and the --reason string. The reason should reference
+    the matching entry in the corrections.md log so a reader can trace
+    why the rename happened, not just that it did.
 """
 
 import argparse
@@ -47,7 +64,7 @@ from pathlib import Path
 
 
 GENERATOR_NAME = "orc_rename_points.py"
-GENERATOR_VERSION = "1.0"
+GENERATOR_VERSION = "1.1"
 
 
 LABEL_PROPERTIES = (
@@ -83,13 +100,35 @@ def find_label_property(properties: dict) -> tuple:
 
 
 def parse_rename_arg(arg: str) -> tuple:
-    """Parse 'OLD=NEW' into (old, new). Whitespace is stripped."""
+    """Parse 'OLD[@INDEX]=NEW' into (old, new, match_index).
+
+    match_index is None when no @INDEX suffix was given, otherwise a
+    non-negative int picking which occurrence of OLD to rename.
+    """
     if "=" not in arg:
         raise argparse.ArgumentTypeError(
-            f"--rename must be OLD=NEW, got {arg!r}"
+            f"--rename must be OLD[@INDEX]=NEW, got {arg!r}"
         )
-    old, new = arg.split("=", 1)
-    old, new = old.strip(), new.strip()
+    old_raw, new = arg.split("=", 1)
+    old_raw, new = old_raw.strip(), new.strip()
+
+    match_index = None
+    if "@" in old_raw:
+        old, idx_str = old_raw.rsplit("@", 1)
+        old, idx_str = old.strip(), idx_str.strip()
+        try:
+            match_index = int(idx_str)
+        except ValueError:
+            raise argparse.ArgumentTypeError(
+                f"--rename {arg!r}: @INDEX must be an integer, got {idx_str!r}"
+            )
+        if match_index < 0:
+            raise argparse.ArgumentTypeError(
+                f"--rename {arg!r}: @INDEX must be ≥ 0 (0-based)"
+            )
+    else:
+        old = old_raw
+
     if not old or not new:
         raise argparse.ArgumentTypeError(
             f"--rename OLD and NEW must both be non-empty, got {arg!r}"
@@ -100,7 +139,11 @@ def parse_rename_arg(arg: str) -> tuple:
             "in OLD or NEW — it is preserved automatically from the "
             "original feature"
         )
-    return old, new
+    return old, new, match_index
+
+
+def _format_rename_key(old: str, match_index) -> str:
+    return f"{old}@{match_index}" if match_index is not None else old
 
 
 def main() -> int:
@@ -111,8 +154,10 @@ def main() -> int:
     )
     ap.add_argument("geojson", type=Path, help="Input GeoJSON")
     ap.add_argument("--rename", action="append", required=True,
-                    type=parse_rename_arg, metavar="OLD=NEW",
-                    help="Rename OLD label to NEW. May be repeated.")
+                    type=parse_rename_arg, metavar="OLD[@INDEX]=NEW",
+                    help="Rename OLD label to NEW. Optional @INDEX "
+                         "(0-based) disambiguates when OLD appears more "
+                         "than once. May be repeated.")
     ap.add_argument("--reason", required=True,
                     help="Free-text justification — should reference the "
                          "corrections.md entry that documents this fix")
@@ -133,15 +178,20 @@ def main() -> int:
               file=sys.stderr)
         return 1
 
-    # Build rename map, detecting conflicting --rename args
-    renames: dict = {}
-    for old, new in args.rename:
-        key = old.upper()
-        if key in renames:
-            print(f"ERROR: --rename {old!r} specified twice "
-                  f"(to {renames[key]!r} and {new!r})", file=sys.stderr)
+    # Preserve order; allow multiple --rename with the same OLD if they
+    # use different @INDEX values (e.g. GCP3@0=A and GCP3@1=B).
+    renames_list: list = []
+    seen_keys: dict = {}
+    for old, new, match_index in args.rename:
+        key = (old.upper(), match_index)
+        if key in seen_keys:
+            prev_new = seen_keys[key]
+            print(f"ERROR: --rename {_format_rename_key(old, match_index)!r} "
+                  f"specified twice (to {prev_new!r} and {new!r})",
+                  file=sys.stderr)
             return 1
-        renames[key] = new
+        seen_keys[key] = new
+        renames_list.append((old, new, match_index))
 
     try:
         with open(args.geojson) as f:
@@ -160,8 +210,9 @@ def main() -> int:
         print(f"ERROR: {args.geojson} contains no features", file=sys.stderr)
         return 1
 
-    # First pass: index every label (clean form) to detect duplicates
-    # and to validate that NEW targets don't already exist.
+    # Index every label (clean form) → list of (feature_idx, clean_label),
+    # in file order. Supports duplicate labels; order of occurrence is
+    # the index space the @INDEX syntax refers to.
     label_index: dict = {}
     for idx, feat in enumerate(features):
         props = feat.get("properties") or {}
@@ -171,41 +222,89 @@ def main() -> int:
         clean, _ = strip_marker(raw)
         label_index.setdefault(clean.upper(), []).append((idx, clean))
 
-    # Validate: each OLD must match exactly one feature
     errors: list = []
-    for old_upper, new in renames.items():
+
+    # Resolve each rename to a single feature index. Record resolution so
+    # the apply pass and the NEW-collision pass don't have to redo it.
+    # Entries are (feat_idx, old, new, match_index) or None on error.
+    resolved: list = []
+    for old, new, match_index in renames_list:
+        old_upper = old.upper()
         matches = label_index.get(old_upper, [])
         if not matches:
-            errors.append(f"--rename: OLD {old_upper!r} not found in {args.geojson.name}")
-        elif len(matches) > 1:
-            labels = [lbl for _, lbl in matches]
             errors.append(
-                f"--rename: OLD {old_upper!r} matches {len(matches)} features "
-                f"({labels}) — ambiguous"
+                f"--rename: OLD {old_upper!r} not found in {args.geojson.name}"
             )
+            resolved.append(None)
+            continue
+        if match_index is None:
+            if len(matches) > 1:
+                labels = [lbl for _, lbl in matches]
+                errors.append(
+                    f"--rename: OLD {old_upper!r} matches {len(matches)} "
+                    f"features ({labels}) — ambiguous; add @INDEX (0-based) "
+                    f"to disambiguate, e.g. --rename {old}@0={new}"
+                )
+                resolved.append(None)
+                continue
+            feat_idx = matches[0][0]
+        else:
+            if match_index >= len(matches):
+                errors.append(
+                    f"--rename: OLD {old_upper!r}@{match_index} out of range "
+                    f"({len(matches)} match(es) found; valid indexes are "
+                    f"0..{len(matches) - 1})"
+                )
+                resolved.append(None)
+                continue
+            feat_idx = matches[match_index][0]
+        resolved.append((feat_idx, old, new, match_index))
 
-    # Validate: NEW must not collide with an existing label that is not
-    # itself being renamed away. In other words, renaming A→B is fine if
-    # either B doesn't exist, or B is being renamed away to something else.
-    for old_upper, new in renames.items():
+    # Feature indexes being renamed away (keyed by OLD upper). Used to
+    # decide whether a NEW collision is actually resolved by another
+    # rename vacating the label.
+    touched_by_old: dict = {}
+    for entry in resolved:
+        if entry is None:
+            continue
+        feat_idx, old, _, _ = entry
+        touched_by_old.setdefault(old.upper(), set()).add(feat_idx)
+
+    # NEW collision check: a NEW target collides if some feature already
+    # has that label and is NOT being renamed away.
+    for entry in resolved:
+        if entry is None:
+            continue
+        _, _, new, _ = entry
         new_upper = new.upper()
-        if new_upper in label_index and new_upper not in renames:
-            existing_labels = [lbl for _, lbl in label_index[new_upper]]
+        existing = label_index.get(new_upper, [])
+        if not existing:
+            continue
+        untouched = [
+            (fidx, lbl) for fidx, lbl in existing
+            if fidx not in touched_by_old.get(new_upper, set())
+        ]
+        if untouched:
+            untouched_labels = [lbl for _, lbl in untouched]
             errors.append(
                 f"--rename: NEW {new!r} already exists in {args.geojson.name} "
-                f"({existing_labels}) — would create a duplicate"
+                f"({untouched_labels}) — would create a duplicate"
             )
 
-    # Detect two renames writing to the same NEW
+    # Detect two renames writing to the same NEW (regardless of OLD).
     new_targets: dict = {}
-    for old_upper, new in renames.items():
+    for entry in resolved:
+        if entry is None:
+            continue
+        _, old, new, match_index = entry
         new_upper = new.upper()
         if new_upper in new_targets:
+            prev = new_targets[new_upper]
             errors.append(
                 f"--rename: two renames write to NEW {new!r} "
-                f"(from {new_targets[new_upper]!r} and {old_upper!r})"
+                f"(from {prev!r} and {_format_rename_key(old, match_index)!r})"
             )
-        new_targets[new_upper] = old_upper
+        new_targets[new_upper] = _format_rename_key(old, match_index)
 
     if errors:
         print("ERROR: rename validation failed:", file=sys.stderr)
@@ -213,23 +312,32 @@ def main() -> int:
             print(f"  - {msg}", file=sys.stderr)
         return 1
 
-    # Apply renames. Preserve the '*' marker status of the original.
+    # Apply: per-feature rename map avoids any label-based collisions
+    # during traversal when duplicate labels are in play.
+    per_feature_rename: dict = {}
+    for entry in resolved:
+        feat_idx, _, new, match_index = entry
+        per_feature_rename[feat_idx] = (new, match_index)
+
     applied: list = []
-    for feat in features:
+    for idx, feat in enumerate(features):
+        if idx not in per_feature_rename:
+            continue
         props = feat.get("properties") or {}
         key, raw = find_label_property(props)
         if not raw:
             continue
         clean, had_star = strip_marker(raw)
-        new = renames.get(clean.upper())
-        if new is None:
-            continue
+        new, match_index = per_feature_rename[idx]
         new_label = new + ("*" if had_star else "")
         props[key] = new_label
-        applied.append({
+        rename_record = {
             "from": clean + ("*" if had_star else ""),
             "to": new_label,
-        })
+        }
+        if match_index is not None:
+            rename_record["match_index"] = match_index
+        applied.append(rename_record)
 
     # Build provenance entry and append to chain
     existing_meta = data.get("metadata") or {}
@@ -265,7 +373,8 @@ def main() -> int:
 
     print(f"wrote {args.output}  ({len(applied)} label(s) renamed)")
     for rename in applied:
-        print(f"  {rename['from']} → {rename['to']}")
+        suffix = f" [@{rename['match_index']}]" if "match_index" in rename else ""
+        print(f"  {rename['from']}{suffix} → {rename['to']}")
     print(f"\nReason recorded: {args.reason.strip()}")
     return 0
 
