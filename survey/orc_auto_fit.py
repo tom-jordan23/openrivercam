@@ -57,6 +57,7 @@ from auto_fit import refine as rf
 from auto_fit import report as rp
 from auto_fit import visualize as vz
 from auto_fit import subset_search as ss
+from auto_fit import plots as pl
 
 
 def sha256_file(path: Path) -> str:
@@ -95,6 +96,96 @@ def load_water_level(path: Path) -> float:
         r = csv.DictReader(f)
         row = next(r)
         return float(row["z"])
+
+
+def load_pole_lengths_cm(path: Path | None) -> dict[str, float]:
+    """Read pole_lengths.csv (Station,Pole_Len_Cm,...) into a dict."""
+    if path is None or not path.exists():
+        return {}
+    out: dict[str, float] = {}
+    with open(path) as f:
+        r = csv.DictReader(f)
+        for row in r:
+            name = row["Station"].strip()
+            try:
+                out[name] = float(row["Pole_Len_Cm"].strip())
+            except (ValueError, KeyError):
+                pass
+    return out
+
+
+def classify_pairs(
+    world_by_id: dict,
+    pixel_by_id: dict | None = None,
+    pixel_same_marker_threshold: float = 15.0,
+) -> dict:
+    """Classify each day-1 / day-2 pair by whether the pixel clicks
+    actually land on the same physical marker.
+
+    A `.2` label is *supposed* to mean "re-occupation of the day-1 GCP
+    with the same suffix-stripped name." That assumption can be checked
+    against human clicks on the calibration frame: if both labels got
+    clicked on the same feature (pixel distance < threshold) the pair
+    is a legitimate re-occupation, and the UTM-space disagreement is
+    survey drift. If the clicks landed on completely different features
+    in the frame, the `.2` label is a field mislabel — the two points
+    are different physical markers and their UTM distance is real
+    geometry, not drift.
+
+    Returns a dict keyed by BOTH members of each pair with entries:
+        {
+          "utm_distance_m": float,
+          "click_pixel_distance": float | None,
+          "classification": "same_marker_drift" | "different_markers" | "unknown",
+          "partner": str,
+        }
+    """
+    out: dict = {}
+    for gid, xyz in world_by_id.items():
+        if not gid.endswith(".2"):
+            continue
+        base = gid[:-2]
+        if base not in world_by_id:
+            continue
+        utm_d = float(np.linalg.norm(xyz - world_by_id[base]))
+
+        click_d = None
+        if pixel_by_id is not None:
+            b = pixel_by_id.get(base)
+            s = pixel_by_id.get(gid)
+            if b is not None and s is not None:
+                click_d = float(np.hypot(b[0] - s[0], b[1] - s[1]))
+
+        if click_d is None:
+            cls = "unknown"
+        elif click_d < pixel_same_marker_threshold:
+            cls = "same_marker_drift"
+        else:
+            cls = "different_markers"
+
+        for member, partner in ((gid, base), (base, gid)):
+            out[member] = {
+                "utm_distance_m": utm_d,
+                "click_pixel_distance": click_d,
+                "classification": cls,
+                "partner": partner,
+            }
+    return out
+
+
+def compute_pair_drift_m(
+    world_by_id: dict,
+    pixel_by_id: dict | None = None,
+) -> dict:
+    """Back-compat helper: returns only the same-marker drifts (i.e.
+    the values where the pair-drift story is real). Consumers wanting
+    the full classification should call classify_pairs() instead."""
+    classes = classify_pairs(world_by_id, pixel_by_id=pixel_by_id)
+    return {
+        gid: info["utm_distance_m"]
+        for gid, info in classes.items()
+        if info["classification"] == "same_marker_drift"
+    }
 
 
 def load_gt_clicks(path: Path) -> dict:
@@ -201,6 +292,11 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--output-base", type=Path,
                     default=Path("spring_2026_ID/survey_data/auto_fit_runs"),
                     help="Parent directory for per-run output folders")
+    ap.add_argument("--pole-lengths",
+                    type=Path,
+                    default=Path("spring_2026_ID/survey_data/pole_lengths.csv"),
+                    help="Optional: pole_lengths.csv for diagnostic plot"
+                         " hatching (bamboo-pole GCPs flagged).")
     ap.add_argument("--bootstrap-from-gt", action="store_true",
                     help="Derive the bootstrap pose from the ground-truth "
                          "clicks (requires --gt-clicks). Isolates detector "
@@ -469,6 +565,91 @@ def main(argv: list[str] | None = None) -> int:
         print(f"  best subset ({len(b.ids)} GCPs): {list(b.ids)}")
         print(f"  best RMSE:                  {b.rmse_px:.2f} px / {b.rmse_m:.4f} m")
 
+        # Compute per-GCP residuals for ALL clicked GCPs under the
+        # best-subset pose. The 6 chosen GCPs have small residuals; the
+        # excluded ones' residuals show HOW MUCH they disagreed.
+        all_clicked_ids = list(pixel_by_id.keys())
+        clicked_wp = np.array([world_by_id[g] for g in all_clicked_ids])
+        clicked_ip = np.array([list(pixel_by_id[g]) for g in all_clicked_ids])
+        projected_under_best, _ = cv2.projectPoints(
+            clicked_wp.reshape(-1, 1, 3),
+            b.rvec, b.tvec, K, dist,
+        )
+        projected_under_best = projected_under_best.reshape(-1, 2)
+        residuals_px_best = np.linalg.norm(
+            clicked_ip - projected_under_best, axis=1
+        )
+        ranges_m_best = np.linalg.norm(clicked_wp - camera_xyz, axis=1)
+        focal_px = float(0.5 * (K[0, 0] + K[1, 1]))
+        residuals_m_best = (residuals_px_best * ranges_m_best / focal_px).tolist()
+        support_residuals_m = {
+            gid: float(r) for gid, r in zip(all_clicked_ids, residuals_m_best)
+        }
+        # Enriching plot with survey-quality diagnostics: pole length
+        # (bamboo vs standard) and pair classification (same-marker
+        # drift vs. field-mislabelled different markers). The former is
+        # an RTK quality signal; the latter is just "these are different
+        # points" and should not be conflated with drift.
+        pole_lengths = load_pole_lengths_cm(args.pole_lengths)
+        pair_classification = classify_pairs(world_by_id, pixel_by_id)
+        # Only pass *same-marker* drifts to the plot — showing a "Δpair"
+        # annotation on a different-marker pair would perpetuate the
+        # mislabel. Different-marker pairs are called out separately.
+        pair_drift_for_plot = {
+            gid: info["utm_distance_m"]
+            for gid, info in pair_classification.items()
+            if info["classification"] == "same_marker_drift"
+        }
+
+        pl.plot_gcp_support(
+            output_path=run_dir / "gcp_support.png",
+            clicked_ids=all_clicked_ids,
+            residuals_m=support_residuals_m,
+            subset_ids=set(b.ids),
+            pole_length_cm=pole_lengths,
+            pair_drift_m=pair_drift_for_plot,
+            a1_target_m=args.a1_target_m,
+            noise_floor_m=0.90,
+            title=f"GCP support of best-subset geometry "
+                  f"(RMSE {b.rmse_m*100:.2f} cm on {len(b.ids)} GCPs)  |  "
+                  f"hatched bars = ≥150 cm pole  |  "
+                  f"Δpair = day-1/day-2 drift (same-marker only)",
+        )
+        print(f"  support plot:  {run_dir / 'gcp_support.png'}")
+
+        same_marker = {
+            gid: info["utm_distance_m"]
+            for gid, info in pair_classification.items()
+            if info["classification"] == "same_marker_drift"
+        }
+        diff_markers = {
+            gid: info
+            for gid, info in pair_classification.items()
+            if info["classification"] == "different_markers"
+        }
+        if same_marker:
+            print("  same-marker pair drift (RTK repeat quality):")
+            seen = set()
+            for gid, d in sorted(same_marker.items(), key=lambda kv: -kv[1]):
+                base = gid[:-2] if gid.endswith(".2") else gid
+                if base in seen:
+                    continue
+                seen.add(base)
+                print(f"    {base} ↔ {base}.2:  {d*100:.0f} cm UTM drift")
+        if diff_markers:
+            print("  mislabelled pairs (clicks land on different markers):")
+            seen = set()
+            for gid, info in diff_markers.items():
+                base = gid[:-2] if gid.endswith(".2") else gid
+                if base in seen:
+                    continue
+                seen.add(base)
+                print(
+                    f"    {base} vs {base}.2:  clicks {info['click_pixel_distance']:.0f} px apart, "
+                    f"{info['utm_distance_m']*100:.0f} cm in UTM — "
+                    "these are different physical points; `.2` label is a field mislabel"
+                )
+
     # --- Evaluate A1 if ground truth supplied -----------------------------
     a1_info: dict
     if gt_clicks is not None:
@@ -626,6 +807,12 @@ def main(argv: list[str] | None = None) -> int:
         rmse_px=final_result.rmse_px,
         rmse_m=final_result.rmse_m,
         acceptance_a1=a1_info,
+        support_plot=("gcp_support.png" if subset_result is not None else None),
+        subset_info=audit.get("subset_search"),
+        pair_drift_m=(
+            classify_pairs(world_by_id, pixel_by_id=pixel_by_id)
+            if subset_result is not None else None
+        ),
     )
 
     print()

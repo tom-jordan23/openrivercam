@@ -28,7 +28,7 @@ Two problems with the survey data we have:
 
 **Problem 1 — The GPS survey has more error than planned.** On a good day, **RTK** (*Real-Time Kinematic*) GPS gives centimetre-level accuracy. RTK works by having a stationary base station at a known location that continuously transmits position-correction data to a moving rover — most of the common-mode GPS errors (ionospheric delay, satellite clock drift) cancel out on the rover side. At Sukabumi, the **check-point comparison** — the same physical point surveyed twice at different times — shows about 99 cm horizontal and 139 cm vertical spread. Those two measurements should have been identical. That is roughly **30×** worse than our 3 cm / 4 cm target and points to a problem with the base-station setup or the rover fixes. A re-survey with better equipment is already planned, but we do not want to wait for it before starting — partly to make progress, partly because the re-survey will benefit from what we learn now.
 
-**Putting those numbers in perspective.** To give the team a physical feel for the distances involved:
+**Putting those numbers in perspective.** To give a physical feel for the distances involved:
 
 | Length | Roughly as big as | In our context |
 |---|---|---|
@@ -318,16 +318,3 @@ The advantage is that Euclidean distance in UTM metres corresponds (to within a 
 
 Why they matter for us: an ArUco board physically placed at each GCP replaces the entire Stage 1 + Stage 2 logic with a single library call. The marker's ID tells us which GCP it is; its four corners give us sub-pixel pixel coordinates to plug directly into PnP. The only reason we are not using them at Sukabumi is that the markers were placed before the design called for ArUco; the boards that *are* in place are older ad-hoc checker tiles and painted X-marks, which SSIMS-Flow and similar tools confirm need the longer pipeline we designed. Jakarta will use ArUco.
 
----
-
-## 13. What we would like from the team tomorrow
-
-Concrete decisions to agree on:
-
-1. **Is the 5 cm accuracy target correct for the automation?** Too tight, too loose, or right?
-2. **Is the "re-survey needed" output acceptable if that is what the tool concludes?** In other words: if after all the work the honest answer is "the survey is not good enough," is the team ready to act on that?
-3. **Who runs Phase 0?** (Default: Tom, on his machine, ~30 min.)
-4. **When do we plan for Phase 1 day(s)?** To fit around other deployment work.
-5. **Is the Sukabumi-only scope correct?** Decision 5 commits this pipeline to a single site. Any methodology for other sites is handled in separate planning, not here. Any concerns with that boundary?
-
-These are the points to review. Everything else in this document is informational.
