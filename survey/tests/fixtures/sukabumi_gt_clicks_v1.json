@@ -1,0 +1,104 @@
+{
+  "schema_version": 1,
+  "site": "sukabumi",
+  "video_source": "spring_2026_ID/survey_data/source_data/20260420T034813.mp4",
+  "frame_index": 0,
+  "frame_sha256": "d56770f0fd709b1f82df00f18f896690a9ae53bc459c86fedb012632b5295e03",
+  "gcps_csv_sha256": "09a2d59072c04326d34a3ea63e9fff392893ac8b980c3c9956452988eeb071ef",
+  "collected_by": "Tom Jordan",
+  "collected_date": "2026-04-21",
+  "method": "manual-click via survey/auto_fit/ground_truth_click.py",
+  "clicks": {
+    "GCP1": [
+      1240.36,
+      945.88
+    ],
+    "GCP2": [
+      1408.0,
+      934.32
+    ],
+    "GCP3": [
+      1483.97,
+      818.71
+    ],
+    "GCP4": [
+      1471.59,
+      732.83
+    ],
+    "GCP5": [
+      907.56,
+      597.39
+    ],
+    "GCP6": [
+      1238.71,
+      345.52
+    ],
+    "GCP7": [
+      1010.79,
+      270.37
+    ],
+    "GCP8": [
+      901.78,
+      267.9
+    ],
+    "GCP9": [
+      906.74,
+      404.15
+    ],
+    "GCP10": [
+      772.13,
+      204.31
+    ],
+    "GCP11": [
+      766.35,
+      385.99
+    ],
+    "GCP1.2": [
+      497.14,
+      341.39
+    ],
+    "GCP13": [
+      594.58,
+      665.94
+    ],
+    "GCP14": [
+      388.95,
+      544.54
+    ],
+    "GCP2.2": [
+      1408.83,
+      940.93
+    ],
+    "GCP3.2": [
+      1486.45,
+      819.54
+    ],
+    "GCP4.2": [
+      1473.24,
+      732.83
+    ]
+  },
+  "skipped": [],
+  "bank_assignment": {
+    "GCP1": "near",
+    "GCP2": "near",
+    "GCP3": "near",
+    "GCP4": "far",
+    "GCP5": "far",
+    "GCP6": "far",
+    "GCP7": "far",
+    "GCP8": "far",
+    "GCP9": "far",
+    "GCP10": "near",
+    "GCP11": "far",
+    "GCP1.2": "near",
+    "GCP12": "near",
+    "GCP13": "near",
+    "GCP14": "near",
+    "GCP17": "near",
+    "GCP18": "far",
+    "GCP2.2": "near",
+    "GCP3.2": "near",
+    "GCP4.2": "far"
+  }
+}
