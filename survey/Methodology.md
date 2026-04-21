@@ -6,7 +6,7 @@
 
 **Date:** 2026-04-21. This document will change as we learn more during Phase 1 and Phase 2 (see "Roadmap" below).
 
-**Scope — one-time salvage, not reusable infrastructure.** This pipeline exists *only* because the Sukabumi 2026 survey data is noisier than planned and already baked (markers are in the ground, survey is done, re-survey is a separate decision). Jakarta and every future site will use **ArUco fiducial markers** (§6 Decision 5; §12.7 Appendix) which make an auto-fit tool unnecessary — a single OpenCV call does the job. We are investing in this pipeline once, for this dataset, and the design is judged against that scope — not against any notion of reusability.
+**Scope — one-time salvage for Sukabumi 2026 only.** This pipeline exists *only* because the Sukabumi 2026 survey data is noisier than planned and the markers are already physically placed. It is built once, for this dataset, and the design is judged against that scope — not against any notion of reusability. How future sites avoid ending up in the same situation is out of scope for this document.
 
 ---
 
@@ -146,7 +146,7 @@ These are the choices that shaped the approach above.
 
 **Decision 4 — The tool must say "re-survey needed" when the data is too noisy.** This is the single most important design decision. We are calibrating on a survey we already know is noisy. The tool must not hide that fact by picking a subset that happens to have low error. If every subset of at least 6 GCPs has high error, the tool will say so in the report and will not write a calibration file. This makes automation honest, not a way to paper over bad data.
 
-**Decision 5 — Jakarta and every future site will use ArUco fiducial markers. This pipeline is not repeated.** **ArUco** is a family of square fiducial markers (typically 4×4 or 5×5 binary patterns inside a thick black border). Each marker encodes a unique ID in its bit pattern, and OpenCV's `cv2.aruco.detectMarkers()` finds every ArUco marker in an image in a single call, returning each marker's four corners to sub-pixel accuracy *and* its decoded ID. With ArUco boards deployed on every GCP, Stages 1, 2, and the photo-registration fallback all collapse into one library call — there is no pose bootstrap, no local detector, no photo matching, no conflict resolution. Sukabumi's markers were already placed as ad-hoc checkerboard tiles and painted X-marks before this design was written, which is why we need the longer pipeline *here*. Going forward, the Jakarta deployment plan (and any future deployment plan) carries ArUco board specifications as a hard requirement. The auto-fit pipeline built for Sukabumi is explicitly a one-shot; we are not investing in it as a long-lived tool.
+**Decision 5 — Scope is Sukabumi only; no investment in reusability.** This pipeline is written once, for this dataset, and is retired after Sukabumi is calibrated (or declared unsalvageable and re-surveyed). We do not design for portability, we do not invest in maintainability beyond the Sukabumi decision, and we do not treat this as a template for other sites. How any future site avoids ending up with noisy survey data is out of scope for this document and will be handled separately.
 
 **Decision 6 — Explicit demonstration-only override for writing a calibration despite noise failure.** Decision 4 is "refuse by default when the data is too noisy." We intentionally pair it with a **deliberate, explicit bypass**: a `--demo-override` flag on the auto-fit CLI that writes a calibration file even when the normal acceptance criteria fail. The override is loud, not quiet:
 
@@ -214,7 +214,7 @@ Each phase has a clear checkpoint. We pause at each checkpoint to review before 
 
 - **Velocity measurement.** This document covers only camera calibration. The part of the OpenRiverCam pipeline that turns calibrated video into flow rate is a separate step and is not affected by this work.
 - **The re-survey.** If and when the re-survey happens, the standard manual-click calibration path (in `orc_build_camera_config.py`) is used against the clean data — not this auto-fit pipeline. Re-survey planning itself is a separate document (`survey/outsourced_survey_brief.md`).
-- **Jakarta.** Jakarta uses ArUco markers from day one (Decision 5) and therefore does not need this pipeline. Jakarta calibration will use `cv2.aruco.detectMarkers` → `cv2.solvePnP` directly. The work here is *not* a template for Jakarta.
+- **Other deployment sites.** This pipeline is for Sukabumi 2026 only. Methodology for other sites — including how they avoid landing in this salvage situation to begin with — is out of scope and is being handled in separate deployment planning.
 - **Future reuse of the auto-fit code.** This is not a supported tool. Once Sukabumi is calibrated (or declared unsalvageable and re-surveyed), the code is legacy. The design intentionally does not invest in maintainability beyond that point.
 - **Certification for flow-rate or water-level measurement.** A successful auto-fit run (meeting A1/A2/A3) is *necessary* but not *sufficient* for certified hydrological measurements — certification requires an independently-verified survey, documented lens calibration, a stage-gauge reference, and a QA process that is out of scope here. The `--demo-override` output (Decision 6) is emphatically *not* certified and its filename and config both carry that label. Any figures quoted from demo-mode output must be accompanied by the DEMO-UNCERTIFIED disclaimer.
 
@@ -328,6 +328,6 @@ Concrete decisions to agree on:
 2. **Is the "re-survey needed" output acceptable if that is what the tool concludes?** In other words: if after all the work the honest answer is "the survey is not good enough," is the team ready to act on that?
 3. **Who runs Phase 0?** (Default: Tom, on his machine, ~30 min.)
 4. **When do we plan for Phase 1 day(s)?** To fit around other deployment work.
-5. **ArUco for Jakarta is assumed in this design (Decision 5 / §10).** Does the team concur, and if so, when do we lock specifications (size, dictionary, print/lamination method, placement plan) into the Jakarta deployment document?
+5. **Is the Sukabumi-only scope correct?** Decision 5 commits this pipeline to a single site. Any methodology for other sites is handled in separate planning, not here. Any concerns with that boundary?
 
 These are the points to review. Everything else in this document is informational.

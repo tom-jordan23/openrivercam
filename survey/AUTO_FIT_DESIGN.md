@@ -33,7 +33,7 @@ Output feeds `pyorc.CameraConfig` and drops into ORC-OS as a saved camera config
 
 ## 2. Why automate this
 
-**Scope note: one-shot salvage tool. Not reusable infrastructure.** This pipeline exists *only* because the Sukabumi 2026 markers are already placed as ad-hoc checker tiles and X-marks, the survey is already noisier than the RTK gate allows, and we cannot retroactively swap to a better fiducial. Jakarta and every future site use ArUco boards per Decision 5 and `Methodology.md` §6 / §10 — their calibration path is `cv2.aruco.detectMarkers` → `cv2.solvePnP`, not this pipeline. The design is judged against that scope: **cover the Sukabumi dataset well; do not invest in maintainability past the Sukabumi salvage decision.**
+**Scope note: one-shot salvage tool for Sukabumi 2026 only.** This pipeline exists *only* because the Sukabumi markers are already placed and the survey is already noisier than the RTK gate allows, and we cannot retroactively swap inputs. The design is judged against that scope: **cover the Sukabumi dataset well; do not invest in maintainability past the Sukabumi salvage decision.** Methodology for other sites is explicitly out of scope and handled separately.
 
 Manual clicking is not today's bottleneck — the noisy GCP survey is. But a salvage decision requires iterating the GCP subset many times (to find the lowest-RMSE subset and prove that no subset meets the quality bar). Each iteration would require re-clicking by hand. Automating the clicking is what makes an exhaustive subset search feasible, which is what makes the re-survey decision defensible.
 
@@ -53,7 +53,6 @@ Epistemic win: a deterministic detector + MAGSAC PnP + scored subset search is *
 **Soft constraints (should).**
 - Should finish end-to-end in under 2 minutes on this machine.
 - Should degrade gracefully to human-in-the-loop per-GCP, not whole-pipeline.
-- ~~Should work on Jakarta with inputs swapped.~~ *Removed per 2026-04-21 scope clarification — see §10 decision record. Jakarta uses ArUco, not this pipeline.*
 
 **Acceptance criteria.**
 - **A1.** On the 2026-04-21 dataset, the auto-located pixel coordinate for ≥ 70 % of the 20 GCPs lies within **5 cm in world-ground units** of a manually-clicked ground truth. At 20 m camera range with focal ≈ 1500 px, that is ≈ 3.75 px — about one human-click's worth of tolerance. Per-GCP world-space error is reported in the output; exceedances are flagged, not suppressed.
@@ -103,7 +102,7 @@ Produces an initial `(rvec, tvec)` for the camera:
 Intrinsics source, in priority order:
 1. Charuco-derived `camera_matrix` / `dist_coeffs` if the calibration video has been processed (see `ORC_FIT_STRATEGY.md` §7; currently not wired, but a CLI flag accepts a pre-computed JSON).
 2. A frozen default: `focal = 1500 px`, principal point = image centre, zero distortion — `ORC_FIT_STRATEGY.md` §4 value.
-3. ~~Jakarta path: same, but site-specific focal stored in a CLI arg.~~ *Jakarta will not use this pipeline; removed.*
+3. (Other-site path is out of scope for this design — see §2 scope note.)
 
 Once computed, intrinsics are **frozen** — they do not change during Stages 2 and 3. This is what makes the subset search fast: without frozen intrinsics, `pyorc.CameraConfig.set_gcps` triggers `optimize_intrinsic` → `differential_evolution` → seconds per subset; with frozen intrinsics, each subset iteration is a single `cv2.solvePnP` call at ~1 ms.
 
@@ -335,7 +334,8 @@ Assertions are structural, not exact-set:
   - Byte-equal round-trip requires explicit intrinsics in the output CameraConfig (Explore).
   - A1 tightened from 10 px to 5 cm in world-ground units (user directive — matches the spirit of the physical-floor framing and gives us a meaningful pass/fail before committing to Phase 1.5).
   - Test strategy re-scoped per test-engineer plan (versioned fixtures, synthetic scene generator, negative tests for re-survey signalling, `pytest.ini`).
-- **2026-04-21 (scope clarification):** Explicitly one-shot. Sukabumi-only. Jakarta and all future sites use ArUco fiducials and the `cv2.aruco.detectMarkers` → `cv2.solvePnP` direct path; this pipeline is not a template for them. Removed "should work on Jakarta with inputs swapped" from §3 soft constraints. Reframed §2 motivation around subset-search feasibility rather than reusability. Once Sukabumi is calibrated or declared unsalvageable, this code is legacy — no investment in maintainability beyond that.
+- **2026-04-21 (scope clarification):** Explicitly one-shot. Sukabumi-only. Removed "should work on Jakarta with inputs swapped" from §3 soft constraints. Reframed §2 motivation around subset-search feasibility rather than reusability. Once Sukabumi is calibrated or declared unsalvageable, this code is legacy — no investment in maintainability beyond that.
+- **2026-04-21 (scope clarification, addendum):** Removed all prescriptive content about how other sites should conduct their surveys or select markers. Methodology for other sites is being handled in separate deployment planning and is explicitly out of scope for this document.
 - **2026-04-21 (demo-override):** Added `--demo-override` as a hard constraint in §3 and a dedicated subsection §5.4. Default behaviour when A2 fails is still "refuse and exit non-zero." With the flag, the tool writes an uncertified CameraConfig labelled `_DEMO_UNCERTIFIED` in filename and `certification_status: "demo-only"` in-config, accompanied by a disclaimer-banner report. Purpose: demonstrate the end-to-end OpenRiverCam pipeline (velocimetry, dashboards, training) at Sukabumi before re-survey completes. The override does not bypass A1 (registration) — only A2 (calibration quality). A follow-on (out of scope for this design) wires downstream consumers to refuse flow-rate publication when `certification_status == demo-only`.
 
 ## 11. Out of scope
@@ -344,18 +344,9 @@ Assertions are structural, not exact-set:
 - Multi-frame fusion beyond Stage 1's optional frame averaging.
 - **ArUco / AprilTag auto-detection for the Sukabumi 2026 dataset.** The markers were already physical X-marks and checker tiles by the time this design was written; they can't be retrofitted.
 
-### ArUco is the path for Jakarta and every future site (committed direction)
+### Methodology for other sites is out of scope
 
-Per 2026-04-21 scope clarification: this pipeline is a one-shot for Sukabumi. Every other site will deploy ArUco fiducials from day one and will use the one-line `cv2.aruco.detectMarkers` path, bypassing this pipeline entirely.
-
-Specifications to land in the Jakarta deployment plan (`spring_2026_ID/CLAUDE.md` Phase 3/4) and in `ORC_FIT_STRATEGY.md` §7:
-
-- **ArUco 4×4_50 dictionary** or 5×5_100 if more uniqueness headroom is wanted.
-- Boards laminated to survive tropical humidity; size chosen so the marker spans ≥ 40 px at the camera's working distance (roughly: side length ≥ 0.7 m at 20 m range with 1500 px focal).
-- ID encoding: ArUco ID = GCP number. This makes the labelling step trivial and eliminates the photo-registration fallback entirely.
-- Partial-occlusion fallback: ArUco requires all four corners visible. If field trials show that vegetation or water regularly covers corners, evaluate STag (circular boundary, more robust to corner occlusion) before the deployment.
-
-The SOTA review (`/tmp/auto_fit_review/sota_research.md`) cited SSIMS-Flow (Ljubičić et al., 2024) and Find-GCP (`zsiki/Find-GCP`) as production validations of this approach for outdoor monitoring deployments.
+Per 2026-04-21 scope clarification: this design is a one-shot for Sukabumi only. Any approach for other sites — whether ArUco fiducials, different survey methodology, or something else — is being handled in separate deployment planning and is not prescribed here. The SOTA review (`/tmp/auto_fit_review/sota_research.md`) is retained for reference only; it was used to confirm that *our Sukabumi approach* is not reinventing an off-the-shelf tool, not to recommend directions for other sites.
 
 ## 12. Cross-references
 
