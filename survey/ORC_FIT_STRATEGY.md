@@ -13,7 +13,8 @@ Deploying OpenRiverCam (ORC) stations in Indonesia. Current site: **Sukabumi reg
 
 ## 2. What's Already Built
 
-- **`survey/orc_build_camera_config.py`** — wraps pyorc to build a `CameraConfig` from the processed survey CSVs. Handles the no-staff-gauge case (`h_ref=None` → pyorc stores 0.0). Prints per-GCP residuals sorted worst-first. End-to-end tested with synthetic clicks; writes a JSON that round-trips through `pyorc.load_camera_config`.
+- **`survey/orc_build_camera_config.py`** — wraps pyorc to build a `CameraConfig` from the processed survey CSVs. Handles the no-staff-gauge case (`h_ref=None` → pyorc stores 0.0). Prints per-GCP residuals sorted worst-first. End-to-end tested with synthetic clicks; writes a JSON that round-trips through `pyorc.load_camera_config`. Fastest iteration path for residual analysis.
+- **`survey/ORC_OS_DOCKER.md`** — containerized ORC-OS fitment station. Full FastAPI + dashboard UI from github.com/localdevices/ORC-OS, running locally via `docker compose`. Uses the same fit under the hood (pyorc) but exercises the real operational UI workflow. Clone at `rainbow-sensing/orc-os/` (gitignored), data at `~/.ORC-OS/`.
 - **`survey/outsourced_survey_brief.md`** — team-handoff doc. Professional surveyor shortlist, SOW template (Indonesian + English), evaluation checklist. Recommended vendors: Geopasi (primary), Geoindo (backup), CV Tata Bumi (price comparator).
 - **`survey/research/professional_surveyor_and_escape_hatch.md`** — deep research on surveyor options and fallback paths (A through G) if existing data can't be made to work.
 - **`.venv/`** (gitignored) — Python 3.12 venv with `pyopenrivercam`, `opencv-python`, `matplotlib`, `requests` installed.
