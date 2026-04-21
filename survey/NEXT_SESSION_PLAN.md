@@ -37,13 +37,13 @@ Check-point gate still fires at 98.6 cm H / 138.8 cm V on purpose — salvage-mo
 
 ## Where to resume
 
-The salvage question is **answered**: the survey can be calibrated at 4.6 cm RMSE on a 6-GCP subset. Three possible next steps, in order of increasing ambition:
+The salvage question is **answered**: the survey can be calibrated at 4.6 cm RMSE on a 6-GCP subset. Ranked next steps:
 
-1. **Accept the salvage fit.** Run `orc_auto_fit.py` one more time with `--subset-search` to emit a `sukabumi_auto_fit.json` CameraConfig, then hand it to ORC-OS. This is the fastest path to a working station.
-2. **Demo-override exercise.** Confirm the `--demo-override` mechanism works end-to-end against a deliberately-bad configuration, so the demo-uncertified output path is tested before any live demo.
-3. **Phase 3 polish.** Tests (`survey/tests/` + `pytest.ini`), `orc_build_camera_config.py --from-auto` wiring, `survey/AUTO_FIT_USAGE.md`.
+1. **Emit a loadable `sukabumi_auto_fit.json` CameraConfig. ← the gap to close next.** The current driver produces `clicks.json`, `labels.json`, `report.md`, and `audit.json` but **does not yet emit a `pyorc.CameraConfig` JSON**. Closing that loop means building a `pyorc.CameraConfig` from the best subset with frozen intrinsics (so the byte-equal round-trip claim from A3 holds) and verifying it loads via `pyorc.load_camera_config`. ~30 min. This is what makes the fit actually usable in ORC-OS.
+2. **`--demo-override` implementation.** Must-support per design §3, but the current salvage result passes the quality bar — override only fires when that bar is missed. Useful to implement so the path is tested before any live demo. ~45 min.
+3. **Phase 3 polish.** Tests (`survey/tests/` + `pytest.ini`), `orc_build_camera_config.py --from-auto` wiring, `survey/AUTO_FIT_USAGE.md`. ~1 day.
 
-Phase 1.5 (photo pose-prior) was scoped as conditional on A1 failing. The current pipeline uses `--use-clicks` which bypasses the detector entirely, so Phase 1.5 is not needed for the salvage result. It would only matter if we wanted full hands-free automation, which isn't the critical path.
+Phase 1.5 (photo pose-prior) is explicitly **not** the critical path — the `--use-clicks` shortcut bypasses the detector entirely, so Phase 1.5 only matters for a full hands-free automation ambition we don't currently have.
 
 ## Commands — ready to run
 
