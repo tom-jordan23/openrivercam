@@ -33,9 +33,11 @@ Output feeds `pyorc.CameraConfig` and drops into ORC-OS as a saved camera config
 
 ## 2. Why automate this
 
-Manual clicking is not today's bottleneck — the GCP survey is. But the clicking cost is **paid again every time we iterate on the GCP set**, and we expect many subset iterations in salvage mode plus one more full run after the planned re-survey. The pipeline also applies to Jakarta.
+**Scope note: one-shot salvage tool. Not reusable infrastructure.** This pipeline exists *only* because the Sukabumi 2026 markers are already placed as ad-hoc checker tiles and X-marks, the survey is already noisier than the RTK gate allows, and we cannot retroactively swap to a better fiducial. Jakarta and every future site use ArUco boards per Decision 5 and `Methodology.md` §6 / §10 — their calibration path is `cv2.aruco.detectMarkers` → `cv2.solvePnP`, not this pipeline. The design is judged against that scope: **cover the Sukabumi dataset well; do not invest in maintainability past the Sukabumi salvage decision.**
 
-Epistemic win: a deterministic detector + MAGSAC PnP + scored subset search is *easier to audit* than a human click log. Provenance and reproducibility are project-wide principles (see `corrections.md`); a fit regenerable byte-identically from source files + one config matches those better than one requiring a human in the loop.
+Manual clicking is not today's bottleneck — the noisy GCP survey is. But a salvage decision requires iterating the GCP subset many times (to find the lowest-RMSE subset and prove that no subset meets the quality bar). Each iteration would require re-clicking by hand. Automating the clicking is what makes an exhaustive subset search feasible, which is what makes the re-survey decision defensible.
+
+Epistemic win: a deterministic detector + MAGSAC PnP + scored subset search is *easier to audit* than a human click log. Provenance and reproducibility are project-wide principles (see `corrections.md`); a fit regenerable byte-identically from source files + one config is the right match to those principles for a one-shot calibration that has to defend a potentially high-cost re-survey decision.
 
 ## 3. Constraints and acceptance criteria
 
@@ -46,11 +48,12 @@ Epistemic win: a deterministic detector + MAGSAC PnP + scored subset search is *
 - Must not hide or suppress the check-point spread gate; salvage-mode preserves that signal.
 - Every detection decision, subset evaluation, and rejection reason must be written to `auto_fit_audit.json`.
 - Frame used for detection is **pinned to frame index 0** of the calibration video; frame SHA-256 recorded in all outputs.
+- Must support an explicit `--demo-override` CLI flag that writes an *uncertified* CameraConfig even when normal acceptance criteria fail (see §5.4). Without the flag, the tool exits non-zero and writes no calibration when the survey noise dominates; *with* the flag, it writes a config that is indelibly marked `certification_status: "demo-only"`, named with a `_DEMO_UNCERTIFIED` filename suffix, and accompanied by a report whose first line is a disclaimer banner.
 
 **Soft constraints (should).**
 - Should finish end-to-end in under 2 minutes on this machine.
 - Should degrade gracefully to human-in-the-loop per-GCP, not whole-pipeline.
-- Should work on Jakarta with inputs swapped; no per-site code changes.
+- ~~Should work on Jakarta with inputs swapped.~~ *Removed per 2026-04-21 scope clarification — see §10 decision record. Jakarta uses ArUco, not this pipeline.*
 
 **Acceptance criteria.**
 - **A1.** On the 2026-04-21 dataset, the auto-located pixel coordinate for ≥ 70 % of the 20 GCPs lies within **5 cm in world-ground units** of a manually-clicked ground truth. At 20 m camera range with focal ≈ 1500 px, that is ≈ 3.75 px — about one human-click's worth of tolerance. Per-GCP world-space error is reported in the output; exceedances are flagged, not suppressed.
@@ -100,7 +103,7 @@ Produces an initial `(rvec, tvec)` for the camera:
 Intrinsics source, in priority order:
 1. Charuco-derived `camera_matrix` / `dist_coeffs` if the calibration video has been processed (see `ORC_FIT_STRATEGY.md` §7; currently not wired, but a CLI flag accepts a pre-computed JSON).
 2. A frozen default: `focal = 1500 px`, principal point = image centre, zero distortion — `ORC_FIT_STRATEGY.md` §4 value.
-3. (Jakarta path: same, but site-specific focal stored in a CLI arg.)
+3. ~~Jakarta path: same, but site-specific focal stored in a CLI arg.~~ *Jakarta will not use this pipeline; removed.*
 
 Once computed, intrinsics are **frozen** — they do not change during Stages 2 and 3. This is what makes the subset search fast: without frozen intrinsics, `pyorc.CameraConfig.set_gcps` triggers `optimize_intrinsic` → `differential_evolution` → seconds per subset; with frozen intrinsics, each subset iteration is a single `cv2.solvePnP` call at ~1 ms.
 
@@ -153,6 +156,31 @@ Subsets violating a hard constraint are rejected upfront; no score computed.
 
 Output: chosen subset S*, RMSE on S*, RMSE on S* ± each candidate point (contribution view), per-GCP residuals sorted worst-first, full audit trail in JSON.
 
+### 5.4 Uncertified demo-override output
+
+When the auto-fit's normal conclusion is "no subset meets the quality bar" (resolvability = `insufficient`), the default behaviour is to exit non-zero and write no CameraConfig. An explicit `--demo-override` CLI flag overrides that refusal and writes a calibration anyway, for end-to-end OpenRiverCam pipeline demonstration only. The override is engineered to be impossible to consume silently:
+
+1. **Filename marker.** The CameraConfig is written as `*_DEMO_UNCERTIFIED.json` (and the sibling `_report.md`, `_clicks.json`, `_audit.json` follow suit — see §6). A file-system glob for the normal name returns nothing in demo-mode runs.
+2. **In-config marker.** The top-level JSON of the CameraConfig carries `"certification_status": "demo-only"`. Downstream consumers (ORC-OS dashboard, velocimetry scripts, the dashboard importer) are expected to refuse to publish flow-rate numbers when this field is `demo-only` — a follow-on task to wire that check into the downstream consumers is flagged in §11 out-of-scope. In the interim, the filename suffix is the primary safety net.
+3. **Report disclaimer.** The accompanying `*_report.md` has a mandatory disclaimer as its first line and again above the per-GCP residual table:
+   ```
+   > **DEMO-UNCERTIFIED — do not use for certified flow, discharge, or water-level measurements.**
+   ```
+4. **Audit entry.** The `*_audit.json` records the flag, the user (from the `--collected-by` or `$USER`), the timestamp, the reason (free-text required by the flag), and the worst per-GCP residual that would otherwise have triggered the refusal.
+5. **CLI ergonomics.** `--demo-override` alone is not sufficient. It must be accompanied by `--override-reason "..."` explaining what the demo is for (stakeholder walk-through, pipeline-bug triage, training session). Both strings are recorded verbatim in the audit JSON.
+
+The override is *not* intended to mask a registration-quality (A1) failure. A1 is about automation; A2 about the survey. The override is for the A2 case specifically — the calibration's world-metres RMSE exceeds what we would call certifiable, but the tool's per-GCP registrations were accurate enough that the downstream pipeline has something coherent to run on.
+
+Behavioural matrix:
+
+| A1 (registration) | A2 (RMSE vs. floor) | Normal behaviour | Behaviour with `--demo-override` |
+|:---:|:---:|---|---|
+| pass | pass | Write certified config (no suffix) | Irrelevant; flag ignored with warning |
+| pass | fail | Refuse, exit non-zero | Write `*_DEMO_UNCERTIFIED.json` |
+| fail | any | Refuse, exit non-zero | **Still refuse.** Demo-override is not for registration failures — fix Phase 1.5 or manually click instead. |
+
+This last row is deliberate: if the automation itself can't locate markers, a demo is not useful. Demo-mode is for "the math is working, the data is just noisy" cases.
+
 ## 6. Data contracts / IO
 
 ```
@@ -172,11 +200,17 @@ Intermediate (under survey/auto_fit_work/, gitignored):
   - detections_by_pass.json            # per-pass candidate windows and winners
   - labels.json                        # final {gcp_id: (x, y, world_err_m)}
 
-Outputs (checked in per run, manually):
-  - spring_2026_ID/survey_data/output/sukabumi_auto_fit.json         # pyorc CameraConfig with explicit intrinsics
+Outputs — normal path (acceptance criteria met):
+  - spring_2026_ID/survey_data/output/sukabumi_auto_fit.json         # pyorc CameraConfig, certification_status="ok"
   - spring_2026_ID/survey_data/output/sukabumi_auto_fit_report.md    # per-GCP residuals, chosen subset, flags
   - spring_2026_ID/survey_data/output/sukabumi_auto_fit_clicks.json  # manual-path compatible
   - spring_2026_ID/survey_data/output/sukabumi_auto_fit_audit.json   # every decision, every rejected subset reason
+
+Outputs — demo-override path (--demo-override set, acceptance criteria NOT met):
+  - spring_2026_ID/survey_data/output/sukabumi_auto_fit_DEMO_UNCERTIFIED.json        # pyorc CameraConfig, certification_status="demo-only"
+  - spring_2026_ID/survey_data/output/sukabumi_auto_fit_DEMO_UNCERTIFIED_report.md   # opens with a mandatory disclaimer banner
+  - spring_2026_ID/survey_data/output/sukabumi_auto_fit_DEMO_UNCERTIFIED_clicks.json
+  - spring_2026_ID/survey_data/output/sukabumi_auto_fit_DEMO_UNCERTIFIED_audit.json  # records the override flag, who invoked it, timestamp
 ```
 
 `orc_build_camera_config.py --from-auto` consumes `sukabumi_auto_fit_clicks.json` without re-prompting.
@@ -219,7 +253,7 @@ Outputs (checked in per run, manually):
 | SIFT not in the installed OpenCV wheel (`opencv-python` vs `opencv-contrib-python`) | Med | High for Phase 1.5 only | Fall back to ORB features; or install `opencv-contrib-python` into the venv |
 | Frame drift between manual ground-truth click and auto-fit run | Low once pinned | High if unpinned | Frame index pinned to 0; frame SHA-256 recorded and re-checked on every run; loud error if mismatch |
 | Lens-distortion unmodelled; reprojection residuals grow toward image corners | Low (short focal, flat scene) | Med | Wire charuco → `camera_matrix` / `dist_coeffs`; feed into `orc_auto_fit.py --intrinsics` |
-| Survey noise dominates; all subsets RMSE ≫ physical floor | **High — expected in salvage mode** | Low (this is the signal we want) | Report `resolvability: insufficient`, exit non-zero, point at `survey/research/professional_surveyor_and_escape_hatch.md`. **Not a failure — success looks like this when the data can't support a fit.** |
+| Survey noise dominates; all subsets RMSE ≫ physical floor | **High — expected in salvage mode** | Low (this is the signal we want) | Default: report `resolvability: insufficient`, exit non-zero, point at `survey/research/professional_surveyor_and_escape_hatch.md`. With `--demo-override` + `--override-reason "..."` (§5.4): write an uncertified CameraConfig with `_DEMO_UNCERTIFIED` filename, `certification_status: demo-only` in-config, and a report whose first line is a disclaimer. Downstream consumers must refuse to publish flow-rate numbers when the config is demo-only. **Not a failure — success looks like this when the data can't support a certified fit.** |
 
 Row 7's salvage-mode outcome is what automation can do that a human click log can't: quantify unfit-ness fast, feed the re-survey decision, not hide it.
 
@@ -301,6 +335,8 @@ Assertions are structural, not exact-set:
   - Byte-equal round-trip requires explicit intrinsics in the output CameraConfig (Explore).
   - A1 tightened from 10 px to 5 cm in world-ground units (user directive — matches the spirit of the physical-floor framing and gives us a meaningful pass/fail before committing to Phase 1.5).
   - Test strategy re-scoped per test-engineer plan (versioned fixtures, synthetic scene generator, negative tests for re-survey signalling, `pytest.ini`).
+- **2026-04-21 (scope clarification):** Explicitly one-shot. Sukabumi-only. Jakarta and all future sites use ArUco fiducials and the `cv2.aruco.detectMarkers` → `cv2.solvePnP` direct path; this pipeline is not a template for them. Removed "should work on Jakarta with inputs swapped" from §3 soft constraints. Reframed §2 motivation around subset-search feasibility rather than reusability. Once Sukabumi is calibrated or declared unsalvageable, this code is legacy — no investment in maintainability beyond that.
+- **2026-04-21 (demo-override):** Added `--demo-override` as a hard constraint in §3 and a dedicated subsection §5.4. Default behaviour when A2 fails is still "refuse and exit non-zero." With the flag, the tool writes an uncertified CameraConfig labelled `_DEMO_UNCERTIFIED` in filename and `certification_status: "demo-only"` in-config, accompanied by a disclaimer-banner report. Purpose: demonstrate the end-to-end OpenRiverCam pipeline (velocimetry, dashboards, training) at Sukabumi before re-survey completes. The override does not bypass A1 (registration) — only A2 (calibration quality). A follow-on (out of scope for this design) wires downstream consumers to refuse flow-rate publication when `certification_status == demo-only`.
 
 ## 11. Out of scope
 
@@ -308,16 +344,18 @@ Assertions are structural, not exact-set:
 - Multi-frame fusion beyond Stage 1's optional frame averaging.
 - **ArUco / AprilTag auto-detection for the Sukabumi 2026 dataset.** The markers were already physical X-marks and checker tiles by the time this design was written; they can't be retrofitted.
 
-### ArUco recommendation for Jakarta and future sites
+### ArUco is the path for Jakarta and every future site (committed direction)
 
-The SOTA review (`/tmp/auto_fit_review/sota_research.md`) concluded that for sites where marker placement is still pending:
+Per 2026-04-21 scope clarification: this pipeline is a one-shot for Sukabumi. Every other site will deploy ArUco fiducials from day one and will use the one-line `cv2.aruco.detectMarkers` path, bypassing this pipeline entirely.
 
-- **Deploy ArUco 4×4 targets**, laminated and staked, with ID encoding the GCP number.
-- `cv2.aruco.detectMarkers()` then replaces Stages 1+2 in one OpenCV call — no SIFT, no pose bootstrap for labelling, no conflict resolution.
-- SSIMS-Flow (Ljubičić et al., 2024) and the Find-GCP tool (`zsiki/Find-GCP`) both validate this as production-ready for outdoor deployments.
-- Accept partial-occlusion risk: ArUco requires all four corners visible. If vegetation/water regularly covers markers, consider STag (circular boundary, more robust to corner occlusion).
+Specifications to land in the Jakarta deployment plan (`spring_2026_ID/CLAUDE.md` Phase 3/4) and in `ORC_FIT_STRATEGY.md` §7:
 
-Track this in the Jakarta deployment plan (`spring_2026_ID/CLAUDE.md` Phase 3/4) and in `ORC_FIT_STRATEGY.md` §7.
+- **ArUco 4×4_50 dictionary** or 5×5_100 if more uniqueness headroom is wanted.
+- Boards laminated to survive tropical humidity; size chosen so the marker spans ≥ 40 px at the camera's working distance (roughly: side length ≥ 0.7 m at 20 m range with 1500 px focal).
+- ID encoding: ArUco ID = GCP number. This makes the labelling step trivial and eliminates the photo-registration fallback entirely.
+- Partial-occlusion fallback: ArUco requires all four corners visible. If field trials show that vegetation or water regularly covers corners, evaluate STag (circular boundary, more robust to corner occlusion) before the deployment.
+
+The SOTA review (`/tmp/auto_fit_review/sota_research.md`) cited SSIMS-Flow (Ljubičić et al., 2024) and Find-GCP (`zsiki/Find-GCP`) as production validations of this approach for outdoor monitoring deployments.
 
 ## 12. Cross-references
 

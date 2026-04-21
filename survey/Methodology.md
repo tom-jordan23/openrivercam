@@ -6,6 +6,8 @@
 
 **Date:** 2026-04-21. This document will change as we learn more during Phase 1 and Phase 2 (see "Roadmap" below).
 
+**Scope — one-time salvage, not reusable infrastructure.** This pipeline exists *only* because the Sukabumi 2026 survey data is noisier than planned and already baked (markers are in the ground, survey is done, re-survey is a separate decision). Jakarta and every future site will use **ArUco fiducial markers** (§6 Decision 5; §12.7 Appendix) which make an auto-fit tool unnecessary — a single OpenCV call does the job. We are investing in this pipeline once, for this dataset, and the design is judged against that scope — not against any notion of reusability.
+
 ---
 
 ## 1. What problem are we solving?
@@ -46,18 +48,17 @@ Re-scaled to the river itself:
 
 This is the hard fact behind "salvage mode." Even a perfect calibration cannot improve on a noisy survey — geometry in is geometry out. The purpose of the auto-tool is to find out *how far* we can get with what we have, and to quantify how much a re-survey would buy us.
 
-**Problem 2 — The current calibration process is manual.** Today, the operator opens the video, looks at the first frame, and clicks each of the 20 markers by hand. This works, but:
+**Problem 2 — The current calibration process is manual, and the noisy survey makes subset search (trying different GCP combinations) expensive.** Today, the operator opens the video, looks at the first frame, and clicks each of the 20 markers by hand. For a single fit this is fine. But to make an honest *salvage* decision on a noisy dataset, we need to try many different combinations of GCPs to see which subset gives the best fit. Each new combination would require re-clicking every time. Doing that by hand, dozens of times, is impractical — so we automate the clicking so that the subset search itself becomes feasible.
 
-- Clicking is slow and hard to repeat exactly.
-- Every time we want to try a different combination of markers, the clicking has to be redone.
-- A click log is hard to audit: we cannot re-verify later that the clicks were accurate.
-- When we move to the Jakarta site, the same manual process starts over.
+A click log is also hard to audit: we cannot re-verify later that the clicks were accurate. An automated tool leaves a deterministic decision log that the re-survey decision can rest on.
 
-We want to replace the clicking with a software tool. The tool will do three things:
+We want to replace the manual cycle with a software tool. The tool will do three things:
 
 1. Find each marker automatically in the video.
 2. Try different combinations of markers to find the one that gives the best calibration.
 3. Honestly report when the survey data is too noisy to give us a good calibration — telling us the re-survey is necessary, rather than hiding the problem.
+
+Everything the tool does is in service of making a defensible *one-time* decision about the Sukabumi 2026 data. It is not scaffolding for future sites.
 
 ---
 
@@ -145,7 +146,22 @@ These are the choices that shaped the approach above.
 
 **Decision 4 — The tool must say "re-survey needed" when the data is too noisy.** This is the single most important design decision. We are calibrating on a survey we already know is noisy. The tool must not hide that fact by picking a subset that happens to have low error. If every subset of at least 6 GCPs has high error, the tool will say so in the report and will not write a calibration file. This makes automation honest, not a way to paper over bad data.
 
-**Decision 5 — For future sites, use ArUco markers instead of ad-hoc X-marks.** **ArUco** is a family of square fiducial markers (typically 4×4 or 5×5 binary patterns inside a thick black border). Each marker encodes a unique ID in its bit pattern, and OpenCV's `cv2.aruco.detectMarkers()` finds every ArUco marker in an image in a single call, returning each marker's four corners to sub-pixel accuracy *and* its decoded ID. If every GCP at a future site carries a uniquely-numbered ArUco board, Stages 1 and 2 collapse into one function call — no pose bootstrap, no local detector, no conflict resolution. At Sukabumi the markers were already placed and checkerboard-style when this approach was designed, so we cannot switch now. The next site (Jakarta) and any future site should use ArUco; specifications for printing and placing the boards will be added to the Jakarta deployment plan.
+**Decision 5 — Jakarta and every future site will use ArUco fiducial markers. This pipeline is not repeated.** **ArUco** is a family of square fiducial markers (typically 4×4 or 5×5 binary patterns inside a thick black border). Each marker encodes a unique ID in its bit pattern, and OpenCV's `cv2.aruco.detectMarkers()` finds every ArUco marker in an image in a single call, returning each marker's four corners to sub-pixel accuracy *and* its decoded ID. With ArUco boards deployed on every GCP, Stages 1, 2, and the photo-registration fallback all collapse into one library call — there is no pose bootstrap, no local detector, no photo matching, no conflict resolution. Sukabumi's markers were already placed as ad-hoc checkerboard tiles and painted X-marks before this design was written, which is why we need the longer pipeline *here*. Going forward, the Jakarta deployment plan (and any future deployment plan) carries ArUco board specifications as a hard requirement. The auto-fit pipeline built for Sukabumi is explicitly a one-shot; we are not investing in it as a long-lived tool.
+
+**Decision 6 — Explicit demonstration-only override for writing a calibration despite noise failure.** Decision 4 is "refuse by default when the data is too noisy." We intentionally pair it with a **deliberate, explicit bypass**: a `--demo-override` flag on the auto-fit CLI that writes a calibration file even when the normal acceptance criteria fail. The override is loud, not quiet:
+
+- The output config JSON has `certification_status: "demo-only"` as a top-level field.
+- The output filename has a distinct suffix — `*_DEMO_UNCERTIFIED.json` — so it cannot be confused with a normal fit on the filesystem.
+- The accompanying report opens with a bold disclaimer: **This calibration is DEMO-ONLY. It must not be used to compute certified flow rate, discharge, or water-level measurements.**
+- The audit JSON records the override flag, who set it, and the timestamp.
+
+**Why we need this bypass.** The OpenRiverCam project has downstream components — velocimetry, report generation, operational dashboards — that we need to be able to demonstrate end-to-end at the Sukabumi site *before* any re-survey happens. Without a camera config, even an uncertified one, nothing downstream runs at all. Demo-mode lets us:
+
+- Show the full pipeline to stakeholders (PMI leadership, funders, field staff) and walk through what the system *will* look like in production.
+- Train operators on the full workflow using real site video.
+- Catch downstream bugs (in the velocimetry code, the dashboard, the data-upload path) that would otherwise be blocked behind the calibration gate.
+
+**What demo mode is not.** Not a way to publish flow numbers. Not a shortcut. Not something an operator would reach for by accident. The explicit flag + distinct filename + in-config marker + report disclaimer together ensure that any downstream consumer of the calibration — automated or human — sees "DEMO-UNCERTIFIED" at every integration point. A certified flow-rate or water-level number from Sukabumi still requires a successful re-survey and a normal (non-override) calibration run.
 
 ---
 
@@ -172,7 +188,7 @@ If A1 fails, we add Phase 1.5 (photos). If A2 or A3 fail, we fix the bug. If aft
 | A photo is labelled wrong (we already saw one: GCP15 appears in the photos but was not surveyed) | **High — already happened** | The tool checks label consistency before starting and refuses to guess |
 | The tool picks a subset that happens to cluster on one bank | Low (hard rule blocks this) | The hard rule rejects any subset that leaves an image quadrant empty |
 | The image library we depend on changes behaviour between versions | Low | We record the library version in the audit file; a pinned version is required to reproduce the result |
-| The survey is too noisy for any subset to meet the quality bar | **High — this is the likely outcome on this dataset** | The tool says so clearly in the report and refuses to write a calibration. We move to the re-survey plan. |
+| The survey is too noisy for any subset to meet the quality bar | **High — this is the likely outcome on this dataset** | The tool says so clearly in the report and refuses to write a certified calibration by default. The operator may invoke the `--demo-override` flag (Decision 6) to write an uncertified calibration for end-to-end pipeline demonstration; that output is labelled `DEMO_UNCERTIFIED` in filename and config. Certified use still requires a re-survey — see `survey/outsourced_survey_brief.md`. |
 
 The last row is not a failure. It is the purpose of the automation: to quantify noise faster than a human click log can, so that the decision to re-survey is data-driven rather than a judgement call.
 
@@ -197,8 +213,10 @@ Each phase has a clear checkpoint. We pause at each checkpoint to review before 
 ## 10. What this document does not cover
 
 - **Velocity measurement.** This document covers only camera calibration. The part of the OpenRiverCam pipeline that turns calibrated video into flow rate is a separate step and is not affected by this work.
-- **The re-survey.** If and when the re-survey happens, the same pipeline runs against the new data. The re-survey planning is a separate document (`survey/outsourced_survey_brief.md`).
-- **Jakarta.** The same tools will be used at Jakarta with different inputs. Jakarta should use ArUco markers from the start; this is a note for the Jakarta deployment plan, not part of the Sukabumi work.
+- **The re-survey.** If and when the re-survey happens, the standard manual-click calibration path (in `orc_build_camera_config.py`) is used against the clean data — not this auto-fit pipeline. Re-survey planning itself is a separate document (`survey/outsourced_survey_brief.md`).
+- **Jakarta.** Jakarta uses ArUco markers from day one (Decision 5) and therefore does not need this pipeline. Jakarta calibration will use `cv2.aruco.detectMarkers` → `cv2.solvePnP` directly. The work here is *not* a template for Jakarta.
+- **Future reuse of the auto-fit code.** This is not a supported tool. Once Sukabumi is calibrated (or declared unsalvageable and re-surveyed), the code is legacy. The design intentionally does not invest in maintainability beyond that point.
+- **Certification for flow-rate or water-level measurement.** A successful auto-fit run (meeting A1/A2/A3) is *necessary* but not *sufficient* for certified hydrological measurements — certification requires an independently-verified survey, documented lens calibration, a stage-gauge reference, and a QA process that is out of scope here. The `--demo-override` output (Decision 6) is emphatically *not* certified and its filename and config both carry that label. Any figures quoted from demo-mode output must be accompanied by the DEMO-UNCERTIFIED disclaimer.
 
 ---
 
@@ -310,6 +328,6 @@ Concrete decisions to agree on:
 2. **Is the "re-survey needed" output acceptable if that is what the tool concludes?** In other words: if after all the work the honest answer is "the survey is not good enough," is the team ready to act on that?
 3. **Who runs Phase 0?** (Default: Tom, on his machine, ~30 min.)
 4. **When do we plan for Phase 1 day(s)?** To fit around other deployment work.
-5. **For the Jakarta site:** do we commit now to using ArUco markers, or discuss at the site visit?
+5. **ArUco for Jakarta is assumed in this design (Decision 5 / §10).** Does the team concur, and if so, when do we lock specifications (size, dictionary, print/lamination method, placement plan) into the Jakarta deployment document?
 
 These are the points to review. Everything else in this document is informational.
