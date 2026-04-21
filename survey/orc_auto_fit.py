@@ -38,6 +38,7 @@ import argparse
 import csv
 import hashlib
 import json
+import os
 import sys
 from dataclasses import asdict
 from datetime import datetime, timezone
@@ -368,6 +369,20 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--crs", type=str, default="EPSG:32748",
                     help="CRS string passed to the emitted CameraConfig "
                          "(default EPSG:32748 = UTM 48S, correct for Sukabumi).")
+    ap.add_argument("--demo-override", action="store_true",
+                    help="When the best-subset RMSE exceeds --a1-target-m, "
+                         "write an *uncertified* CameraConfig anyway, with "
+                         "filename suffix '_DEMO_UNCERTIFIED' and "
+                         "certification_status='demo-only' in the sibling "
+                         "cert file. The report opens with a disclaimer "
+                         "banner. See AUTO_FIT_DESIGN.md §5.4 and "
+                         "Methodology.md Decision 6. Requires "
+                         "--override-reason. Does NOT bypass A1 "
+                         "registration-accuracy failure.")
+    ap.add_argument("--override-reason", type=str,
+                    help="Free-text justification for --demo-override "
+                         "(required when that flag is set). Recorded in "
+                         "audit.json and the cert sibling file.")
     ap.add_argument("--gt-clicks", type=Path,
                     help="Phase 0 ground-truth clicks JSON; if supplied, A1 is evaluated")
     ap.add_argument("--frame-index", type=int, default=0,
@@ -749,25 +764,58 @@ def main(argv: list[str] | None = None) -> int:
                 )
 
         # --- Emit pyorc CameraConfig JSON ---------------------------------
-        # This is the "operational handoff" step: turns the best-subset
-        # fit into a file ORC-OS can load.
+        # Gate + demo-override logic per AUTO_FIT_DESIGN.md §5.4:
+        #   RMSE <= gate                    → emit with status=ok
+        #   RMSE > gate,  no --demo-override → refuse, exit non-zero
+        #   RMSE > gate,  --demo-override    → emit _DEMO_UNCERTIFIED
+        # (A1 registration failure is NOT overridable — not covered
+        # here because --use-clicks makes A1 trivial for the salvage
+        # path; A1 gate lives with the auto-detect loop.)
         cam_cfg_info = None
         if args.water_level and args.water_level.exists():
             z_0 = load_water_level(args.water_level)
-            # Certification status: "ok" if the chosen subset meets the
-            # A1 target; otherwise flagged. (Gate enforcement + the
-            # _DEMO_UNCERTIFIED filename suffix are part of the follow-on
-            # --demo-override task.)
             meets_gate = b.rmse_m <= args.a1_target_m
-            cert = "ok" if meets_gate else "below_quality_gate"
-            note = None if meets_gate else (
-                f"Subset RMSE {b.rmse_m*100:.2f} cm exceeds the "
-                f"{args.a1_target_m*100:.0f} cm A1 target. "
-                "This config must not be used for certified flow or "
-                "water-level measurements. See survey/Methodology.md "
-                "Decision 6 for the demo-override mechanism."
-            )
-            cfg_path = run_dir / "sukabumi_auto_fit.json"
+            use_demo_override = bool(args.demo_override)
+
+            if use_demo_override and not args.override_reason:
+                raise SystemExit(
+                    "--demo-override requires --override-reason "
+                    "(free-text justification; recorded in audit log)."
+                )
+
+            if not meets_gate and not use_demo_override:
+                raise SystemExit(
+                    f"REFUSE: best-subset RMSE {b.rmse_m*100:.2f} cm exceeds "
+                    f"the {args.a1_target_m*100:.0f} cm quality gate, and no "
+                    "--demo-override was supplied. No CameraConfig will be "
+                    "written. Re-survey is required for a certified fit, "
+                    "OR run with --demo-override + --override-reason \"...\" "
+                    "to emit an uncertified config for pipeline demonstration. "
+                    "See survey/Methodology.md Decision 6."
+                )
+
+            is_demo = not meets_gate and use_demo_override
+            if is_demo:
+                cert = "demo-only"
+                cfg_filename = "sukabumi_auto_fit_DEMO_UNCERTIFIED.json"
+                note = (
+                    f"Subset RMSE {b.rmse_m*100:.2f} cm exceeds the "
+                    f"{args.a1_target_m*100:.0f} cm quality gate. "
+                    "DEMO-UNCERTIFIED: do not use for certified flow, "
+                    "discharge, or water-level measurements. Reason: "
+                    f"{args.override_reason}"
+                )
+                print(
+                    "  ⚠ DEMO-OVERRIDE MODE: writing uncertified CameraConfig. "
+                    "This file must not be used to compute certified flow, "
+                    "discharge, or water-level measurements."
+                )
+            else:
+                cert = "ok"
+                cfg_filename = "sukabumi_auto_fit.json"
+                note = None
+
+            cfg_path = run_dir / cfg_filename
             cam_cfg_info = emit_camera_config(
                 output_path=cfg_path,
                 subset_ids=list(b.ids),
@@ -783,6 +831,24 @@ def main(argv: list[str] | None = None) -> int:
                 certification_status=cert,
                 resolvability_note=note,
             )
+            # Augment the cert sidecar with override metadata when in demo mode.
+            if is_demo:
+                cert_path = Path(cam_cfg_info["cert_path"])
+                cert_doc = json.loads(cert_path.read_text())
+                cert_doc["override_flag"] = True
+                cert_doc["override_reason"] = args.override_reason
+                cert_doc["override_invoked_by"] = (
+                    os.environ.get("USER", "unknown")
+                )
+                cert_doc["override_timestamp"] = (
+                    datetime.now(timezone.utc).isoformat(timespec="seconds")
+                )
+                cert_doc["rmse_m"] = b.rmse_m
+                cert_doc["quality_gate_m"] = float(args.a1_target_m)
+                cert_path.write_text(json.dumps(cert_doc, indent=2) + "\n")
+                cam_cfg_info["override_flag"] = True
+                cam_cfg_info["override_reason"] = args.override_reason
+
             print(f"  camera config: {cfg_path}  "
                   f"(status={cert}, roundtrip_ok={cam_cfg_info['roundtrip_ok']})")
             if cam_cfg_info["roundtrip_mismatches"]:
@@ -921,7 +987,11 @@ def main(argv: list[str] | None = None) -> int:
         output_path=run_dir / "annotated.png",
     )
 
-    # Markdown report
+    # Markdown report — demo banner fires when we emitted an uncertified
+    # config (cam_cfg_info carries the flag set during emission above).
+    demo_banner_on = bool(
+        cam_cfg_info and cam_cfg_info.get("override_flag", False)
+    )
     rp.write_report(
         path=run_dir / "report.md",
         run_info={
@@ -957,6 +1027,11 @@ def main(argv: list[str] | None = None) -> int:
             classify_pairs(world_by_id, pixel_by_id=pixel_by_id)
             if subset_result is not None else None
         ),
+        certification_status=(
+            cam_cfg_info["certification_status"]
+            if cam_cfg_info else "ok"
+        ),
+        demo_banner=demo_banner_on,
     )
 
     print()
