@@ -134,7 +134,7 @@ If you prefer the Python script path for faster drop-one iteration, the script r
 
 ## Local Patches Applied to the Clone
 
-The clone at `rainbow-sensing/orc-os/` has two edits on top of upstream. If you re-clone, apply these again.
+The clone at `rainbow-sensing/orc-os/` has three edits on top of upstream. If you re-clone, apply these again.
 
 ### `Dockerfile` — pin setuptools<70 in the PEP 517 build env
 
@@ -156,6 +156,24 @@ RUN pip install --no-cache-dir .
 ### `pyproject.toml` — dedupe rasterio constraint
 
 Upstream has two `rasterio` specifiers in the dependencies list (one capped `<=1.3.11` guarded by `python_version < '3.10'`, one unbounded for `>= '3.9'`). pip sometimes resolves both through its backtracking logic and still tries to install the capped version on py3.11. Reducing to a single unbounded `"rasterio"` avoids that path. The real gating constraint (`rasterio<1.4.0`) is still enforced by pyopenrivercam itself.
+
+### `Dockerfile` — pin xarray<2026 in pip-constraints
+
+Symptom without the pin (2026-04-22): video processing runs through frame scanning and PIV, then dies on transect extraction with `TypeError: Passing a Dataset as data_vars to the Dataset constructor is not supported. Use ds.copy() to create a copy of a Dataset.`
+
+Root cause: pyorc 0.9.4's `api/velocimetry.py:224` does `ds_points = xr.Dataset(ds_points, attrs=ds_points.attrs)` — re-wrapping an existing `xarray.Dataset` in a new `Dataset()` constructor. That pattern was legal in older xarray; xarray ≥ 2026.x explicitly rejects it with a `TypeError`. pyorc hasn't yet tracked the xarray API change.
+
+**Fix (applies everywhere — local Docker, station image, any rebuild):** add `xarray<2026` to the pip-constraints file alongside `setuptools<70`. Because `PIP_CONSTRAINT` propagates into build-isolation envs, this caps xarray at install time and the bug never triggers.
+
+Replace the constraints line in the Dockerfile with:
+
+```dockerfile
+RUN printf "setuptools<70\nxarray<2026\n" > /tmp/pip-constraints.txt
+```
+
+Verified compatible versions: xarray 2024.11.0 through 2025.9.0 all accept `Dataset(existing_dataset)` without complaint. The pin gives pyorc a working xarray without locking it to an ancient release.
+
+Remove the `xarray<2026` line when pyorc lands the `ds.copy()` fix upstream (or when ORC-OS upgrades its pyorc pin past that commit).
 
 ## Troubleshooting
 
