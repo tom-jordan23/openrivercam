@@ -4,7 +4,40 @@
 
 ---
 
-## PAUSE: 2026-04-22 evening — stuck on ORC-OS end-to-end velocimetry demo
+## RESUME: 2026-04-22 late evening — ORC-OS end-to-end velocimetry demo SUCCEEDED
+
+The pyorc + xarray ≥ 2026 `Dataset(Dataset)` blocker that paused this thread earlier in the day is cleared. The demo ran end-to-end through the dashboard:
+
+| Stage | Result |
+|---|---|
+| Calibration import (camera_config id=3 `Sukabumi_A`) | OK — 6-GCP salvage subset loaded |
+| Cross-section + bbox + recipe | OK |
+| Click Process | OK — pyorc ran scanning + PIV + transect cleanly |
+| Output artifacts | `~/.ORC-OS/uploads/videos/20260420/1/output/` contains `piv.nc`, `piv_mask.nc`, `transect_transect_1.nc`, `cross.geojson`, `plot_quiver.jpg`, `recipe.yml`, `camera_config.json` |
+| `time_series.id=1` | h=0.0 (optical), **q_50 = 0.51 m³/s**, v_av = 0.49 m/s, wetted_surface = 1.12 m², fraction_velocimetry = 65.7 % |
+| `video.id=1.status` | `DONE` |
+
+**What unstuck it:**
+1. The `xarray<2026` pin landed via `printf "setuptools<70\nxarray<2026\n" > /tmp/pip-constraints.txt` in `rainbow-sensing/orc-os/Dockerfile`. After a `docker compose build --no-cache` the container's xarray is `2025.12.0`. The `pyorc/api/velocimetry.py:224` re-wrap no longer raises. (Earlier in the day Tom had rejected this approach when I framed it as "modifying ORC-OS"; revisited and approved on second pass — keep the pin until pyorc lands the `ds.copy()` upstream fix.)
+2. A water-level prompt blocked manual submit. The UI prompts on every Process click unless the per-video `h_a` resolves through one of three paths in `orc_api/schemas/video.py::allowed_to_run`: sample-video shortcut (`gcps.h_ref` non-None), `time_series.h` populated, or `cross_section_wl` configured. The third path was already wired (cross_section_wl_id=1 on video_config 1) and is what carried the actual run.
+
+**Important caveat — h_ref DB-side edit got clobbered:**
+- We tried to set `gcps.h_ref = 617.065` on camera_config id=3 via `UPDATE` (audit entry written into `spring_2026_ID/survey_data/corrections.md`). A subsequent dashboard "save" websocket action overwrote the row from the dashboard's in-memory form (which still had `h_ref = 0.0`). Post-clobber DB read confirms `h_ref = 0.0`.
+- The override at `video.py:232` therefore set `h_a = 0.0`, the `if h_a:` check is falsy, and the pipeline took the `else` branch ("Running without water level, will estimate optically if possible"). Optical detection through `cross_section_wl` succeeded.
+- **For the next session**: to lock in the sample-video shortcut path, enter `h_ref = 617.065` through the dashboard's GCP / water-level form (not via SQL), then save. After that, the Process log line should change from `Running without water level...` to `Water level set to 617.065 m.` and `time_series.h` should record `617.065` instead of the optical `0.0`.
+
+**Where to pick up:**
+
+1. **(low priority) Demonstrate the h_ref shortcut path through the UI.** Confirms the documentation in `sukabumi_handoff/README.md` step 5 is operationally correct. Optical fallback works, but the shortcut is what the handoff doc currently tells operators to use.
+2. **Polish the demo for stakeholder viewing.** The output `plot_quiver.jpg` and the dashboard's results view are the things to walk people through. Consider a screen-record.
+3. **Decide on file-of-truth for camera_config.** The dashboard treats its in-memory form as authoritative on save and will overwrite SQL-side edits. Either (a) make all edits through the UI from now on, or (b) re-import the salvage JSON via `POST /camera_config/from_file/` after every dashboard save (heavy-handed). Option (a) is the obvious one.
+4. **Production readiness for non-sample videos.** The shortcut + the optical fallback both only matter for re-processing the calibration video. For real station operation processing 96 cycles/day of unrelated videos, the per-video `h_a` has to come from a `water_level_settings` poller, an injected `time_series` row, or repeated optical detection. That decision is downstream of this thread.
+
+**Note for cold resume:** the older PAUSE section below this one is now historical — the blocker it describes is fixed. Keep it for context on the false starts (monkey-patch / Dockerfile pin / recipe-layer fix) so the same dead ends aren't re-explored.
+
+---
+
+## PAUSE (RESOLVED 2026-04-22 late evening — see RESUME section above): 2026-04-22 evening — stuck on ORC-OS end-to-end velocimetry demo
 
 Context: the whole salvage + calibration pipeline is built and tested (Phase 0–3 complete, tests green, CameraConfig JSON load-tested against ORC-OS). Tom was walking through the ORC-OS dashboard for a team demo, got through camera config, GCP subset, cross-section, bounding box, and recipe. Clicked Process. **The run fails on the velocimetry-to-transect step with a pyorc-vs-xarray incompatibility**:
 
