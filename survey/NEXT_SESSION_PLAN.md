@@ -39,7 +39,7 @@ Check-point gate still fires at 98.6 cm H / 138.8 cm V on purpose — salvage-mo
 
 The salvage question is **answered**: the survey can be calibrated at 4.6 cm RMSE on a 6-GCP subset. Ranked next steps:
 
-1. **Emit a loadable `sukabumi_auto_fit.json` CameraConfig. ← the gap to close next.** The current driver produces `clicks.json`, `labels.json`, `report.md`, and `audit.json` but **does not yet emit a `pyorc.CameraConfig` JSON**. Closing that loop means building a `pyorc.CameraConfig` from the best subset with frozen intrinsics (so the byte-equal round-trip claim from A3 holds) and verifying it loads via `pyorc.load_camera_config`. ~30 min. This is what makes the fit actually usable in ORC-OS.
+1. **Emit a loadable `sukabumi_autofit_camera_calibration.json` CameraConfig. ← the gap to close next.** The current driver produces `clicks.json`, `labels.json`, `report.md`, and `audit.json` but **does not yet emit a `pyorc.CameraConfig` JSON**. Closing that loop means building a `pyorc.CameraConfig` from the best subset with frozen intrinsics (so the byte-equal round-trip claim from A3 holds) and verifying it loads via `pyorc.load_camera_config`. ~30 min. This is what makes the fit actually usable in ORC-OS.
 2. **`--demo-override` implementation.** Must-support per design §3, but the current salvage result passes the quality bar — override only fires when that bar is missed. Useful to implement so the path is tested before any live demo. ~45 min.
 3. **Phase 3 polish.** Tests (`survey/tests/` + `pytest.ini`), `orc_build_camera_config.py --from-auto` wiring, `survey/AUTO_FIT_USAGE.md`. ~1 day.
 
@@ -115,6 +115,7 @@ Five decisions captured today (see `survey/AUTO_FIT_DESIGN.md` §10 and `survey/
 - **Daemon filename template:** videos dropped in `uploads/incoming/` must match `{%Y%m%dT%H%M%S}.mp4`. Non-timestamped files get moved to `tmp/`.
 - **Lens calibration from `calibration_a.mp4` currently fails:** pyorc's `set_lens_calibration` expects a 9×6 chessboard, not a 5×7 charuco. Re-shoot or skip lens intrinsics.
 - **GCP1 vs GCP1.2 is a field mislabel, not a re-shoot pair.** The two `.2` members are different physical markers. Other `.2` pairs (GCP2, GCP3, GCP4) are genuine re-occupations.
+- **`orc_survey_prep.py` routes XS re-shoots into the cross-section polyline, which breaks pyorc's CSL.** `XS1.2` and `XS2.2` are re-occupations of the XS1/XS2 anchor markers, not new points on the transect — they drift a few dozen cm off the main line. The current classifier puts them in the `xs` bucket (because label prefix "XS"), so they end up as rows 12 and 21 of `cross_section.csv`. When ORC-OS treats the CSV as a polyline, it doubles back on itself and CSL refuses with "No valid water level crossings found". For Sukabumi 2026 the fix is in the handoff folder: `spring_2026_ID/survey_data/sukabumi_handoff/cross_section.{csv,geojson}` have the 19 clean main-line points (re-shoots dropped). An inline TODO in `survey/orc_survey_prep.py` at `classify()` describes three upstream fix options for the next site.
 
 ## Cross-references
 

@@ -801,7 +801,7 @@ def main(argv: list[str] | None = None) -> int:
             is_demo = not meets_gate and use_demo_override
             if is_demo:
                 cert = "demo-only"
-                cfg_filename = "sukabumi_auto_fit_DEMO_UNCERTIFIED.json"
+                cfg_filename = "sukabumi_autofit_camera_calibration_DEMO_UNCERTIFIED.json"
                 note = (
                     f"Subset RMSE {b.rmse_m*100:.2f} cm exceeds the "
                     f"{args.a1_target_m*100:.0f} cm quality gate. "
@@ -816,7 +816,7 @@ def main(argv: list[str] | None = None) -> int:
                 )
             else:
                 cert = "ok"
-                cfg_filename = "sukabumi_auto_fit.json"
+                cfg_filename = "sukabumi_autofit_camera_calibration.json"
                 note = None
 
             cfg_path = run_dir / cfg_filename
@@ -860,7 +860,7 @@ def main(argv: list[str] | None = None) -> int:
                     print(f"    roundtrip mismatch: {m}")
         else:
             print("  camera config: not emitted (pass --water-level to write "
-                  "a pyorc-loadable sukabumi_auto_fit.json)")
+                  "a pyorc-loadable sukabumi_autofit_camera_calibration.json)")
 
     # --- Evaluate A1 if ground truth supplied -----------------------------
     a1_info: dict

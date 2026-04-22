@@ -199,20 +199,32 @@ Intermediate (under survey/auto_fit_work/, gitignored):
   - detections_by_pass.json            # per-pass candidate windows and winners
   - labels.json                        # final {gcp_id: (x, y, world_err_m)}
 
-Outputs — normal path (acceptance criteria met):
-  - spring_2026_ID/survey_data/output/sukabumi_auto_fit.json         # pyorc CameraConfig, certification_status="ok"
-  - spring_2026_ID/survey_data/output/sukabumi_auto_fit_report.md    # per-GCP residuals, chosen subset, flags
-  - spring_2026_ID/survey_data/output/sukabumi_auto_fit_clicks.json  # manual-path compatible
-  - spring_2026_ID/survey_data/output/sukabumi_auto_fit_audit.json   # every decision, every rejected subset reason
+Outputs — all runs (per-run timestamped subdirectory):
+  # run_dir = spring_2026_ID/survey_data/auto_fit_runs/<timestamp>_<site>_<tag>/
+  <run_dir>/report.md                         # human-readable summary
+  <run_dir>/audit.json                        # every decision, every rejected subset reason
+  <run_dir>/labels.json                       # per-GCP pixel + residual record
+  <run_dir>/clicks.json                       # manual-path compatible click file
+  <run_dir>/detections_by_pass.json           # stage 2 windowed detection trace
+  <run_dir>/annotated.png                     # frame with clicks/detections/residual vectors
+  <run_dir>/gcp_support.png                   # per-GCP diagnostic bar chart (if subset search ran)
 
-Outputs — demo-override path (--demo-override set, acceptance criteria NOT met):
-  - spring_2026_ID/survey_data/output/sukabumi_auto_fit_DEMO_UNCERTIFIED.json        # pyorc CameraConfig, certification_status="demo-only"
-  - spring_2026_ID/survey_data/output/sukabumi_auto_fit_DEMO_UNCERTIFIED_report.md   # opens with a mandatory disclaimer banner
-  - spring_2026_ID/survey_data/output/sukabumi_auto_fit_DEMO_UNCERTIFIED_clicks.json
-  - spring_2026_ID/survey_data/output/sukabumi_auto_fit_DEMO_UNCERTIFIED_audit.json  # records the override flag, who invoked it, timestamp
+Outputs — normal path (acceptance criteria met; requires --water-level):
+  <run_dir>/sukabumi_autofit_camera_calibration.json       # pyorc CameraConfig (pure pyorc, no extras)
+  <run_dir>/sukabumi_autofit_camera_calibration_cert.json  # cert sidecar: {"certification_status": "ok", ...}
+
+Outputs — demo-override path (--demo-override set, gate failed):
+  <run_dir>/sukabumi_autofit_camera_calibration_DEMO_UNCERTIFIED.json
+  <run_dir>/sukabumi_autofit_camera_calibration_DEMO_UNCERTIFIED_cert.json
+    # cert sidecar carries: certification_status="demo-only", override_flag,
+    # override_reason, override_invoked_by ($USER), override_timestamp (UTC),
+    # rmse_m and quality_gate_m, resolvability_note (human-readable explanation)
 ```
 
-`orc_build_camera_config.py --from-auto` consumes `sukabumi_auto_fit_clicks.json` without re-prompting.
+`orc_build_camera_config.py --from-auto <run_dir>` consumes the auto-fit's
+`clicks.json` and filters to the chosen subset via the IDs recorded in
+`audit.json`'s `subset_search.best.ids`, then runs the manual PnP path
+for independent verification.
 
 ## 7. Phases and checkpoints
 

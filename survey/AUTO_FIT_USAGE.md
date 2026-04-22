@@ -70,8 +70,8 @@ spring_2026_ID/survey_data/auto_fit_runs/<timestamp>_<site>_<tag>/
     labels.json                  # per-GCP pixel + residual record
     detections_by_pass.json      # stage 2 windowed detection trace
     audit.json                   # full decision log
-    sukabumi_auto_fit.json       # ← pyorc CameraConfig, ORC-OS-loadable
-    sukabumi_auto_fit_cert.json  # sidecar: certification_status, override metadata
+    sukabumi_autofit_camera_calibration.json       # ← pyorc CameraConfig, ORC-OS-loadable
+    sukabumi_autofit_camera_calibration_cert.json  # sidecar: certification_status, override metadata
 ```
 
 The two JSONs at the bottom are the operational handoff: drop them into ORC-OS or keep them next to the deployed station.
@@ -93,7 +93,7 @@ python3 survey/orc_auto_fit.py \
 
 Differences in demo mode:
 
-- CameraConfig filename becomes `sukabumi_auto_fit_DEMO_UNCERTIFIED.json`.
+- CameraConfig filename becomes `sukabumi_autofit_camera_calibration_DEMO_UNCERTIFIED.json`.
 - Sibling cert file has `certification_status: "demo-only"` plus the override reason, the invoking user, a UTC timestamp, the actual RMSE, and the gate that was exceeded.
 - `report.md` opens with a disclaimer banner: *"DEMO-UNCERTIFIED — do not use for certified flow, discharge, or water-level measurements."*
 - `audit.json` records the override as a first-class event.
@@ -155,7 +155,7 @@ cd rainbow-sensing/orc-os && docker compose up -d
 sleep 15
 
 # persist our config as a named camera config in the DB
-CFG=<absolute path to sukabumi_auto_fit.json>
+CFG=<absolute path to sukabumi_autofit_camera_calibration.json>
 python3 -c "
 import json
 data = json.load(open('$CFG'))

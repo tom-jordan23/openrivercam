@@ -100,7 +100,36 @@ class Problem(Exception):
 
 
 def classify(label: str) -> str:
-    """Return one of: gcp, xs, wl, cam, cp, unknown."""
+    """Return one of: gcp, xs, wl, cam, cp, unknown.
+
+    TODO (2026-04-22, Sukabumi handoff): re-shoots named with a ``.2``
+    suffix (e.g. ``XS1.2``, ``XS2.2``) currently land in the ``xs``
+    bucket, which makes them members of the cross_section.csv output.
+    That bucket is treated downstream as a polyline — the cross-section
+    transect. In practice re-shoots of XS anchors are *verification
+    points for the same ground marker*, taken on a later day, that
+    don't sit on the main-line transect (they typically drift a few
+    dozen cm in UTM from their originals).
+
+    The result is an ill-formed cross-section polyline that doubles
+    back on itself, which pyorc's CSL water-level algorithm refuses to
+    consume ("No valid water level crossings found"). For Sukabumi
+    2026 this was caught and patched by hand — the re-shoots were
+    dropped from the XS set after the fact. See
+    ``spring_2026_ID/survey_data/sukabumi_handoff/`` for the cleaned
+    files and the ``NEXT_SESSION_PLAN.md`` 'Known traps' entry.
+
+    Upstream fix options (pick one before the next site):
+      1. Add a ``.2`` re-shoot filter at the XS-bucket edge here, so
+         only main-line XS labels land in the cross-section CSV and
+         the re-shoots land in a separate verification bucket.
+      2. Change the field-survey naming convention so cross-section
+         re-shoots don't use the ``XS`` prefix.
+      3. Compute perpendicular distance to the (XS1, XSn) line and
+         drop outliers > ~10 cm at CSV-write time.
+    Until one lands, operators must hand-inspect cross_section.csv
+    for out-of-line points and post-process before ORC-OS ingestion.
+    """
     up = label.strip().upper()
     if up.startswith("GCP"):
         return "gcp"
