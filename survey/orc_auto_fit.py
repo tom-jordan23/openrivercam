@@ -297,7 +297,11 @@ def emit_camera_config(
         width=int(frame_width),
         crs=crs,
         camera_matrix=[list(map(float, row)) for row in K],
-        dist_coeffs=[list(map(float, dist_coeffs.flatten()))],
+        # dist_coeffs in 5×1 column form ([[k1],[k2],[p1],[p2],[k3]]),
+        # which is what ORC-OS's pydantic schema reads (it indexes
+        # dist_coeffs[1][0] etc.). pyorc accepts either row or column
+        # form; matching ORC-OS is the binding constraint.
+        dist_coeffs=[[float(v)] for v in dist_coeffs.flatten()],
         lens_position=[float(v) for v in camera_xyz],
         gcps={"src": src, "dst": dst, "z_0": float(z_0)},
     )
@@ -376,7 +380,7 @@ def main(argv: list[str] | None = None) -> int:
                          "certification_status='demo-only' in the sibling "
                          "cert file. The report opens with a disclaimer "
                          "banner. See AUTO_FIT_DESIGN.md §5.4 and "
-                         "Methodology.md Decision 6. Requires "
+                         "Sukabumi_survey_salvage_methodology.md Decision 6. Requires "
                          "--override-reason. Does NOT bypass A1 "
                          "registration-accuracy failure.")
     ap.add_argument("--override-reason", type=str,
@@ -791,7 +795,7 @@ def main(argv: list[str] | None = None) -> int:
                     "written. Re-survey is required for a certified fit, "
                     "OR run with --demo-override + --override-reason \"...\" "
                     "to emit an uncertified config for pipeline demonstration. "
-                    "See survey/Methodology.md Decision 6."
+                    "See survey/Sukabumi_survey_salvage_methodology.md Decision 6."
                 )
 
             is_demo = not meets_gate and use_demo_override

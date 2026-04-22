@@ -279,8 +279,18 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--crs", type=int, default=32748, help="target CRS EPSG (default 32748)")
     p.add_argument("--frame", type=int, default=0, help="video frame index for clicks")
     p.add_argument("--output", help="output camera_config.json path")
-    p.add_argument("--clicks", help="load pre-saved pixel clicks JSON (skips UI)")
+    p.add_argument("--clicks", help="load pre-saved pixel clicks JSON (skips UI). "
+                                    "Strict: the JSON must have the same GCP IDs as --gcps.")
     p.add_argument("--save-clicks", help="write pixel clicks to this JSON after UI")
+    p.add_argument(
+        "--from-auto",
+        metavar="RUN_DIR",
+        help="Consume an orc_auto_fit.py run directory: loads "
+             "<RUN_DIR>/clicks.json (the auto-fit's chosen subset, typically "
+             "6 of 20 GCPs) and filters --gcps down to just those. "
+             "Use after a --subset-search run to repeat the fit via the "
+             "manual path for verification. Mutually exclusive with --clicks.",
+    )
     p.add_argument(
         "--calibration-video",
         help="charuco video for lens calibration (passed to CameraConfig.set_lens_calibration)",
@@ -322,7 +332,64 @@ def main(argv: list[str] | None = None) -> int:
     print(f"video: {args.video}  {width}x{height}  frame {args.frame}")
 
     # --- pixel clicks ---
-    if args.clicks:
+    if args.clicks and args.from_auto:
+        raise SystemExit("--clicks and --from-auto are mutually exclusive")
+
+    if args.from_auto:
+        run_dir = Path(args.from_auto)
+        clicks_path = run_dir / "clicks.json"
+        audit_path = run_dir / "audit.json"
+        if not clicks_path.exists():
+            raise SystemExit(
+                f"--from-auto: expected {clicks_path} but it's missing. "
+                "Make sure RUN_DIR points at an orc_auto_fit.py run directory."
+            )
+        with open(clicks_path) as f:
+            all_clicks = json.load(f)
+        # Prefer the auto-fit's chosen subset (from audit.subset_search.best)
+        # when the run included --subset-search. Fall back to using every
+        # click in the file (useful for runs without subset search).
+        subset_ids: list[str] | None = None
+        if audit_path.exists():
+            try:
+                audit = json.loads(audit_path.read_text())
+                subset_ids = list(
+                    (audit.get("subset_search") or {}).get("best", {}).get("ids", [])
+                    or []
+                )
+            except json.JSONDecodeError:
+                pass
+        if subset_ids:
+            saved = {k: all_clicks[k] for k in subset_ids if k in all_clicks}
+            source_note = (
+                f"auto-fit best subset from {audit_path.name} "
+                f"({len(saved)} of {len(all_clicks)} clicks)"
+            )
+        else:
+            saved = dict(all_clicks)
+            source_note = f"all clicks from {clicks_path.name} (no subset info)"
+
+        overlap = {k: v for k, v in saved.items() if k in set(gcp_ids)}
+        missing_in_csv = [k for k in saved if k not in set(gcp_ids)]
+        if missing_in_csv:
+            print(
+                f"--from-auto: {len(missing_in_csv)} click(s) for GCPs not in "
+                f"--gcps ({sorted(missing_in_csv)}); dropping them."
+            )
+        if len(overlap) < 4:
+            raise SystemExit(
+                f"--from-auto: only {len(overlap)} clicks overlap with --gcps; "
+                "need at least 4 for a PnP fit. Check that --gcps matches "
+                "the CSV the auto-fit was run against."
+            )
+        gcps = [g for g in gcps if g["id"] in overlap]
+        gcp_ids = [g["id"] for g in gcps]
+        src_px = [overlap[i] for i in gcp_ids]
+        print(
+            f"--from-auto: {source_note}; filtered --gcps to {len(src_px)} "
+            f"GCP(s): {gcp_ids}"
+        )
+    elif args.clicks:
         with open(args.clicks) as f:
             saved = json.load(f)
         if set(saved) != set(gcp_ids):

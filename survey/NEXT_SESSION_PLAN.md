@@ -22,7 +22,7 @@ Check-point gate still fires at 98.6 cm H / 138.8 cm V on purpose — salvage-mo
 - **Phase 1 MVP:** `survey/auto_fit/{bootstrap,detect_local,refine,visualize,plots,report,subset_search}.py` + `survey/orc_auto_fit.py` CLI driver. Supports `--bootstrap-from-gt`, `--use-clicks`, `--subset-search`, annotated-frame visualisation, per-run output dir with input SHAs.
 - **Phase 2:** Subset search (greedy drop-one + exhaustive over all 6+ GCP subsets with quadrant coverage).
 
-**Salvage result.** Using Tom's 17 ground-truth clicks + subset search:
+**Salvage result.** Using the operator's 17 ground-truth clicks + subset search:
 
 - Baseline RMSE (all 17): 79 cm.
 - **Best 6-GCP subset: {GCP7, GCP8, GCP10, GCP13, GCP14, GCP3.2} → 4.61 cm RMSE.** Below the 5 cm target.
@@ -31,7 +31,7 @@ Check-point gate still fires at 98.6 cm H / 138.8 cm V on purpose — salvage-mo
 **Why the survey was hard** (from tonight's diagnostic plot, `gcp_support.png`):
 
 - Three genuine same-marker RTK drifts: GCP2 ↔ GCP2.2 (29 cm), GCP4 ↔ GCP4.2 (75 cm), GCP3 ↔ GCP3.2 (89 cm). All far above the 3 cm RTK gate.
-- One field mislabel: **GCP1 and GCP1.2 are different physical markers** (Tom's clicks are 958 px apart in the video), not a re-occupation. The 218 cm UTM "drift" is real geometry.
+- One field mislabel: **GCP1 and GCP1.2 are different physical markers** (the operator's clicks are 958 px apart in the video), not a re-occupation. The 218 cm UTM "drift" is real geometry.
 - Bamboo pole (2.42 m) correlates with exclusion: all three 242 cm-pole GCPs (GCP2, GCP3) are in the excluded orange group.
 - GCP5, GCP1, GCP6, GCP1.2 exceed the ~90 cm physical floor and are likely individual fix-quality failures (FLOAT not FIX, or similar).
 
@@ -100,7 +100,7 @@ python3 survey/orc_survey_prep.py \
 
 ## Recorded decisions
 
-Five decisions captured today (see `survey/AUTO_FIT_DESIGN.md` §10 and `survey/Methodology.md` §6):
+Five decisions captured today (see `survey/AUTO_FIT_DESIGN.md` §10 and `survey/Sukabumi_survey_salvage_methodology.md` §6):
 
 - Start without photos; add only if needed (not needed — `--use-clicks` path works).
 - Bypass pyorc's calibration machinery in the inner loop (frozen intrinsics + direct `cv2.solvePnP`).
@@ -118,7 +118,7 @@ Five decisions captured today (see `survey/AUTO_FIT_DESIGN.md` §10 and `survey/
 
 ## Cross-references
 
-- `survey/Methodology.md` — plain-English walkthrough (background concepts in Appendix A).
+- `survey/Sukabumi_survey_salvage_methodology.md` — plain-English walkthrough (background concepts in Appendix A).
 - `survey/AUTO_FIT_DESIGN.md` — full technical design + decision record.
 - `survey/ORC_FIT_STRATEGY.md` — manual residual reading, physical floor, drop-one rules.
 - `survey/ORC_OS_DOCKER.md` — Docker station setup.

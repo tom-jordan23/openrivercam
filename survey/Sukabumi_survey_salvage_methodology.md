@@ -2,9 +2,9 @@
 
 **Purpose:** Explain the approach we are taking to calibrate the camera at the Sukabumi site from the existing survey data, and the plan for building the automation that does this work.
 
-**Audience:** The deployment team (PMI staff, hydrologist, software helper). Written to be readable end-to-end without deep photogrammetry or computer-vision background. Undergrad CS knowledge (matrices, algorithm complexity, Gaussian noise, hash functions) is assumed. Domain-specific terms — GCPs, UTM, PnP, RMSE, RANSAC, SIFT, ArUco — are expanded inline the first time they appear and defined more fully in **Appendix A (§12)**.
+**Audience:** The deployment team (PMI staff, hydrologist) and upstream OpenRiverCam engineers. Written to be readable end-to-end without deep photogrammetry or computer-vision background. Undergrad CS knowledge (matrices, algorithm complexity, Gaussian noise, hash functions) is assumed. Domain-specific terms — GCPs, UTM, PnP, RMSE, RANSAC, SIFT, ArUco — are expanded inline the first time they appear and defined more fully in **Appendix A (§12)**.
 
-**Date:** 2026-04-21. This document will change as we learn more during Phase 1 and Phase 2 (see "Roadmap" below).
+**Date:** 2026-04-22. **Current state:** Phases 0, 1, 2 complete. Best 6-GCP subset produces RMSE 4.61 cm (below the 5 cm target). A pyorc-loadable `CameraConfig` has been emitted and verified against ORC-OS's API (parse, persist, and fit all pass). See "Current state" note in §9 Roadmap for the phase-by-phase status and what's still open.
 
 **Scope — one-time salvage for Sukabumi 2026 only.** This pipeline exists *only* because the Sukabumi 2026 survey data is noisier than planned and the markers are already physically placed. It is built once, for this dataset, and the design is judged against that scope — not against any notion of reusability. How future sites avoid ending up in the same situation is out of scope for this document.
 
@@ -196,17 +196,15 @@ The last row is not a failure. It is the purpose of the automation: to quantify 
 
 ## 9. Roadmap
 
-Each phase has a clear checkpoint. We pause at each checkpoint to review before moving on.
+Each phase has a clear checkpoint. The pipeline progressed through the phases in sequence; each row below shows actual outcome.
 
-| Phase | What gets built | Who | Time | Checkpoint |
-|---|---|---|---|---|
-| 0 | Operator clicks each of the 20 GCPs once on the pinned video frame, saves a small file called `sukabumi_gt_clicks_v1.json`. Tool is already built (`survey/auto_fit/ground_truth_click.py`). | Tom | ~30 min | File saved with 20 clicks (or explicit skips) |
-| 1 | Main pipeline: Stages 1–2 end-to-end. Command-line tool (`orc_auto_fit.py`). | Claude + Tom | 1 day | **A1:** ≥ 70% of GCPs within 5 cm |
-| 1.5 | Only if A1 fails: add photo-based help to Stage 1. | Claude + Tom | 0.5 day | A1 after re-run |
-| 2 | Stage 3 (subset search) and the audit log. | Claude + Tom | 0.5 day | **A2:** auto subset error ≤ hand-trimmed |
-| 3 | Tests, manual-click compatibility, usage documentation. | Claude + Tom | 1 day | **A3:** full round-trip; tests all pass |
-
-**Total estimate:** 2.5–3 days of focused work, including Phase 1.5 if it triggers.
+| Phase | What gets built | Who | Status | Outcome |
+|---|---|---|:---:|---|
+| 0 | Operator clicks each of the 20 GCPs once on the pinned video frame, saving `sukabumi_gt_clicks_v1.json` (Phase 0 tool at `survey/auto_fit/ground_truth_click.py`). | Operator | ✅ | 17 of 20 GCPs clicked (GCP12, GCP17, GCP18 skipped as not needed for the final subset). |
+| 1 | Main pipeline: Stages 1–2 end-to-end. Command-line tool `orc_auto_fit.py` with local detector, MAGSAC PnP, annotated-frame visualization. | Engineering | ✅ | Auto-detection snaps to cobbles on this scene (the Sukabumi stone wall has too many high-contrast non-marker features). `--use-clicks` path was added to bypass the detector and use trusted operator clicks directly. |
+| 1.5 | *Conditional:* add photo-based help to Stage 1 if A1 fails. | Engineering | Skipped | Not needed — `--use-clicks` achieved the required accuracy without photo priors. |
+| 2 | Stage 3 (subset search) + audit log. | Engineering | ✅ | Exhaustive search over 81,102 valid subsets; 3 subsets clear 5 cm gate; chosen subset RMSE 4.61 cm. |
+| 3 | CameraConfig emission, tests, `--from-auto` manual-click compatibility, usage documentation. | Engineering | In progress | CameraConfig emission done and verified against ORC-OS. Usage doc written. Tests and final polish in progress. |
 
 ---
 
@@ -225,10 +223,12 @@ Each phase has a clear checkpoint. We pause at each checkpoint to review before 
 For anyone who wants to go deeper:
 
 - `survey/AUTO_FIT_DESIGN.md` — the full technical design with every decision recorded, including the feedback from the four review agents.
-- `survey/ORC_FIT_STRATEGY.md` — the manual calibration procedure this automation replaces.
-- `survey/NEXT_SESSION_PLAN.md` — cold-start document for picking up this work.
+- `survey/AUTO_FIT_USAGE.md` — operator-facing "how to run it" guide, with the full CLI surface and common failure-mode troubleshooting.
+- `survey/ORC_FIT_STRATEGY.md` — the manual calibration procedure this automation complements. The salvage pipeline embodies the drop-one and geometric-spread rules described there.
+- `survey/ORC_OS_DOCKER.md` — Docker-based ORC-OS station setup; load test of the emitted `CameraConfig` JSON lives here.
+- `survey/NEXT_SESSION_PLAN.md` — cold-start document for picking up this work after a session gap.
 - `spring_2026_ID/survey_data/20260421_rerun_plan.md` — the correction pipeline that produces the inputs to this calibration step.
-- `spring_2026_ID/survey_data/corrections.md` — full log of every correction to the survey data, with checksums for audit.
+- `spring_2026_ID/survey_data/corrections.md` — append-only log of every correction to the survey data, with SHA-256 hashes for audit.
 - `survey/outsourced_survey_brief.md` — the plan if re-survey is required.
 - `survey/research/professional_surveyor_and_escape_hatch.md` — deeper analysis of re-survey options A through G.
 
