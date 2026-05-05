@@ -33,6 +33,18 @@ spring_2026_ID/build_photos/
 # Survey exports (real GPS coordinates of deployment sites)
 spring_2026_ID/survey_data/
 
+# Bringup runtime data: input files (calibration JSON / geojson with real
+# coords) + state / session logs / .env. Scripts and the data/state README
+# placeholders themselves are tracked. NOTE: must explicitly re-include the
+# bringup data/ dir because the top-of-file 'data/' rule shadows it.
+!spring_2026_ID/sukabumi_bringup/data/
+spring_2026_ID/sukabumi_bringup/data/*
+!spring_2026_ID/sukabumi_bringup/data/README.md
+spring_2026_ID/sukabumi_bringup/state/*
+!spring_2026_ID/sukabumi_bringup/state/.gitkeep
+spring_2026_ID/sukabumi_bringup/.env
+spring_2026_ID/sukabumi_bringup/*.log
+
 # Video files (large binaries)
 *.mp4
 
