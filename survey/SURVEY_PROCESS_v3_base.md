@@ -1,5 +1,20 @@
 # RIVER SURVEY PROCEDURE FOR OPENRIVERCAM DEPLOYMENTS — LOCAL BASE STATION WORKFLOW
 
+> **Status (May 2026): RTK is parked at Sukabumi.** Two surveys at the
+> Sukabumi site using this procedure produced ~99 cm horizontal /
+> ~139 cm vertical check-point spread — ~30× the 3 cm gate. Root cause
+> is not yet identified (urban RF, base coordinate quality, multipath,
+> sky obstruction are all candidates). The Sukabumi re-survey is being
+> arranged through IPB as a **total station** survey instead. This
+> document is retained as the original RTK methodology for sites where
+> conditions are more favourable, but is not the active path for
+> Sukabumi 2026.
+>
+> See `Sukabumi_survey_salvage_methodology.md` for the salvage
+> calibration the deployed Sukabumi station is currently running on,
+> and `outsourced_survey_brief.md` for the vendor SOW being adapted
+> for the IPB engagement.
+
 **Equipment:** ArduSimple RTK base + rover + Android + GNSS Master + SW Maps
 **Target Accuracy:** 1-2cm relative accuracy in the field; ~0.5-1m absolute during the survey, improved to 2-5cm absolute after PPP post-processing
 **CRS:** UTM zone for your location (determine using instructions in Section 1)

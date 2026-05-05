@@ -241,7 +241,106 @@ dependencies, and more things to break in the field.
 
 ---
 
-## 6. (Template for future entries)
+## 6. Site permission must be confirmed before the build begins
+
+**What happened:** Jakarta was built around a specific intended
+installation site whose permission was understood to be pending but
+expected. During the trip, that permission did not come through —
+ultimately we returned to the US without deploying the Jakarta
+station. The work was not wasted (the station is built and tested),
+but the assumption that "we will sort the permission while we build"
+turned out to be load-bearing in a way it shouldn't have been.
+
+**Impact:** A built-but-not-deployed station is the worst outcome on
+the procurement axis: the kit is paid for, packed, flown, and back —
+without producing any data. The station now has to either be deployed
+to a different site (with whatever site-specific design constraints
+that brings) or warehoused until a site is identified. We are
+re-engaging IPB (Bogor University) for site selection — which is the
+right partner to find a viable location, but is a delay that should
+not have been necessary.
+
+**Recommendation for next time:**
+- **Site permission is a P0 prerequisite, not a parallel workstream.**
+  Build only against sites whose installation permission is in writing.
+  If the partner organization can't get a written permission letter
+  before the build begins, design to not need permission at that site
+  (e.g. install on the partner's own premises or a public bridge with
+  a clear regulatory path) — or pick a different site.
+- **Engage local academic / domain partners for site selection.** PMI
+  has the deployment relationships but not necessarily the
+  hydrological judgment for "which urban canal would actually be
+  useful to monitor." A domain partner like IPB or another local
+  university adds the rigour and reduces the chance that a politically-
+  available site is chosen over a hydrologically-useful one.
+- **Treat the bench-built station as a soak rig.** Once it's clear a
+  station won't deploy on the planned trip, rotate it to "extended
+  bench / long-term burn-in" mode rather than packing and flying it.
+  Months of thermal cycling and software soak time on a bench is more
+  valuable than a round-trip flight.
+- This pairs with lesson #4: a camera-only field node lowers the
+  permission ask from "build out an enclosure with a battery and a
+  modem" to "mount an IP camera." Many sites that won't approve a
+  full kit will approve a camera. Designing for camera-only deployment
+  expands the set of permission-feasible sites.
+
+---
+
+## 7. Repeat surveys with the same equipment / methods will reproduce the same noise
+
+**What happened:** The Sukabumi RTK survey on day 1 produced a check-
+point spread of ~99 cm horizontal / ~139 cm vertical between repeat
+occupations of the same physical markers — well outside the 3 cm / 4 cm
+RTK gate. We re-occupied the next day, with the same Emlid Reach RS+
+rover, the same temporary base setup, and the same field crew. The
+day-2 survey produced exactly the same noise level. The day-1 → day-2
+drifts on individual same-marker re-occupations were even worse:
+GCP3 drifted 89 cm, GCP4 drifted 75 cm, GCP2 drifted 29 cm. The data
+is salvageable for a 6-GCP subset calibration via subset search
+(4.6 cm RMSE), but is unfit for certified discharge measurement.
+
+**Impact:** Two field days of surveyor time produced one survey of
+borderline-usable quality. The salvage calibration is sufficient to
+demonstrate the pipeline end-to-end at the site, but the absolute
+discharge numbers it produces inherit a multiplicative scaling error
+of similar magnitude to the geometric noise. We are now arranging an
+IPB-led total station survey as the recovery path — at the cost of
+several weeks of additional schedule slip and a separate budget line.
+
+**Recommendation for next time:**
+- **If RTK fails once at a site, switch methodology — do not re-try
+  RTK with the same equipment.** The most likely failure modes
+  (poor base-station coordinate quality, multipath at the receiver,
+  ionospheric activity, ambient RF interference, sky obstruction)
+  all reproduce day-to-day at the same site with the same gear.
+  Doing the same thing twice is not "verification"; it is gathering
+  the same evidence twice. If the methodology has produced unusable
+  results once, the next attempt must change something material:
+  different equipment (dual-frequency rover, longer base-station
+  occupation), different correction source (network NTRIP instead of
+  temporary base), or a different methodology entirely (total station,
+  conventional levelling).
+- **Carry an independent check-method.** If RTK is the primary, the
+  check-method should be something orthogonal — a tape-measured
+  cross-section between two GCPs, a clinometer-and-rod elevation
+  check, a known-elevation reference benchmark within the camera
+  view. The check needs to fail-fast on bad RTK data while still in
+  the field, not weeks later in post-processing.
+- **The auto-fit salvage pipeline buys us time, but is not a substitute
+  for a clean survey.** The pipeline finds the subset of GCPs that
+  agree, but every flow number it produces still inherits the survey's
+  underlying noise floor. Treat salvage outputs as "this site is
+  alive and producing relative data" rather than "this site is
+  certified for discharge publication."
+- For the next site: budget for a professional surveyor up front
+  (see `survey/outsourced_survey_brief.md` for the SOW template). The
+  cost of a vendor survey (Rp 5–15 M / ~$300–950 USD per site) is
+  small compared to the cost of an unusable in-house survey plus
+  the recovery survey afterward.
+
+---
+
+## 8. (Template for future entries)
 
 **What happened:**
 
@@ -251,4 +350,4 @@ dependencies, and more things to break in the field.
 
 ---
 
-*Last updated: 2026-04-16*
+*Last updated: 2026-05-05*

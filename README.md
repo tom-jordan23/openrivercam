@@ -14,36 +14,28 @@ creating an excellent open-source platform for camera-based river surface
 velocity measurement, and for their generous support and guidance throughout
 our deployments.
 
-## Current Focus
+## Current Status (post-trip, May 2026)
 
-Both stations are in active build. Sukabumi is in software integration
-testing. Jakarta wiring is underway. Departure ~April 15, 2026.
+The April 2026 deployment trip is complete. Outcomes:
 
-### Deployment Overview
+| Site | Outcome |
+|------|---------|
+| **Sukabumi** | Hardware deployed and operating. Two RTK surveys (2026-04-20 + 2026-04-21) reproduced the same ~99 cm H / 139 cm V check-point spread, ~30× worse than the 3 cm RTK gate. We are engaging IPB (Bogor University) for a **total station** re-survey. In the meantime the station is being brought up using the auto-fit salvage pipeline (`survey/Sukabumi_survey_salvage_methodology.md`), which finds a 6-GCP subset producing a 4.61 cm RMSE calibration that passes the standard quality gate (the absolute discharge inherits the survey noise floor — qualitative monitoring is fine, certified discharge needs the IPB re-survey). |
+| **Jakarta** | **Not deployed.** Permission for the intended site fell through during the trip. The pre-built station was not installed. We are consulting with IPB on site selection before the next attempt. |
 
-**Trip:** April 2026
-**Sites:** Sukabumi (redeploy) + Jakarta (new install)
-**Budget:** $3,000 USD for both sites
+### Active workstreams
+
+1. **Sukabumi configuration** — promote the salvage `CameraConfig` (4.61 cm RMSE on the 6-GCP subset) into the deployed station's ORC-OS so it produces velocity fields from live captured video. End-to-end has already run once on the calibration video (`q_50 = 0.51 m³/s`); remaining work is enabling that on real captures and locking down `h_ref = 617.065 m` through the dashboard so it survives subsequent saves.
+2. **Grafana on the LiveORC server** — stand up a Grafana instance on the AWS LiveORC host to visualize sensor CSVs (rain gauge, SHT40, DS18B20) being uploaded by `orc-sensors-upload`.
+3. **LiveORC upload verification** — confirm video and sensor uploads from Sukabumi are landing on the LiveORC server cleanly.
+
+Pre-trip planning docs (departure schedule, day-by-day TODO list, pre-trip task tracking) have been moved to `spring_2026_ID/archive/` for reference.
+
+### Deployment Overview (as conducted)
+
+**Trip:** April 12–24, 2026
+**Sites attempted:** Sukabumi (redeploy) + Jakarta (new install)
 **Method:** Personal carry with humanitarian papers
-
-### Site Summary
-
-| Site | Power | Camera | Status |
-|------|-------|--------|--------|
-| **Sukabumi** | Solar (existing 200W/50Ah) | Factory-sealed PoE (1 camera) | ORC-OS config and capture testing |
-| **Jakarta** | AC utility + 24hr UPS | Factory-sealed PoE (1 camera) | 12V/5V wiring complete, relay wired, first Pi boot done |
-
-### Project Status
-
-- **Research phases 1-5:** Complete
-- **BOMs:** Complete — equipment ordered and mostly received
-- **Travel/import strategy:** Documented (TRAVEL_AND_IMPORT.md)
-- **Wiring diagrams:** Complete for both sites
-- **Assembly docs:** Comprehensive step-by-step guides with build photos, continuity checklists, door sheets, and bilingual exterior placards
-- **Sukabumi hardware:** Mounted, wired, powered on, relay tested, RTC and SHT40 installed. ORC-OS software integration in progress.
-- **Jakarta hardware:** AC power chain complete (surge suppressor → PSU → 12V distribution). 5V buck converter trimmed and wired to Pi. Relay 5V side wired. CH1 PoE path wired. First boot successful.
-- **Software:** `orc-capture` script with quality gate, `poe-relay` control, `orc-sensors` for SHT40, `orc-sensors-upload` (incremental scp of sensor CSVs to LiveORC on every boot / hourly), `orc-preflight` checks. Site-specific config via `RELAY_MODE` (cycle for solar, always for AC).
-- **Remaining:** LED decision (ISS-005), rain gauge external wiring, J2 power buttons, conformal coating, final integration testing, Jakarta battery+charger (sourced in-country)
 
 ## Repository Structure
 
@@ -114,13 +106,10 @@ survey/
 
 ## Next Steps
 
-1. Finalize status LED design (ISS-005 — decision by 3/30)
-2. Complete ORC-OS software integration on Sukabumi
-3. Complete Jakarta wiring (sensors, rain gauge, power button)
-4. Conformal coat both stations
-5. Final integration testing (end-to-end capture on both)
-6. Print and laminate door sheets and exterior placards
-7. Pack per TRAVEL_AND_IMPORT.md
+1. **Sukabumi: load salvage CameraConfig into ORC-OS** so the deployed station produces velocity fields from real video. The auto-fit pipeline (`survey/orc_auto_fit.py` + `--demo-override`) has already produced a `*_DEMO_UNCERTIFIED.json` config at 4.61 cm RMSE; remaining work is loading it via the ORC-OS dashboard and confirming end-to-end processing on a recent capture.
+2. **Stand up Grafana on the AWS LiveORC server** to display sensor data (RG-15 rainfall, SHT40 temp/humidity, DS18B20 water/air temp) from the CSVs uploaded by `orc-sensors-upload`.
+3. **Verify LiveORC video and sensor uploads** from Sukabumi are working end-to-end (capture → upload → visible in LiveORC + Grafana).
+4. **Coordinate IPB engagement** for (a) Jakarta site selection and (b) total station survey at Sukabumi.
 
 ## Related Projects
 

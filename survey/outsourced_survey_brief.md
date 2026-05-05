@@ -2,9 +2,25 @@
 
 *Brief for the deployment team. Describes the fully-outsourced survey option for the ORC camera stations, with providers in Sukabumi and Jakarta, and a decision checklist.*
 
+> **Status (May 2026):** The active path for the Sukabumi re-survey is
+> a **total station survey via IPB (Bogor University / Institut Pertanian Bogor)**,
+> not the RTK-vendor route this document was originally written for.
+> Two in-house RTK attempts at Sukabumi reproduced the same
+> ~99 cm H / ~139 cm V check-point noise, so the methodology pivot is
+> away from RTK entirely for this site. The vendor shortlist below is
+> retained for sites/contexts where RTK is still appropriate; the
+> *deliverables* in section 2 are still the right SOW and are being
+> adapted for the IPB engagement (with section 5 RTK-specific items
+> swapped for total-station equivalents).
+
 ## 1. Objective
 
-Hire a licensed survey firm to produce the complete survey dataset required by each ORC station, so that the local team does not need to repeat or refine the existing survey work. The vendor handles: ground control points (GCPs), river cross-section, staff gauge datum tie, and a written report. The vendor brings their own geodetic equipment.
+Hire a licensed survey firm — or, for the current Sukabumi engagement,
+work through IPB — to produce the complete survey dataset required by each
+ORC station, so that the local team does not need to repeat or refine the
+existing survey work. The vendor handles: ground control points (GCPs),
+river cross-section, staff gauge datum tie, and a written report. The
+vendor brings their own geodetic equipment.
 
 ## 2. What the Vendor Will Deliver
 

@@ -1,17 +1,22 @@
 # Spring 2026 Indonesia Deployment
 
-Two ORC river monitoring stations for flood early warning, deployed to
-Indonesia in April 2026. Built on [ORC-OS](https://github.com/localdevices/ORC-OS)
-running on Raspberry Pi 5 with Witty Pi 5 HAT+ power management.
+Two ORC river monitoring stations for flood early warning, built for
+deployment to Indonesia in April 2026. Built on
+[ORC-OS](https://github.com/localdevices/ORC-OS) running on Raspberry Pi 5
+with Witty Pi 5 HAT+ power management.
 
 **Organizations:** American Red Cross / Palang Merah Indonesia (PMI)
 
-## Station Status
+## Station Status (post-trip, May 2026)
 
 | Site | Power | Camera | Compute Stack | Status |
 |------|-------|--------|---------------|--------|
-| **Sukabumi** | Solar (200W panel / 50Ah battery) | ANNKE C1200 PoE, power-cycled | Pi 5 + Witty Pi 5 + G469 | Built, software configured, ready to deploy |
-| **Jakarta** | AC utility (Mean Well PSU) + APC 900VA UPS | ANNKE C1200 PoE, continuous | Pi 5 + Witty Pi 5 + G469 | Built, software configured, ready to deploy |
+| **Sukabumi** | Solar (200W panel / 50Ah battery) | ANNKE C1200 PoE, power-cycled | Pi 5 + Witty Pi 5 + G469 | **Deployed.** Two RTK surveys reproduced the same ~99 cm H / 139 cm V check-point noise (vs the 3 cm gate). Engaging IPB (Bogor University) for a total station re-survey. Running on the auto-fit salvage calibration in the meantime — 4.61 cm RMSE on a 6-GCP subset, passes the standard quality gate, but absolute discharge inherits the survey noise floor (good for qualitative trends, not for certified flow numbers). |
+| **Jakarta** | AC utility (Mean Well PSU) + APC 900VA UPS | ANNKE C1200 PoE, continuous | Pi 5 + Witty Pi 5 + G469 | **Not deployed.** Permission for the intended site fell through during the trip. Station is built and software-ready. Consulting with IPB on alternate site selection. |
+
+Pre-trip planning docs (departure schedule, day-by-day pre-trip TODOs,
+pre-trip checklists) live in [`archive/`](archive/) and capture the plan as
+it was before travel.
 
 ## Key Architecture
 
@@ -72,20 +77,26 @@ running on Raspberry Pi 5 with Witty Pi 5 HAT+ power management.
 
 ### Survey
 
+The RTK approach failed twice at Sukabumi. The active path is now:
+
 | Path | Description |
 |------|-------------|
-| [survey/SURVEY_PROCESS_v3.md](../survey/SURVEY_PROCESS_v3.md) | Full RTK survey procedure (InaCORS NTRIP + base station fallback) |
-| [survey/InaCORS_HOWTO.md](../survey/InaCORS_HOWTO.md) | InaCORS NTRIP registration and configuration |
-| [survey/SURVEY_DATA_PROCESSING.md](../survey/SURVEY_DATA_PROCESSING.md) | Post-survey data processing and QGIS workflow |
+| [survey/Sukabumi_survey_salvage_methodology.md](../survey/Sukabumi_survey_salvage_methodology.md) | Salvage calibration pipeline used on the noisy survey data — auto-fit with subset search and `--demo-override` for the DEMO-UNCERTIFIED CameraConfig currently used at Sukabumi |
+| [survey/AUTO_FIT_USAGE.md](../survey/AUTO_FIT_USAGE.md) | Operator guide for the auto-fit tool |
+| [survey/outsourced_survey_brief.md](../survey/outsourced_survey_brief.md) | Vendor brief / SOW used to scope the IPB total station re-survey |
+
+The original RTK process docs (`SURVEY_PROCESS_v3_base.md`, `SURVEY_PROCESS_v3_ntrip.md`, `InaCORS_HOWTO.md`, `SURVEY_DATA_PROCESSING.md`) are retained as reference but carry a status banner — RTK is parked at Sukabumi pending the IPB total station survey.
 
 ### Planning and Reference
 
 | Path | Description |
 |------|-------------|
 | [SITES.md](SITES.md) | Site requirements, equipment lists, field conditions |
-| [TRAVEL_AND_IMPORT.md](TRAVEL_AND_IMPORT.md) | Customs strategy, airline restrictions, packing |
-| [TODO.md](TODO.md) | Task tracking and in-country TODOs |
-| [ISSUE_LOG.md](ISSUE_LOG.md) | Problems encountered and resolutions |
+| [TODO.md](TODO.md) | Active post-trip task list |
+| [ISSUE_LOG.md](ISSUE_LOG.md) | Problems encountered (build + field) and resolutions |
+| [LESSONS_LEARNED.md](LESSONS_LEARNED.md) | Trip retrospective and recommendations for next deployment |
+| [archive/](archive/) | Historic pre-trip planning docs (SCHEDULE.md, pre-trip TODO, departure checklists) |
+| [TRAVEL_AND_IMPORT.md](TRAVEL_AND_IMPORT.md) | Customs strategy, airline restrictions, packing (historical reference) |
 | [research/](research/) | 27 technical research documents |
 | [USB_DRIVE_CONTENTS.md](USB_DRIVE_CONTENTS.md) | USB stick and tackle box contents for PMI team |
 

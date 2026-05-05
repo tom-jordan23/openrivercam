@@ -1,5 +1,11 @@
 # Deployment Schedule - Indonesia Spring 2026
 
+> **ARCHIVED — historical pre-trip plan.** This is the schedule as written
+> on departure. The actual trip diverged: Jakarta deployment was cancelled
+> mid-trip (site permission fell through), and the Sukabumi RTK survey
+> failed twice. See `../LESSONS_LEARNED.md` and `../README.md` for the
+> post-trip status.
+
 **Created:** 2026-04-12
 **Travel:** April 12-24, 2026
 **Route:** Jakarta (7 days) then Sukabumi (4 days)

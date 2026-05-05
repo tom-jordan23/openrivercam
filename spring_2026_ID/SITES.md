@@ -1,9 +1,19 @@
 # Sites for ORC deployment in Indonesia 2026
 
+> **Status (May 2026):** Sukabumi was deployed in April 2026 but its RTK
+> survey failed twice — IPB (Bogor University) is being engaged for a
+> total station re-survey. Jakarta was **not** deployed: permission for
+> the intended site fell through during the trip, and IPB will also help
+> select a viable alternate site. The pre-trip equipment lists below are
+> retained as the as-built reference for the existing Sukabumi station
+> and as the starting point for whichever Jakarta site is ultimately
+> chosen.
+
+---
 
 ## Sukabumi Site
 
-An existing site where a combined compute / video unit failed due to trapped humidity. The site is solar with no easily accessible utility power.
+An existing site where a combined compute / video unit failed due to trapped humidity. The site is solar with no easily accessible utility power. **Re-deployed April 2026** — see parent `README.md` for current operational status.
 
 Equipment for this site:
 
@@ -30,7 +40,7 @@ Equipment for this site:
 
 ## Jakarta Site
 
-This will be a new site that is used for training and testing purposes. We will be using some new approaches here, including setting up a site running on AC power with battery backup. No equipment exists at this site yet.
+**Originally planned** as a new training/testing site running on AC power with battery backup. **Not deployed in April 2026** — permission for the intended location fell through during the trip. The station is built and software-ready; site selection is being re-done with IPB. Equipment list below is retained as the spec for whichever site is ultimately chosen.
 
  - Mounting pole
  - Power enclosure (with some kind of active cooling) with pole mount
