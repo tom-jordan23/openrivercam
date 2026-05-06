@@ -7,10 +7,134 @@ Tracks discovered issues, design corrections, and open questions across both sit
 | OPEN | Needs action |
 | RESOLVED | Fix applied, verified |
 | CLOSED | No longer relevant |
+| PARKED | Action depends on external dependency (IPB engagement, etc.) |
+
+Issues prefixed `ISS-FIELD-*` were discovered during the April 2026
+deployment trip; earlier issues (`ISS-001`–`ISS-007`) date from the
+build phase.
 
 ---
 
 ## Issues
+
+### ISS-FIELD-001: Jakarta intended site permission fell through; station not deployed
+
+| Field | Value |
+|-------|-------|
+| **Date opened** | 2026-04-19 (in-country) |
+| **Site** | Jakarta |
+| **Risk** | Project schedule |
+| **Impact** | High |
+| **Status** | PARKED (pending IPB site re-selection) |
+
+**Problem:**
+Permission to install the Jakarta station at the intended site did not
+come through during the April 2026 trip. Without an authorized location
+and the associated logistical arrangements (mounting, AC power tap,
+network access, on-site security), the station could not be installed.
+The station is built, software-configured, and bench-tested.
+
+**Resolution path:**
+Engaging IPB (Institut Pertanian Bogor / Bogor University) to advise on
+a viable alternate site that is (a) hydrologically useful, (b) in
+catchment of interest to PMI's flood-warning use case, and (c) has the
+physical/permission profile that makes a deployment feasible. Until a
+site is identified and authorized, the Jakarta station stays in the US
+in storage.
+
+**What this means for the rest of the project:**
+- The TODO and BOM items that assume Jakarta-on-river (mounting hardware,
+  GCP survey, sensor field testing, PMI training at Jakarta) are paused.
+- Software work that benefits both sites continues against the Sukabumi
+  station and against the bench-built Jakarta station as a soak rig.
+
+---
+
+### ISS-FIELD-002: Sukabumi RTK survey failed twice — same ~99 cm H / 139 cm V noise both times
+
+| Field | Value |
+|-------|-------|
+| **Date opened** | 2026-04-20 (initial), reproduced 2026-04-21 |
+| **Site** | Sukabumi |
+| **Risk** | Calibration accuracy / discharge certifiability |
+| **Impact** | High |
+| **Status** | PARKED (pending IPB total station survey) |
+
+**Problem:**
+Two RTK survey attempts at the Sukabumi site, on consecutive days with
+the same equipment (Emlid Reach RS+ rover + temporary base) and the
+same methods, both produced check-point spreads of ~99 cm horizontal
+and ~139 cm vertical between repeat occupations of the same physical
+markers. The 3 cm horizontal / 4 cm vertical RTK gate was exceeded by
+roughly 30×. Same-marker drifts between day 1 and day 2: 29 cm (GCP2),
+75 cm (GCP4), 89 cm (GCP3). See `survey_data/output/metadata.yaml` for
+the recorded check-point spread and full warnings.
+
+**Why this matters:**
+Calibration accuracy is bounded below by survey accuracy. Discharge
+estimates published from this survey alone would carry the survey's
+noise as a multiplicative scaling error of similar magnitude (~30%) on
+absolute flow values. Qualitative monitoring (rising/falling, faster/
+slower) is unaffected; quantitative discharge in m³/s with a stated
+uncertainty band is not certifiable from this data.
+
+**Resolution path:**
+Engaging IPB for a **total station** survey at Sukabumi. RTK-with-our-
+equipment has now produced the same noise twice; that's strong evidence
+to try a fundamentally different methodology rather than a third RTK
+attempt. Total station gives sub-cm accuracy independent of GNSS sky
+conditions or base-station setup quality and avoids whatever is causing
+the RTK noise (possible causes include poor base-station coordinate
+quality, sky obstruction, RF interference at the urban canal site).
+
+**Interim:**
+The auto-fit salvage pipeline (`survey/Sukabumi_survey_salvage_methodology.md`)
+identifies a 6-GCP subset (GCP7, GCP8, GCP10, GCP13, GCP14, GCP3.2)
+that produces a calibration with 4.61 cm RMSE — passes the 5 cm gate.
+This is the calibration the deployed station runs on. End-to-end has
+been verified once against the calibration video (`q_50 = 0.51 m³/s`);
+absolute flow numbers from the salvage calibration are *not* certified.
+
+**Files:**
+- `spring_2026_ID/survey_data/output/metadata.yaml` — recorded spread
+- `spring_2026_ID/survey_data/sukabumi_handoff/` — calibration handoff
+  files used to load the station
+- `survey/Sukabumi_survey_salvage_methodology.md` — methodology
+- `survey/outsourced_survey_brief.md` — vendor SOW for the IPB survey
+
+---
+
+### ISS-FIELD-003: ORC-OS dashboard "save" silently clobbers SQL-edited camera_config fields
+
+| Field | Value |
+|-------|-------|
+| **Date opened** | 2026-04-22 |
+| **Site** | Sukabumi |
+| **Status** | OPEN — workaround documented |
+
+**Problem:**
+Editing `camera_config.data` directly in `~/.ORC-OS/orc-os.db` (e.g.
+`UPDATE camera_config SET data = json_set(data, '$.gcps.h_ref', 617.065) WHERE id=3`)
+is durable in SQL only. The next time the dashboard fires a websocket
+`{action: 'save'}` for that camera config — which can happen on any
+form interaction, not only an explicit save click — the in-memory
+form copy of `data` overwrites the DB row, reverting the SQL edit.
+This bit us during the Sukabumi bring-up: `h_ref` was set to 617.065
+via SQL, the dashboard later saved, the value reverted to 0.0, and the
+subsequent Process run fell through to optical water-level detection.
+
+**Workaround:**
+Always set camera-config values through the dashboard form (or through
+the `/api/camera_config/` PATCH endpoint). The SQL path is non-durable
+and should not be used.
+
+**Followup:**
+Worth flagging upstream to the ORC-OS team — at minimum the websocket
+save should be a partial PATCH, not a wholesale clobber of `data`.
+
+---
+
+## Build-phase issues
 
 ### ISS-001: Sleep-phase power budget was understated by ~24 Wh/day
 

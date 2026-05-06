@@ -1,4 +1,10 @@
 # QUICK_NOTES.md
+
+> **Status (May 2026):** Cheat sheet for the PPP-translation step of the
+> RTK base-station workflow. RTK is parked at Sukabumi (see
+> `SURVEY_PROCESS_v3_base.md` banner). Retained as reference for sites
+> where the RTK methodology is still appropriate.
+
 PPP Translation — UTM‑Everywhere Cheat Sheet (EPSG:32748)
 
 **Goal**  

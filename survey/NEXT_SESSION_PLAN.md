@@ -1,6 +1,18 @@
 # Next Session Plan
 
-*Pick-up brief for the next session. Read this first if you're resuming the Sukabumi fitment work cold.*
+> **Superseded (2026-05-05).** This document was a session pickup brief
+> written in-country in late April 2026. The blockers it describes are
+> resolved: the xarray<2026 pin landed in the local Dockerfile so the
+> pyorc transect bug no longer fires, the salvage CameraConfig was
+> emitted and end-to-end Process completed (`q_50 = 0.51 m³/s`), and
+> Phase 3 of the auto-fit roadmap is finished.
+>
+> **For the current next-step plan**, see
+> `spring_2026_ID/TODO.md` TODO-101 (configure deployed Sukabumi
+> station with the salvage CameraConfig) and the parent `README.md`.
+> Document below is retained for the "Known traps" section and the
+> field-day correction-pipeline command sequence — both are still
+> useful reference.
 
 ---
 

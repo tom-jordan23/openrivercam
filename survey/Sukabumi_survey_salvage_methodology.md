@@ -4,7 +4,21 @@
 
 **Audience:** The deployment team (PMI staff, hydrologist) and upstream OpenRiverCam engineers. Written to be readable end-to-end without deep photogrammetry or computer-vision background. Undergrad CS knowledge (matrices, algorithm complexity, Gaussian noise, hash functions) is assumed. Domain-specific terms — GCPs, UTM, PnP, RMSE, RANSAC, SIFT, ArUco — are expanded inline the first time they appear and defined more fully in **Appendix A (§12)**.
 
-**Date:** 2026-04-22. **Current state:** Phases 0, 1, 2 complete. Best 6-GCP subset produces RMSE 4.61 cm (below the 5 cm target). A pyorc-loadable `CameraConfig` has been emitted and verified against ORC-OS's API (parse, persist, and fit all pass). See "Current state" note in §9 Roadmap for the phase-by-phase status and what's still open.
+**Date:** 2026-04-22 (initial); status updated 2026-05-05.
+
+**Current state (May 2026):** Phases 0, 1, 2, 3 complete. Best 6-GCP
+subset produces RMSE 4.61 cm (below the 5 cm target). The pyorc-loadable
+`CameraConfig` (`spring_2026_ID/survey_data/sukabumi_handoff/sukabumi_autofit_camera_calibration.json`)
+is the active production calibration on the deployed Sukabumi station —
+end-to-end ORC-OS Process has run successfully against the calibration
+video (`q_50 = 0.51 m³/s`, `v_av = 0.49 m/s`,
+`fraction_velocimetry = 65.7 %`). **Important caveat:** the salvage
+calibration passes its own RMSE gate, but the underlying survey carries
+~99 cm H / 139 cm V noise. Absolute discharge inherits that error.
+A total-station re-survey via IPB is being arranged to replace the
+salvage data with a clean baseline; until then, the Sukabumi outputs
+are useful for *qualitative* monitoring (rising/falling, faster/slower)
+but not for *certified* discharge values.
 
 **Scope — one-time salvage for Sukabumi 2026 only.** This pipeline exists *only* because the Sukabumi 2026 survey data is noisier than planned and the markers are already physically placed. It is built once, for this dataset, and the design is judged against that scope — not against any notion of reusability. How future sites avoid ending up in the same situation is out of scope for this document.
 

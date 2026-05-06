@@ -1,5 +1,17 @@
 # RIVER SURVEY PROCEDURE FOR OPENRIVERCAM DEPLOYMENTS — NTRIP WORKFLOW
 
+> **Status (May 2026): RTK is parked at Sukabumi.** Two RTK surveys at
+> Sukabumi (using the local-base variant of this methodology) produced
+> ~99 cm horizontal / ~139 cm vertical check-point spread, ~30× the
+> 3 cm gate. The Sukabumi re-survey is being arranged through IPB as
+> a **total station** survey instead. This NTRIP procedure is retained
+> as the active path for *future* sites where cellular coverage is
+> available and the urban-RF / multipath conditions don't reproduce the
+> Sukabumi failure mode. See `Sukabumi_survey_salvage_methodology.md`
+> for the calibration the deployed Sukabumi station is running on, and
+> `outsourced_survey_brief.md` for the vendor SOW being adapted for
+> the IPB engagement.
+
 **Equipment:** ArduSimple RTK rover + Android + GNSS Master + SW Maps + **InaCORS NTRIP**
 **Target Accuracy:** Centimeter-level absolute positioning via NTRIP (~3-5cm)
 **CRS:** UTM zone for your location (determine using instructions in Section 1)
