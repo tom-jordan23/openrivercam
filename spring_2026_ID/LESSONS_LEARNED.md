@@ -241,7 +241,216 @@ dependencies, and more things to break in the field.
 
 ---
 
-## 6. (Template for future entries)
+## 6. Investigate a self-contained, networked, solar-powered rain gauge
+
+**What happened:** The Hydreon RG-15 is co-located with the camera station
+at Sukabumi because it's convenient — the Pi is already there, the UART is
+already wired, it shares the solar budget. But the rainfall regime that
+matters for a river-gauging station is the *catchment*, not the point
+where the camera happens to be. A single rain gauge bolted to the camera
+pole tells you about rainfall at the camera, which may be many kilometers
+downstream of where the water actually fell.
+
+**Impact:** Rainfall data from the station is a point measurement with
+limited hydrologic value. For discharge modelling, event attribution, or
+flood-warning applications, we'd want distributed rainfall across the
+catchment — which the current architecture doesn't support.
+
+**Recommendation for next time:**
+- Investigate a self-contained networked rain gauge node: solar panel,
+  small battery, RG-15 (or similar optical gauge), a low-power MCU, and a
+  LoRa / LTE-M / NB-IoT radio. Target BOM in the $200–$400 range.
+- Design as part of a **store-and-forward mesh**: gauges that can't reach
+  the internet hop through neighbors until one node does, so a single
+  cellular / WiFi gateway covers the whole catchment. LoRaWAN is the
+  obvious starting point; Meshtastic is worth a look for ad-hoc meshes
+  without a LoRaWAN gateway.
+- Keep the protocol plain and idempotent (retry-safe timestamped
+  rainfall totals) so packets dropped or duplicated in the mesh don't
+  corrupt the time series.
+- Treat the camera station as one consumer of rainfall data, not its
+  host. The gauge network and the camera station are independent
+  subsystems that happen to feed the same pipeline.
+- Related: this also addresses lesson #5 — decoupling sensing location
+  from camera location is the same architectural move applied to the
+  catchment scale instead of just a few meters of cable.
+- **Match the existing station style and footprint.** The catchment
+  gauge nodes should look like smaller siblings of the camera station:
+  same enclosure family, same pole-mount hardware, same cable-gland
+  conventions, same visual identity. Same physical footprint or
+  smaller. Benefits: spare parts and tools overlap, PMI staff can
+  service both without re-training, and the network reads as one system
+  instead of a grab-bag of third-party boxes. Design the gauge node
+  within that constraint rather than optimising each node in isolation.
+- **Match the ombrometer standard for manual gauges.** PMI and the
+  Indonesian meteorological agencies (BMKG) use the ombrometer as their
+  standard manual rain gauge; daily totals across the country are
+  reported in those units and against that resolution. The automated
+  node should be able to reproduce an ombrometer reading at the same
+  site within the ombrometer's tolerance, so that its output is
+  directly interchangeable with the existing manual-reading record
+  and so historical time series stitch cleanly. That means: match the
+  typical 0.1–0.2 mm resolution and the 24-hour totalling convention,
+  and log in a form that an operator comparing to a manual ombrometer
+  reading can reconcile without a conversion step.
+- Note: **BMKG owns rainfall, not river stage or discharge.** Rain
+  gauge networks fall under BMKG; river-level and flow monitoring is
+  a separate agency (Kementerian PUPR / Ditjen SDA / BBWS) — see
+  lesson #7. Any rainfall node in this design should target BMKG
+  ingest pipelines and ombrometer-equivalence; level/flow nodes
+  target PUPR/BBWS pipelines.
+
+---
+
+## 7. Explore a cheaper river-level / stage sensor with public-alert relays
+
+**What happened:** Operators in the region currently run German diver-style
+pressure-transducer gauges (Schlumberger/van Essen, OTT, Seba and
+similar) for water level and derived flow, at roughly **USD ~$1,000 per
+station**. That includes the vented transducer, cable, barometric
+reference, and usually a logger/telemetry unit. It's reliable, accurate,
+and well-understood — but it's also the dominant cost of a gauging
+station and puts density at a price ceiling. If a watershed wants 20
+stations, that's $20k just in level sensors.
+
+**Impact:** Price pressure directly limits how dense a hydrometric
+network can be. Every station that a community can't afford is a
+catchment where floods aren't measured or warned on.
+
+**Indonesian standards context** (research summary — full report at
+`spring_2026_ID/research/indonesia_hydrometric_standards.md`):
+
+- **Responsible agency is PUPR, not BMKG.** Water-level and discharge
+  monitoring in Indonesia is owned by Kementerian PUPR / Ditjen SDA,
+  executed through 34 **BBWS/BWS** river-basin offices, with
+  **PUSAIR** (Bandung) running calibration and standards. BMKG is
+  atmospheric/rainfall only (see lesson #6). No public evidence of
+  BMKG-operated rated river discharge stations.
+- **Automatic water level (AWLR / pos duga air telemetri).**
+  International dominant brand: **OTT HydroMet** — PLS/PLS 500
+  pressure probe, RLS radar, CBS bubbler, Thalimedes shaft encoder,
+  netDL 500/1000 data logger. Domestic alternatives: **IDDATA RL03**
+  radar + GSM, catalogued on INAPROC at **~Rp 58 M (~USD 3,600) ex-VAT**;
+  **Mertani** (radar/ultrasonic); **PT. Tatonas** (ultrasonic and
+  float/encoder, projects at BBWS Pemali Juana). Campbell Scientific
+  CR300/CR1000 loggers present but secondary to OTT netDL.
+- **Manual staff gauge.** Called **papan duga air** (or *peilschaal*).
+  Enameled-steel or fiberglass board, centimeter resolution, zero
+  referenced to a local benchmark. Read three times daily (07:00,
+  12:00, 17:00) by a contracted community observer (**juru pengamat
+  hidrologi**). Data recorded on printed PUPR forms.
+- **Discharge is rating-curve derived.** BBWS does *not* operate
+  continuous-discharge sensors at most stations. Standard cycle: (1)
+  continuous stage record, (2) 3–5 current-meter gaugings per year,
+  (3) fit **lengkung debit** (rating curve) from ≥30 Q-H pairs,
+  (4) apply curve to stage record to produce Q. Gauging instruments:
+  **OTT C31 propeller**, **OTT MF Pro electromagnetic**, **SonTek
+  FlowTracker 2** (handheld ADV, wading/bridge), **SonTek RiverSurveyor
+  M9 ADCP** (boat-mounted, for flood stages).
+- **Binding standards.** **SNI 8066:2015** — current binding standard
+  for current-meter discharge. **SNI 03-2414-1991** — foundational.
+  **WMO-No. 168** (Guide to Hydrological Practices) — international
+  baseline referenced in PUSAIR materials.
+- **Telemetry pipelines.** National portals: **SIHLSDA** / **SIH3** /
+  **SIHKA**. Typical ingest: CSV or HTTP POST with timestamp, station
+  ID, TMA (tinggi muka air) in cm or m. GSM/GPRS transmission is the
+  Java/Sumatra norm.
+- **The $1k diver-style price point referenced above is the informal
+  regional market price**, not confirmed in Indonesian government
+  tenders in this research. The cheapest confirmed government-catalog
+  entry is the IDDATA RL03 radar at ~USD 3,600. So "undercut the
+  diver" and "undercut the government catalog entry" are two different
+  targets, both worth pursuing.
+
+**Recommendation for next time:**
+- Investigate a level-sensor station with a BOM target **well under
+  $1,000**. Candidate technologies: non-contact ultrasonic (MaxBotix,
+  Senix), radar (Acconeer A121, Seeed / Tl. mmWave modules), low-cost
+  vented pressure transducers (Keller 26Y / 36X lines), or a
+  camera-based staff-gauge read (re-using the ORC camera hardware we
+  already deploy).
+- **Interoperability, not sensor principle, is the acceptance test.**
+  To be additive to BBWS time-series: output in meters above the
+  local peilschaal zero; timestep 15-min minimum (5-min preferred for
+  flood-warning ingest); CSV or HTTP POST in SIH3/SIHLSDA format;
+  paired daily reading against a manual papan duga air during
+  commissioning. Calibration verifiable against PUSAIR's KAN-accredited
+  lab (0–300 cm pressure range). Any sensor principle — pressure,
+  radar, ultrasonic, camera-based staff-gauge read — is acceptable if
+  it meets those interop requirements.
+- **Discharge is supplementary, not replacement.** Our ORC-derived
+  surface velocity feeds Q via an index-velocity or rating relationship;
+  it supplements the BBWS rating curve, not replaces it. Uncertainty
+  should be documented per SNI 8066:2015 / WMO-No. 168 Ch. 5 for the
+  output to be accepted alongside BBWS data.
+- **Expose open relay outputs for public alerting.** The station should
+  have 1–2 dry-contact relay outputs (or optoisolated GPIO) wired to
+  screw terminals, triggerable by local threshold rules without a
+  round-trip to a central server. Typical wired loads: siren driver,
+  strobe, SMS modem, public-address trigger, downstream-gate SCADA
+  input. Local thresholds survive WAN outages — which is exactly when
+  public alerting matters most.
+- Keep the alert rule engine local and simple — e.g. "relay 1 closes if
+  stage > X for > Y minutes" — and make the thresholds configurable
+  without a firmware rebuild. The central server should be able to
+  *push* threshold updates but the relay logic must keep running when
+  it's unreachable.
+- Document the safety boundary clearly: this is a *gauging* relay, not
+  a certified safety-of-life alarm. Publicly-facing alerts need a human
+  in the loop or a redundant certified path. The relays lower the
+  latency for that human, they don't replace them.
+
+---
+
+## 8. Split responsibilities: university owns the technology, Red Cross owns deployment and operations
+
+**What happened:** Technology development and field deployment are two
+very different disciplines, and one organisation rarely excels at both.
+Through this trip it's become clear which side each partner is best
+positioned to own: the university is where sensor design, software
+engineering, calibration methodology and research iteration happen;
+the Red Cross (PMI in-country, and the broader IFRC network) is where
+local language, community trust, long-term site presence, volunteer
+networks, and operational continuity live.
+
+**Impact:** When responsibilities overlap or shift ad-hoc, things fall
+between the cracks — field diagnostics land in research inboxes where
+they wait for a PhD schedule, or the research team gets pulled into
+running day-to-day station support they're not set up for. Both sides
+move slower than they should.
+
+**Recommendation for next time:**
+- **University role — technology.** Hardware and software design, BOM
+  definition, firmware, ORC pipeline and calibration methodology,
+  training materials, and the R&D pipeline for future sensors
+  (lessons #6 and #7 sit squarely here). Produces reproducible
+  station designs and documented procedures the operator can rely on.
+- **Red Cross role — deployment, support, and operations.** Site
+  selection within the Red Cross mission scope, stakeholder
+  engagement, on-site installation and maintenance, spares inventory
+  at the local chapter, staff training, incident response when a
+  station misbehaves, and the data-to-decision loop when the station
+  output feeds a humanitarian action. PMI is the primary point of
+  contact for in-country questions.
+- **Scope the Red Cross role to mission-aligned use cases.** Flood
+  warning, disaster preparedness, community-health-adjacent water
+  monitoring — yes. General-purpose hydrometric networks for
+  research-only or commercial purposes — no; those need a different
+  operator (or a layered agreement where the Red Cross gets value in
+  exchange). This boundary keeps the Red Cross's scarce operational
+  capacity pointed at humanitarian outcomes.
+- Write this split into MoUs and deployment plans explicitly — don't
+  leave it as tribal knowledge between the individual collaborators
+  who happen to know each other today. The point is the model
+  survives staff turnover on either side.
+- Keep a lightweight joint forum (monthly call, shared issue tracker)
+  where edge cases get adjudicated. Not every incident sorts cleanly;
+  the forum handles the grey zone and updates the written split as
+  patterns emerge.
+
+---
+
+## 9. (Template for future entries)
 
 **What happened:**
 
@@ -251,4 +460,4 @@ dependencies, and more things to break in the field.
 
 ---
 
-*Last updated: 2026-04-16*
+*Last updated: 2026-04-22*
