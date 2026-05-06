@@ -131,7 +131,10 @@ VIDEO_CONFIG_ID  (default 1)
 | `uploads/incoming/` has a recent capture | WARN if empty |
 | `orc-maintenance-check` reports maintenance mode | WARN if production mode active |
 | Disk space at `$HOME` and `~/.ORC-OS` | informational |
-| LiveORC settings present in DB | informational |
+| LiveORC settings present in DB | WARN if missing |
+| LiveORC server reachability (HTTP probe to configured URL) | WARN if unreachable / 5xx |
+| LiveORC auth probe (if a token-like setting is present) | WARN if 401/403 (token rotted) |
+| `docker compose logs orcapi` recent upload events | WARN if error / failure / 4xx / 5xx lines |
 
 Exit code: 0 = OK or warnings only, 1 = blockers.
 

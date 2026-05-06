@@ -134,23 +134,94 @@ df_uploads=$(df -h "$HOME/.ORC-OS" 2>/dev/null | awk 'NR==2 {print $4 " free of 
 
 # --- LiveORC upload config --------------------------------------------------
 section "LiveORC upload config"
+liveorc_url=""
+liveorc_token=""
 if [[ -f "$ORC_DB" ]]; then
-    liveorc_settings=$(sqlite3 "$ORC_DB" "
-        SELECT key || '=' || COALESCE(value, '') FROM settings
+    liveorc_settings=$(sqlite3 -separator '=' "$ORC_DB" "
+        SELECT key, COALESCE(value, '') FROM settings
         WHERE key LIKE '%liveorc%' OR key LIKE '%liveSite%' OR key LIKE '%upload%'
         ORDER BY key;
     " 2>/dev/null || true)
     if [[ -n "$liveorc_settings" ]]; then
         echo "  settings entries (key=value):"
-        echo "$liveorc_settings" | sed 's/^/    /'
+        # Print non-secret entries unredacted; mask secret-like ones to <present>.
+        echo "$liveorc_settings" | grep -viE '(token|password|secret|key)=' \
+            | sed 's/^/    /' || true
+        echo "$liveorc_settings" | grep -iE '(token|password|secret|key)=' \
+            | awk -F= '{print "    " $1 "=<present>"}' || true
+
+        # Pick first http(s) URL from values
+        liveorc_url=$(echo "$liveorc_settings" \
+            | awk -F= '/=https?:\/\//{sub(/^[^=]+=/,""); print; exit}')
+        liveorc_token=$(echo "$liveorc_settings" \
+            | awk -F= 'tolower($1) ~ /(token|key|secret)/ && $2 != "" {sub(/^[^=]+=/,""); print; exit}')
+    else
+        warn "no liveorc / liveSite / upload settings found in DB"
     fi
-    # Hessel's API stores institution/project in different schema versions; try a few.
+    # Schema-version-tolerant check for institution/project rows
     for table in liveorc_config institution project; do
         rows=$(sqlite3 "$ORC_DB" "SELECT count(*) FROM $table;" 2>/dev/null || true)
         [[ -n "$rows" && "$rows" != "0" ]] && note "$table table has $rows row(s)"
     done
+else
+    warn "ORC-OS DB not readable — skipping LiveORC settings probe"
 fi
-note "Verify last successful upload after a Process run by tailing 'docker compose logs orcapi'"
+
+# Reachability probe against the configured server URL
+if [[ -n "$liveorc_url" ]]; then
+    probe_url="${liveorc_url%/}/"
+    status=$(curl -sS -o /dev/null --max-time 8 \
+        -w '%{http_code}' "$probe_url" 2>/dev/null || echo "000")
+    case "$status" in
+        2*|3*) ok "LiveORC reachable: $probe_url → HTTP $status" ;;
+        401|403) ok "LiveORC reachable: $probe_url → HTTP $status (auth-gated, server is up)" ;;
+        4*|5*)   warn "LiveORC reachable but server returned HTTP $status at $probe_url" ;;
+        000)     warn "LiveORC NOT reachable at $probe_url (network error / DNS / firewall)" ;;
+        *)       warn "LiveORC probe got unexpected HTTP $status at $probe_url" ;;
+    esac
+
+    # Authenticated probe (only if a token-like setting was found)
+    if [[ -n "$liveorc_token" ]]; then
+        auth_status=$(curl -sS -o /dev/null --max-time 8 \
+            -H "Authorization: Token $liveorc_token" \
+            -w '%{http_code}' "$probe_url" 2>/dev/null || echo "000")
+        case "$auth_status" in
+            2*|3*)   ok  "LiveORC auth probe → HTTP $auth_status (token accepted)" ;;
+            401|403) warn "LiveORC auth probe → HTTP $auth_status (token rejected — rotate / re-paste in dashboard Settings)" ;;
+            000)     warn "LiveORC auth probe failed (network)" ;;
+            *)       note "LiveORC auth probe → HTTP $auth_status" ;;
+        esac
+    else
+        note "no token-like setting present; skipped auth probe"
+    fi
+else
+    warn "no liveSiteUrl-like value in settings — uploads will not fire until configured in dashboard Settings"
+fi
+
+# Recent upload-related events in orcapi logs (last ~500 lines)
+if command -v docker >/dev/null 2>&1; then
+    recent_log=$(docker compose logs --tail=500 --no-color orcapi 2>/dev/null \
+        | grep -iE 'upload|liveorc|callback|sync' \
+        | tail -n 20 || true)
+    if [[ -n "$recent_log" ]]; then
+        # Surface error-flavoured lines as warnings; just count info lines.
+        n_err=$(echo "$recent_log" | grep -ciE 'error|fail|traceback|refused|timeout|4[0-9][0-9]|5[0-9][0-9]' || true)
+        n_total=$(echo "$recent_log" | wc -l | tr -d ' ')
+        if (( n_err > 0 )); then
+            warn "orcapi log has $n_err upload-related error line(s) in last 500 (of $n_total upload-related total). Last few:"
+            echo "$recent_log" | grep -iE 'error|fail|traceback|refused|timeout|4[0-9][0-9]|5[0-9][0-9]' \
+                | tail -n 5 | sed 's/^/      /'
+        else
+            ok "orcapi log: $n_total recent upload-related line(s), no obvious errors"
+        fi
+    else
+        note "orcapi log: no upload-related entries in last 500 lines (no recent Process run, or different logger name)"
+    fi
+else
+    note "docker not on PATH — skipped orcapi log scan"
+fi
+
+note "After a Process run, tail full logs with: docker compose logs -f orcapi"
 
 # --- Summary ----------------------------------------------------------------
 echo
