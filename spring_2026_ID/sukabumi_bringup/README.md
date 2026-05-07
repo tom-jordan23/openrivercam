@@ -1,4 +1,19 @@
-# Sukabumi station bringup scripts
+# Sukabumi station bringup
+
+> **The active bringup path is manual (UI-driven). See [`MANUAL_BRINGUP.md`](MANUAL_BRINGUP.md).**
+>
+> The API-import scripts in this folder (`preflight.sh` / `bringup.sh`)
+> work for the camera_config and cross_section records, but the
+> dashboard form clobbers API-set values when you go in to draw the
+> **bounding box** (a UI-only field). The bbox can't be set via API,
+> so any API-then-UI flow loses the API-imported h_ref / GCPs / etc.
+> on the first form save.
+>
+> The manual flow puts everything — including the bbox — in the form
+> in one pass and saves once. Reliable, sub-1-hour. The scripts are
+> retained below for reference and for the cross_section + state-file
+> rollback machinery, which the manual flow's troubleshooting section
+> still references.
 
 Apply the salvage CameraConfig + cross-section to the deployed Sukabumi
 ORC-OS station via API, with preflight validation and automatic
