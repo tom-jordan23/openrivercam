@@ -13,11 +13,14 @@
 # Workflow:
 #   1. Power on PoE relay via poe-relay
 #   2. Wait for camera to boot and become reachable
-#   3. Capture 5s video via RTSP (TCP transport, codec copy — no re-encoding)
-#   4. Validate captured file against quality gate
-#   5. On pass: deliver to ORC-OS incoming directory
-#   6. On fail: retry up to MAX_RETRIES
-#   7. Power off PoE relay (cycle mode) or leave on (always mode)
+#   3. Switch to day or night image profile if time-of-day requires it
+#      (idempotent — usually a no-op since image config persists in NVRAM)
+#   4. Enforce critical camera settings (supplement light mode, OSD off)
+#   5. Capture 5s video via RTSP (TCP transport, codec copy — no re-encoding)
+#   6. Validate captured file against quality gate
+#   7. On pass: deliver to ORC-OS incoming directory
+#   8. On fail: retry up to MAX_RETRIES
+#   9. Power off PoE relay (cycle mode) or leave on (always mode)
 #
 # Quality gate checks:
 #   - File exists and is non-empty
@@ -384,7 +387,19 @@ main() {
         exit 1
     fi
 
-    # Step 3: Enforce camera settings that revert on power cycle
+    # Step 3: Day/night profile switch (idempotent — no-op if active profile
+    # matches the time-of-day decision). Image settings persist in the
+    # camera's NVRAM across power cycles, so this normally exits without
+    # making a call.
+    if command -v orc-camera-profile-switch >/dev/null 2>&1; then
+        if ! orc-camera-profile-switch auto; then
+            warn "orc-camera-profile-switch failed — continuing with whatever profile is on the camera"
+        fi
+    else
+        warn "orc-camera-profile-switch not in PATH — skipping day/night profile management"
+    fi
+
+    # Step 4: Enforce camera settings that revert on power cycle
     enforce_camera_config
 
     # Step 4: Capture with retries

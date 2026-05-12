@@ -102,6 +102,12 @@ camera/
 │   ├── ntp.xml             # NTP server config
 │   └── motion_detection.xml # Motion detection (disabled)
 │
+├── profiles/               # Alternate / specialized profile bundles
+│   ├── profile-a/ … /-f    # Streaming bitrate / resolution experiments
+│   └── profile-night/      # IR-tuned image params for night captures
+│       ├── image.xml       # Lower IR brightness, less sharpening, less NR, contrast pull
+│       └── README.md       # Rationale + sweep / iteration notes
+│
 ├── sukabumi/
 │   └── cam1/               # Inherits common/ — overrides added as needed
 │
@@ -109,6 +115,16 @@ camera/
     └── cam1/
         └── overlays.xml    # OSD text: "ORC Jakarta - Cam 1"
 ```
+
+### Day / night profile switching
+
+Sukabumi (and Jakarta when deployed) auto-switch between `common/image.xml`
+(day) and `profiles/profile-night/image.xml` (night) based on the local
+clock. The switch is integrated into `orc-capture` — see
+`profiles/profile-night/README.md` for the flow, configuration, and
+operator-override controls. The push uses `camtool push <cam> --config FILE`
+which now derives the ISAPI endpoint from the filename stem (so `image.xml`
+→ `/ISAPI/Image/channels/1` without needing a separate flag).
 
 ### About the XML stubs
 

@@ -1,0 +1,187 @@
+#!/bin/bash
+# orc-camera-profile-switch — push day or night camera profile based on local time.
+#
+# Invoked by orc-capture once per wake cycle after the camera is reachable
+# but before the actual RTSP capture. Idempotent: only pushes when the
+# desired profile differs from the last-pushed profile (tracked in a state
+# file). The camera persists ISAPI image config across power cycles, so we
+# only need to push on day↔night transitions.
+#
+# Can also be invoked manually for forcing a profile (e.g. to test):
+#   orc-camera-profile-switch auto    # decide from local time (default)
+#   orc-camera-profile-switch day     # force day profile
+#   orc-camera-profile-switch night   # force night profile
+#   orc-camera-profile-switch status  # print current state, do nothing
+#   orc-camera-profile-switch --force # ignore state file, push anyway
+#
+# Configuration (from /etc/orc-capture.conf or defaults below):
+#   NIGHT_START         — local time HH:MM when night profile should be active (default 18:00)
+#   NIGHT_END           — local time HH:MM when day profile should resume (default 06:00)
+#   DAY_PROFILE_PATH    — image.xml to push during day (default common/image.xml)
+#   NIGHT_PROFILE_PATH  — image.xml to push during night (default profile-night/image.xml)
+#   CAMERA_NAME         — camera name in cameras.json (default sukabumi-cam1)
+#
+# State file: /var/lib/orc-camera/active-profile
+#   Contents: single line, "day" or "night", reflects what was last pushed.
+#
+# Exit codes:
+#   0 — success or no-op
+#   1 — push failed
+#   2 — configuration / argument error
+
+set -o pipefail
+
+# ─── Load configuration ─────────────────────────────────────────────
+
+ORC_CAPTURE_CONF="${ORC_CAPTURE_CONF:-/etc/orc-capture.conf}"
+if [ -f "$ORC_CAPTURE_CONF" ]; then
+    # shellcheck disable=SC1090
+    source "$ORC_CAPTURE_CONF"
+fi
+
+NIGHT_START="${NIGHT_START:-18:00}"
+NIGHT_END="${NIGHT_END:-06:00}"
+DAY_PROFILE_PATH="${DAY_PROFILE_PATH:-/home/pi/camera_profiles/common/image.xml}"
+NIGHT_PROFILE_PATH="${NIGHT_PROFILE_PATH:-/home/pi/camera_profiles/profiles/profile-night/image.xml}"
+CAMERA_NAME="${CAMERA_NAME:-sukabumi-cam1}"
+
+STATE_DIR="/var/lib/orc-camera"
+STATE_FILE="$STATE_DIR/active-profile"
+
+# ─── Logging ────────────────────────────────────────────────────────
+
+log()  { echo "$(date '+%Y-%m-%d %H:%M:%S') [orc-camera-profile-switch] $1"; }
+err()  { echo "$(date '+%Y-%m-%d %H:%M:%S') [orc-camera-profile-switch] ERROR: $1" >&2; }
+warn() { echo "$(date '+%Y-%m-%d %H:%M:%S') [orc-camera-profile-switch] WARN: $1" >&2; }
+
+# ─── Argument parsing ───────────────────────────────────────────────
+
+MODE="auto"
+FORCE=0
+for arg in "$@"; do
+    case "$arg" in
+        auto|day|night|status) MODE="$arg" ;;
+        --force) FORCE=1 ;;
+        -h|--help)
+            sed -n '2,21p' "$0" | sed 's/^# \?//'
+            exit 0
+            ;;
+        *)
+            err "Unknown argument: $arg"
+            exit 2
+            ;;
+    esac
+done
+
+# ─── Decide desired profile ─────────────────────────────────────────
+
+decide_from_clock() {
+    # Returns "day" or "night" based on the current local time vs NIGHT_START / NIGHT_END.
+    # Handles wraparound (night spans midnight when NIGHT_START > NIGHT_END).
+    local now start end
+    now=$(date +%H:%M)
+    start="$NIGHT_START"
+    end="$NIGHT_END"
+
+    # Compare as HH:MM strings — lexicographic compare works for zero-padded times.
+    if [[ "$start" > "$end" ]]; then
+        # Night wraps midnight: e.g. 18:00 → 06:00. Night = now >= start OR now < end.
+        if [[ "$now" > "$start" || "$now" == "$start" || "$now" < "$end" ]]; then
+            echo "night"
+        else
+            echo "day"
+        fi
+    else
+        # No wrap: e.g. 09:00 → 17:00. Night = start <= now < end.
+        if [[ ("$now" > "$start" || "$now" == "$start") && "$now" < "$end" ]]; then
+            echo "night"
+        else
+            echo "day"
+        fi
+    fi
+}
+
+case "$MODE" in
+    auto)   DESIRED=$(decide_from_clock) ;;
+    day)    DESIRED="day" ;;
+    night)  DESIRED="night" ;;
+    status) ;;  # handled below
+esac
+
+# ─── Read current state ─────────────────────────────────────────────
+
+# State dir is created by deploy.sh with pi:pi ownership. If it's missing
+# we warn but keep running — the push will succeed, only the state-file
+# write at the end will fail (caller sees the warning).
+if [ ! -d "$STATE_DIR" ]; then
+    warn "state dir $STATE_DIR does not exist — run deploy.sh to create it. State will not persist."
+fi
+
+CURRENT="unknown"
+if [ -f "$STATE_FILE" ]; then
+    CURRENT=$(< "$STATE_FILE")
+fi
+
+if [ "$MODE" = "status" ]; then
+    log "active profile (per state file): $CURRENT"
+    log "desired profile (from clock):    $(decide_from_clock)"
+    log "current local time:              $(date '+%H:%M %Z')"
+    log "night window:                    $NIGHT_START → $NIGHT_END"
+    exit 0
+fi
+
+# ─── Decide whether to push ─────────────────────────────────────────
+
+if [ "$CURRENT" = "$DESIRED" ] && [ $FORCE -eq 0 ]; then
+    log "active=$CURRENT desired=$DESIRED — no change needed"
+    exit 0
+fi
+
+# ─── Pick profile path ──────────────────────────────────────────────
+
+case "$DESIRED" in
+    day)   PROFILE_PATH="$DAY_PROFILE_PATH" ;;
+    night) PROFILE_PATH="$NIGHT_PROFILE_PATH" ;;
+    *)
+        err "Internal error: invalid DESIRED=$DESIRED"
+        exit 2
+        ;;
+esac
+
+if [ ! -f "$PROFILE_PATH" ]; then
+    err "Profile file not found: $PROFILE_PATH"
+    exit 2
+fi
+
+# ─── Push via camtool ───────────────────────────────────────────────
+
+log "transition: $CURRENT → $DESIRED (force=$FORCE)"
+log "pushing $PROFILE_PATH to $CAMERA_NAME"
+
+if ! command -v camtool.py >/dev/null 2>&1; then
+    err "camtool.py not found in PATH"
+    exit 2
+fi
+
+push_output=$(camtool.py push "$CAMERA_NAME" --config "$PROFILE_PATH" --no-backup 2>&1)
+push_status=$?
+
+if [ $push_status -ne 0 ]; then
+    err "camtool push failed (exit $push_status):"
+    echo "$push_output" | sed 's/^/  /' >&2
+    exit 1
+fi
+
+# ─── Update state file atomically ───────────────────────────────────
+
+if [ -d "$STATE_DIR" ]; then
+    tmp="$STATE_FILE.tmp.$$"
+    if echo "$DESIRED" > "$tmp" 2>/dev/null; then
+        mv "$tmp" "$STATE_FILE"
+    else
+        warn "could not write state file $STATE_FILE — next invocation will re-push"
+    fi
+fi
+
+log "switched to $DESIRED profile"
+exit 0

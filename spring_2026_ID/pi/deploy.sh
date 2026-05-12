@@ -366,6 +366,26 @@ run_overlay_files() {
         warn "camera/camtool.py not found at $camtool_src — camera config management unavailable"
     fi
 
+    # profile-night/image.xml — IR-tuned image params for night captures.
+    # Pushed by orc-camera-profile-switch (invoked from orc-capture) on
+    # day → night transitions. Source of truth lives outside pi/shared/.
+    local profile_night_src="$REPO_ROOT/camera/profiles/profile-night/image.xml"
+    local profile_night_dest="/home/pi/camera_profiles/profiles/profile-night/image.xml"
+    if [ -f "$profile_night_src" ]; then
+        if [ -f "$profile_night_dest" ] && cmp -s "$profile_night_src" "$profile_night_dest"; then
+            pass "$profile_night_dest (up to date)"
+        else
+            if [ -f "$profile_night_dest" ]; then
+                fail "$profile_night_dest (differs from camera/profiles/profile-night/image.xml)"
+            else
+                fail "$profile_night_dest (missing — night camera profile will not be available)"
+            fi
+            OVERLAY_DIFFS+=("$profile_night_src|$profile_night_dest|profile-night")
+        fi
+    else
+        warn "camera/profiles/profile-night/image.xml not found at $profile_night_src — night profile switching disabled"
+    fi
+
     # Fix phase: apply all diffs
     if [ "$FIXING" -eq 1 ] && [ "${#OVERLAY_DIFFS[@]}" -gt 0 ]; then
         for entry in "${OVERLAY_DIFFS[@]}"; do
@@ -389,6 +409,7 @@ run_directories() {
     local dirs=(
         /var/log/orc/sensors
         /var/lib/orc-sensors
+        /var/lib/orc-camera
         /mnt/usb
         /etc/orc-sensors
         /etc/orc
@@ -407,7 +428,7 @@ run_directories() {
                 sudo mkdir -p "$d"
                 if [[ "$d" == /var/log/orc* ]]; then
                     sudo chown -R pi:pi /var/log/orc
-                elif [[ "$d" == /var/lib/orc-sensors ]]; then
+                elif [[ "$d" == /var/lib/orc-sensors || "$d" == /var/lib/orc-camera ]]; then
                     sudo chown pi:pi "$d"
                 fi
                 fixed "$d created"
@@ -1284,6 +1305,40 @@ run_config_checks() {
         fi
     else
         fail "~/camera_profiles/ not found"
+    fi
+
+    # Day/night profile switching — verify the paths declared in
+    # /etc/orc-capture.conf actually point at existing files. The
+    # profile-night XML is auto-synced in run_overlay_files; the day
+    # profile (typically ~/camera_profiles/common/image.xml) is operator-
+    # populated and only warned on if missing so we don't clobber edits.
+    local day_path night_path
+    day_path=$(grep "^DAY_PROFILE_PATH=" /etc/orc-capture.conf 2>/dev/null | cut -d= -f2 | sed 's/#.*//' | xargs || true)
+    night_path=$(grep "^NIGHT_PROFILE_PATH=" /etc/orc-capture.conf 2>/dev/null | cut -d= -f2 | sed 's/#.*//' | xargs || true)
+    if [ -n "$day_path" ]; then
+        if [ -f "$day_path" ]; then
+            pass "DAY_PROFILE_PATH points at existing file ($day_path)"
+        else
+            warn "DAY_PROFILE_PATH ($day_path) does not exist — day profile push will fail"
+        fi
+    else
+        warn "DAY_PROFILE_PATH not set in /etc/orc-capture.conf"
+    fi
+    if [ -n "$night_path" ]; then
+        if [ -f "$night_path" ]; then
+            pass "NIGHT_PROFILE_PATH points at existing file ($night_path)"
+        else
+            fail "NIGHT_PROFILE_PATH ($night_path) does not exist — night profile push will fail"
+        fi
+    else
+        warn "NIGHT_PROFILE_PATH not set in /etc/orc-capture.conf"
+    fi
+
+    # orc-camera-profile-switch should be in PATH after overlay sync
+    if command -v orc-camera-profile-switch >/dev/null 2>&1; then
+        pass "orc-camera-profile-switch found at $(command -v orc-camera-profile-switch)"
+    else
+        fail "orc-camera-profile-switch not found in PATH (day/night profile switching disabled)"
     fi
 }
 
