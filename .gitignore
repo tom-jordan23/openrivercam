@@ -53,3 +53,6 @@ spring_2026_ID/sukabumi_bringup/*.log
 
 # macOS Finder metadata
 .DS_Store
+
+# Sukabumi handoff folder (real GPS coords, .env with camera password)
+spring_2026_ID/sukabumi_handoff/

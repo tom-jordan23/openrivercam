@@ -77,6 +77,8 @@ MAX_DURATION="${MAX_DURATION:-7.0}"
 MIN_FRAMES="${MIN_FRAMES:-40}"
 ISAPI_CHANNEL="${ISAPI_CHANNEL:-/ISAPI/Image/channels/1}"
 SUPPLEMENT_LIGHT_MODE="${SUPPLEMENT_LIGHT_MODE:-irLight}"
+CYCLE_MODE="${CYCLE_MODE:-0}"
+DELIVERED_FLAG="/run/orc-capture-delivered"
 
 DRY_RUN=0
 SKIP_RELAY=0
@@ -109,6 +111,22 @@ if [ -f /run/orc-maintenance-mode ]; then
         echo "$(date '+%Y-%m-%d %H:%M:%S') [orc-capture] MAINTENANCE MODE — skipping capture cycle"
         exit 0
     fi
+fi
+
+# ─── Cycle-mode shutdown check ──────────────────────────────────────
+# On stations with a scheduled wake/sleep timer (Witty Pi), orc-capture
+# acts as the shutdown trigger: after a successful delivery, a flag is
+# written to tmpfs. Subsequent fires within the same boot detect the
+# flag and initiate a clean shutdown instead of capturing again. This
+# guarantees an orderly shutdown even when orc-api cannot process the
+# video (e.g. no video config set) so shutdown_after_task never fires.
+# Enable per-station by setting CYCLE_MODE=1 in /etc/orc-capture.conf.
+# Bypassed by --dry-run and --force.
+
+if [ "$CYCLE_MODE" = "1" ] && [ "$DRY_RUN" -eq 0 ] && [ "$FORCE" -eq 0 ] && [ -f "$DELIVERED_FLAG" ]; then
+    echo "$(date '+%Y-%m-%d %H:%M:%S') [orc-capture] CYCLE MODE — delivery already happened this boot, scheduling clean shutdown"
+    sudo shutdown -h +1 "orc-capture: cycle-mode shutdown after successful delivery"
+    exit 0
 fi
 
 # ─── Logging ─────────────────────────────────────────────────────────
@@ -428,6 +446,9 @@ main() {
         else
             mv "$tmpfile" "${INCOMING_DIR}/${filename}"
             log "Delivered: ${INCOMING_DIR}/${filename}"
+            if [ "$CYCLE_MODE" = "1" ]; then
+                sudo touch "$DELIVERED_FLAG"
+            fi
         fi
     else
         err "All $MAX_RETRIES attempts failed — no video delivered"
