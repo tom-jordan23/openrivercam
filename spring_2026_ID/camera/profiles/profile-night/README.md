@@ -98,15 +98,29 @@ All in `/etc/orc-capture.conf` (site-specific copies under `pi/sukabumi/`
 and `pi/jakarta/`):
 
 ```
-NIGHT_START=18:00               # local time when night profile takes over
-NIGHT_END=06:00                 # local time when day profile resumes
+NIGHT_START=11:00               # 18:00 WIB — night profile takes over
+NIGHT_END=23:00                 # 06:00 WIB — day profile resumes
 DAY_PROFILE_PATH=/home/pi/camera_profiles/common/image.xml
 NIGHT_PROFILE_PATH=/home/pi/camera_profiles/profiles/profile-night/image.xml
 CAMERA_NAME=sukabumi-cam1       # cameras.json key for camtool push
 ```
 
-Wraparound across midnight is handled (NIGHT_START > NIGHT_END means
-night spans midnight, which is the usual case).
+**Times are interpreted in the station's system-clock timezone.** Both
+Indonesia Pis are configured to UTC (per the `Timezone is UTC` preflight
+check), so the values above are UTC, not local. WIB is UTC+7, so:
+
+| Event | Local (WIB) | UTC |
+|-------|-------------|-----|
+| Sunset → switch to night profile | 18:00 | **11:00** |
+| Sunrise → switch to day profile | 06:00 | **23:00** |
+
+The window 11:00 → 23:00 UTC does not wrap midnight UTC, so wraparound
+logic is not engaged. If you change the threshold, remember to convert
+local → UTC.
+
+Wraparound across midnight in the SYSTEM clock IS handled
+(NIGHT_START > NIGHT_END triggers the wrap branch), which would apply
+for sites at significantly different longitudes from WIB.
 
 ### Files involved
 
