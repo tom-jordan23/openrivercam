@@ -382,13 +382,26 @@ def cmd_push(args):
     camera = get_camera(args.camera_name)
     password = get_password(args)
 
-    # --config overrides: push a specific file as streaming_101
+    # --config overrides: push a specific file. The endpoint is derived from
+    # the filename stem (image.xml → "image", streaming_101.xml → "streaming_101").
+    # If the filename doesn't match a known endpoint, fall back to streaming_101
+    # for backward compatibility with earlier --config usage.
     config_override = None
     if getattr(args, "config", None):
         config_override = Path(args.config).expanduser().resolve()
         if not config_override.is_file():
             sys.exit(f"Error: config file not found: {config_override}")
-        endpoints = ["streaming_101"]
+        stem = config_override.stem
+        if stem in ENDPOINTS:
+            endpoints = [stem]
+        else:
+            print(
+                f"Warning: filename {config_override.name!r} does not match a "
+                f"known endpoint; pushing as streaming_101 (legacy behavior). "
+                f"Known endpoints: {', '.join(sorted(ENDPOINTS.keys()))}",
+                file=sys.stderr,
+            )
+            endpoints = ["streaming_101"]
     else:
         endpoints = resolve_endpoints(args.endpoints)
 
@@ -919,7 +932,9 @@ def build_parser() -> argparse.ArgumentParser:
     p_push.add_argument("camera_name", help="Camera name from cameras.json")
     p_push.add_argument("endpoints", nargs="*", help="Specific endpoints (default: all)")
     p_push.add_argument("--config", metavar="FILE",
-                        help="Push a specific XML file as streaming_101 (overrides layered lookup)")
+                        help="Push a specific XML file. Endpoint is derived from the filename stem "
+                             "(e.g. image.xml → image). Falls back to streaming_101 if the stem is "
+                             "not a known endpoint (legacy behavior).")
     p_push.add_argument("--no-backup", action="store_true",
                         help="Skip automatic pre-push backup of live config")
 
