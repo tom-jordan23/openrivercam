@@ -462,7 +462,11 @@ run_directories() {
         fi
     fi
 
-    # ~/Videos (directory or symlink to USB)
+    # USB drive (optional, for archive/spare). NOT used for live captures.
+    # We tried symlinking ~/Videos -> /mnt/usb/incoming but hit EXDEV: ORC-OS's
+    # check_new_videos uses os.rename to move captures into .ORC-OS/tmp (on the
+    # SD rootfs), and os.rename can't cross filesystems. The proper fix is
+    # upstream (shutil.move); until then, keep ~/Videos on the rootfs.
     if [ -b /dev/sda1 ]; then
         local usb_uuid
         usb_uuid=$(sudo blkid -s UUID -o value /dev/sda1 2>/dev/null || true)
@@ -473,59 +477,32 @@ run_directories() {
                 if [ "$FIXING" -eq 1 ]; then
                     echo "UUID=$usb_uuid /mnt/usb ext4 defaults,noatime,nofail 0 2" | sudo tee -a /etc/fstab > /dev/null
                     sudo mount -a 2>/dev/null || true
-                    sudo mkdir -p /mnt/usb/incoming
-                    sudo chown pi:pi /mnt/usb/incoming
                     fixed "/mnt/usb added to fstab (UUID=$usb_uuid)"
                 else
                     fail "/mnt/usb not in fstab (USB drive detected at /dev/sda1)"
                 fi
             fi
+        fi
+    fi
 
-            if [ -L /home/pi/Videos ]; then
-                local link_target
-                link_target=$(readlink /home/pi/Videos)
-                if [ "$link_target" = "/mnt/usb/incoming" ]; then
-                    pass "~/Videos symlink -> /mnt/usb/incoming"
-                else
-                    if [ "$FIXING" -eq 1 ]; then
-                        rm -f /home/pi/Videos
-                        ln -s /mnt/usb/incoming /home/pi/Videos
-                        fixed "~/Videos symlink corrected -> /mnt/usb/incoming"
-                    else
-                        fail "~/Videos symlink points to wrong target: $link_target"
-                    fi
-                fi
-            elif [ -d /home/pi/Videos ]; then
-                if [ "$FIXING" -eq 1 ]; then
-                    rm -rf /home/pi/Videos
-                    ln -s /mnt/usb/incoming /home/pi/Videos
-                    fixed "~/Videos replaced with symlink -> /mnt/usb/incoming"
-                else
-                    warn "~/Videos is a plain directory (USB drive present; should be symlink -> /mnt/usb/incoming)"
-                fi
-            else
-                if [ "$FIXING" -eq 1 ]; then
-                    sudo mkdir -p /mnt/usb/incoming
-                    sudo chown pi:pi /mnt/usb/incoming
-                    ln -s /mnt/usb/incoming /home/pi/Videos
-                    fixed "~/Videos symlink created -> /mnt/usb/incoming"
-                else
-                    fail "~/Videos missing (USB drive present)"
-                fi
-            fi
+    # ~/Videos must be a plain directory on the OS rootfs (same FS as .ORC-OS/tmp).
+    if [ -L /home/pi/Videos ]; then
+        if [ "$FIXING" -eq 1 ]; then
+            rm -f /home/pi/Videos
+            mkdir -p /home/pi/Videos
+            fixed "~/Videos symlink removed, plain directory restored (avoids ORC-OS EXDEV bug)"
+        else
+            fail "~/Videos is a symlink (causes ORC-OS EXDEV bug — should be plain directory on rootfs)"
+        fi
+    elif [ ! -d /home/pi/Videos ]; then
+        if [ "$FIXING" -eq 1 ]; then
+            mkdir -p /home/pi/Videos
+            fixed "~/Videos directory created"
+        else
+            fail "~/Videos missing"
         fi
     else
-        warn "USB drive not detected at /dev/sda1 — add fstab entry manually after inserting drive"
-        if [ -d /home/pi/Videos ] || [ -L /home/pi/Videos ]; then
-            pass "~/Videos exists"
-        else
-            if [ "$FIXING" -eq 1 ]; then
-                mkdir -p /home/pi/Videos
-                fixed "~/Videos directory created"
-            else
-                fail "~/Videos missing"
-            fi
-        fi
+        pass "~/Videos is a plain directory on rootfs"
     fi
 }
 
