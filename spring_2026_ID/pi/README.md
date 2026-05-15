@@ -63,10 +63,8 @@ contains a real file.
 | `shared/usr/local/lib/orc-sensors/sensors_logger.py` | `/usr/local/lib/orc-sensors/sensors_logger.py` | Multi-sensor reader: I2C read, CRC validation, CSV append, log rotation | Shared | No | Yes |
 | `shared/etc/systemd/system/orc-sensors.service` | `/etc/systemd/system/orc-sensors.service` | Oneshot service: reads all due sensors and appends to daily CSVs | Shared | No | Yes |
 | `shared/etc/systemd/system/orc-sensors.timer` | `/etc/systemd/system/orc-sensors.timer` | Timer: ticks every 60s, per-sensor interval checked in Python | Shared | No | Yes |
-| `shared/usr/local/bin/orc-sensors-upload` | `/usr/local/bin/orc-sensors-upload` | Push new sensor CSVs to remote host via scp; only sends files newer than the state-file watermark | Shared | No | No |
-| `shared/etc/orc/sensors-upload.conf` | `/etc/orc/sensors-upload.conf` | Remote host, user, path, SSH key, and state file for sensor upload | Shared | No | No |
-| `shared/etc/systemd/system/orc-sensors-upload.service` | `/etc/systemd/system/orc-sensors-upload.service` | Oneshot service: runs orc-sensors-upload after network is online | Shared | No | No |
-| `shared/etc/systemd/system/orc-sensors-upload.timer` | `/etc/systemd/system/orc-sensors-upload.timer` | Timer: OnBootSec=30s (every boot on Sukabumi) + OnUnitActiveSec=1h (hourly on Jakarta) | Shared | No | No |
+| `shared/usr/local/bin/orc-sensors-upload` | `/usr/local/bin/orc-sensors-upload` | PUT new sensor CSVs to LiveORC over HTTPS; only sends files newer than the state-file watermark. Invoked from orc-capture step 2 (not a timer). | Shared | No | No |
+| `shared/etc/orc/sensors-upload.conf` | `/etc/orc/sensors-upload.conf` | UPLOAD_URL + state file for sensor upload. UPLOAD_TOKEN is loaded from `~pi/.orc_deploy_<site>` (out-of-band, not version controlled). | Shared | No | No |
 | `shared/update-motd.d/30-camera-status` | `/etc/update-motd.d/30-camera-status` | Dynamic MOTD: relay status, Witty Pi 5 RTC/temp/voltage, eth0 IP, camera reachability | Shared | No | No |
 | `shared/update-motd.d/40-power-management` | `/etc/update-motd.d/40-power-management` | Dynamic MOTD: ORC-OS shutdown/reboot settings, Witty Pi 5 wake schedule, how to change | Shared | No | No |
 | `shared/update-motd.d/20-led-status` | `/etc/update-motd.d/20-led-status` | Dynamic MOTD: LED service status, compact color guide | Shared | No | No |
@@ -189,110 +187,68 @@ If a local-only variant is ever needed, use the `*.local` suffix (e.g.
 ## Sensor Data Upload
 
 Sensor CSVs under `/var/log/orc/sensors/` are pushed to the LiveORC server
-(or any other SSH-accessible host) by `orc-sensors-upload.timer`. The timer
-fires 30 seconds after every boot (which on Sukabumi means every 15-minute
-cycle) and every hour thereafter (which matters on Jakarta, where the Pi
-stays on between cycles).
+via HTTPS PUT. Uploads are driven from **`orc-capture` step 2** (during the
+camera-boot dead time), not by a standalone timer. This guarantees that
+uploads run inside the wake-cycle critical path, before ORC-OS's
+shutdown-after-task trigger can race them.
 
 Uploads are incremental: a state file at `/var/lib/orc-sensors/upload.state`
 holds the mtime of the last successful upload, and the script only sends
 files newer than that watermark. The watermark is advanced atomically, so
-any failure during upload just retries the same set next cycle.
+any failure during upload just retries the same set next cycle. PUTs are
+idempotent on the server (same URL = same effect), so re-uploads on retry
+are safe and cheap.
 
 ### One-time setup
 
-Until `ENABLED=1` is set in `/etc/orc/sensors-upload.conf`, the timer runs
-but the script exits immediately. Enabling it before the server is ready
-is safe — each failed run logs to the journal, leaves the watermark alone,
-and the next cycle retries. The backlog clears naturally once SSH starts
-accepting connections.
+The server-side endpoint and per-station tokens are provisioned via the
+LiveORC server's `liveorc_server/sensor-upload/` stack — see
+`spring_2026_ID/liveorc_server/README.md` for that side.
 
-**On AWS** (LiveORC's EC2 instance is HTTPS-only by default — port 22 has
-to be opened before anything else works):
-
-1. **Security group inbound rule.** In the EC2 console, open the security
-   group attached to the LiveORC instance and add:
-   - Type: `SSH`
-   - Protocol: `TCP`
-   - Port: `22` (or a non-standard port like `2022` to cut log noise;
-     match `REMOTE_PORT` in the Pi config if you change it)
-   - Source: `0.0.0.0/0` is pragmatic — station LTE IPs are dynamic and
-     carrier CGNAT ranges are huge. Key-only auth (step 3 below) is what
-     actually protects the host. If you want a smaller surface, allow
-     only the office public IP and add the stations later by observing
-     their source IPs in the auth log.
-
-2. **Host firewall.** If `ufw` is active on the EC2 host
-   (`sudo ufw status`), also run `sudo ufw allow 22/tcp`. On stock
-   Ubuntu AMIs, ufw is disabled and the SG is the only gate.
-
-3. **Harden sshd.** Edit `/etc/ssh/sshd_config.d/orc-upload.conf`:
-   ```
-   PasswordAuthentication no
-   PermitRootLogin no
-   # Keep sftp subsystem enabled — scp uses it on modern OpenSSH
-   Subsystem sftp /usr/lib/openssh/sftp-server
-   ```
-   Then `sudo systemctl reload ssh`.
-
-4. **(Optional) Non-standard port.** If you moved SSH off 22, uncomment
-   `REMOTE_PORT=2022` in `/etc/orc/sensors-upload.conf` on each Pi. Also
-   prime known_hosts with the matching `-p 2022` for `ssh-keyscan`.
-
-**On the LiveORC server** (as root, once):
+On each Pi (as `pi`, once per station):
 
 ```bash
-# 1. Create the upload user and data dirs (one per station)
-sudo useradd -m -s /bin/bash orc-upload
-sudo mkdir -p /var/orc/sensors/sukabumi /var/orc/sensors/jakarta
-sudo chown -R orc-upload:orc-upload /var/orc/sensors
+# 1. Get the station's bearer token from the password manager. Append it
+#    to ~pi/.orc_deploy_<site> (same file that holds CAMERA_PASS).
+#    Example:
+#       echo 'UPLOAD_TOKEN=<token-from-password-manager>' \
+#           >> ~/.orc_deploy_sukabumi
+#    Mode on that file should be 0600.
 
-# 2. Accept the Pi's public key (paste PI_PUBKEY content below)
-sudo -u orc-upload mkdir -p /home/orc-upload/.ssh
-sudo -u orc-upload tee -a /home/orc-upload/.ssh/authorized_keys <<'EOF'
-<PI_PUBKEY>
-EOF
-sudo chmod 600 /home/orc-upload/.ssh/authorized_keys
+# 2. Smoke-test from the Pi (replaces the token in env for this command):
+UPLOAD_TOKEN=<paste token> \
+  curl -sS -X PUT \
+    -H "Authorization: Bearer $UPLOAD_TOKEN" \
+    -H "Content-Type: text/csv" \
+    --data-binary "ts,value
+$(date -u +%FT%TZ),test" \
+    https://openrivercam.endlessprojects.info/sensors/upload/sukabumi/smoke-$(date -u +%FT%TZ).csv
+
+# 3. Confirm the file landed on the server side, then flip the flag:
+sudo sed -i 's/^ENABLED=0$/ENABLED=1/' /etc/orc/sensors-upload.conf
+
+# 4. Manually trigger one upload run to verify under the production code path:
+/usr/local/bin/orc-sensors-upload
+sudo journalctl -t orc-sensors-upload -n 30 --no-pager
 ```
 
-If you want to lock the key down further, prefix the authorized_keys line
-with `restrict,command="/usr/lib/openssh/sftp-server"` — scp still works
-over SFTP mode on modern OpenSSH.
-
-**On each Pi** (as `pi`, once per station):
-
-```bash
-# 1. Generate a passphraseless key reserved for this purpose
-ssh-keygen -t ed25519 -N '' -C "orc-sensors-upload@$(hostname)" \
-    -f ~/.ssh/orc-sensors-upload
-
-# 2. Print the public key — paste it into authorized_keys on the server
-cat ~/.ssh/orc-sensors-upload.pub
-
-# 3. Prime known_hosts (avoids the first-run TOFU prompt)
-ssh-keyscan -H openrivercam.endlessprojects.info >> ~/.ssh/known_hosts
-
-# 4. Smoke-test from the Pi
-ssh -i ~/.ssh/orc-sensors-upload orc-upload@openrivercam.endlessprojects.info true
-
-# 5. Flip the flag and trigger a run
-sudo sed -i 's/^ENABLED=0/ENABLED=1/' /etc/orc/sensors-upload.conf
-sudo systemctl start orc-sensors-upload.service
-sudo journalctl -u orc-sensors-upload.service -n 30 --no-pager
-```
+After that, every `orc-capture` invocation runs the upload as step 2.
 
 ### Forcing a full re-upload
 
 ```bash
 sudo rm /var/lib/orc-sensors/upload.state
-sudo systemctl start orc-sensors-upload.service
+/usr/local/bin/orc-sensors-upload
 ```
 
 ### Disabling
 
 ```bash
-sudo sed -i 's/^ENABLED=1/ENABLED=0/' /etc/orc/sensors-upload.conf
+sudo sed -i 's/^ENABLED=1$/ENABLED=0/' /etc/orc/sensors-upload.conf
 ```
+
+orc-capture's step 2 detects the disabled state and skips the upload
+without warning (already a no-op exit-zero in the script).
 
 The timer still fires, but the script exits in ~10 ms when `ENABLED != 1`.
 

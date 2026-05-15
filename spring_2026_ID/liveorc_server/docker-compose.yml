@@ -1,0 +1,34 @@
+# LiveORC server-side additions: services that run alongside LiveORC on the
+# same EC2 host. Joined to LiveORC's docker network so its nginx can proxy
+# to us by container name.
+#
+# Deploy with:
+#   docker compose -f docker-compose.yml --env-file .env up -d --build
+#
+# Requires `.env` with at minimum:
+#   ORC_UPLOAD_TOKENS=sukabumi:<token1>,jakarta:<token2>
+#
+# LiveORC must already be running so its default network exists.
+
+services:
+  sensor-upload:
+    build: ./sensor-upload
+    container_name: orc-sensor-upload
+    restart: unless-stopped
+    environment:
+      ORC_SENSORS_DIR: /var/orc/sensors
+      ORC_UPLOAD_TOKENS: ${ORC_UPLOAD_TOKENS:?ORC_UPLOAD_TOKENS must be set in .env}
+    volumes:
+      - /var/orc/sensors:/var/orc/sensors:rw
+    expose:
+      - "8001"
+    networks:
+      - liveorc
+
+networks:
+  liveorc:
+    external: true
+    # LiveORC's docker compose network. Confirm with `docker network ls`:
+    # the project's name is "liveorc" (the directory under /opt/) so the
+    # default network is "liveorc_default".
+    name: liveorc_default

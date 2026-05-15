@@ -18,6 +18,9 @@ spring_2026_ID/pi/**/*.local
 spring_2026_ID/camera/.env
 spring_2026_ID/camera/**/*.local
 
+# LiveORC server-side .env (contains ORC_UPLOAD_TOKENS)
+spring_2026_ID/liveorc_server/.env
+
 # Python venv for doc tools (translation)
 spring_2026_ID/docs/.venv/
 

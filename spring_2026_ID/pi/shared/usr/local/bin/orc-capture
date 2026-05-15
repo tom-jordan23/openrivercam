@@ -12,15 +12,20 @@
 #
 # Workflow:
 #   1. Power on PoE relay via poe-relay
-#   2. Wait for camera to boot and become reachable
-#   3. Switch to day or night image profile if time-of-day requires it
+#   2. Read fresh sensor data + upload to LiveORC (fills camera-boot dead time)
+#   3. Wait for camera to boot and become reachable
+#   4. Switch to day or night image profile if time-of-day requires it
 #      (idempotent — usually a no-op since image config persists in NVRAM)
-#   4. Enforce critical camera settings (supplement light mode, OSD off)
-#   5. Capture 5s video via RTSP (TCP transport, codec copy — no re-encoding)
-#   6. Validate captured file against quality gate
-#   7. On pass: deliver to ORC-OS incoming directory
-#   8. On fail: retry up to MAX_RETRIES
-#   9. Power off PoE relay (cycle mode) or leave on (always mode)
+#   5. Enforce critical camera settings (supplement light mode, OSD off)
+#   6. Capture 5s video via RTSP (TCP transport, codec copy — no re-encoding)
+#   7. Validate captured file against quality gate
+#   8. On pass: deliver to ORC-OS incoming directory
+#   9. On fail: retry up to MAX_RETRIES
+#  10. Power off PoE relay (cycle mode) or leave on (always mode)
+#
+# Step 2 is placed during the camera-boot dead time so total wake time is
+# unchanged in the common case. It runs BEFORE delivery so ORC-OS's
+# shutdown-after-task trigger cannot race the upload to completion.
 #
 # Quality gate checks:
 #   - File exists and is non-empty
@@ -399,13 +404,32 @@ main() {
     # Step 1: Power on PoE
     relay_on
 
-    # Step 2: Wait for camera
+    # Step 2: Read fresh sensor data, then upload to LiveORC.
+    # SoC NOTE: integrated here for wake-cycle sequencing only — sits in the
+    # camera-boot dead time so it doesn't add to total wake time, and runs
+    # before delivery so ORC-OS's shutdown-after-task trigger can't race it.
+    # The read+upload pair should eventually move out to an orc-cycle
+    # orchestrator. Don't expand this block — keep new logic in orc-sensors
+    # and orc-sensors-upload, not here. Both failures are warn+continue:
+    # sensor data and video capture are independent concerns.
+    if command -v orc-sensors >/dev/null 2>&1; then
+        if ! /usr/local/bin/orc-sensors 2>&1 | logger -t orc-capture-sensors; then
+            warn "orc-sensors read failed — uploading whatever's on disk"
+        fi
+    fi
+    if command -v orc-sensors-upload >/dev/null 2>&1; then
+        if ! timeout 30 /usr/local/bin/orc-sensors-upload; then
+            warn "orc-sensors-upload failed or timed out — sensor data will retry next cycle"
+        fi
+    fi
+
+    # Step 3: Wait for camera
     if ! wait_for_camera; then
         err "Camera unreachable — aborting"
         exit 1
     fi
 
-    # Step 3: Day/night profile switch (idempotent — no-op if active profile
+    # Step 4: Day/night profile switch (idempotent — no-op if active profile
     # matches the time-of-day decision). Image settings persist in the
     # camera's NVRAM across power cycles, so this normally exits without
     # making a call.
@@ -417,10 +441,10 @@ main() {
         warn "orc-camera-profile-switch not in PATH — skipping day/night profile management"
     fi
 
-    # Step 4: Enforce camera settings that revert on power cycle
+    # Step 5: Enforce camera settings that revert on power cycle
     enforce_camera_config
 
-    # Step 4: Capture with retries
+    # Step 6: Capture with retries
     local attempt=0
     local success=0
     local timestamp filename tmpfile
@@ -454,7 +478,7 @@ main() {
         fi
     done
 
-    # Step 4: Deliver or fail
+    # Step 7: Deliver or fail
     if [ "$success" -eq 1 ]; then
         if [ "$DRY_RUN" -eq 1 ]; then
             log "Dry run — not delivering. File at: $tmpfile"
@@ -470,7 +494,7 @@ main() {
         exit 1
     fi
 
-    # Step 5: Power off PoE (via trap on exit)
+    # Step 8: Power off PoE (via trap on exit)
     log "Capture cycle complete"
 }
 

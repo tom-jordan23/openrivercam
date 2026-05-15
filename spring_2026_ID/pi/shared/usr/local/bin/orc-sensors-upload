@@ -1,25 +1,37 @@
 #!/bin/bash
-# orc-sensors-upload — push new sensor CSVs to a remote host
+# orc-sensors-upload — push new sensor CSVs to the LiveORC server via HTTPS PUT
 #
-# Reads /etc/orc/sensors-upload.conf, finds files under LOG_DIR that
-# changed since the last successful upload (tracked via STATE_FILE
-# mtime), and scps them to REMOTE_USER@REMOTE_HOST:REMOTE_PATH_BASE/<station>/.
+# SEPARATION OF CONCERNS NOTE: This script is invoked from orc-capture as a
+# step in the wake-cycle, not because sensor upload belongs in capture but
+# because we need wake-cycle sequencing to avoid being killed by ORC-OS's
+# shutdown trigger. The long-term plan is to extract capture, sensor upload,
+# and shutdown decision into an orc-cycle orchestrator. Don't expand this
+# script's responsibilities; if you need additional pre-upload work, add a
+# separate step in orc-capture rather than bundling here.
 #
-# The "station" component is derived from the hostname (e.g.,
-# orc-sukabumi -> sukabumi) so both sites can share one config file
-# without overwriting each other's uploads on the server.
+# Reads /etc/orc/sensors-upload.conf for UPLOAD_URL / LOG_DIR / STATE_FILE.
+# Reads ~pi/.orc_deploy_<site> for UPLOAD_TOKEN (out-of-band secret).
+# Files under LOG_DIR newer than STATE_FILE's mtime are PUT to:
+#   <UPLOAD_URL>/<station>/<filename>
+# with an `Authorization: Bearer <token>` header. Station is derived from
+# hostname (orc-<station> → <station>).
 #
 # Watermark semantics:
-#   - A temp file is touched before the find, capturing "now".
-#   - If all scps succeed, the temp file replaces STATE_FILE atomically.
-#   - If any scp fails, the old watermark stays, and the next run retries.
+#   - A temp file is touched before scanning, capturing "now".
+#   - If all PUTs succeed, the temp file replaces STATE_FILE atomically.
+#   - If any PUT fails, the old watermark stays, and the next run retries
+#     the whole batch. PUTs are idempotent (same URL = same effect), so
+#     re-uploading a few files is cheap.
 #
-# Designed for oneshot use from orc-sensors-upload.service (+ timer).
+# Each PUT is bounded by --max-time MAX_PER_FILE_SECS so a stalled upload
+# fails fast rather than getting killed by the wake-cycle shutdown.
 
 set -euo pipefail
 
 TAG="orc-sensors-upload"
-CONF="/etc/orc/sensors-upload.conf"
+# CONF and STATION are env-overridable for local testing. In production both
+# come from their defaults (config in /etc/orc/, station from hostname).
+CONF="${ORC_SENSORS_UPLOAD_CONF:-/etc/orc/sensors-upload.conf}"
 
 log() { logger -t "$TAG" -- "$1"; echo "[$TAG] $1"; }
 
@@ -35,9 +47,20 @@ if [ "${ENABLED:-0}" != "1" ]; then
     exit 0
 fi
 
-for v in REMOTE_HOST REMOTE_USER REMOTE_PATH_BASE SSH_KEY LOG_DIR STATE_FILE; do
+# Pull UPLOAD_TOKEN from ~pi/.orc_deploy_<site> if not already in env.
+# Same pattern orc-capture uses for CAMERA_PASS.
+if [ -z "${UPLOAD_TOKEN:-}" ]; then
+    for f in /home/pi/.orc_deploy_*; do
+        if [ -f "$f" ]; then
+            # shellcheck source=/dev/null
+            . "$f"
+        fi
+    done
+fi
+
+for v in UPLOAD_URL LOG_DIR STATE_FILE UPLOAD_TOKEN; do
     if [ -z "${!v:-}" ]; then
-        log "ERROR: $v not set in $CONF"
+        log "ERROR: $v not set (check $CONF and ~pi/.orc_deploy_<site>)"
         exit 1
     fi
 done
@@ -47,18 +70,14 @@ if [ ! -d "$LOG_DIR" ]; then
     exit 0
 fi
 
-if [ ! -r "$SSH_KEY" ]; then
-    log "ERROR: SSH_KEY $SSH_KEY not readable"
-    exit 1
-fi
-
-STATION="$(hostname | sed 's/^orc-//')"
+STATION="${STATION:-$(hostname | sed 's/^orc-//')}"
 if [ -z "$STATION" ]; then
-    log "ERROR: could not derive station from hostname"
+    log "ERROR: could not derive station (set STATION env var or run on a host named orc-<station>)"
     exit 1
 fi
 
-REMOTE_DEST="${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_PATH_BASE%/}/${STATION}/"
+# Normalize endpoint (no trailing slash so we don't double up)
+UPLOAD_URL="${UPLOAD_URL%/}"
 
 # Make sure STATE_FILE parent exists (on first run it may not)
 mkdir -p "$(dirname "$STATE_FILE")"
@@ -73,7 +92,7 @@ if [ -f "$STATE_FILE" ]; then
     find_args=(-newer "$STATE_FILE")
 fi
 
-# Read NUL-delimited file list into an array
+# Read NUL-delimited file list into an array, sorted oldest-first.
 mapfile -d '' files < <(find "$LOG_DIR" -type f "${find_args[@]}" -print0 | sort -z)
 
 if [ "${#files[@]}" -eq 0 ]; then
@@ -83,24 +102,28 @@ if [ "${#files[@]}" -eq 0 ]; then
     exit 0
 fi
 
-SSH_OPTS=(
-    -i "$SSH_KEY"
-    -o BatchMode=yes
-    -o ConnectTimeout="${CONNECT_TIMEOUT:-15}"
-    -o StrictHostKeyChecking=accept-new
-    -o UserKnownHostsFile="${KNOWN_HOSTS:-/home/pi/.ssh/known_hosts}"
-)
-if [ -n "${REMOTE_PORT:-}" ]; then
-    SSH_OPTS+=(-P "$REMOTE_PORT")
-fi
+MAX_PER_FILE_SECS="${MAX_PER_FILE_SECS:-20}"
+CONNECT_TIMEOUT="${CONNECT_TIMEOUT:-10}"
 
-log "uploading ${#files[@]} file(s) to ${REMOTE_DEST}"
+log "uploading ${#files[@]} file(s) to ${UPLOAD_URL}/${STATION}/"
 ok=0
 for f in "${files[@]}"; do
-    if scp -p -q "${SSH_OPTS[@]}" "$f" "$REMOTE_DEST"; then
+    fname=$(basename "$f")
+    target="${UPLOAD_URL}/${STATION}/${fname}"
+    if curl -sS -X PUT \
+        --data-binary "@${f}" \
+        -H "Authorization: Bearer ${UPLOAD_TOKEN}" \
+        -H "Content-Type: text/csv" \
+        -H "Connection: close" \
+        --connect-timeout "$CONNECT_TIMEOUT" \
+        --max-time "$MAX_PER_FILE_SECS" \
+        --fail \
+        --output /dev/null \
+        "$target"; then
         ok=$((ok+1))
     else
-        log "ERROR: scp failed for $f after $ok successful upload(s) — watermark not advanced"
+        rc=$?
+        log "ERROR: PUT failed (curl exit $rc) for $f -> $target after $ok successful upload(s); watermark not advanced"
         exit 1
     fi
 done

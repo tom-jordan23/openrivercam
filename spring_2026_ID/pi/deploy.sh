@@ -1016,7 +1016,6 @@ run_services() {
     _ensure_service_enabled dnsmasq
     _ensure_service_enabled chrony
     _ensure_service_enabled orc-sensors.timer
-    _ensure_service_enabled orc-sensors-upload.timer
     _ensure_service_enabled orc-led-status.service
     _ensure_service_enabled orc-led-off.service
     _ensure_service_enabled orc-boot-usb-log.service
@@ -1032,6 +1031,22 @@ run_services() {
     # started since the last boot, the backstop won't run.
     for svc in orc-api orc-led-status orc-led-off dnsmasq NetworkManager ModemManager chrony; do
         _check_service_running "$svc"
+    done
+
+    # Obsolete orc-sensors-upload.timer/service — remove if present.
+    # Upload is now driven by orc-capture step 2 (see orc-capture workflow).
+    for obsolete in orc-sensors-upload.timer orc-sensors-upload.service; do
+        if [ -e /etc/systemd/system/"$obsolete" ]; then
+            if [ "$FIXING" -eq 1 ]; then
+                sudo systemctl stop "$obsolete" 2>/dev/null || true
+                sudo systemctl disable "$obsolete" 2>/dev/null || true
+                sudo rm -f /etc/systemd/system/"$obsolete"
+                sudo systemctl daemon-reload
+                fixed "obsolete $obsolete removed (sensor upload now driven by orc-capture)"
+            else
+                fail "obsolete $obsolete present (should be removed — orc-capture drives sensor upload)"
+            fi
+        fi
     done
 
     # Static orc-capture.service — remove if present (replaced by ORC-OS managed timer)
@@ -1094,59 +1109,49 @@ run_credentials() {
         warn "~pi/.ssh/authorized_keys not found (SSH key login unavailable)"
     fi
 
-    # Sensor upload credentials (out-of-band — deploy.sh will not generate keys)
+    # Sensor upload credentials (HTTPS PUT with bearer token).
+    # Token is operator-provisioned in ~pi/.orc_deploy_<site> (per-site
+    # secrets file, same place CAMERA_PASS / BASE_PASSWD live). deploy.sh
+    # checks for its presence but never generates or modifies it.
     local upload_conf=/etc/orc/sensors-upload.conf
     if [ -f "$upload_conf" ]; then
-        # shellcheck source=/dev/null
-        local upload_enabled="" upload_key="" upload_known="" upload_host=""
-        # Read values in a subshell so sourcing doesn't leak
+        local upload_enabled="" upload_url=""
         eval "$(
             . "$upload_conf"
             printf 'upload_enabled=%q\n' "${ENABLED:-0}"
-            printf 'upload_key=%q\n'     "${SSH_KEY:-}"
-            printf 'upload_known=%q\n'   "${KNOWN_HOSTS:-/home/pi/.ssh/known_hosts}"
-            printf 'upload_host=%q\n'    "${REMOTE_HOST:-}"
+            printf 'upload_url=%q\n'     "${UPLOAD_URL:-}"
         )"
 
-        if [ "$upload_enabled" != "1" ]; then
-            warn "sensors-upload disabled in $upload_conf (set ENABLED=1 after key + server setup)"
+        if [ -z "$upload_url" ]; then
+            fail "sensors-upload: UPLOAD_URL not set in $upload_conf"
         else
-            # SSH key file — warn (not fail) and do not auto-create
-            if [ -z "$upload_key" ]; then
-                fail "sensors-upload: SSH_KEY not set in $upload_conf"
-            elif [ ! -f "$upload_key" ]; then
-                warn "sensors-upload: SSH key $upload_key missing — generate with:"
-                warn "  sudo -u pi ssh-keygen -t ed25519 -N '' -C orc-sensors-upload@\$(hostname) -f $upload_key"
-            else
-                pass "sensors-upload: SSH key $upload_key present"
-                local key_mode key_owner
-                key_mode=$(stat -c '%a' "$upload_key" 2>/dev/null || echo "")
-                key_owner=$(stat -c '%U' "$upload_key" 2>/dev/null || echo "")
-                if [ "$key_mode" = "600" ] && [ "$key_owner" = "pi" ]; then
-                    pass "sensors-upload: SSH key mode 600 pi:pi"
-                else
-                    if [ "$FIXING" -eq 1 ]; then
-                        sudo chmod 600 "$upload_key"
-                        sudo chown pi:pi "$upload_key"
-                        fixed "sensors-upload: SSH key perms set to 600 pi:pi"
-                    else
-                        fail "sensors-upload: SSH key has mode=$key_mode owner=$key_owner (want 600 pi)"
-                    fi
-                fi
-            fi
+            pass "sensors-upload: UPLOAD_URL=$upload_url"
+        fi
 
-            # known_hosts entry for REMOTE_HOST
-            if [ -n "$upload_host" ] && [ -f "$upload_known" ]; then
-                if grep -q -E "(^|,)$upload_host([ ,]|$)" "$upload_known" 2>/dev/null \
-                   || ssh-keygen -F "$upload_host" -f "$upload_known" >/dev/null 2>&1; then
-                    pass "sensors-upload: known_hosts has $upload_host"
-                else
-                    warn "sensors-upload: $upload_host not in $upload_known — prime with:"
-                    warn "  sudo -u pi ssh-keyscan -H $upload_host >> $upload_known"
-                fi
-            elif [ -n "$upload_host" ]; then
-                warn "sensors-upload: $upload_known missing (first scp will accept host key on TOFU)"
+        # UPLOAD_TOKEN must live in ~pi/.orc_deploy_<site>, not in the
+        # shared conf (which is in version control). We check presence
+        # without leaking the value.
+        local token_found=0
+        for f in ~pi/.orc_deploy_*; do
+            [ -f "$f" ] || continue
+            if grep -q '^UPLOAD_TOKEN=' "$f" 2>/dev/null; then
+                token_found=1
+                break
             fi
+        done
+        if [ "$token_found" -eq 1 ]; then
+            pass "sensors-upload: UPLOAD_TOKEN present in ~pi/.orc_deploy_<site>"
+        else
+            warn "sensors-upload: UPLOAD_TOKEN missing from ~pi/.orc_deploy_<site>"
+            warn "  Add a line: UPLOAD_TOKEN=<token from password manager>"
+        fi
+
+        if [ "$upload_enabled" != "1" ]; then
+            warn "sensors-upload disabled in $upload_conf (set ENABLED=1 after token + smoke test)"
+        elif [ "$token_found" -eq 1 ] && [ -n "$upload_url" ]; then
+            pass "sensors-upload enabled and prereqs met"
+        else
+            fail "sensors-upload enabled but prereqs not met (see warnings above)"
         fi
     fi
 }
@@ -1199,6 +1204,20 @@ run_config_checks() {
         pass "camtool.py found at $(command -v camtool.py)"
     else
         fail "camtool.py not found in PATH"
+    fi
+
+    # orc-sensors-upload in PATH (invoked from orc-capture step 2)
+    if command -v orc-sensors-upload >/dev/null 2>&1; then
+        pass "orc-sensors-upload found at $(command -v orc-sensors-upload)"
+    else
+        fail "orc-sensors-upload not found in PATH (orc-capture step 2 will warn-and-skip)"
+    fi
+
+    # curl available for HTTPS uploads from orc-sensors-upload
+    if command -v curl >/dev/null 2>&1; then
+        pass "curl found at $(command -v curl)"
+    else
+        fail "curl not installed (sensors-upload requires it for HTTPS PUT)"
     fi
 
     # LED status config
