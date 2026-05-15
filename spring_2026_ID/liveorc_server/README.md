@@ -1,15 +1,18 @@
 # LiveORC server-side additions
 
 Services that run alongside LiveORC on the same EC2 host **without modifying
-LiveORC's container or config**. Currently:
+LiveORC's container or config**:
 
 - **`sensor-upload/`** — FastAPI endpoint receiving sensor CSV uploads from
   Pi stations. Terminates TLS directly on port 8443 with a self-signed
   certificate. Authenticated via per-station bearer token. Writes files
   atomically under `/var/orc/sensors/<station>/`.
-
-Future additions (Grafana, CSV ingester to TimescaleDB) will land in the
-same docker-compose file alongside `sensor-upload`.
+- **`sensor-ingest/`** — Python watcher that polls `/var/orc/sensors/*.csv`
+  every 30 s and upserts parsed rows into the TimescaleDB hypertable.
+  Idempotent (composite unique key per `(ts, station, sensor, metric)`).
+- **`timescale`** — TimescaleDB instance backing the sensor time-series.
+- **`grafana`** — UI at port 9443 with anonymous viewer access (admin
+  login required for editing). Reuses the same self-signed cert.
 
 ## Architecture
 
@@ -102,14 +105,18 @@ sudo chmod 0755 /var/orc/sensors
 # Container runs as root and writes here directly — no chown needed.
 ```
 
-### 7. Open AWS Security Group for port 8443
+### 7. Open AWS Security Group for ports 8443 + 9443
 
-In the EC2 console → Security Groups → SG attached to the LiveORC instance:
+In the EC2 console → Security Groups → SG attached to the LiveORC instance,
+add two inbound rules:
 
-- Type: `Custom TCP`
-- Port: `8443`
-- Source: `0.0.0.0/0`
-- Description: `orc-sensor-upload (station CSV ingest)`
+| Port | Description |
+|------|-------------|
+| `8443` | `orc-sensor-upload (station CSV ingest)` |
+| `9443` | `orc-grafana (public read-only dashboards)` |
+
+Both: Type `Custom TCP`, Source `0.0.0.0/0` (public dashboards are an
+explicit design choice — see disclaimer banner on every dashboard).
 
 ### 8. Bring up the service
 
@@ -122,7 +129,21 @@ sudo docker logs orc-sensor-upload --tail 20
 Expect to see `loaded tokens for stations: ['jakarta', 'sukabumi']` and
 `Uvicorn running on https://0.0.0.0:8443`.
 
-### 9. Smoke test from the open internet
+### 9. Smoke test Grafana
+
+Browser → `https://openrivercam.endlessprojects.info:9443/`. You'll see a
+browser cert warning (self-signed). Accept the risk; you'll land on the
+Grafana home page in anonymous viewer mode. The "Station overview"
+dashboard should be available under "Browse → ORC station dashboards".
+
+The disclaimer banner at the top of every dashboard is **mandatory and
+non-removable** — see `memory/project_grafana_disclaimer.md`. If you add
+new dashboards, copy the banner panel as the first row.
+
+Admin login (to edit dashboards) is at `/login` with `orc-admin` and the
+password from `.env`.
+
+### 10. Smoke test sensor-upload from the open internet
 
 ```bash
 TOKEN=<paste sukabumi token>

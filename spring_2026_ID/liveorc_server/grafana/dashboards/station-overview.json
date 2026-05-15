@@ -1,0 +1,123 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": false,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "type": "text",
+      "title": "",
+      "gridPos": {"h": 4, "w": 24, "x": 0, "y": 0},
+      "id": 100,
+      "options": {
+        "mode": "markdown",
+        "code": {"language": "plaintext", "showLineNumbers": false, "showMiniMap": false},
+        "content": "## ⚠️ Research project — NOT an official Indonesian government weather station\n\nThis dashboard displays sensor readings from a research deployment operated in cooperation with local partners (PMI, IPB). The data shown here is **not** authoritative weather or hydrological information and **must not be used for emergency response, planning, or official reporting**. Real-time conditions may differ significantly from what is shown. For official weather and flood data, consult BMKG (`bmkg.go.id`) and BNPB (`bnpb.go.id`).\n\n*Proyek penelitian — bukan stasiun cuaca resmi pemerintah Indonesia.*"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "custom": {},
+          "thresholds": {"mode": "absolute", "steps": [{"color": "orange", "value": null}]}
+        },
+        "overrides": []
+      },
+      "transparent": false
+    },
+    {
+      "type": "timeseries",
+      "title": "Temperature (°C) — $station",
+      "datasource": {"type": "postgres", "uid": "timescale"},
+      "gridPos": {"h": 9, "w": 12, "x": 0, "y": 4},
+      "id": 1,
+      "targets": [
+        {
+          "format": "time_series",
+          "rawSql": "SELECT\n  $__timeGroupAlias(ts, $__interval),\n  sensor || ':' || metric AS series,\n  AVG(value) AS value\nFROM sensor_readings\nWHERE $__timeFilter(ts)\n  AND station = '${station}'\n  AND ( (sensor = 'sht40' AND metric ILIKE '%temp%')\n     OR (sensor = 'ds18b20')\n     OR (sensor = 'rg15' AND metric ILIKE '%temp%') )\nGROUP BY 1, 2\nORDER BY 1",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "celsius",
+          "custom": {"drawStyle": "line", "lineInterpolation": "linear", "lineWidth": 1, "pointSize": 4, "fillOpacity": 10}
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Humidity (%) — $station",
+      "datasource": {"type": "postgres", "uid": "timescale"},
+      "gridPos": {"h": 9, "w": 12, "x": 12, "y": 4},
+      "id": 2,
+      "targets": [
+        {
+          "format": "time_series",
+          "rawSql": "SELECT\n  $__timeGroupAlias(ts, $__interval),\n  sensor || ':' || metric AS series,\n  AVG(value) AS value\nFROM sensor_readings\nWHERE $__timeFilter(ts)\n  AND station = '${station}'\n  AND sensor = 'sht40'\n  AND metric ILIKE '%humid%'\nGROUP BY 1, 2\nORDER BY 1",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "max": 100,
+          "min": 0,
+          "custom": {"drawStyle": "line", "lineInterpolation": "linear", "lineWidth": 1, "pointSize": 4, "fillOpacity": 10}
+        },
+        "overrides": []
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Rainfall accumulation (mm) — $station",
+      "datasource": {"type": "postgres", "uid": "timescale"},
+      "gridPos": {"h": 9, "w": 24, "x": 0, "y": 13},
+      "id": 3,
+      "targets": [
+        {
+          "format": "time_series",
+          "rawSql": "SELECT\n  $__timeGroupAlias(ts, $__interval),\n  metric AS series,\n  MAX(value) AS value\nFROM sensor_readings\nWHERE $__timeFilter(ts)\n  AND station = '${station}'\n  AND sensor = 'rg15'\n  AND metric ILIKE '%acc%'\nGROUP BY 1, 2\nORDER BY 1",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "lengthmm",
+          "custom": {"drawStyle": "line", "lineInterpolation": "linear", "lineWidth": 1, "pointSize": 4, "fillOpacity": 10}
+        },
+        "overrides": []
+      }
+    }
+  ],
+  "refresh": "1m",
+  "schemaVersion": 39,
+  "tags": ["orc", "stations"],
+  "templating": {
+    "list": [
+      {
+        "name": "station",
+        "type": "query",
+        "datasource": {"type": "postgres", "uid": "timescale"},
+        "query": "SELECT DISTINCT station AS __text, station AS __value FROM sensor_readings ORDER BY station",
+        "refresh": 1,
+        "includeAll": false,
+        "multi": false,
+        "label": "Station",
+        "sort": 1
+      }
+    ]
+  },
+  "time": {"from": "now-7d", "to": "now"},
+  "timepicker": {},
+  "timezone": "utc",
+  "title": "Station overview",
+  "uid": "station-overview",
+  "version": 1,
+  "weekStart": ""
+}
