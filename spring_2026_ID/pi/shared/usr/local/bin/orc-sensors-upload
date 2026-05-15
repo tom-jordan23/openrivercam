@@ -65,6 +65,19 @@ for v in UPLOAD_URL LOG_DIR STATE_FILE UPLOAD_TOKEN; do
     fi
 done
 
+# CACERT is required for TLS pinning. The server uses a self-signed cert;
+# without a pinned CA, curl will refuse to connect. An empty CACERT means
+# the script is misconfigured (don't fall back to --insecure — that would
+# defeat the point of pinning).
+if [ -z "${CACERT:-}" ]; then
+    log "ERROR: CACERT not set in $CONF (no pinned CA — refusing to upload)"
+    exit 1
+fi
+if [ ! -r "$CACERT" ]; then
+    log "ERROR: CACERT $CACERT not readable"
+    exit 1
+fi
+
 if [ ! -d "$LOG_DIR" ]; then
     log "LOG_DIR $LOG_DIR missing — nothing to do"
     exit 0
@@ -115,6 +128,7 @@ for f in "${files[@]}"; do
         -H "Authorization: Bearer ${UPLOAD_TOKEN}" \
         -H "Content-Type: text/csv" \
         -H "Connection: close" \
+        --cacert "$CACERT" \
         --connect-timeout "$CONNECT_TIMEOUT" \
         --max-time "$MAX_PER_FILE_SECS" \
         --fail \

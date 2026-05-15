@@ -1146,9 +1146,18 @@ run_credentials() {
             warn "  Add a line: UPLOAD_TOKEN=<token from password manager>"
         fi
 
+        # CA cert for TLS pinning (server uses self-signed)
+        local ca_path
+        ca_path=$(. "$upload_conf"; echo "${CACERT:-/etc/orc/sensor-upload-ca.pem}")
+        if [ -r "$ca_path" ]; then
+            pass "sensors-upload: pinned CA cert present at $ca_path"
+        else
+            fail "sensors-upload: CA cert missing at $ca_path (server uses self-signed; upload will fail without it)"
+        fi
+
         if [ "$upload_enabled" != "1" ]; then
             warn "sensors-upload disabled in $upload_conf (set ENABLED=1 after token + smoke test)"
-        elif [ "$token_found" -eq 1 ] && [ -n "$upload_url" ]; then
+        elif [ "$token_found" -eq 1 ] && [ -n "$upload_url" ] && [ -r "$ca_path" ]; then
             pass "sensors-upload enabled and prereqs met"
         else
             fail "sensors-upload enabled but prereqs not met (see warnings above)"
