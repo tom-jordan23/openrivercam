@@ -1,7 +1,5 @@
 {
-  "annotations": {
-    "list": []
-  },
+  "annotations": {"list": []},
   "editable": false,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
@@ -29,16 +27,17 @@
       },
       "transparent": false
     },
+
     {
       "type": "timeseries",
-      "title": "Temperature (°C) — $station",
+      "title": "Outside temp — $station (DS18B20)",
       "datasource": {"type": "postgres", "uid": "timescale"},
       "gridPos": {"h": 9, "w": 12, "x": 0, "y": 4},
       "id": 1,
       "targets": [
         {
           "format": "time_series",
-          "rawSql": "SELECT\n  $__timeGroupAlias(ts, $__interval),\n  sensor || ':' || metric AS series,\n  AVG(value) AS value\nFROM sensor_readings\nWHERE $__timeFilter(ts)\n  AND station = '${station}'\n  AND ( (sensor = 'sht40' AND metric ILIKE '%temp%')\n     OR (sensor = 'ds18b20')\n     OR (sensor = 'rg15' AND metric ILIKE '%temp%') )\nGROUP BY 1, 2\nORDER BY 1",
+          "rawSql": "SELECT\n  $__timeGroupAlias(ts, $__interval),\n  AVG(value) AS \"Outside temp\"\nFROM sensor_readings\nWHERE $__timeFilter(ts)\n  AND station = '${station}'\n  AND sensor = 'ds18b20'\n  AND metric = 'temp_c'\nGROUP BY 1\nORDER BY 1",
           "refId": "A"
         }
       ],
@@ -50,16 +49,39 @@
         "overrides": []
       }
     },
+
     {
       "type": "timeseries",
-      "title": "Humidity (%) — $station",
+      "title": "Enclosure interior temp — $station (SHT40)",
       "datasource": {"type": "postgres", "uid": "timescale"},
       "gridPos": {"h": 9, "w": 12, "x": 12, "y": 4},
       "id": 2,
       "targets": [
         {
           "format": "time_series",
-          "rawSql": "SELECT\n  $__timeGroupAlias(ts, $__interval),\n  sensor || ':' || metric AS series,\n  AVG(value) AS value\nFROM sensor_readings\nWHERE $__timeFilter(ts)\n  AND station = '${station}'\n  AND sensor = 'sht40'\n  AND metric ILIKE '%humid%'\nGROUP BY 1, 2\nORDER BY 1",
+          "rawSql": "SELECT\n  $__timeGroupAlias(ts, $__interval),\n  AVG(value) AS \"Enclosure interior temp\"\nFROM sensor_readings\nWHERE $__timeFilter(ts)\n  AND station = '${station}'\n  AND sensor = 'sht40'\n  AND metric = 'temp_c'\nGROUP BY 1\nORDER BY 1",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "celsius",
+          "custom": {"drawStyle": "line", "lineInterpolation": "linear", "lineWidth": 1, "pointSize": 4, "fillOpacity": 10}
+        },
+        "overrides": []
+      }
+    },
+
+    {
+      "type": "timeseries",
+      "title": "Enclosure interior humidity — $station (SHT40)",
+      "datasource": {"type": "postgres", "uid": "timescale"},
+      "gridPos": {"h": 9, "w": 24, "x": 0, "y": 13},
+      "id": 3,
+      "targets": [
+        {
+          "format": "time_series",
+          "rawSql": "SELECT\n  $__timeGroupAlias(ts, $__interval),\n  AVG(value) AS \"Enclosure interior humidity\"\nFROM sensor_readings\nWHERE $__timeFilter(ts)\n  AND station = '${station}'\n  AND sensor = 'sht40'\n  AND metric = 'humidity_pct'\nGROUP BY 1\nORDER BY 1",
           "refId": "A"
         }
       ],
@@ -73,23 +95,71 @@
         "overrides": []
       }
     },
+
     {
       "type": "timeseries",
-      "title": "Rainfall accumulation (mm) — $station",
+      "title": "Rainfall per reporting interval — $station (RG-15)",
+      "description": "interval_mm = rain (mm) measured since previous reading; summed within each chart-time bucket so the bar height reflects total rain in that window",
       "datasource": {"type": "postgres", "uid": "timescale"},
-      "gridPos": {"h": 9, "w": 24, "x": 0, "y": 13},
-      "id": 3,
+      "gridPos": {"h": 9, "w": 8, "x": 0, "y": 22},
+      "id": 4,
       "targets": [
         {
           "format": "time_series",
-          "rawSql": "SELECT\n  $__timeGroupAlias(ts, $__interval),\n  metric AS series,\n  MAX(value) AS value\nFROM sensor_readings\nWHERE $__timeFilter(ts)\n  AND station = '${station}'\n  AND sensor = 'rg15'\n  AND metric ILIKE '%acc%'\nGROUP BY 1, 2\nORDER BY 1",
+          "rawSql": "SELECT\n  $__timeGroupAlias(ts, $__interval),\n  SUM(value) AS \"Rainfall (interval)\"\nFROM sensor_readings\nWHERE $__timeFilter(ts)\n  AND station = '${station}'\n  AND sensor = 'rg15'\n  AND metric = 'interval_mm'\nGROUP BY 1\nORDER BY 1",
           "refId": "A"
         }
       ],
       "fieldConfig": {
         "defaults": {
           "unit": "lengthmm",
-          "custom": {"drawStyle": "line", "lineInterpolation": "linear", "lineWidth": 1, "pointSize": 4, "fillOpacity": 10}
+          "custom": {"drawStyle": "bars", "lineInterpolation": "linear", "lineWidth": 1, "pointSize": 4, "fillOpacity": 70}
+        },
+        "overrides": []
+      }
+    },
+
+    {
+      "type": "timeseries",
+      "title": "Rainfall — current event accumulation — $station (RG-15)",
+      "description": "acc_mm = mm of rain accumulated in the current rain event; resets when the gauge detects the event has ended",
+      "datasource": {"type": "postgres", "uid": "timescale"},
+      "gridPos": {"h": 9, "w": 8, "x": 8, "y": 22},
+      "id": 5,
+      "targets": [
+        {
+          "format": "time_series",
+          "rawSql": "SELECT\n  $__timeGroupAlias(ts, $__interval),\n  MAX(value) AS \"Event accumulation\"\nFROM sensor_readings\nWHERE $__timeFilter(ts)\n  AND station = '${station}'\n  AND sensor = 'rg15'\n  AND metric = 'acc_mm'\nGROUP BY 1\nORDER BY 1",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "lengthmm",
+          "custom": {"drawStyle": "line", "lineInterpolation": "stepBefore", "lineWidth": 2, "pointSize": 4, "fillOpacity": 10}
+        },
+        "overrides": []
+      }
+    },
+
+    {
+      "type": "timeseries",
+      "title": "Rainfall — total accumulation since reset — $station (RG-15)",
+      "description": "totalacc_mm = monotonically increasing total mm of rain since the gauge's last total reset",
+      "datasource": {"type": "postgres", "uid": "timescale"},
+      "gridPos": {"h": 9, "w": 8, "x": 16, "y": 22},
+      "id": 6,
+      "targets": [
+        {
+          "format": "time_series",
+          "rawSql": "SELECT\n  $__timeGroupAlias(ts, $__interval),\n  MAX(value) AS \"Total accumulation\"\nFROM sensor_readings\nWHERE $__timeFilter(ts)\n  AND station = '${station}'\n  AND sensor = 'rg15'\n  AND metric = 'totalacc_mm'\nGROUP BY 1\nORDER BY 1",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "lengthmm",
+          "custom": {"drawStyle": "line", "lineInterpolation": "linear", "lineWidth": 2, "pointSize": 4, "fillOpacity": 10}
         },
         "overrides": []
       }
@@ -118,6 +188,6 @@
   "timezone": "utc",
   "title": "Station overview",
   "uid": "station-overview",
-  "version": 1,
+  "version": 2,
   "weekStart": ""
 }
