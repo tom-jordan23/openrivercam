@@ -1,6 +1,9 @@
 # LiveORC server-side additions: services that run alongside LiveORC on the
-# same EC2 host. Joined to LiveORC's docker network so its nginx can proxy
-# to us by container name.
+# same EC2 host but DO NOT modify LiveORC's container or config.
+#
+# Architecture: sensor-upload terminates TLS directly on port 8443, reusing
+# LiveORC's letsencrypt cert by mounting LiveORC's existing docker volume
+# read-only. AWS Security Group must allow inbound 8443.
 #
 # Deploy with:
 #   docker compose -f docker-compose.yml --env-file .env up -d --build
@@ -8,7 +11,8 @@
 # Requires `.env` with at minimum:
 #   ORC_UPLOAD_TOKENS=sukabumi:<token1>,jakarta:<token2>
 #
-# LiveORC must already be running so its default network exists.
+# LiveORC must already be running because its letsencrypt volume is mounted
+# here as an external named volume.
 
 services:
   sensor-upload:
@@ -18,17 +22,15 @@ services:
     environment:
       ORC_SENSORS_DIR: /var/orc/sensors
       ORC_UPLOAD_TOKENS: ${ORC_UPLOAD_TOKENS:?ORC_UPLOAD_TOKENS must be set in .env}
+    ports:
+      - "8443:8443"
     volumes:
       - /var/orc/sensors:/var/orc/sensors:rw
-    expose:
-      - "8001"
-    networks:
-      - liveorc
+      - liveorc_letsencrypt:/certs:ro
 
-networks:
-  liveorc:
+# LiveORC's letsencrypt volume — we mount it read-only to reuse the cert.
+# When LiveORC's certbot renews (every ~60 days), this container's uvicorn
+# needs a restart to pick up the new files (see README → "Cert renewal").
+volumes:
+  liveorc_letsencrypt:
     external: true
-    # LiveORC's docker compose network. Confirm with `docker network ls`:
-    # the project's name is "liveorc" (the directory under /opt/) so the
-    # default network is "liveorc_default".
-    name: liveorc_default
