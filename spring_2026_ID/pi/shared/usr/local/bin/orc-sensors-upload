@@ -123,7 +123,16 @@ ok=0
 for f in "${files[@]}"; do
     fname=$(basename "$f")
     target="${UPLOAD_URL}/${STATION}/${fname}"
+    # --ipv4 forces curl to use the IPv4 path. Required because Indonesian
+    # carriers (Telkomsel etc.) use NAT64, and the resulting IPv6 path has
+    # a PMTU black hole that breaks TLS handshakes when the server cert is
+    # large (our 4096-bit RSA cert overflows the post-NAT64 MTU). TCP
+    # connects fine over IPv6; the Server Hello+Certificate response
+    # fragments and is silently dropped. IPv4 path avoids the fragmentation
+    # issue entirely. If we ever switch to a smaller cert (RSA 2048 or
+    # ECDSA), this flag becomes optional.
     if curl -sS -X PUT \
+        --ipv4 \
         --data-binary "@${f}" \
         -H "Authorization: Bearer ${UPLOAD_TOKEN}" \
         -H "Content-Type: text/csv" \
