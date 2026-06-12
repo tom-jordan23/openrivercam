@@ -419,6 +419,14 @@ Connect the field laptop to the Pi's maintenance hotspot and open the
 ORC-OS web UI at `http://<station>.local`. Order matters — each step
 feeds the next.
 
+> For a detailed, source-verified walkthrough of the current dashboard UI
+> (the per-video Video Configuration view: GCP clicking, the **Validate**
+> pose fit, the 3-click bounding box, cross-section assignment), see
+> **`ORC_OS_GCP_CLICK_PROCEDURE.md`**. The step summaries below describe the
+> intended deployment flow and may lag the current UI in spots (e.g. the fit
+> button is now "Validate" reporting average error in metres; the bbox is in
+> the Cross sections tab). Reconcile against that doc when in doubt.
+
 ### 4.1 Upload the Calibration Video
 
 13. Navigate to `/video`.
