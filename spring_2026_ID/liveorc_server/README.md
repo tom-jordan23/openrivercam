@@ -13,6 +13,11 @@ LiveORC's container or config**:
 - **`timescale`** — TimescaleDB instance backing the sensor time-series.
 - **`grafana`** — UI at port 9443 with anonymous viewer access (admin
   login required for editing). Reuses the same self-signed cert.
+- **`reprocess/`** — one-off toolkit to re-derive historical Sukabumi
+  `time_series` with a corrected camera config (re-detects optical water
+  level, overwrites in place). Backup/restore + a free **local** staging
+  build + before/after analytics. Start at
+  [`reprocess/REPROCESS_RUNBOOK.md`](reprocess/REPROCESS_RUNBOOK.md).
 
 ## Architecture
 
