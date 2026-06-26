@@ -2,6 +2,14 @@
 # backup_liveorc_db.sh — full + targeted backup of the LiveORC Postgres DB
 # BEFORE any reprocessing of historical time_series. Read-only against the DB.
 #
+# SCOPE: DATABASE ONLY (metadata + time_series rows). It does NOT include the video
+# files — those bytes live in MinIO/S3 (or the media volume), not in Postgres, so the
+# dump is intentionally small. That is sufficient here because reprocess_fit6.py is
+# READ-ONLY on videos: it only rewrites api_timeseries (and optionally re-points
+# video.video_config). Rollback only ever needs these rows (restore_liveorc_db.sh
+# timeseries). For a full disaster-recovery backup incl. media, see the note in
+# REPROCESS_RUNBOOK ("Do I need a media backup?") — separate, much larger job.
+#
 # Run ON the LiveORC host (AWS EC2 via SSM), where the `db` postgis container runs.
 # Produces, under ./liveorc-backups/<timestamp>/ :
 #   - liveorc_full.dump        full pg_dump (custom/compressed) — full-DB safety net

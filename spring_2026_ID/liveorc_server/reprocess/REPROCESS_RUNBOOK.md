@@ -74,6 +74,14 @@ the restore+media step against a second containerized stack — see its header.)
 ./backup_liveorc_db.sh        # → liveorc-backups/<ts>/  (KEEP api_timeseries.csv = baseline)
 ```
 
+**Do I need a media (video) backup? No.** The backup is DB-only and small on
+purpose — the video bytes live in MinIO/S3, not Postgres. Reprocessing is
+**read-only on videos** (it streams them, never writes/deletes), so the only thing
+that can change — and the only thing rollback needs — is the `api_timeseries` rows,
+which the DB dump captures in full. A media backup would only matter for full
+disaster recovery (a separate `mc mirror`/`rsync` of the bucket; many GB) and is not
+part of this operation.
+
 ## Phase 2 — Dry-run + impact preview (staging, then prod)
 
 ```bash
