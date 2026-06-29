@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 # prod_reprocess.sh — run the Fit 6 reprocess against PROD LiveORC.
 #
-# It runs INSIDE the running webapp container via `docker exec` (that container already
-# resolves `db` and the S3/MinIO `storage` service and holds the S3 creds — a separate
-# sidecar can't reliably resolve `storage`). To avoid disturbing the serving app, the
-# pyorc-compatible xarray pin goes into a throwaway `--system-site-packages` VENV, so
-# the webapp's own installed packages are NOT modified (only our venv shadows xarray).
+# It runs INSIDE the running webapp container via `docker exec`, so it inherits the
+# webapp's real env (prod uses local FileSystemStorage, NOT S3), DB, and media volume.
+#
+# pyorc 0.9.4 needs an older xarray than the image ships, AND pyorc runs velocimetry in
+# a `pyorc` CLI SUBPROCESS (system python) — so a venv pin wouldn't reach it. Instead we
+# install the pinned xarray into an ISOLATED dir and put it first on PYTHONPATH, which
+# the subprocess inherits. The webapp's installed packages are NOT modified.
 #
 # Defaults: --site-id 4 --video-config-id 3 (Sukabumi / "Sukabumi IPB"). Anything you
 # pass is appended and can override. DRY-RUN unless you pass --commit. Logs are copied
@@ -26,7 +28,7 @@ WEBAPP="${WEBAPP:-liveorc_webapp}"
 XARRAY_PIN="${XARRAY_PIN:-2024.9.0}"
 SITE_ID="${SITE_ID:-4}"
 VC_ID="${VC_ID:-3}"
-VENV="/tmp/orc-reprocess-venv"
+XPIN_DIR="/tmp/orc-xarray-pin"          # isolated xarray install (shadows via PYTHONPATH)
 CLOG="/tmp/orc-reprocess-logs"          # log dir inside the container
 
 DOCKER="docker"
@@ -46,15 +48,16 @@ fi
 # Stage the (latest) reprocessor into the container.
 $DOCKER cp "$SCRIPT_DIR/reprocess_fit6.py" "$WEBAPP:/tmp/reprocess_fit6.py"
 
-# Build the in-container command: make a system-site-packages venv (so pyorc/django are
-# inherited), pin xarray ONLY in that venv, run the reprocessor.
+# Build the in-container command: install the pinned xarray into an isolated dir
+# (--no-deps so numpy/pandas stay the system ones), prepend it to PYTHONPATH so both
+# this process AND the pyorc CLI subprocess pick it up, then run the reprocessor.
 INNER='set -e
-if [ ! -x "'"$VENV"'/bin/python" ]; then python -m venv --system-site-packages "'"$VENV"'"; fi
-"'"$VENV"'/bin/pip" install -q "xarray=='"$XARRAY_PIN"'"
-mkdir -p "'"$CLOG"'"
-exec "'"$VENV"'/bin/python" /tmp/reprocess_fit6.py "$@" --log-dir "'"$CLOG"'"'
+mkdir -p "'"$XPIN_DIR"'" "'"$CLOG"'"
+if [ ! -d "'"$XPIN_DIR"'/xarray" ]; then pip install -q --target "'"$XPIN_DIR"'" --no-deps "xarray=='"$XARRAY_PIN"'"; fi
+export PYTHONPATH="'"$XPIN_DIR"'${PYTHONPATH:+:$PYTHONPATH}"
+exec python /tmp/reprocess_fit6.py "$@" --log-dir "'"$CLOG"'"'
 
-echo "==> exec in $WEBAPP (venv xarray==$XARRAY_PIN)  args: --site-id $SITE_ID --video-config-id $VC_ID $*"
+echo "==> exec in $WEBAPP (isolated xarray==$XARRAY_PIN via PYTHONPATH)  args: --site-id $SITE_ID --video-config-id $VC_ID $*"
 
 if [ "${DETACH:-0}" = "1" ]; then
   $DOCKER exec -d "$WEBAPP" bash -lc "$INNER" _ --site-id "$SITE_ID" --video-config-id "$VC_ID" "$@"
