@@ -43,21 +43,26 @@ case "$MODE" in
   timeseries)
     SQL="$BACKUP_DIR/api_timeseries.sql"
     [ -f "$SQL" ] || { echo "missing $SQL" >&2; exit 1; }
+    echo "*** WARNING: this restores ONLY api_timeseries. It does NOT undo changes the"
+    echo "*** reprocess made to api_video (--repoint sets video_config/status; --recover"
+    echo "*** links new rows). If your commit used --repoint or --recover, use '$0 full'"
+    echo "*** instead — otherwise videos are left repointed / linked to deleted rows."
+    read -r -p "Proceed with api_timeseries-only restore anyway? Type YES: " ok2
+    [ "$ok2" = "YES" ] || { echo "aborted — use: $0 full $BACKUP_DIR"; exit 1; }
     echo "==> targeted restore of api_timeseries…"
-    # Wrap in a transaction: drop the table (CASCADE would drop the video FK, so instead
-    # we TRUNCATE+reload to keep FKs intact), then load the snapshot rows.
+    # Use DELETE under replica role (FK triggers off) — NOT 'TRUNCATE ... CASCADE',
+    # which would also truncate api_video (it FK-references api_timeseries).
     {
       echo "BEGIN;"
-      echo "SET session_replication_role = replica;"   # defer FK checks during reload
-      echo "TRUNCATE api_timeseries CASCADE;"
-      # the dump recreates the table if absent and inserts rows; strip its own table DROP/CREATE
-      # by loading data-only INSERTs. api_timeseries.sql from pg_dump is plain SQL.
+      echo "SET session_replication_role = replica;"   # disable FK enforcement for the swap
+      echo "DELETE FROM api_timeseries;"               # no CASCADE -> api_video untouched
+      # load the snapshot's data rows (strip the dump's table/sequence DDL)
       grep -vE '^(DROP TABLE|CREATE TABLE|ALTER TABLE ONLY api_timeseries\b.*(OWNER|PRIMARY KEY|CONSTRAINT)|CREATE SEQUENCE|ALTER SEQUENCE.*OWNED)' "$SQL" || true
       echo "SET session_replication_role = DEFAULT;"
       echo "COMMIT;"
     } | dx psql -U "$LORC_DB_USER" -d "$DB_NAME" -v ON_ERROR_STOP=1
     echo "    rows now: $(dx psql -U "$LORC_DB_USER" -d "$DB_NAME" -At -c 'select count(*) from api_timeseries;')"
-    echo "NOTE: if the targeted reload reports constraint issues, fall back to: $0 full <dir>"
+    echo "NOTE: any recovered videos now point to deleted rows — run '$0 full' if that matters."
     ;;
   full)
     DUMP="$BACKUP_DIR/liveorc_full.dump"

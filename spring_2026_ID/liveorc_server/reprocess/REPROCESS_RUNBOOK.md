@@ -154,11 +154,15 @@ Defaults are `--site-id 4 --video-config-id 3`; tunables (`ENV_FILE`, `WEBAPP`, 
 ```bash
 python analytics_reprocess.py reprocess-logs/reprocess_commit_<stamp>.jsonl --out final-report
 ```
-Rollback if needed (uses the Phase-1 backup):
+Rollback if needed (uses the Phase-1 backup). Because the commit uses `--repoint`
+`--recover`, it changes **api_video too** (config/status/links), so the **full** restore
+is the correct rollback:
 ```bash
-./restore_liveorc_db.sh timeseries liveorc-backups/<ts>      # surgical undo of api_timeseries
-# ./restore_liveorc_db.sh full liveorc-backups/<ts>          # only if the targeted undo is insufficient
+./restore_liveorc_db.sh full liveorc-backups/<ts>           # the right rollback for repoint/recover
+# ./restore_liveorc_db.sh timeseries liveorc-backups/<ts>   # ONLY for a values-only commit (no repoint/recover)
 ```
+(The `timeseries` mode restores only `api_timeseries`; it can't undo the video-row
+changes, so use `full` here.)
 
 ## Failure handling (decided)
 
