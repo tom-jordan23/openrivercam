@@ -43,14 +43,21 @@ if [ ! -r "$ENV_FILE" ] && ! sudo test -r "$ENV_FILE" 2>/dev/null; then
   echo "env file not readable: $ENV_FILE (set ENV_FILE=...)"; exit 1
 fi
 
-NET="${NET:-$($DOCKER inspect -f '{{range $k,$_ := .NetworkSettings.Networks}}{{$k}}{{end}}' "$WEBAPP")}"
 IMG="${IMG:-$($DOCKER inspect -f '{{.Config.Image}}' "$WEBAPP")}"
+
+# Network: by default SHARE the webapp's network namespace, so `db` AND `storage`
+# (MinIO) resolve exactly as they do for the webapp. LiveORC's settings.py calls
+# S3 list_buckets() at import time, so the sidecar must reach MinIO just to start;
+# attaching to the named network alone was observed NOT to resolve `storage`.
+# Override by attaching to a named network instead with:  NET=liveorc_default ...
+if [ -n "${NET:-}" ]; then NETARG=(--network "$NET"); NETDESC="$NET"
+else NETARG=(--network "container:$WEBAPP"); NETDESC="container:$WEBAPP"; fi
 
 mkdir -p "$SCRIPT_DIR/reprocess-logs"
 
 # Confirm before any write.
 if printf '%s ' "$@" | grep -qw -- --commit && [ "${FORCE:-0}" != "1" ]; then
-  echo "About to run with --commit (WRITES to prod DB). Network=$NET Image=$IMG"
+  echo "About to run with --commit (WRITES to prod DB). Network=$NETDESC Image=$IMG"
   echo "Make sure you ran backup_liveorc_db.sh first."
   read -r -p "Type COMMIT to proceed: " ans
   [ "$ans" = "COMMIT" ] || { echo "aborted."; exit 1; }
@@ -59,9 +66,9 @@ fi
 RUNFLAGS=(--rm)
 [ "${DETACH:-0}" = "1" ] && RUNFLAGS=(-d --name "orc-reprocess-$(date +%H%M%S)")
 
-echo "==> sidecar: net=$NET image=$IMG env=$ENV_FILE  args: --site-id $SITE_ID --video-config-id $VC_ID $*"
+echo "==> sidecar: net=$NETDESC image=$IMG env=$ENV_FILE  args: --site-id $SITE_ID --video-config-id $VC_ID $*"
 set -x
-$DOCKER run "${RUNFLAGS[@]}" --network "$NET" \
+$DOCKER run "${RUNFLAGS[@]}" "${NETARG[@]}" \
   --env-file "$ENV_FILE" \
   -e DJANGO_SETTINGS_MODULE=LiveORC.settings \
   -v "$SCRIPT_DIR/reprocess_fit6.py:/tmp/reprocess_fit6.py:ro" \
