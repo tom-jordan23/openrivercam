@@ -28,6 +28,7 @@ SAFETY:
   * Run backup_liveorc_db.sh FIRST. Validate on staging before prod.
 """
 import argparse
+import copy
 import datetime as dt
 import glob
 import json
@@ -39,6 +40,11 @@ import traceback
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # --- Django bootstrap (we run inside the LiveORC container) -----------------
+# The LiveORC project package lives at /liveorc; make sure it's importable no
+# matter what cwd we're launched from (e.g. /tmp via `docker exec`).
+_APP_DIR = os.environ.get("LIVEORC_APP_DIR", "/liveorc")
+if os.path.isdir(_APP_DIR) and _APP_DIR not in sys.path:
+    sys.path.insert(0, _APP_DIR)
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "LiveORC.settings")
 import django  # noqa: E402
 
@@ -46,12 +52,45 @@ django.setup()
 
 import numpy as np  # noqa: E402
 import xarray as xr  # noqa: E402
-from django.conf import settings  # noqa: E402
 
 from api.models import Video, VideoConfig, VideoStatus  # noqa: E402
-from api import crud  # type: ignore  # noqa: E402  (only used if present; harmless)
-from api.task_utils import recipe_update_cross_section  # noqa: E402
 from pyorc.service import velocity_flow_subprocess  # noqa: E402
+
+
+def recipe_update_cross_section(recipe, cross_section):
+    """Inject the chosen cross-section geojson into the recipe's transect (+ plot).
+
+    Inlined verbatim from api.task_utils (LiveORC 0.3.0). We DON'T import it, because
+    api.task_utils pulls in `nodeorc`, which is not installed in the LiveORC image.
+    """
+    recipe = copy.deepcopy(recipe)
+    transect_template = recipe["transect"]
+    transect = {}
+    trans_no = 0
+    for k, v in transect_template.items():
+        if k != "write":
+            trans_no += 1
+            if "geojson" in v:
+                del v["geojson"]
+            if "shapefile" in v:
+                del v["shapefile"]
+            v["geojson"] = cross_section
+            transect[f"transect_{trans_no}"] = v
+            break
+    transect["write"] = True
+    recipe["transect"] = transect
+    if "plot" in recipe:
+        for k, v in recipe["plot"].items():
+            if "transect" in v:
+                transect = {}
+                transect_template = v["transect"]
+                for n, (k_, v_) in enumerate(transect_template.items()):
+                    transect[f"transect_{n + 1}"] = v_
+                    break
+                v["transect"] = transect
+            recipe["plot"][k] = v
+    return recipe
+
 
 _print_lock = threading.Lock()
 
@@ -168,7 +207,6 @@ def process_one(video, fit6, recipe_base, cross, cross_wl, out_base, commit, rep
             h_a=None,            # <-- force fresh OPTICAL water-level detection
             cross=cross,
             cross_wl=cross_wl,   # WL cross-section for the optical detection
-            logger=None,
         )
         if getattr(res, "returncode", 1) != 0:
             rec["status"] = "pyorc_error"
