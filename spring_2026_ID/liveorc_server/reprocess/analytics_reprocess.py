@@ -59,12 +59,20 @@ def main():
     by_status = {}
     for r in rows:
         by_status.setdefault(r["status"], []).append(r)
-    ok = by_status.get("ok", [])
+    # "ok" = updated existing row; "recovered" = newly created for a previously
+    # errored/no-ts video. Both are successful writes; recovered rows have no old value.
+    recovered = by_status.get("recovered", [])
+    success = by_status.get("ok", []) + recovered
 
-    # paired arrays (only rows that had both an old and a new value)
-    oh, nh, oq, nq, nv, nf, movers = [], [], [], [], [], [], []
-    for r in ok:
+    # nh_all/nq_all = the NEW distribution across all successes (incl. recovered);
+    # oh/nh (paired), oq/nq, movers = only rows that also had an OLD value.
+    oh, nh, oq, nq, nv, nf, movers, nh_all, nq_all = [], [], [], [], [], [], [], [], []
+    for r in success:
         o, n = r.get("old") or {}, r.get("new") or {}
+        if n.get("h") is not None:
+            nh_all.append(n["h"])
+        if n.get("q_50") is not None:
+            nq_all.append(n["q_50"])
         if o.get("h") is not None and n.get("h") is not None:
             oh.append(o["h"]); nh.append(n["h"])
         if o.get("q_50") is not None and n.get("q_50") is not None:
@@ -123,14 +131,21 @@ def main():
         f.write("## Outcomes\n\n| status | count |\n|---|---|\n")
         for k in sorted(by_status):
             f.write(f"| {k} | {len(by_status[k])} |\n")
-        f.write("\n_Only `ok` rows are written to the DB; everything else leaves the old value intact._\n\n")
+        f.write("\n_`ok` = existing row overwritten; `recovered` = new row created for a "
+                "previously errored/no-ts video (with `--recover`). Both are writes; all other "
+                "statuses leave the DB untouched._\n\n")
+        if recovered:
+            f.write(f"**Recovered: {len(recovered)} videos** that had no time_series now get one "
+                    "(Fit 6 succeeded where salvage had errored).\n\n")
 
         f.write("## Water level (h)\n\n")
-        f.write(f"- old: {describe(oh)}\n- new: {describe(nh)}\n- Δ(new−old): {describe(dh)}\n")
+        f.write(f"- old (updated rows): {describe(oh)}\n- new (all successes): {describe(nh_all)}\n"
+                f"- Δ(new−old, updated rows): {describe(dh)}\n")
         f.write("- A consistent negative Δh is expected (Fit 6 z_0=615.0 vs the higher salvage datum).\n\n")
 
         f.write("## Discharge (q_50)\n\n")
-        f.write(f"- old: {describe(oq)}\n- new: {describe(nq)}\n- Δ(new−old): {describe(dq)}\n")
+        f.write(f"- old (updated rows): {describe(oq)}\n- new (all successes): {describe(nq_all)}\n"
+                f"- Δ(new−old, updated rows): {describe(dq)}\n")
         f.write(f"- sign flips (pos↔neg/zero): **{sign_flips}**\n\n")
         f.write("## Velocimetry\n\n")
         f.write(f"- new v_av: {describe(nv)}\n- new fraction_velocimetry [%]: {describe(nf)}\n\n")

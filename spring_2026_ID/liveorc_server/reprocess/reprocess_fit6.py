@@ -166,7 +166,7 @@ def extract_results(nc):
     }
 
 
-def process_one(video, fit6, recipe_base, cross, cross_wl, out_base, commit, repoint):
+def process_one(video, fit6, recipe_base, cross, cross_wl, out_base, commit, repoint, recover):
     """Run one video; return a result dict (and write to DB if commit)."""
     ts = video.time_series
     old = {f: getattr(ts, f, None) for f in
@@ -181,8 +181,9 @@ def process_one(video, fit6, recipe_base, cross, cross_wl, out_base, commit, rep
         "status": "skipped",
         "error": None,
     }
-    if ts is None:
-        rec["status"], rec["error"] = "no_timeseries", "video has no OneToOne time_series row to overwrite"
+    # A video with no time_series can only be RECOVERED (create a new row) if --recover.
+    if ts is None and not recover:
+        rec["status"], rec["error"] = "no_timeseries", "no time_series to overwrite (use --recover to create one)"
         return rec
 
     # per-video work dir (fresh, so pyorc's stale-output cache never silently skips)
@@ -222,16 +223,27 @@ def process_one(video, fit6, recipe_base, cross, cross_wl, out_base, commit, rep
             rec["status"] = "incomplete"  # optical WL or PIV failed → leave old row alone
             rec["error"] = f"h={new['h']} q_50={new['q_50']}"
             return rec
-        rec["status"] = "ok"
+        rec["status"] = "ok" if ts is not None else "recovered"
         if commit:
-            # replace-in-place on the existing OneToOne row
-            for k, v in new.items():
-                setattr(ts, k, v)
-            ts.save()
-            if repoint and getattr(video, "video_config_id", None) != fit6["id"]:
-                video.video_config_id = fit6["id"]
-                video.status = VideoStatus.DONE
-                video.save(update_fields=["video_config", "status"])
+            from api.models import TimeSeries  # local import; api.models already set up
+            vid_updates = {"status": VideoStatus.DONE}
+            if repoint:
+                vid_updates["video_config_id"] = fit6["id"]
+            # IMPORTANT: write with .update()/bulk_create to bypass the model save()
+            # overrides — Video.save() regenerates thumbnails from the file, and
+            # TimeSeries.save() auto-associates the nearest video. We want neither.
+            if ts is not None:
+                TimeSeries.objects.filter(id=ts.id).update(**new)          # replace in place
+            else:
+                new_ts = TimeSeries(
+                    site_id=fit6["site_id"],
+                    timestamp=video.timestamp,
+                    creator_id=video.creator_id,   # attribute to the video's uploader
+                    **new,
+                )
+                TimeSeries.objects.bulk_create([new_ts])                    # no save() side effects
+                vid_updates["time_series_id"] = new_ts.id                   # link the new row
+            Video.objects.filter(id=video.id).update(**vid_updates)
     except Exception as e:
         rec["status"] = "exception"
         rec["error"] = f"{e}\n{traceback.format_exc()[-1200:]}"
@@ -249,6 +261,9 @@ def main():
     ap.add_argument("--commit", action="store_true", help="WRITE results (default: dry-run)")
     ap.add_argument("--repoint", action="store_true",
                     help="also set each video.video_config to Fit 6 (keeps config↔result consistent)")
+    ap.add_argument("--recover", action="store_true",
+                    help="for videos with NO time_series (errored/never-processed): CREATE one "
+                         "if Fit 6 succeeds, instead of skipping")
     ap.add_argument("--limit", type=int, default=None, help="process at most N videos")
     ap.add_argument("--ids", default=None, help="comma-separated video ids (overrides site scan)")
     ap.add_argument("--start", default=None, help="only videos with timestamp >= ISO date")
@@ -273,7 +288,7 @@ def main():
         log("WARNING: Fit 6 VideoConfig has no cross_section_wl — optical WL detection needs it. "
             "Proceeding, but expect 'incomplete' unless the discharge XS doubles as WL.")
 
-    fit6 = {"id": fit6_vc.id, "cameraconfig": fit6_vc.camera_config.data}
+    fit6 = {"id": fit6_vc.id, "site_id": fit6_vc.site_id, "cameraconfig": fit6_vc.camera_config.data}
     recipe_base = fit6_vc.recipe.data
     cross = features_of(fit6_vc.cross_section)
     cross_wl = features_of(fit6_vc.cross_section_wl)
@@ -291,7 +306,8 @@ def main():
     videos = list(qs[: args.limit] if args.limit else qs)
 
     log(f"{'DRY-RUN' if dry else 'COMMIT'} | Fit6 VideoConfig={fit6_vc.id} ({fit6_vc.name}) | "
-        f"site={args.site_id} | videos={len(videos)} | workers={args.workers} | repoint={args.repoint}")
+        f"site={args.site_id} | videos={len(videos)} | workers={args.workers} | "
+        f"repoint={args.repoint} | recover={args.recover}")
     if not videos:
         sys.exit("no videos matched.")
 
@@ -301,17 +317,21 @@ def main():
     done = 0
     with open(jsonl, "w") as fh, ThreadPoolExecutor(max_workers=args.workers) as ex:
         futs = {ex.submit(process_one, v, fit6, recipe_base, cross, cross_wl,
-                          args.out_base, args.commit, args.repoint): v for v in videos}
+                          args.out_base, args.commit, args.repoint, args.recover): v for v in videos}
         for fut in as_completed(futs):
             rec = fut.result()
             fh.write(json.dumps(rec) + "\n"); fh.flush()
             counts[rec["status"]] = counts.get(rec["status"], 0) + 1
             done += 1
-            if rec["status"] == "ok":
+            if rec["status"] in ("ok", "recovered"):
                 o, n = rec["old"], rec["new"]
-                dh = (n["h"] - o["h"]) if (o.get("h") is not None and n["h"] is not None) else float("nan")
-                log(f"[{done}/{len(videos)}] vid {rec['video_id']} OK  "
-                    f"h {o.get('h')}->{n['h']} (Δ{dh:+.3f})  q50 {o.get('q_50')}->{n['q_50']}")
+                if rec["status"] == "recovered":
+                    log(f"[{done}/{len(videos)}] vid {rec['video_id']} RECOVERED  "
+                        f"h={n['h']:.3f}  q50={n['q_50']:.3f}")
+                else:
+                    dh = (n["h"] - o["h"]) if (o.get("h") is not None and n["h"] is not None) else float("nan")
+                    log(f"[{done}/{len(videos)}] vid {rec['video_id']} OK  "
+                        f"h {o.get('h')}->{n['h']} (Δ{dh:+.3f})  q50 {o.get('q_50')}->{n['q_50']}")
             else:
                 log(f"[{done}/{len(videos)}] vid {rec['video_id']} {rec['status'].upper()} "
                     f"{(rec['error'] or '')[:120]}")

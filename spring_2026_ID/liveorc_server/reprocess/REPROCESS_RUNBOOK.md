@@ -122,8 +122,10 @@ shifting off zero to ~0.2–0.7 m³/s, ~96% velocimetry coverage, a couple of
 
 ```bash
 # staging commit (proves the write path + analytics end-to-end)
-./run_reprocess.sh --site-id 4 --video-config-id 3 --commit --repoint --workers 2
+./run_reprocess.sh --site-id 4 --video-config-id 3 --commit --repoint --recover --workers 2
 ```
+`--recover` creates time_series for previously-errored videos; `--repoint` sets each
+video's config to Fit 6 so config↔result stay consistent.
 For **prod**: back up first (Phase 1), then run via an **ephemeral sidecar** so the
 serving webapp's environment is never mutated (the xarray pin lives only in the
 throwaway container) — see the `run_reprocess.sh` header for the `docker run --rm
@@ -151,12 +153,14 @@ and the **old row is left intact** — never silently overwritten with a failed 
 They surface in the analytics `Outcomes` table for review (tie-in to the parked
 night-profile work).
 
-## Resolved inputs (from staging) + open decisions
+## Resolved inputs + decisions (from staging)
 
 - `SITE_ID = 4`, `FIT6_VC_ID = 3`. Storage is **S3/MinIO** — handled by the
   storage-agnostic streaming read (no download branch needed).
-- **Open decision:** whether to also reprocess site 2 "Test site" (1255 videos,
-  config `sukabumi_h`) if those are early Sukabumi captures worth correcting.
-- **Open:** the ~418 site-4 videos that errored under salvage have **no** time_series,
-  so reprocess can't overwrite them (it skips). If we want them recovered, that's a
-  separate "create new time_series" pass (bigger scope; sync model implications).
+- **Site 2 "Test site": EXCLUDED** (decided) — different camera + scene, not the
+  Sukabumi gauge. Only site 4 is reprocessed.
+- **Errored / no-time_series videos: RECOVER them** (decided). `--recover` creates a
+  new time_series (via `bulk_create`, bypassing the model's thumbnail-regen /
+  auto-associate side effects) when Fit 6 succeeds; videos where pyorc still fails are
+  left untouched. Validated on staging: 3/3 errored 2026-05-16 clips recovered, with
+  no OneToOne violations.
