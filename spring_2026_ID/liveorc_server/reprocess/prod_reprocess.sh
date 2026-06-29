@@ -81,10 +81,10 @@ echo "    args: ${BASEARGS[*]} $*"
 
 if [ "${DETACH:-0}" = "1" ]; then
   $DOCKER exec -d "$WEBAPP" bash -lc "$INNER" _ "${BASEARGS[@]}" "$@"
-  echo "==> detached. Live progress:"
-  echo "      $DOCKER exec $WEBAPP sh -c 'cat $CLOG/\$(ls -t $CLOG | grep .progress | head -1)'"
-  echo "    Tail results:"
-  echo "      $DOCKER exec $WEBAPP sh -c 'tail -f $CLOG/\$(ls -t $CLOG | grep .jsonl | head -1)'"
+  echo "==> detached (first .progress appears after video #1 completes, ~15-30s)."
+  echo "    Is it running:  $DOCKER exec $WEBAPP sh -c 'ps -eo pid,etime,cmd | grep [r]eprocess_fit6'"
+  echo "    Live progress:  $DOCKER exec $WEBAPP sh -c 'cat $CLOG/*.progress 2>/dev/null || echo not-yet'"
+  echo "    Tail results:   $DOCKER exec $WEBAPP sh -c 'tail -f $CLOG/*.jsonl'"
   echo "    When done, pull logs: $DOCKER cp $WEBAPP:$CLOG/. $SCRIPT_DIR/reprocess-logs/"
   exit 0
 fi
