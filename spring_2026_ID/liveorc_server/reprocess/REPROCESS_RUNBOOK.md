@@ -36,7 +36,7 @@ touched**.
 | `stage_load.sh`          | same but into a remote/second stack (alt to local) |
 | `reprocess_fit6.py`      | the reprocessor — **dry-run by default**, parallel, JSONL log, replace-in-place |
 | `run_reprocess.sh`       | STAGING wrapper: `docker exec` into the local webapp, pin xarray, run |
-| `prod_reprocess.sh`      | PROD wrapper: ephemeral **sidecar** (never touches the serving webapp) |
+| `prod_reprocess.sh`      | PROD wrapper: `docker exec` in the webapp, xarray pinned in an isolated venv |
 | `analytics_reprocess.py` | before/after impact report (runs on the **dry-run** log too) |
 | `prod_analytics.sh`      | convenience: run analytics on the newest log in `./reprocess-logs/` |
 
@@ -50,14 +50,18 @@ touched**.
   whether to include them.
 - **Engine env gotcha (important):** the stock LiveORC image ships pyorc 0.9.4 with an
   xarray years too new (2026.x on py3.14), which crashes pyorc's transect step. Pin
-  **`xarray==2024.9.0`** (what `run_reprocess.sh` and `build_staging_local.sh` do).
-  Do NOT permanently mutate the serving webapp on prod — use an ephemeral sidecar
-  (see `run_reprocess.sh` header).
+  **`xarray==2024.9.0`**. `prod_reprocess.sh` puts the pin in an isolated
+  `--system-site-packages` venv so the serving webapp's own packages are untouched.
+- **Storage = local FileSystemStorage on prod** (the MinIO/S3 path was abandoned; a
+  stale `LORC_STORAGE_HOST=http://storage` lingers in `/opt/LiveORC/.env`). So
+  `prod_reprocess.sh` runs **inside** the webapp via `docker exec` to inherit its real
+  env + media volume — do NOT pass that `.env` (an earlier sidecar did, which forced
+  the dead S3 path and failed resolving `storage`). The S3 bucket `openrivercam-video`
+  is only a manual backup/transfer location.
 - **Validated impact** on a 25-video staging sample (2026-05-16): salvage water level
   617.65 m (sd 0.92, wrong datum, q_50≈0) → Fit 6 **614.75 m (sd 0.04)**, q_50 median
   **0.31 m³/s**, velocimetry coverage **~96%**. 23/25 OK, 2 pyorc errors (left intact),
-  3 had no time_series (skipped). Storage is **S3/MinIO** on prod — the reprocessor
-  streams via Django storage, so no download branch is needed.
+  3 recovered with `--recover`.
 
 ---
 
@@ -128,10 +132,11 @@ shifting off zero to ~0.2–0.7 m³/s, ~96% velocimetry coverage, a couple of
 ```
 `--recover` creates time_series for previously-errored videos; `--repoint` sets each
 video's config to Fit 6 so config↔result stay consistent.
-For **prod**, use `prod_reprocess.sh` — it launches an **ephemeral sidecar** from the
-webapp's image on the same docker network (reaches `db` + the S3/MinIO `storage`),
-pins the xarray, and never touches the serving webapp. It auto-uses `sudo docker` if
-needed and prompts before any `--commit`. Run on the EC2 from the repo checkout:
+For **prod**, use `prod_reprocess.sh` — it runs the reprocessor **inside** the running
+webapp via `docker exec` (so it inherits the webapp's real env, DB, and media volume),
+with the xarray pin isolated in a `--system-site-packages` venv so the webapp's own
+packages are untouched. It auto-uses `sudo docker` if needed and prompts before any
+`--commit`. Run on the EC2 from the repo checkout:
 ```bash
 cd ~/openrivercam/spring_2026_ID/liveorc_server/reprocess
 ./prod_reprocess.sh --limit 5                        # smoke dry-run (5 videos)
@@ -165,8 +170,8 @@ night-profile work).
 
 ## Resolved inputs + decisions (from staging)
 
-- `SITE_ID = 4`, `FIT6_VC_ID = 3`. Storage is **S3/MinIO** — handled by the
-  storage-agnostic streaming read (no download branch needed).
+- `SITE_ID = 4`, `FIT6_VC_ID = 3`. Storage is **local FileSystemStorage** (not S3);
+  `prod_reprocess.sh` execs inside the webapp so it reads the local media volume.
 - **Site 2 "Test site": EXCLUDED** (decided) — different camera + scene, not the
   Sukabumi gauge. Only site 4 is reprocessed.
 - **Errored / no-time_series videos: RECOVER them** (decided). `--recover` creates a
