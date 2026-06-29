@@ -1,0 +1,11 @@
+# Never commit prod data or run outputs to the public repo.
+liveorc-backups/
+reprocess-logs/
+media-src/
+*-report/
+*.jsonl
+staging_dry.jsonl
+staging-report/
+prod-preview/
+final-report/
+__pycache__/

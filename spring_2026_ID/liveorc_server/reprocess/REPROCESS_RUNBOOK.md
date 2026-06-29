@@ -35,7 +35,27 @@ touched**.
 | `build_staging_local.sh` | stand up a **local** throwaway LiveORC + restore a prod dump (free; default) |
 | `stage_load.sh`          | same but into a remote/second stack (alt to local) |
 | `reprocess_fit6.py`      | the reprocessor — **dry-run by default**, parallel, JSONL log, replace-in-place |
+| `run_reprocess.sh`       | wrapper that pins a pyorc-compatible xarray, then runs the reprocessor |
 | `analytics_reprocess.py` | before/after impact report (runs on the **dry-run** log too) |
+
+---
+
+## Known good (validated on local staging 2026-06-29, LiveORC 0.3.0)
+
+- **Sukabumi = site id 4** ("Sukabumi City", 1165 videos). **Fit 6 = VideoConfig id 3**
+  ("Sukabumi IPB", `cross_section=4`, `cross_section_wl=5`). Site 2 "Test site" (1255
+  videos, config `sukabumi_h`) is likely early Sukabumi captures — **decide separately**
+  whether to include them.
+- **Engine env gotcha (important):** the stock LiveORC image ships pyorc 0.9.4 with an
+  xarray years too new (2026.x on py3.14), which crashes pyorc's transect step. Pin
+  **`xarray==2024.9.0`** (what `run_reprocess.sh` and `build_staging_local.sh` do).
+  Do NOT permanently mutate the serving webapp on prod — use an ephemeral sidecar
+  (see `run_reprocess.sh` header).
+- **Validated impact** on a 25-video staging sample (2026-05-16): salvage water level
+  617.65 m (sd 0.92, wrong datum, q_50≈0) → Fit 6 **614.75 m (sd 0.04)**, q_50 median
+  **0.31 m³/s**, velocimetry coverage **~96%**. 23/25 OK, 2 pyorc errors (left intact),
+  3 had no time_series (skipped). Storage is **S3/MinIO** on prod — the reprocessor
+  streams via Django storage, so no download branch is needed.
 
 ---
 
@@ -84,38 +104,33 @@ part of this operation.
 
 ## Phase 2 — Dry-run + impact preview (staging, then prod)
 
+`run_reprocess.sh` pins the compatible xarray, copies the script in, and runs it
+(dry-run is the default). On staging it targets `liveorc_webapp`:
 ```bash
-docker cp reprocess_fit6.py liveorc_webapp:/tmp/
-docker exec -it liveorc_webapp python /tmp/reprocess_fit6.py \
-    --site-id <SITE_ID> --video-config-id <FIT6_VC_ID> \
-    --ids <staged_sample_ids> --workers 4        # dry-run is default
+./run_reprocess.sh --site-id 4 --video-config-id 3 --workers 2     # dry-run, all site-4 videos
+# (or scope: --ids <list>  /  --start 2026-05-16T00:00:00 --stop 2026-05-16T23:59:59)
 
 # preview how the corrections move the data — BEFORE writing anything
-python analytics_reprocess.py reprocess-logs/reprocess_dry_<stamp>.jsonl --out staging-report
+docker cp liveorc_webapp:/tmp/<log>.jsonl ./staging_dry.jsonl   # log path is printed by the run
+python analytics_reprocess.py ./staging_dry.jsonl --out staging-report
 ```
-Expect: a consistent **negative Δh** (615.0 datum vs higher salvage), plausible
-discharge, few/no `pyorc_error`/`incomplete`. Spot-check that a video the **station**
-already processed under Fit 6 gives a **matching h/q** here (engine-equivalence check —
-the AWS pyorc is newer than the station's 0.9.4).
+Expect (matches the validated sample): consistent **negative Δh** to ~614.7 m, q_50
+shifting off zero to ~0.2–0.7 m³/s, ~96% velocimetry coverage, a couple of
+`pyorc_error`/`no_timeseries` that are left intact.
 
 ## Phase 3 — Commit on staging, verify, then prod
 
 ```bash
-# staging commit (full set) to prove the write path + analytics end-to-end
-docker exec -it liveorc_webapp python /tmp/reprocess_fit6.py \
-    --site-id <SITE_ID> --video-config-id <FIT6_VC_ID> --commit --repoint --workers 6
+# staging commit (proves the write path + analytics end-to-end)
+./run_reprocess.sh --site-id 4 --video-config-id 3 --commit --repoint --workers 2
 ```
-When satisfied, repeat **Phase 1 → dry-run → commit** on **prod** (`webapp`):
-```bash
-docker cp reprocess_fit6.py webapp:/tmp/
-docker exec -it webapp python /tmp/reprocess_fit6.py \
-    --site-id <SITE_ID> --video-config-id <FIT6_VC_ID> --workers 6           # dry-run
-python analytics_reprocess.py reprocess-logs/reprocess_dry_<stamp>.jsonl --out prod-preview
-docker exec -it webapp python /tmp/reprocess_fit6.py \
-    --site-id <SITE_ID> --video-config-id <FIT6_VC_ID> --commit --repoint --workers 6
-```
-Run `--commit` `nice`/overnight; it competes with the live app (low-traffic site, fine).
-~1,297 × ~30–90 s ÷ 6 workers ≈ a few hours.
+For **prod**: back up first (Phase 1), then run via an **ephemeral sidecar** so the
+serving webapp's environment is never mutated (the xarray pin lives only in the
+throwaway container) — see the `run_reprocess.sh` header for the `docker run --rm
+--network … --env-file …` invocation. Always dry-run + analytics before `--commit`.
+Run `--commit` `nice`/overnight; low-traffic site, fine.
+~1165 site-4 videos × ~30–90 s ÷ workers ≈ a few hours (≈747 have a time_series to
+overwrite; the rest are skipped/errored).
 
 ## Phase 4 — Final report + rollback path
 
@@ -136,9 +151,12 @@ and the **old row is left intact** — never silently overwritten with a failed 
 They surface in the analytics `Outcomes` table for review (tie-in to the parked
 night-profile work).
 
-## Open inputs to fill before running
+## Resolved inputs (from staging) + open decisions
 
-- `<SITE_ID>` — Sukabumi site id on LiveORC (server ref says "TBD"; read from admin).
-- `<FIT6_VC_ID>` — the Fit 6 VideoConfig id on LiveORC (or use `--video-config-name`).
-- Confirm prod storage is local `FileSystemStorage` (default). If S3 is configured
-  (`LORC_STORAGE_HOST` set), `reprocess_fit6.py` needs a download branch — flag it.
+- `SITE_ID = 4`, `FIT6_VC_ID = 3`. Storage is **S3/MinIO** — handled by the
+  storage-agnostic streaming read (no download branch needed).
+- **Open decision:** whether to also reprocess site 2 "Test site" (1255 videos,
+  config `sukabumi_h`) if those are early Sukabumi captures worth correcting.
+- **Open:** the ~418 site-4 videos that errored under salvage have **no** time_series,
+  so reprocess can't overwrite them (it skips). If we want them recovered, that's a
+  separate "create new time_series" pass (bigger scope; sync model implications).

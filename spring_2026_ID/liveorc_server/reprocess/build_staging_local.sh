@@ -35,6 +35,11 @@ done
 [ -d "$REPO" ] || { echo "LiveORC repo not at $REPO (set LIVEORC_REPO)"; exit 1; }
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
+# Absolutize paths NOW, before we cd into the repo (otherwise relative --backup/--media
+# would resolve against $REPO and break).
+[ -n "$BACKUP_DIR" ] && { [ -d "$BACKUP_DIR" ] || { echo "no such backup dir: $BACKUP_DIR"; exit 1; }; BACKUP_DIR="$(cd "$BACKUP_DIR" && pwd)"; }
+[ -n "$MEDIA_SRC" ]  && { [ -d "$MEDIA_SRC"  ] || { echo "no such media dir: $MEDIA_SRC"; exit 1; };  MEDIA_SRC="$(cd "$MEDIA_SRC" && pwd)"; }
+
 # Staging env: postgis + LOCAL filesystem storage (empty LORC_STORAGE_HOST → FS),
 # no rabbitmq (empty LORC_RABBITMQ_HOST), no nodes. Distinct ports so it won't clash
 # with the local ORC-OS dev stack.
@@ -90,8 +95,12 @@ if [ -n "$BACKUP_DIR" ]; then
      UNION ALL SELECT 'timeseries='||count(*) FROM api_timeseries;"
 
   if [ -n "$MEDIA_SRC" ] && [ -d "$MEDIA_SRC" ]; then
-    echo "==> copying sample media from $MEDIA_SRC into the webapp media volume…"
-    docker cp "$MEDIA_SRC/." liveorc_webapp:/liveorc/data/media/ && echo "   media copied"
+    # NOTE: stage into Django's MEDIA_ROOT (/liveorc/media), NOT the compose volume
+    # mount (/liveorc/data/media) — FS storage resolves files against MEDIA_ROOT.
+    # MEDIA_SRC must mirror the DB `file` paths, e.g. MEDIA_SRC/videos/4/<date>/<clip>.mp4
+    echo "==> copying sample media from $MEDIA_SRC into MEDIA_ROOT (/liveorc/media)…"
+    docker exec liveorc_webapp mkdir -p /liveorc/media
+    docker cp "$MEDIA_SRC/." liveorc_webapp:/liveorc/media/ && echo "   media copied"
   fi
 
   if [ -n "$SITE_ID" ]; then
@@ -113,10 +122,15 @@ else
 fi
 
 echo
+echo "==> pinning a pyorc-compatible xarray (image ships one too new for pyorc 0.9.4)…"
+XARRAY_PIN="${XARRAY_PIN:-2024.9.0}"
+docker exec liveorc_webapp python -c "import sys,xarray; sys.exit(0 if xarray.__version__=='$XARRAY_PIN' else 1)" 2>/dev/null \
+  || docker exec liveorc_webapp pip install -q "xarray==$XARRAY_PIN" || echo "   WARN: xarray pin failed"
+
 echo "==> validating the reprocess engine inside the webapp container…"
 docker cp "$SCRIPT_DIR/reprocess_fit6.py" liveorc_webapp:/tmp/reprocess_fit6.py 2>/dev/null || true
 docker exec liveorc_webapp python -c \
-  "import django,pyorc; from pyorc.service import velocity_flow_subprocess; print('pyorc',pyorc.__version__,'+ Django + velocity_flow_subprocess OK')" \
+  "import django,pyorc,xarray; from pyorc.service import velocity_flow_subprocess; print('pyorc',pyorc.__version__,'xarray',xarray.__version__,'+ Django + velocity_flow_subprocess OK')" \
   || echo "   WARN: engine import failed — check the image has pyorc"
 
 echo
