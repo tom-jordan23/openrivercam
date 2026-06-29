@@ -35,8 +35,10 @@ touched**.
 | `build_staging_local.sh` | stand up a **local** throwaway LiveORC + restore a prod dump (free; default) |
 | `stage_load.sh`          | same but into a remote/second stack (alt to local) |
 | `reprocess_fit6.py`      | the reprocessor — **dry-run by default**, parallel, JSONL log, replace-in-place |
-| `run_reprocess.sh`       | wrapper that pins a pyorc-compatible xarray, then runs the reprocessor |
+| `run_reprocess.sh`       | STAGING wrapper: `docker exec` into the local webapp, pin xarray, run |
+| `prod_reprocess.sh`      | PROD wrapper: ephemeral **sidecar** (never touches the serving webapp) |
 | `analytics_reprocess.py` | before/after impact report (runs on the **dry-run** log too) |
+| `prod_analytics.sh`      | convenience: run analytics on the newest log in `./reprocess-logs/` |
 
 ---
 
@@ -126,13 +128,21 @@ shifting off zero to ~0.2–0.7 m³/s, ~96% velocimetry coverage, a couple of
 ```
 `--recover` creates time_series for previously-errored videos; `--repoint` sets each
 video's config to Fit 6 so config↔result stay consistent.
-For **prod**: back up first (Phase 1), then run via an **ephemeral sidecar** so the
-serving webapp's environment is never mutated (the xarray pin lives only in the
-throwaway container) — see the `run_reprocess.sh` header for the `docker run --rm
---network … --env-file …` invocation. Always dry-run + analytics before `--commit`.
-Run `--commit` `nice`/overnight; low-traffic site, fine.
-~1165 site-4 videos × ~30–90 s ÷ workers ≈ a few hours (≈747 have a time_series to
-overwrite; the rest are skipped/errored).
+For **prod**, use `prod_reprocess.sh` — it launches an **ephemeral sidecar** from the
+webapp's image on the same docker network (reaches `db` + the S3/MinIO `storage`),
+pins the xarray, and never touches the serving webapp. It auto-uses `sudo docker` if
+needed and prompts before any `--commit`. Run on the EC2 from the repo checkout:
+```bash
+cd ~/openrivercam/spring_2026_ID/liveorc_server/reprocess
+./prod_reprocess.sh --limit 5                        # smoke dry-run (5 videos)
+./prod_reprocess.sh --recover                        # full dry-run (all site 4)
+./prod_analytics.sh                                  # report on the newest log
+./backup_liveorc_db.sh                               # Phase 1 backup BEFORE writing
+DETACH=1 ./prod_reprocess.sh --commit --repoint --recover   # the real write, backgrounded
+```
+Defaults are `--site-id 4 --video-config-id 3`; tunables (`ENV_FILE`, `WEBAPP`, `NET`,
+`IMG`, `XARRAY_PIN`) are in the script header. `--commit` run: ~1165 site-4 videos ×
+~30–90 s ÷ workers ≈ a few hours (≈747 overwritten, ~3+ recovered, the rest left as-is).
 
 ## Phase 4 — Final report + rollback path
 
