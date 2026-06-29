@@ -36,8 +36,27 @@ import os
 import shutil
 import sys
 import threading
+import time
 import traceback
 from concurrent.futures import ThreadPoolExecutor, as_completed
+
+
+def _fmt_dur(s):
+    if s != s or s == float("inf"):
+        return "?"
+    s = int(s)
+    h, m, sec = s // 3600, (s % 3600) // 60, s % 60
+    return f"{h}h{m:02d}m" if h else (f"{m}m{sec:02d}s" if m else f"{sec}s")
+
+
+def _progress_line(done, total, counts, t0):
+    el = time.monotonic() - t0
+    rate = done / el if el > 0 else 0.0
+    eta = (total - done) / rate if rate > 0 else float("inf")
+    pct = 100.0 * done / total if total else 0.0
+    tally = " ".join(f"{k}={v}" for k, v in sorted(counts.items()))
+    return (f"{done}/{total} ({pct:.1f}%) | {tally} | elapsed {_fmt_dur(el)} | "
+            f"{rate * 60:.1f}/min | ETA {_fmt_dur(eta)}")
 
 # --- Django bootstrap (we run inside the LiveORC container) -----------------
 # The LiveORC project package lives at /liveorc; make sure it's importable no
@@ -166,7 +185,7 @@ def extract_results(nc):
     }
 
 
-def process_one(video, fit6, recipe_base, cross, cross_wl, out_base, commit, repoint, recover):
+def process_one(video, fit6, recipe_base, cross, cross_wl, out_base, commit, repoint, recover, sleep=0.0):
     """Run one video; return a result dict (and write to DB if commit)."""
     ts = video.time_series
     old = {f: getattr(ts, f, None) for f in
@@ -249,6 +268,8 @@ def process_one(video, fit6, recipe_base, cross, cross_wl, out_base, commit, rep
         rec["error"] = f"{e}\n{traceback.format_exc()[-1200:]}"
     finally:
         shutil.rmtree(work, ignore_errors=True)  # don't let 1,297 temp dirs fill the disk
+        if sleep:
+            time.sleep(sleep)                     # throttle: ease load on the box
     return rec
 
 
@@ -269,6 +290,10 @@ def main():
     ap.add_argument("--start", default=None, help="only videos with timestamp >= ISO date")
     ap.add_argument("--stop", default=None, help="only videos with timestamp <= ISO date")
     ap.add_argument("--workers", type=int, default=4)
+    ap.add_argument("--sleep", type=float, default=0.0,
+                    help="seconds each worker pauses after a video (throttle CPU/IO)")
+    ap.add_argument("--progress-every", type=int, default=20,
+                    help="print a PROGRESS line (with %% done + ETA) every N videos")
     ap.add_argument("--out-base", default="/tmp/reprocess_fit6")
     ap.add_argument("--log-dir", default="./reprocess-logs")
     args = ap.parse_args()
@@ -312,34 +337,56 @@ def main():
         sys.exit("no videos matched.")
 
     stamp = dt.datetime.now().strftime("%Y%m%d-%H%M%S")  # local stamp for the log file name
-    jsonl = os.path.join(args.log_dir, f"reprocess_{'dry' if dry else 'commit'}_{stamp}.jsonl")
+    base = f"reprocess_{'dry' if dry else 'commit'}_{stamp}"
+    jsonl = os.path.join(args.log_dir, base + ".jsonl")
+    progress_path = os.path.join(args.log_dir, base + ".progress")
+    total = len(videos)
     counts = {}
     done = 0
+    t0 = time.monotonic()
+
+    def emit_progress():
+        line = _progress_line(done, total, counts, t0)
+        try:                                   # live progress file (survives a crash)
+            with open(progress_path, "w") as pf:
+                pf.write(line + "\n")
+        except OSError:
+            pass
+        return line
+
     with open(jsonl, "w") as fh, ThreadPoolExecutor(max_workers=args.workers) as ex:
         futs = {ex.submit(process_one, v, fit6, recipe_base, cross, cross_wl,
-                          args.out_base, args.commit, args.repoint, args.recover): v for v in videos}
+                          args.out_base, args.commit, args.repoint, args.recover, args.sleep): v
+                for v in videos}
         for fut in as_completed(futs):
             rec = fut.result()
-            fh.write(json.dumps(rec) + "\n"); fh.flush()
+            fh.write(json.dumps(rec) + "\n"); fh.flush()  # results streamed to disk as we go
             counts[rec["status"]] = counts.get(rec["status"], 0) + 1
             done += 1
+            line = emit_progress()
+            if args.progress_every and (done % args.progress_every == 0 or done == total):
+                log(f"==> PROGRESS {line}")
             if rec["status"] in ("ok", "recovered"):
                 o, n = rec["old"], rec["new"]
                 if rec["status"] == "recovered":
-                    log(f"[{done}/{len(videos)}] vid {rec['video_id']} RECOVERED  "
+                    log(f"[{done}/{total}] vid {rec['video_id']} RECOVERED  "
                         f"h={n['h']:.3f}  q50={n['q_50']:.3f}")
                 else:
                     dh = (n["h"] - o["h"]) if (o.get("h") is not None and n["h"] is not None) else float("nan")
-                    log(f"[{done}/{len(videos)}] vid {rec['video_id']} OK  "
+                    log(f"[{done}/{total}] vid {rec['video_id']} OK  "
                         f"h {o.get('h')}->{n['h']} (Δ{dh:+.3f})  q50 {o.get('q_50')}->{n['q_50']}")
             else:
-                log(f"[{done}/{len(videos)}] vid {rec['video_id']} {rec['status'].upper()} "
-                    f"{(rec['error'] or '')[:120]}")
+                # show the last line of the error (the real exception), not the tqdm spam
+                err = (rec["error"] or "").replace("\r", "\n").strip().splitlines()
+                log(f"[{done}/{total}] vid {rec['video_id']} {rec['status'].upper()} "
+                    f"{(err[-1][:140] if err else '')}")
 
     log("\n==== summary ====")
+    log(f"  {_progress_line(done, total, counts, t0)}")
     for k in sorted(counts):
         log(f"  {k:14s} {counts[k]}")
-    log(f"  log: {jsonl}")
+    log(f"  results: {jsonl}")
+    log(f"  progress: {progress_path}")
     if dry:
         log("\nDRY-RUN only — nothing written. Re-run with --commit (after backup + staging validation).")
 

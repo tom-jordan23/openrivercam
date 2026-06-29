@@ -19,8 +19,14 @@
 #   ./prod_reprocess.sh --commit --repoint --recover     # the real write (prompts first)
 #   DETACH=1 ./prod_reprocess.sh --commit --repoint --recover   # long run, in background
 #
-# Tunables (env): WEBAPP (default liveorc_webapp), XARRAY_PIN (default 2024.9.0),
-#   SITE_ID (4), VC_ID (3), DETACH=1 (background), FORCE=1 (skip --commit prompt).
+# Throttle (the box gets sluggish under load): WORKERS parallel videos (default 2),
+#   THREADS = number of CPUs the whole job is pinned to via taskset (default 2),
+#   NICE cpu priority (default 15). Lower WORKERS/THREADS or raise NICE if still heavy.
+# Progress: a PROGRESS line (% done + ETA) prints every 20 videos; per-video results
+#   stream to ./reprocess-logs/*.jsonl as they finish, and *.progress holds the latest
+#   status (both survive a crash). Foreground also tees console to ./reprocess-logs/*.out.
+# Tunables (env): WEBAPP (liveorc_webapp), XARRAY_PIN (2024.9.0), SITE_ID (4), VC_ID (3),
+#   WORKERS (2), THREADS (2), NICE (15), DETACH=1 (background), FORCE=1 (skip prompt).
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -28,6 +34,11 @@ WEBAPP="${WEBAPP:-liveorc_webapp}"
 XARRAY_PIN="${XARRAY_PIN:-2024.9.0}"
 SITE_ID="${SITE_ID:-4}"
 VC_ID="${VC_ID:-3}"
+# Throttle (keep the box responsive): WORKERS parallel videos, each pyorc capped to
+# THREADS cpu threads, whole job at low cpu/io priority (NICE). Tune via env.
+WORKERS="${WORKERS:-2}"
+THREADS="${THREADS:-2}"
+NICE="${NICE:-15}"
 XPIN_DIR="/tmp/orc-xarray-pin"          # isolated xarray install (shadows via PYTHONPATH)
 CLOG="/tmp/orc-reprocess-logs"          # log dir inside the container
 
@@ -51,28 +62,43 @@ $DOCKER cp "$SCRIPT_DIR/reprocess_fit6.py" "$WEBAPP:/tmp/reprocess_fit6.py"
 # Build the in-container command: install the pinned xarray into an isolated dir
 # (--no-deps so numpy/pandas stay the system ones), prepend it to PYTHONPATH so both
 # this process AND the pyorc CLI subprocess pick it up, then run the reprocessor.
+CPUMAX=$(( THREADS > 0 ? THREADS - 1 : 0 ))
+# Throttle by CAPPING cpus with taskset (+ low priority via nice). We deliberately do
+# NOT set *_NUM_THREADS env — limiting NUMBA_NUM_THREADS while pyorc runs its internal
+# multiprocessing caused SIGSEGV. taskset bounds total CPU without touching numba.
 INNER='set -e
 mkdir -p "'"$XPIN_DIR"'" "'"$CLOG"'"
 if [ ! -d "'"$XPIN_DIR"'/xarray" ]; then pip install -q --target "'"$XPIN_DIR"'" --no-deps "xarray=='"$XARRAY_PIN"'"; fi
 export PYTHONPATH="'"$XPIN_DIR"'${PYTHONPATH:+:$PYTHONPATH}"
-exec python /tmp/reprocess_fit6.py "$@" --log-dir "'"$CLOG"'"'
+RUN="nice -n '"$NICE"'"
+command -v taskset >/dev/null 2>&1 && RUN="taskset -c 0-'"$CPUMAX"' $RUN"
+exec $RUN python /tmp/reprocess_fit6.py "$@" --log-dir "'"$CLOG"'"'
 
-echo "==> exec in $WEBAPP (isolated xarray==$XARRAY_PIN via PYTHONPATH)  args: --site-id $SITE_ID --video-config-id $VC_ID $*"
+# base args (WORKERS default; user args after can override). --log-dir is forced in INNER.
+BASEARGS=(--site-id "$SITE_ID" --video-config-id "$VC_ID" --workers "$WORKERS")
+echo "==> exec in $WEBAPP | xarray==$XARRAY_PIN (PYTHONPATH) | workers=$WORKERS cpus=$THREADS(0-$CPUMAX) nice=$NICE"
+echo "    args: ${BASEARGS[*]} $*"
 
 if [ "${DETACH:-0}" = "1" ]; then
-  $DOCKER exec -d "$WEBAPP" bash -lc "$INNER" _ --site-id "$SITE_ID" --video-config-id "$VC_ID" "$@"
-  echo "==> detached. Monitor:   $DOCKER exec $WEBAPP sh -c 'tail -f $CLOG/\$(ls -t $CLOG | head -1)'"
+  $DOCKER exec -d "$WEBAPP" bash -lc "$INNER" _ "${BASEARGS[@]}" "$@"
+  echo "==> detached. Live progress:"
+  echo "      $DOCKER exec $WEBAPP sh -c 'cat $CLOG/\$(ls -t $CLOG | grep .progress | head -1)'"
+  echo "    Tail results:"
+  echo "      $DOCKER exec $WEBAPP sh -c 'tail -f $CLOG/\$(ls -t $CLOG | grep .jsonl | head -1)'"
   echo "    When done, pull logs: $DOCKER cp $WEBAPP:$CLOG/. $SCRIPT_DIR/reprocess-logs/"
   exit 0
 fi
 
+# Foreground: mirror stdout to a host file live (so you have it even if it crashes).
+mkdir -p "$SCRIPT_DIR/reprocess-logs"
+HOST_OUT="$SCRIPT_DIR/reprocess-logs/run_$(date +%Y%m%d-%H%M%S).out"
 set +e
-$DOCKER exec "$WEBAPP" bash -lc "$INNER" _ --site-id "$SITE_ID" --video-config-id "$VC_ID" "$@"
-rc=$?
+$DOCKER exec "$WEBAPP" bash -lc "$INNER" _ "${BASEARGS[@]}" "$@" 2>&1 | tee "$HOST_OUT"
+rc=${PIPESTATUS[0]}
 set -e
 
-# Pull logs back to the host regardless of exit code.
-mkdir -p "$SCRIPT_DIR/reprocess-logs"
+# Pull the JSONL results + .progress files back to the host regardless of exit code.
 $DOCKER cp "$WEBAPP:$CLOG/." "$SCRIPT_DIR/reprocess-logs/" 2>/dev/null || true
-echo "==> logs in $SCRIPT_DIR/reprocess-logs/   (exit $rc)"
+echo "==> console log: $HOST_OUT"
+echo "==> results/progress in $SCRIPT_DIR/reprocess-logs/   (exit $rc)"
 exit $rc
