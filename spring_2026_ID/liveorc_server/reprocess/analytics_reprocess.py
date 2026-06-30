@@ -168,7 +168,8 @@ def main():
     for p in plots:
         print(f"  plot: {p}")
     print("\nHeadline:")
-    print(f"  ok={len(ok)}  Δh {describe(dh)}")
+    print(f"  writes={len(success)} (ok={len(by_status.get('ok', []))} "
+          f"recovered={len(recovered)})  Δh {describe(dh)}")
     print(f"  q_50 Δ {describe(dq)}  sign_flips={sign_flips}")
 
 
