@@ -113,6 +113,14 @@ def recipe_update_cross_section(recipe, cross_section):
 
 _print_lock = threading.Lock()
 
+# libhdf5 is NOT thread-safe: concurrent xr.open_dataset() calls from multiple
+# ThreadPoolExecutor workers segfault inside libhdf5 (observed as SIGSEGV in
+# libhdf5.so from ThreadPoolExecutor threads, which kills the whole run with no
+# Python traceback). Serialize ALL in-process netCDF reads through one global lock.
+# The heavy pyorc step runs in a SEPARATE subprocess, so workers still parallelize
+# it — only the brief netCDF reads here are serialized.
+_hdf5_lock = threading.Lock()
+
 
 def log(msg):
     with _print_lock:
@@ -150,7 +158,7 @@ def find_discharge_nc(output_dir):
     """Locate the transect netCDF pyorc wrote (the one carrying river_flow/h_a)."""
     for fn in sorted(glob.glob(os.path.join(output_dir, "**", "*.nc"), recursive=True)):
         try:
-            with xr.open_dataset(fn) as ds:
+            with _hdf5_lock, xr.open_dataset(fn) as ds:  # libhdf5 not thread-safe
                 if "river_flow" in ds or "h_a" in ds:
                     return fn
         except Exception:
@@ -160,7 +168,7 @@ def find_discharge_nc(output_dir):
 
 def extract_results(nc):
     """Map the pyorc transect output to time_series fields (mirrors ORC-OS update_timeseries)."""
-    with xr.open_dataset(nc) as ds:
+    with _hdf5_lock, xr.open_dataset(nc) as ds:  # libhdf5 not thread-safe
         h = float(ds.h_a)
         Q = np.abs(ds.river_flow.values)
         q = 2 if ("quantile" in ds.dims and len(ds["quantile"]) == 5) else 0
