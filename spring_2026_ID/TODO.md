@@ -104,27 +104,36 @@ that PMI, IPB, and other stakeholders can reach.
 
 | Field | Value |
 |-------|-------|
-| **Status** | OPEN |
+| **Status** | RESOLVED 2026-07-07 (alerting follow-up remains — see below) |
 | **Site** | Sukabumi → LiveORC server |
 
-Captures and sensor CSVs *should* be uploading from the Sukabumi
-station to the LiveORC server, but there's been no end-to-end
-verification since coming back. Need to confirm both paths are working
-and any failures are visible.
+End-to-end verification done. Videos/hydrology were uploading fine.
+**Sensor CSV uploads were silently failing** — and had been for weeks:
+`orc-sensors-upload` fires ~5 s after boot, before the LTE modem
+registers, so its PUTs failed (`curl 6/7`); the old fail-fast +
+all-or-nothing watermark then never advanced, and alphabetical upload
+order starved sht40. The server had stalled at sht40≤05-15, rg15≤06-15,
+ds18b20≤07-03 while the sensors kept logging locally.
+
+**Resolution:** fixed in commit 966d327 (curl `--retry` +
+oldest-mtime-first + per-file resumable watermark), deployed to the
+station 2026-07-07. Backlog recovered with `pi/tools/orc_flush_one.sh`;
+all three sensors now current on the server. Permanently lost: sht40
+2026-05-16 → 06-07 (the 30-day CSV rotation deleted it before recovery —
+see `pi/tools/README.md`).
 
 **Steps:**
-- [ ] On the LiveORC server, list the most recent video uploads from
-      the Sukabumi site. Confirm they correspond to capture cycles on
-      the Pi (cross-check `journalctl -u orc-capture` on the Pi).
-- [ ] On the LiveORC server, inspect the sensor CSV ingest path used
-      by `orc-sensors-upload`. Confirm new rows are landing for the
-      current date and that the file rotation matches what the Pi is
-      writing.
-- [ ] Verify the Pi side: `orc-sensors-upload` runs on boot + hourly,
-      exits 0, and the local journal shows successful scp.
-- [ ] If anything has been silently failing: capture the failure mode,
-      add an alert (low-rate log scrape, Grafana alert once it's up,
-      or a daily email) so the next gap is detected within hours.
+- [x] Confirm recent Sukabumi video uploads on LiveORC (videos were flowing).
+- [x] Inspect sensor CSV ingest — root-caused the stall, fixed, rows now
+      landing for the current date.
+- [x] Verify Pi side: `orc-sensors-upload` now rides the boot-race and
+      advances its watermark (it's invoked from orc-capture each wake
+      cycle, not a boot+hourly timer).
+- [ ] **Alerting (still open):** add a low-rate detector so the next
+      upload gap is caught in hours, not weeks — e.g. a Grafana "no
+      sensor rows in N hours" alert on the TimescaleDB, or a daily
+      server-side scrape. This gap went undetected precisely because
+      nothing watched for staleness.
 
 ### TODO-104: Coordinate IPB engagement (site + survey)
 
