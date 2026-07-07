@@ -64,3 +64,6 @@ spring_2026_ID/sukabumi_bringup/*.log
 
 # Sukabumi handoff folder (real GPS coords, .env with camera password)
 spring_2026_ID/sukabumi_handoff/
+
+# Ad-hoc sensor-pipeline diagnostic bundles (see pi/tools/orc_collect.sh)
+orc_collect_*.txt
