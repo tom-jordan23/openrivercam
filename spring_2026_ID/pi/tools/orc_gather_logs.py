@@ -22,16 +22,20 @@ is set and a password is configured). Login is POST /auth/login/?password=... wh
 returns a token; we send it back as the `orc_token` cookie the API checks. If the
 instance is in DEV_MODE (e.g. a local dev stack) no password is needed.
 
-BASE: on the native Pi install the API uvicorn serves at http://localhost:5000
-with routes at root (nginx only adds the /api prefix for the browser). So:
-  BASE=http://localhost:5000 ./orc_gather_logs.py --password '...'
-A dockerised dev stack may publish it elsewhere (e.g. http://localhost:3001).
+BASE: go through nginx, NOT uvicorn directly. The app is FastAPI(root_path="/api")
+and its auth middleware whitelists login as the literal path "/api/auth/login/".
+nginx forwards the browser's /api/... requests with that prefix intact, so login
+is allowed; but uvicorn on :5000 sees the path as "/auth/login/" (no /api), which
+is NOT whitelisted, so even the login/password_available calls get bounced with a
+401 "Token missing or not a valid token format". So on the native Pi install use:
+  BASE=http://localhost/api ./orc_gather_logs.py --password '...'
+A dockerised dev stack may publish nginx elsewhere (e.g. http://localhost:3000/api).
 
 Usage:
-  BASE=http://localhost:5000 ORC_PASSWORD='...' ./orc_gather_logs.py            # errored videos
-  BASE=http://localhost:5000 ./orc_gather_logs.py --password '...' --start 2026-07-10
-  BASE=http://localhost:5000 ./orc_gather_logs.py --status all --count 20
-  BASE=http://localhost:5000 ./orc_gather_logs.py --ids 41 42 43
+  BASE=http://localhost/api ORC_PASSWORD='...' ./orc_gather_logs.py            # errored videos
+  BASE=http://localhost/api ./orc_gather_logs.py --password '...' --start 2026-07-10
+  BASE=http://localhost/api ./orc_gather_logs.py --status all --count 20
+  BASE=http://localhost/api ./orc_gather_logs.py --ids 41 42 43
 
 ORC-OS VideoStatus: NEW=1 QUEUE=2 TASK=3 DONE=4 ERROR=5
 """
@@ -77,7 +81,13 @@ def login(base, password):
     st, b = get(base, "/auth/password_available/")
     if st is None:
         sys.exit(f"cannot reach API at {base}: {b.decode(errors='replace')}\n"
-                 f"On the native Pi install try BASE=http://localhost:5000")
+                 f"On the native Pi install try BASE=http://localhost/api")
+    if st == 401:
+        # The auth middleware whitelists login only under the /api prefix. A 401 here
+        # means we're hitting uvicorn directly (path lacks /api). Go through nginx.
+        sys.exit(f"401 on /auth/password_available/ at {base}: {b.decode(errors='replace')[:160]}\n"
+                 f"You're bypassing nginx — the API only whitelists login under /api.\n"
+                 f"Use the nginx base instead:  BASE=http://localhost/api")
     if b.strip() in (b"false", b'"false"'):
         # no password configured — either DEV_MODE or a fresh box; nothing to do
         return True
@@ -112,8 +122,8 @@ def save(out, name, data, decode_json_str=False):
 
 def main():
     ap = argparse.ArgumentParser(description="Read-only: gather errored-video logs+config from ORC-OS.")
-    ap.add_argument("--base", default=os.environ.get("BASE", "http://localhost:5000"),
-                    help="ORC-OS API base URL (or set BASE env). Native Pi: http://localhost:5000")
+    ap.add_argument("--base", default=os.environ.get("BASE", "http://localhost/api"),
+                    help="ORC-OS API base URL (or set BASE env). Native Pi (via nginx): http://localhost/api")
     ap.add_argument("--password", default=None,
                     help="back-end password (or ORC_PASSWORD env; prompted if needed)")
     ap.add_argument("--status", default="error",
