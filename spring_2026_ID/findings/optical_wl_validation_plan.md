@@ -56,7 +56,7 @@ These are **not** mutually exclusive — the expected outcome is H1+H2+H3 togeth
 |----|------|-----|--------|
 | **P1** | `orc_gather_logs.py`: bulk **list-only** mode — page ALL videos, record id/timestamp/status (no per-video log fetch) | V1 timeline | ☐ to build |
 | **P2** | `orc_gather_logs.py`: **frame/video fetch** mode for a given id list (first-frame JPEG is enough) | V2 pixel test | ☐ to build |
-| **P3** | LiveORC query path (server per `reference_liveorc_server` memory): historical daytime result density for the **pre-Fit 6** period | V1 baseline | ☐ confirm access |
+| **P3** | Retrieve the **PROD reprocess commit log** `reprocess_commit_<stamp>.jsonl` from the LiveORC AWS box (`docker cp liveorc_webapp:/tmp/orc-reprocess-logs/. …`, or per `prod_reprocess.sh`). The prod reprocess (done on LiveORC) re-detected optical WL with `h_a=None` on the ~1,297 historical videos → each record carries timestamp + status (`ok` = WL succeeded / `pyorc_error` = WL failed). **Local dry-run logs are insufficient** (28 videos, 2026-05-16 only, no re-detection: `new.h==old.h`). | V1 baseline | ☐ pull from AWS |
 | **P4** | Sky-state proxy: on-station rain gauge log, and/or in-frame hard-shadow detector | V4 | ☐ decide source |
 
 All station-side tools stay **read-only**. Derived datasets committed must remain **coordinate-free**
@@ -68,31 +68,42 @@ All station-side tools stay **read-only**. Derived datasets committed must remai
 
 Ordered by information-value ÷ cost. Each phase has a **decision gate**; we stop and talk at each.
 
-### V0 — Verify the camera pose (gate for everything geometric) ☐
-- **Question:** is the derived orientation (313° NW / 54° depression) actually correct, and was it
-  the **same** on the pre-Fit 6 unit (or was the camera re-aimed at the swap)?
-- **Method:** (a) sanity-check pose against a real frame (does "up-left in image" map to the
-  expected compass direction?); (b) confirm intended aim from install notes/photos; (c) note
-  whether the Fit 6 swap changed camera position/aim (a confound for V1 history).
-- **Output:** confirmed azimuth/depression ± uncertainty; a yes/no on "aim changed at swap."
-- **Gate:** if pose is wrong or aim changed at the swap → revise the geometric model and the V1
-  interpretation before proceeding.
+### V0 — Verify the camera pose (gate for everything geometric) ✅ RESOLVED 2026-07-14
+- **Question:** is the derived orientation (313° NW / 54° depression) correct, and was it the
+  **same** on the pre-Fit 6 unit (or re-aimed at the swap)?
+- **Result:** camera faces **~313° (NW)**, depression **~54°**, derived from *surveyed* coords —
+  the camera sits at surveyed point C and the GCPs are physical points it imaged (they carry
+  row/col), so it must look C→GCPs; this is convention-free and authoritative. UTM grid→true-north
+  convergence at the site is −0.23° (negligible), so 313° is a true-north bearing. **Stakeholder
+  confirms the camera did not move during or since the Fit 6 swap** → no re-aim confound for V1.
+- **Caveat (parked for V3):** interpreting `camera_rotation` (rvec) as the cv2 world→camera vector
+  gives azimuth ~188°, disagreeing with the geometry's 313° (depressions agree, ~49° vs ~54°). The
+  geometry wins for *facing direction*; the rvec **rotation convention must be pinned down before
+  V3** projects the glint point into the image.
 
 ### V1 — Onset & baseline: did it work before? (answers Q1) ☐
 - **Question:** reconstruct daytime optical-WL failure rate over time; is onset seasonal or a step?
+- **Primary data source (best):** the **PROD reprocess commit log** (P3) — the pre-Fit 6 history
+  re-scored with the *current* recipe (`h_a=None`, same optical-WL detection the station runs), so
+  `status` per record = WL succeeded (`ok`) / failed (`pyorc_error`). This is a **same-algorithm**
+  seasonal baseline — it controls for "did the pipeline change" (it didn't; the same code scored
+  both eras).
 - **Method:**
-  - ☐ P1: pull the full video history from the station DB → per-day counts of DONE vs ERROR,
-    split by **morning (06–12)** and **afternoon (12–18)** WIB.
-  - ☐ P3: for the pre-Fit 6 months, use LiveORC — plot **density of successful daytime results
-    per day** over the prior months (daytime gaps = failures, since only successes upload).
-  - ☐ Overlay solar declination (and sunset azimuth relative to 313°) on the failure-rate timeline.
-- **Output:** a failure-rate-vs-date chart (am/pm split) spanning as far back as data allows.
+  - ☐ P3: parse the prod commit log → per-video timestamp + WL success/fail; confirm the failures
+    carry the "Could not estimate water level" signature (vs unrelated velocimetry errors).
+  - ☐ Combine with the current live-station ERROR/DONE sets (already pulled) for the Fit-6 era.
+  - ☐ Per-day failure rate, split **morning (06–12)** and **afternoon (12–18)** WIB; overlay solar
+    declination and the sunset-azimuth-vs-313° track.
+  - ☐ (Optional P1) station-DB full history to extend/confirm the Fit-6-era tail.
+- **Output:** a failure-rate-vs-date chart (am/pm split) spanning the reprocessed history → now.
 - **Gate:**
   - Onset **tracks the sun going north / sunset entering the NW** → seasonal (H3 supported); proceed.
   - **Step change on a single date** → a discrete regression (H0); pivot to find that event
-    (lens, camera nudge, water-level drop, recipe change) before any seasonal modelling.
-  - Too little history (only ~3 weeks; unit deployed 2026-06-24) → rely on V3+V5 (model + forward
-    monitoring) instead, and say so explicitly.
+    (lens, camera nudge, water-level drop, recipe/capture-config change) before seasonal modelling.
+  - **Persistent failures across the whole reprocessed span** (if it only covers ~May–Jun, all near
+    the solstice, i.e. all "bad-glint" months) → consistent with a seasonal May–Aug problem but with
+    little transition *leverage*; lean on V3 (model) + V5 (forward monitoring) for the seasonal
+    swing, and say so. **First check the history's actual date span** (open question §9).
 
 ### V2 — Split frame-level proof (answers Q2; tests H1 & H2) ☐
 - **Question:** does each peak show its own predicted signature?
@@ -166,8 +177,15 @@ V5 seasonal curves diverge as predicted → CONFIRMED → choose & validate miti
 
 ## 7. Confounders to control
 
-- Camera re-aimed at the Fit 6 swap (V0) — would break V1 history continuity.
-- LiveORC "gaps" may reflect upload/comms outages, not WL failures — cross-check against known
+- ~~Camera re-aimed at the Fit 6 swap~~ — **cleared** (V0: stakeholder confirms no movement).
+- **Pre/post-Fit 6 capture-config comparability** — the reprocess scores *old imagery* with the new
+  recipe, but if the pre-Fit 6 camera model / exposure / resolution / IR settings differed, imagery
+  characteristics (hence S/N) could differ independently of season. Confirm the camera and capture
+  settings were unchanged across the swap.
+- Reprocess `status` semantics — confirm `pyorc_error` on a historical video means the *WL* step
+  failed (our signature), not a downstream velocimetry error; the runbook's "recovered/errored"
+  wording refers to discharge salvage, which is not the same thing.
+- LiveORC data gaps may reflect upload/comms outages, not WL failures — cross-check against known
   outage windows (see sensor-upload memories) before reading a gap as a failure.
 - Dry-season clear skies raise *both* glint (direct sun) and radiation fog — don't attribute both
   peaks to one cause.
@@ -177,8 +195,9 @@ V5 seasonal curves diverge as predicted → CONFIRMED → choose & validate miti
 
 ## 8. Results log (fill inline as phases complete)
 
-- V0 — _pending_
-- V1 — _pending_
+- V0 — ✅ **done (2026-07-14):** camera faces ~313° NW, ~54° depression, from surveyed coords;
+  confirmed not moved across Fit 6. rvec rotation-convention mismatch parked for V3.
+- V1 — _pending_ — data source identified: prod reprocess commit log on the LiveORC box (P3).
 - V2 — _pending_
 - V3 — _pending_
 - V4 — _pending_
@@ -186,7 +205,10 @@ V5 seasonal curves diverge as predicted → CONFIRMED → choose & validate miti
 
 ## 9. Open questions
 
-- How far back does station/LiveORC history actually go for Sukabumi? (bounds V1)
-- Did the Fit 6 swap change camera position/aim? (V0)
-- Does LiveORC record failures, or only successful results? (sets the V1 method)
+- **What is the date span of the reprocessed history?** (~1,297 videos; sample seen is 2026-05-16.)
+  If it only covers ~May–Jun it's all near the solstice → limited seasonal-transition leverage for
+  V1. This is the first thing to check when the prod log is in hand. (bounds V1)
+- ~~Did the Fit 6 swap change camera position/aim?~~ — **answered: no** (V0).
+- Was the camera model / capture config unchanged across the Fit 6 swap? (V1 confound)
+- Does the prod reprocess `pyorc_error` reliably encode a *WL-detection* failure? (sets V1 method)
 - Water-roughness input for V3 — measurable from the video, or assume a range?
