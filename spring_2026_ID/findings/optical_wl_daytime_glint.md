@@ -220,6 +220,9 @@ collapse is uniform along the whole cross-section rather than localized at a bri
   those endpoints return YAML / GeoJSON respectively.
 
 ## 10. Related
+- **Validation plan:** [`optical_wl_validation_plan.md`](optical_wl_validation_plan.md) — the
+  multi-phase plan to confirm mechanism, seasonality, and mitigation. Supersedes the proof
+  protocol sketched in §7.
 - Memory: `project_ipb_optical_wl_recipe_tuning`, `project_night_snr_tuning_findings`,
   `project_night_profile_rebaseline` (this finding refines the last: night optical WL confirmed
   reliable; the open gap is **daytime**, not night).
