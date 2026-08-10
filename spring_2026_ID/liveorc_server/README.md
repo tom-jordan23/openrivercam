@@ -64,15 +64,28 @@ volumes — all unchanged. We share only the host EC2 instance.
 ```bash
 # If you have the repo cloned (e.g., ~/openrivercam):
 sudo mkdir -p /opt/orc-additions
-sudo rsync -a --exclude='.env' --exclude='certs/' \
+sudo rsync -a --exclude='.env' --exclude='certs/' --exclude='secrets/' \
     ~/openrivercam/spring_2026_ID/liveorc_server/ /opt/orc-additions/
-sudo chown -R $USER:$USER /opt/orc-additions
+sudo find /opt/orc-additions -path /opt/orc-additions/secrets -prune -o \
+    -exec chown $USER:$USER {} +
 cd /opt/orc-additions
 ```
 
-**Do NOT use `rsync --delete`** — it would wipe `.env` and `certs/` on the
-server (both are server-local, not in the repo). The `--exclude` flags
-are belt-and-braces in case someone forgets.
+**Do NOT use `rsync --delete`** — it would wipe `.env`, `certs/`, and
+`secrets/` on the server (all three are server-local, not in the repo). The
+`--exclude` flags are belt-and-braces in case someone forgets.
+
+**Do not `chown -R` over `secrets/`.** The Sheets service-account key must
+stay `1001:1001` — `chown`ing it to your login user makes `sheets-export`
+fail at startup with `PermissionError`. This bites on *re*-deploys, not the
+first one. `chown` has no `--exclude` flag, which is why the command above
+uses `find ... -prune`. If you ever run a plain `chown -R` by habit,
+re-assert the key's ownership afterwards:
+
+```bash
+sudo chown 1001:1001 /opt/orc-additions/secrets/sheets-sa.json
+sudo chmod 0400      /opt/orc-additions/secrets/sheets-sa.json
+```
 
 ### 2. Generate the self-signed cert
 
