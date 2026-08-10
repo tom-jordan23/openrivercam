@@ -30,7 +30,10 @@ services:
     ports:
       - "8443:8443"
     volumes:
-      - /var/orc/sensors:/var/orc/sensors:rw
+      # ORC_SENSORS_HOST_DIR is unset on the server, so this resolves to the
+      # production path. Local dev sets it in .env to redirect the mount to a
+      # repo-local directory (no sudo, no host-absolute path).
+      - ${ORC_SENSORS_HOST_DIR:-/var/orc/sensors}:/var/orc/sensors:rw
       - ./certs:/certs:ro
 
   timescale:
@@ -63,7 +66,29 @@ services:
       PG_DSN: host=timescale port=5432 dbname=orc user=orc password=${TIMESCALE_PASSWORD:?TIMESCALE_PASSWORD must be set in .env}
       POLL_SECS: "30"
     volumes:
-      - /var/orc/sensors:/data:ro
+      - ${ORC_SENSORS_HOST_DIR:-/var/orc/sensors}:/data:ro
+
+  sheets-export:
+    build: ./sheets-export
+    container_name: orc-sheets-export
+    restart: unless-stopped
+    depends_on:
+      timescale:
+        condition: service_healthy
+    environment:
+      PG_DSN: host=timescale port=5432 dbname=orc user=orc password=${TIMESCALE_PASSWORD:?TIMESCALE_PASSWORD must be set in .env}
+      SHEETS_SPREADSHEET_ID: ${SHEETS_SPREADSHEET_ID:?SHEETS_SPREADSHEET_ID must be set in .env}
+      SHEETS_TAB: readings
+      SHEETS_KEY_FILE: /secrets/sheets-sa.json
+      EXPORT_INTERVAL_SECS: "3600"
+      EXPORT_BATCH_ROWS: "2000"
+      # live on the server. dry-run/preview are for local dev and one-off
+      # checks — see .env.example.
+      EXPORT_MODE: ${EXPORT_MODE:-live}
+    volumes:
+      # Service-account JSON key. Server-local and gitignored, same treatment
+      # as certs/. Must be chown 1001:1001 (the container is non-root).
+      - ./secrets:/secrets:ro
 
   grafana:
     image: grafana/grafana:11.3.0

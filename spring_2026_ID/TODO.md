@@ -1,6 +1,6 @@
 # TODO — Indonesia Spring 2026 Deployment (post-trip)
 
-**Last updated:** 2026-05-05
+**Last updated:** 2026-08-07
 
 The pre-trip task list (departure schedule day-by-day, in-country
 deferred items, etc.) was archived to `archive/` after the April 2026
@@ -263,6 +263,52 @@ be useful for funder reporting and as input for the next trip plan.
 `BOM_Spares.md` was the pre-trip plan. After the trip, the actual
 spares left at the PMI office (and what came back to the US with the
 Jakarta kit) need reconciling. Do this before the next trip plan.
+
+### TODO-111: Google Sheets export of sensor data
+
+| Field | Value |
+|-------|-------|
+| **Status** | IN PROGRESS |
+| **Site** | LiveORC server (AWS) |
+
+Grafana (TODO-102) covers people who will log into Grafana. Stakeholders
+who won't — PMI, IPB — need the sensor data somewhere they can filter
+and chart it themselves, without a login or a self-signed-cert warning.
+A Google Sheet is that surface.
+
+The `sheets-export` service is written, wired into the compose stack, and
+verified locally against a seeded TimescaleDB. What remains is the
+Google-side setup and the deploy, both of which need a human in a browser.
+
+**Design note — why there is no `ts` watermark:** sensor CSVs backfill
+(that is exactly what the TODO-103 recovery did), so a `max(ts)` cursor
+would silently skip replayed rows. Instead a `sensor_exports` ledger
+table is anti-joined against `sensor_readings`. Verified locally: after
+a backfill the naive query finds 0 rows while the anti-join finds all
+1,440. `sensor_readings` is never altered. **Never prune
+`sensor_exports` — it is the cursor.**
+
+**Steps:**
+- [x] Write the exporter, matching `sensor-ingest` conventions.
+- [x] Validate the cursor against a local TimescaleDB, including the
+      backfill case and a fault-injected crash in the append/mark window
+      (0 rows lost; the batch re-appends, by design).
+- [x] Document setup, deploy, dedupe, and rollover in
+      `liveorc_server/README.md`.
+- [ ] Create the spreadsheet (must be a human — a service account has no
+      Drive storage quota). Decide Shared Drive vs personal Drive; the
+      target is one `.env` variable, so this is repointable later.
+- [ ] Add the `G1` disclaimer cell mirroring the mandatory Grafana
+      banner, and set the sheet timezone to UTC.
+- [ ] Create the GCP service account, enable the Sheets API, download the
+      JSON key, share the sheet with its `client_email` as Editor.
+- [ ] Deploy via Session Manager (no SSH on that host): `git pull`,
+      rsync into `/opt/orc-additions` (**no `--delete`**), install the
+      key as `1001:1001` mode `0400`, run once with
+      `EXPORT_MODE=preview`, then switch to `live`.
+- [ ] Confirm the ~130k-row first backfill completes without rate-limit
+      errors, and that the four pre-existing containers were not
+      recreated.
 
 ---
 

@@ -26,6 +26,16 @@ spring_2026_ID/liveorc_server/.env
 # committed; the private key never leaves the server.
 spring_2026_ID/liveorc_server/certs/
 
+# LiveORC server-side Google service-account key for sheets-export. Server-
+# local, same treatment as certs/. The key grants Editor on the export
+# spreadsheet — there is no public half, so none of it is ever committed.
+spring_2026_ID/liveorc_server/secrets/
+
+# Local dev only: compose override redirecting host-absolute bind mounts, and
+# the synthetic sensor CSVs it feeds to sensor-ingest.
+spring_2026_ID/liveorc_server/docker-compose.override.yml
+spring_2026_ID/liveorc_server/devdata/
+
 # Python venv for doc tools (translation)
 spring_2026_ID/docs/.venv/
 
