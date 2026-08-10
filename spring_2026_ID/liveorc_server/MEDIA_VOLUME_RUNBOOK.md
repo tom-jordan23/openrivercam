@@ -122,6 +122,27 @@ Interpreting the first command:
 - **`os.link` into `MEDIA_ROOT`** — hardlinks cannot cross filesystems and
   have no fallback. Do 5b.
 
+#### Result — run 2026-08-10 on `localdevices/liveorc`
+
+| Check | Result | Consequence |
+|---|---|---|
+| `os.link` / `os.rename` / `os.replace` / `shutil.move` in app code | **none** | **Skip 5b.** `/liveorc/data` stays on `/`. Only Django's `file_move_safe()` crosses the boundary, and it falls back to a copy on `EXDEV`. |
+| `FILE_UPLOAD_TEMP_DIR` | **unset** | Uploads use the system temp dir and cross the boundary via that same fallback. No action. |
+| Image content at `/liveorc/media` | **`admin-interface/`** | **Phase 4's seed step is mandatory.** The bind mount masks it, and nginx serves `/media/admin-interface` directly — skipping the seed breaks the Django admin theme with no error in the app log. |
+| `liveorc.service` | **five separate s3fs couplings** | Phase 6 rewrites all of them; see there. |
+
+`UPPER` for this migration:
+`/var/lib/docker/overlay2/6e92d3cd47b783469b9cdbb914011237b65d1880394a86f2f92ea57a6c89048f/diff`
+
+Still to read before Phase 6 (`/usr/local/bin/verify-s3mount.sh` decides
+whether that hook is rewritten or dropped):
+
+```bash
+cat /usr/local/bin/verify-s3mount.sh
+cat /opt/LiveORC/start-liveorc.sh
+grep -rn "s3-storage" /opt/LiveORC/ /etc/systemd/system/ 2>/dev/null
+```
+
 ### Phase 1 — DB backup
 
 ```bash
@@ -161,7 +182,7 @@ findmnt /var/lib/liveorc-media
 ### Phase 4 — Seed and copy
 
 ```bash
-# Only if Phase 0 showed content shipped at /liveorc/media (e.g. admin-interface):
+# REQUIRED — Phase 0 confirmed the image ships /liveorc/media/admin-interface.
 CID=$(sudo docker create "$IMG")
 sudo docker cp "$CID:/liveorc/media/." /var/lib/liveorc-media/
 sudo docker rm "$CID"
@@ -185,7 +206,13 @@ An empty `--itemize-changes` means every file is present at the right size,
 mtime, and permissions. Then snapshot the volume — this is the media backup
 the old runbook wrongly assumed already existed.
 
-#### Phase 5b — only if Phase 0 found `os.link` into `MEDIA_ROOT`
+#### Phase 5b — ~~NOT NEEDED~~ (Phase 0, 2026-08-10)
+
+Phase 0 found no `os.link` anywhere in the application code, so
+`/liveorc/data` may stay on the root filesystem and the layout below is
+**not** used. Retained only in case a future image adds hardlinking.
+
+<details><summary>Unused: collapse /liveorc/data onto the media volume</summary>
 
 `/liveorc/data` must share the filesystem with `/liveorc/media`:
 
@@ -199,6 +226,8 @@ sudo rsync -aHAX "$DATAVOL/" /var/lib/liveorc-media/data/
 
 Then bind both paths in Phase 6 instead of one.
 
+</details>
+
 ### Phase 6 — Repoint ⚠️ point of no return
 
 Recreating the container **deletes the 28.6 GB writable layer**. Only proceed
@@ -207,17 +236,51 @@ once Phase 5 passed.
 ```
 /opt/LiveORC/.env          LORC_STORAGE_DIR=/var/lib/liveorc-media
 /opt/LiveORC/compose       - ${LORC_STORAGE_DIR}:/liveorc/media:z
-liveorc.service            RequiresMountsFor=/var/lib/liveorc-media
 ```
+
+`liveorc.service` couples to s3fs in **five** places (Phase 0). Every one
+moves to the media volume — leaving any behind keeps a dead mount able to
+take LiveORC down, which is exactly what happened:
+
+```ini
+# was → now
+RequiresMountsFor=/mnt/s3-storage        → /var/lib/liveorc-media
+After=docker.service mnt-s3\x2dstorage.mount     → docker.service var-lib-liveorc\x2dmedia.mount
+Requires=docker.service mnt-s3\x2dstorage.mount  → docker.service var-lib-liveorc\x2dmedia.mount
+AssertPathIsMountPoint=/mnt/s3-storage   → /var/lib/liveorc-media
+ExecStartPre=/usr/local/bin/verify-s3mount.sh    → drop, or rewrite for the new path
+Description=LiveORC Server with S3 Storage       → LiveORC Server
+```
+
+The systemd unit name for `/var/lib/liveorc-media` must be exact — derive it
+rather than typing it:
+
+```bash
+systemd-escape -p --suffix=mount /var/lib/liveorc-media
+# → var-lib-liveorc\x2dmedia.mount
+```
+
+`fstab` (Phase 3) generates that unit automatically, so no `.mount` file is
+written by hand. Verify it exists **before** editing the service:
+
+```bash
+systemctl status "$(systemd-escape -p --suffix=mount /var/lib/liveorc-media)"
+```
+
+Then retire s3fs and reload:
 
 ```bash
 sudo systemctl disable --now 'mnt-s3\x2dstorage.mount'
 sudo systemctl daemon-reload
+sudo systemctl start liveorc.service     # must succeed before the next reboot
 ```
 
-**Keep the mount dependency.** LiveORC should refuse to start when its media
-volume is absent. That guard is precisely what was missing, and its absence
-is why ten weeks of uploads went into a container layer without one error.
+**Keep the mount dependency, pointed at the right mount.** LiveORC should
+refuse to start when its media volume is absent. The guard was never missing —
+it was aimed at a 4 KB s3fs mount nothing used, while the real media path had
+no guard at all. That inversion is why ten weeks of uploads went into a
+container layer without one error, and why a disk-full s3fs failure took the
+application down.
 
 Do **not** pass `--renew-anon-volumes` — the webapp's `/liveorc/data`
 anonymous volume must be carried across, and `docker compose up` reuses it by
