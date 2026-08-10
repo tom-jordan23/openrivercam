@@ -310,16 +310,30 @@ a backfill the naive query finds 0 rows while the anti-join finds all
       errors, and that the four pre-existing containers were not
       recreated.
 
-**Blocked** on TODO-112 — the LiveORC host had no free disk on 2026-08-10.
-Nothing from this workstream reached the server, so it resumes unchanged
-once the host is healthy.
+**Unblocked 2026-08-10.** The root volume was repaired (`/` at 62%, 30 G
+free), so this proceeds ahead of TODO-112. It is also safely separable:
+sheets-export is a service in the `/opt/orc-additions` stack and never
+touches `/opt/LiveORC` or the `liveorc_webapp` container.
+
+**Ordering constraint:** put `SHEETS_SPREADSHEET_ID` into
+`/opt/orc-additions/.env` **before** the rsync lands the new
+`docker-compose.yml`. `${SHEETS_SPREADSHEET_ID:?…}` is evaluated for the
+whole file, so without it every `docker compose` command against that
+stack fails — including ones targeting the four healthy ORC containers.
 
 ### TODO-112: Move LiveORC media onto a dedicated EBS volume
 
 | Field | Value |
 |-------|-------|
-| **Status** | IN PROGRESS |
+| **Status** | PAUSED — resumes after the 2026-08-11 demo |
 | **Site** | LiveORC server (AWS) |
+
+**Paused 2026-08-10** with Phase 0 complete. The migration is destructive
+by design and there is a demo on 2026-08-11, so the host stays on its
+current configuration until there is slack. Until then the 26 GB of media
+lives only in the container writable layer, so **`liveorc.service` must
+stay disabled** and a root-volume snapshot is the standing safety net —
+see the warning block at the top of the runbook.
 
 On 2026-08-10 the root filesystem hit 100% and took the host down —
 LiveORC dead, Session Manager refusing to open a shell, Run Command
@@ -357,15 +371,26 @@ guarded the mount, so the one condition that mattered went unchecked.
       were expanded by hand. `/` now 77 G at 62%.
 - [x] Confirm the database is safe (`db` → named volume
       `liveorc_lorc_data`, writable layer 0 B).
-- [ ] Phase 0: determine whether LiveORC does `os.link`/`os.rename` into
-      `MEDIA_ROOT` — decides whether `/liveorc/data` must share the new
-      filesystem.
+- [x] Phase 0 — no `os.link`/`os.rename`/`shutil.move` anywhere in the
+      application code, so `/liveorc/data` can stay on `/` and Phase 5b is
+      not needed. The image ships `/liveorc/media/admin-interface`, making
+      Phase 4's seed step mandatory. `liveorc.service` turned out to couple
+      to the s3fs mount in five places, not one.
+- [ ] Snapshot the root EBS volume — the 26 GB exists in exactly one
+      place. Do this **before** anything else, including the demo.
+- [ ] `systemctl disable liveorc.service` until Phase 6. It runs
+      `start-liveorc.sh` → `liveorc.sh start` → `docker compose up -d`,
+      which recreates the webapp and destroys the writable layer; the
+      unit is `WantedBy=multi-user.target`, so a reboot alone triggers it.
+      Bring LiveORC up with `docker start` instead.
 - [ ] Phase 1: DB backup → `s3://openrivercam-video/backups/`.
 - [ ] Phases 2–5: create/attach/format a 150 GiB gp3 volume at
       `/var/lib/liveorc-media`, seed image assets, copy the 26 GB,
       verify with a dry-run `rsync --itemize-changes`, snapshot.
-- [ ] Phase 6: repoint `.env`, compose, and `liveorc.service`
-      (`RequiresMountsFor`); retire the vestigial s3fs mount unit.
+- [ ] Phase 6: repoint **`start-liveorc.sh`'s `--storage-dir`** (the real
+      control point — it overrides `.env`), the compose bind, and all five
+      s3fs couplings in `liveorc.service`; retire the vestigial s3fs mount
+      unit; re-enable the service.
 - [ ] Phase 7: recreate, confirm the writable layer drops to MB and `/`
       falls to ~20 G; open an existing video and upload a new one.
 - [ ] Add a disk-space alarm on `/` — its absence is why this ran

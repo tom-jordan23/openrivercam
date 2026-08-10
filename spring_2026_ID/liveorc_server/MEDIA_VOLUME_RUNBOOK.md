@@ -62,6 +62,29 @@ went somewhere with no persistence, no backup, and a hard ceiling.
    mount but not a mount at `MEDIA_ROOT`, so the one condition that actually
    mattered went unchecked.
 
+## ⚠️ Until this migration runs: do not let systemd start LiveORC
+
+`liveorc.service` → `start-liveorc.sh` → `liveorc.sh start` → `docker
+compose up -d`, which **recreates `liveorc_webapp` and destroys the 26 GB in
+its writable layer.** The unit is `WantedBy=multi-user.target`, so a plain
+reboot is enough to trigger it.
+
+While the media still lives in the container layer:
+
+```bash
+sudo systemctl disable liveorc.service   # survives reboot; does not stop what is running
+sudo docker start db rabbitmq liveorc_webapp   # the safe way to bring LiveORC up
+```
+
+`docker start` reuses the existing container and its layer. `docker compose
+up`, `--force-recreate`, `docker rm`, and `docker system prune` all destroy
+it. Re-enable the unit in Phase 6, once media is on the EBS volume and a
+recreate is harmless.
+
+Take an EBS snapshot of the **root** volume before any of this — the 26 GB
+exists in exactly one place, and that is the only thing standing between a
+stray command and permanent loss.
+
 ## Why EBS and not S3
 
 S3 was tried first and abandoned. Two independent blockers, both still valid:
@@ -234,9 +257,21 @@ Recreating the container **deletes the 28.6 GB writable layer**. Only proceed
 once Phase 5 passed.
 
 ```
-/opt/LiveORC/.env          LORC_STORAGE_DIR=/var/lib/liveorc-media
-/opt/LiveORC/compose       - ${LORC_STORAGE_DIR}:/liveorc/media:z
+/opt/LiveORC/start-liveorc.sh   --storage-dir /var/lib/liveorc-media   ← the real control point
+/opt/LiveORC/compose            - ${LORC_STORAGE_DIR}:/liveorc/media:z
+/opt/LiveORC/.env               LORC_STORAGE_DIR=/var/lib/liveorc-media  (belt-and-braces only)
 ```
+
+**`start-liveorc.sh` is what actually sets the storage dir**, by passing
+`--storage-local --storage-dir /mnt/s3-storage` to `liveorc.sh` on the
+command line. That overrides `.env`, which is why `.env` reads
+`LORC_STORAGE_DIR=lorc_media` (a named volume) while the running container
+carries a `/mnt/s3-storage` bind. Editing `.env` alone changes nothing.
+
+Note the original intent was already correct — someone meant media to land
+on the mount. It never did, because the bind targets `/liveorc/data/media`
+while `MEDIA_ROOT` is `/liveorc/media`. A single path component is the
+entire outage.
 
 `liveorc.service` couples to s3fs in **five** places (Phase 0). Every one
 moves to the media volume — leaving any behind keeps a dead mount able to
