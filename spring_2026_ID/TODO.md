@@ -310,6 +310,69 @@ a backfill the naive query finds 0 rows while the anti-join finds all
       errors, and that the four pre-existing containers were not
       recreated.
 
+**Blocked** on TODO-112 — the LiveORC host had no free disk on 2026-08-10.
+Nothing from this workstream reached the server, so it resumes unchanged
+once the host is healthy.
+
+### TODO-112: Move LiveORC media onto a dedicated EBS volume
+
+| Field | Value |
+|-------|-------|
+| **Status** | IN PROGRESS |
+| **Site** | LiveORC server (AWS) |
+
+On 2026-08-10 the root filesystem hit 100% and took the host down —
+LiveORC dead, Session Manager refusing to open a shell, Run Command
+returning exit 1 with zero bytes on both streams, CPU pinned at ~98% for
+a week.
+
+The cause was a **path mismatch**. `MEDIA_ROOT` is `/liveorc/media`
+(`settings.py:126`), but the compose bind targeted `/liveorc/data/media`
+— a path Django never writes to. So 26 GB of video, 1.3 GB of keyframes
+and 9.5 MB of thumbnails accumulated in the webapp container's
+**ephemeral writable layer** between 2026-05-14 and 2026-07-29, with no
+persistence, no backup, and no error ever raised. The mismatch is residue
+from an abandoned S3 migration whose mount was left pointing somewhere
+inert rather than removed.
+
+S3 is not the fix and was correctly abandoned: LiveORC's storage backend
+is all-or-nothing (prod runs `FileSystemStorage`, and `prod_reprocess.sh`
+execs inside the webapp precisely to read local media), and `rename`/
+`link` fail with `EXDEV` across a mount boundary — s3fs has no hardlink
+support at all.
+
+Full incident analysis and the phased procedure are in
+[`liveorc_server/MEDIA_VOLUME_RUNBOOK.md`](liveorc_server/MEDIA_VOLUME_RUNBOOK.md).
+
+**Two landmines this exposed**, both worth fixing regardless: the
+reprocess runbook asserted a media backup was unnecessary "because the
+video bytes live in MinIO/S3" — they did not, so any `--force-recreate`
+during those runs would have destroyed 26 GB silently; and nothing
+guarded the mount, so the one condition that mattered went unchecked.
+
+**Steps:**
+- [x] Diagnose: disk full, not compromise or runaway process.
+- [x] Repair the root volume — it had been grown 50→80 GiB but
+      `growpart` died at boot with `ENOSPC`, so partition and filesystem
+      were expanded by hand. `/` now 77 G at 62%.
+- [x] Confirm the database is safe (`db` → named volume
+      `liveorc_lorc_data`, writable layer 0 B).
+- [ ] Phase 0: determine whether LiveORC does `os.link`/`os.rename` into
+      `MEDIA_ROOT` — decides whether `/liveorc/data` must share the new
+      filesystem.
+- [ ] Phase 1: DB backup → `s3://openrivercam-video/backups/`.
+- [ ] Phases 2–5: create/attach/format a 150 GiB gp3 volume at
+      `/var/lib/liveorc-media`, seed image assets, copy the 26 GB,
+      verify with a dry-run `rsync --itemize-changes`, snapshot.
+- [ ] Phase 6: repoint `.env`, compose, and `liveorc.service`
+      (`RequiresMountsFor`); retire the vestigial s3fs mount unit.
+- [ ] Phase 7: recreate, confirm the writable layer drops to MB and `/`
+      falls to ~20 G; open an existing video and upload a new one.
+- [ ] Add a disk-space alarm on `/` — its absence is why this ran
+      undetected for ten weeks.
+- [ ] Correct the false media-backup claim in
+      `reprocess/REPROCESS_RUNBOOK.md`.
+
 ---
 
 ## DONE — post-trip
