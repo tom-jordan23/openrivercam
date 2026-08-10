@@ -295,16 +295,23 @@ a backfill the naive query finds 0 rows while the anti-join finds all
       (0 rows lost; the batch re-appends, by design).
 - [x] Document setup, deploy, dedupe, and rollover in
       `liveorc_server/README.md`.
-- [ ] Create the spreadsheet (must be a human — a service account has no
-      Drive storage quota). Decide Shared Drive vs personal Drive; the
-      target is one `.env` variable, so this is repointable later.
-- [ ] Add the `G1` disclaimer cell mirroring the mandatory Grafana
-      banner, and set the sheet timezone to UTC.
-- [ ] Create the GCP service account, enable the Sheets API, download the
+- [x] Create the spreadsheet (must be a human — a service account has no
+      Drive storage quota). Done; the ID is server-side only, never
+      committed, because this repo is public.
+- [x] Create the GCP service account, enable the Sheets API, download the
       JSON key, share the sheet with its `client_email` as Editor.
+- [ ] Verify the sheet itself: tab named exactly `readings`, `A1:E1` =
+      `ts,station,sensor,metric,value`, File → Settings → Time zone = UTC.
+      `check_sheet_access()` warns on a non-UTC timezone at startup but
+      does not fix it, and nothing creates the header row.
+- [ ] Add the `G1` disclaimer cell mirroring the mandatory Grafana banner.
+- [ ] Get the JSON key onto the host — **open question: where does it live
+      now?** It must never transit chat. Target
+      `/opt/orc-additions/secrets/sheets-sa.json`, `chown 1001:1001`,
+      `chmod 0400` (the container drops to uid 1001 per its Dockerfile).
 - [ ] Deploy via Session Manager (no SSH on that host): `git pull`,
-      rsync into `/opt/orc-additions` (**no `--delete`**), install the
-      key as `1001:1001` mode `0400`, run once with
+      rsync into `/opt/orc-additions` (**no `--delete`**, and **exclude
+      `.env`, `certs/`, `secrets/`**), run once with
       `EXPORT_MODE=preview`, then switch to `live`.
 - [ ] Confirm the ~130k-row first backfill completes without rate-limit
       errors, and that the four pre-existing containers were not
@@ -320,6 +327,11 @@ touches `/opt/LiveORC` or the `liveorc_webapp` container.
 `docker-compose.yml`. `${SHEETS_SPREADSHEET_ID:?…}` is evaluated for the
 whole file, so without it every `docker compose` command against that
 stack fails — including ones targeting the four healthy ORC containers.
+
+**Start in `preview`.** The compose default is `EXPORT_MODE=${EXPORT_MODE:-live}`,
+so an unset variable goes straight to live. `preview` neither appends nor
+advances the ledger. Never set `dry-run` here: it advances the cursor
+without writing, silently skipping real data.
 
 ### TODO-112: Move LiveORC media onto a dedicated EBS volume
 
@@ -376,13 +388,23 @@ guarded the mount, so the one condition that mattered went unchecked.
       not needed. The image ships `/liveorc/media/admin-interface`, making
       Phase 4's seed step mandatory. `liveorc.service` turned out to couple
       to the s3fs mount in five places, not one.
-- [ ] Snapshot the root EBS volume — the 26 GB exists in exactly one
-      place. Do this **before** anything else, including the demo.
-- [ ] `systemctl disable liveorc.service` until Phase 6. It runs
+- [ ] **Snapshot the root EBS volume** — the 26 GB exists in exactly one
+      place. Initiated 2026-08-10; **confirm it reached `completed`**, not
+      `pending`, before relying on it.
+- [x] `systemctl disable liveorc.service` (2026-08-10) — it runs
       `start-liveorc.sh` → `liveorc.sh start` → `docker compose up -d`,
-      which recreates the webapp and destroys the writable layer; the
-      unit is `WantedBy=multi-user.target`, so a reboot alone triggers it.
-      Bring LiveORC up with `docker start` instead.
+      which recreates the webapp and destroys the writable layer, and the
+      unit is `WantedBy=multi-user.target` so a reboot alone triggers it.
+      Re-enable in Phase 6.
+- [x] `docker update --restart unless-stopped rabbitmq` (2026-08-10). It
+      was `restart=no` while `db` and `liveorc_webapp` were already
+      `unless-stopped`, so a reboot would have brought the webapp up
+      without its broker — video processing failing silently while the
+      site looked healthy. `docker update` changes the policy in place
+      and does not recreate the container.
+- [x] Brought LiveORC up safely for the 2026-08-11 demo with
+      `docker start db rabbitmq liveorc_webapp` (never `compose up`).
+      Verified: video plays from the web UI.
 - [ ] Phase 1: DB backup → `s3://openrivercam-video/backups/`.
 - [ ] Phases 2–5: create/attach/format a 150 GiB gp3 volume at
       `/var/lib/liveorc-media`, seed image assets, copy the 26 GB,
