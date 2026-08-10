@@ -141,8 +141,14 @@ def build_sheets_client():
     append_rows() a silent no-op while mark_exported() still advanced the
     ledger, permanently skipping those rows. Failing to start is the safe
     outcome — Docker's restart backoff keeps the retry loop from spinning.
+
+    preview builds a real client so check_sheet_access() can prove the key
+    loads, the sheet is shared, and the timezone is UTC — that check is the
+    whole reason preview runs before live. It stays safe because process_once()
+    returns before append_rows() in preview mode. Only dry-run, which never
+    contacts the API at all, gets a None client.
     """
-    if EXPORT_MODE != "live":
+    if EXPORT_MODE == "dry-run":
         return None
     try:
         creds = service_account.Credentials.from_service_account_file(KEY_FILE, scopes=SCOPES)

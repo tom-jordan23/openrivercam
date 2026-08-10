@@ -300,6 +300,19 @@ a backfill the naive query finds 0 rows while the anti-join finds all
       committed, because this repo is public.
 - [x] Create the GCP service account, enable the Sheets API, download the
       JSON key, share the sheet with its `client_email` as Editor.
+- [x] Fix the `preview` gate (2026-08-10). `build_sheets_client()` returned
+      `None` for every mode but `live`, and `check_sheet_access()` no-ops on a
+      `None` client — so `preview`, the mode this deploy starts in precisely to
+      prove auth and sharing, never loaded the key and never called the API. A
+      bad share, a missed `chown 1001:1001`, or a non-UTC sheet would all have
+      stayed silent until `live`, whose first act is the ~130k-row append. Now
+      only `dry-run` gets a `None` client. Verified locally: preview reaches the
+      access check and still appends nothing (`sensor_exports` flat across
+      cycles, no `sheets append ok` lines).
+- [ ] **Re-confirm the JSON key exists and locate it** — as of 2026-08-10 its
+      whereabouts are unconfirmed, so treat the download as unverified. If it
+      cannot be found, generate a new key and delete the old one in the console
+      rather than hunting for it.
 - [ ] Verify the sheet itself: tab named exactly `readings`, `A1:E1` =
       `ts,station,sensor,metric,value`, File → Settings → Time zone = UTC.
       `check_sheet_access()` warns on a non-UTC timezone at startup but
