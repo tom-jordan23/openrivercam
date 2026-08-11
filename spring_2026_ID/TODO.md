@@ -1,6 +1,6 @@
 # TODO — Indonesia Spring 2026 Deployment (post-trip)
 
-**Last updated:** 2026-08-07
+**Last updated:** 2026-08-11
 
 The pre-trip task list (departure schedule day-by-day, in-country
 deferred items, etc.) was archived to `archive/` after the April 2026
@@ -142,7 +142,7 @@ see `pi/tools/README.md`).
 | **Status** | OPEN |
 | **Sites** | Both |
 
-Two parallel asks for IPB:
+Three parallel asks for IPB:
 
 **Sukabumi — total station re-survey.** Use
 `survey/outsourced_survey_brief.md` as the SOW template, scoped to
@@ -158,12 +158,25 @@ interest, (b) have a clear permission/installation path, and
 (c) are not subject to the same urban RF / sky-view problems that
 appear to have hurt RTK at the Sukabumi canal site.
 
+**Data access — LiveORC logins for IPB.** Ready to provision on
+request: additional login links, account setup, and a walkthrough of
+where the data lives. **Gated on PMI, not on us.** Dan was explicit on
+the 2026-08-11 call that who gets access, and when, is PMI's decision —
+do not provision ahead of that approval. Dan separately confirmed this
+does *not* need to wait on the water-level adjustment, so the gate is
+purely PMI's, not a technical readiness one.
+
 **Steps:**
 - [ ] Identify the right IPB contact(s) and make introductions
       through PMI.
 - [ ] Send the survey SOW for Sukabumi.
 - [ ] Send a separate brief for Jakarta site selection.
 - [ ] Track responses; do not block other workstreams on them.
+- [ ] **Data access — wait on PMI's approval.** Do not provision
+      ahead of it.
+- [ ] Once approved: create the LiveORC accounts, send login links,
+      and confirm IPB can reach the data surfaces they actually need —
+      the LiveORC web UI, Grafana (TODO-102), and the Sheet (TODO-111).
 
 ---
 
@@ -239,6 +252,51 @@ is in flight, run it on a bench as an extended soak rig:
 - [ ] Track any failures that emerge on long soak — these are the
       thermal/humidity issues that would otherwise show up first in
       the field.
+
+### TODO-113: Reprocess retained video under changed settings — and announce it
+
+| Field | Value |
+|-------|-------|
+| **Status** | OPEN |
+| **Site** | Sukabumi → LiveORC server |
+
+Committed on the 2026-08-11 call: old video is retained, so a settings
+change can be applied retroactively rather than only affecting future
+captures. Two obligations follow.
+
+**The experiment.** Swapping the cross sections was named specifically
+— reprocess existing video with them swapped and see what it does to
+the data. **Reconcile with TODO-101 first:** a cross-section reversal
+was already tried on 2026-04-22 and turned out to be the wrong fix for
+the apparent flow-direction problem (`survey_data/corrections.md`,
+2026-04-22 entries). Either what was described on the call is a
+different change than the one already tried, or that earlier finding
+needs revisiting. Establish which before spending a reprocess run.
+
+**The communication protocol.** Reprocessing changes numbers
+stakeholders may already have seen, so each run gets announced to
+PMI/IPB as it happens: what setting changed, which date range was
+reprocessed, and that the prior figures are superseded. Silent
+retroactive edits to a shared dataset are the failure mode.
+
+**Blocked on TODO-112 in practice.** `prod_reprocess.sh` execs inside
+`liveorc_webapp` to read local media, and that media currently exists
+only in the container's ephemeral writable layer. Until the EBS
+migration lands, any reprocess work on the server carries the same
+risk the runbook already warns about — never `compose up` or
+`--force-recreate` on that host.
+
+**Steps:**
+- [ ] Settle the cross-section question against the 2026-04-22
+      correction before running anything.
+- [ ] Confirm what video is retained and over what date range, on the
+      station and on the server — this bounds the reprocess window.
+- [ ] Sequence against TODO-112, or accept and document the writable-
+      layer risk explicitly if a run can't wait.
+- [ ] Run the reprocess per
+      `liveorc_server/reprocess/REPROCESS_RUNBOOK.md`; compare outputs
+      against the currently published figures.
+- [ ] Announce the run and its effect on published data to PMI/IPB.
 
 ---
 
@@ -431,7 +489,7 @@ guarded the mount, so the one condition that mattered went unchecked.
 - [ ] Add a disk-space alarm on `/` — its absence is why this ran
       undetected for ten weeks.
 - [ ] Correct the false media-backup claim in
-      `reprocess/REPROCESS_RUNBOOK.md`.
+      `liveorc_server/reprocess/REPROCESS_RUNBOOK.md`.
 
 ---
 
