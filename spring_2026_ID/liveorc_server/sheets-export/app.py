@@ -63,7 +63,10 @@ LOG = logging.getLogger("sheets-export")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 
 PG_DSN = os.environ["PG_DSN"]
-SPREADSHEET_ID = os.environ["SHEETS_SPREADSHEET_ID"]
+# .get(), not [...]: compose passes this as ${SHEETS_SPREADSHEET_ID:-}, which
+# sets an EMPTY string rather than leaving the variable unset, so a KeyError
+# would never fire. main() rejects the empty value explicitly instead.
+SPREADSHEET_ID = os.environ.get("SHEETS_SPREADSHEET_ID", "").strip()
 SHEET_TAB = os.environ.get("SHEETS_TAB", "readings")
 KEY_FILE = os.environ.get("SHEETS_KEY_FILE", "/secrets/sheets-sa.json")
 VALUE_INPUT_OPTION = os.environ.get("SHEETS_VALUE_INPUT_OPTION", "USER_ENTERED")
@@ -309,6 +312,13 @@ def main():
              EXPORT_MODE, INTERVAL_SECS, BATCH_ROWS, SHEET_TAB)
     if EXPORT_MODE not in ("live", "dry-run", "preview"):
         LOG.error("EXPORT_MODE=%s is not one of live|dry-run|preview; exiting", EXPORT_MODE)
+        sys.exit(1)
+    # Exit rather than run: with an empty ID every Sheets call 404s, and the
+    # main loop would swallow that as a retryable HttpError and spin hourly
+    # forever. Docker's restart backoff makes a hard exit the visible failure.
+    if not SPREADSHEET_ID:
+        LOG.error("SHEETS_SPREADSHEET_ID is empty — set it in .env "
+                  "(the /d/<ID>/ segment of the sheet URL); exiting")
         sys.exit(1)
     if EXPORT_MODE == "dry-run":
         LOG.warning("DRY RUN — rows will be MARKED EXPORTED but NOT written to "

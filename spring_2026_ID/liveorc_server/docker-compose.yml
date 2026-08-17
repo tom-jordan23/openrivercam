@@ -77,7 +77,16 @@ services:
         condition: service_healthy
     environment:
       PG_DSN: host=timescale port=5432 dbname=orc user=orc password=${TIMESCALE_PASSWORD:?TIMESCALE_PASSWORD must be set in .env}
-      SHEETS_SPREADSHEET_ID: ${SHEETS_SPREADSHEET_ID:?SHEETS_SPREADSHEET_ID must be set in .env}
+      # NOT ${...:?} — Compose interpolates the whole file for EVERY command,
+      # so a :? guard here fails `up`, `stop`, even `config`, for the four
+      # unrelated ORC containers in this stack. That is not hypothetical: the
+      # deploy rsync landed this file before the variable existed and locked
+      # the stack out entirely (2026-08-17).
+      #
+      # Fail-fast is not lost, it just moves into the service: app.py rejects
+      # an empty value at startup and exits 1, so an unset variable still
+      # stops THIS container loudly without taking the others with it.
+      SHEETS_SPREADSHEET_ID: ${SHEETS_SPREADSHEET_ID:-}
       SHEETS_TAB: readings
       SHEETS_KEY_FILE: /secrets/sheets-sa.json
       EXPORT_INTERVAL_SECS: "3600"
