@@ -187,9 +187,13 @@ grep -n 'docker compose\|docker-compose\|storage-dir\|storage-local\|\-f ' \
 
 ### Phase 1 — DB backup
 
+`db` is already running, so **skip the `docker compose up -d db`** an earlier
+draft of this runbook called for. Every `docker compose` command against
+`/opt/LiveORC` is an avoidable risk while media is still in the writable layer;
+the only one that should run is Phase 7's, and that goes through systemd.
+
 ```bash
-cd /opt/LiveORC && sudo docker compose up -d db
-cd ~/openrivercam/spring_2026_ID/liveorc_server/reprocess
+cd ~/code/git/openrivercam/spring_2026_ID/liveorc_server/reprocess
 sudo ./backup_liveorc_db.sh
 aws s3 sync ./liveorc-backups/ s3://openrivercam-video/backups/
 ```
@@ -270,10 +274,14 @@ Then bind both paths in Phase 6 instead of one.
 
 </details>
 
-### Phase 6 — Repoint ⚠️ point of no return
+### Phase 6 — Repoint (edits only — nothing restarts)
 
-Recreating the container **deletes the 28.6 GB writable layer**. Only proceed
-once Phase 5 passed.
+Every change here is a file edit. Nothing is recreated and nothing is
+destroyed, so this phase is reversible and can be reviewed before committing to
+Phase 7. **Phase 7 is the point of no return** — that is where the container is
+recreated and the 28.6 GB writable layer is deleted. Do not run Phase 7 until
+Phase 5's `--itemize-changes` came back empty and the media-volume snapshot
+completed.
 
 ```
 /opt/LiveORC/start-liveorc.sh   --storage-dir /var/lib/liveorc-media   ← the real control point
@@ -308,6 +316,20 @@ Checklist for Phase 6, both required:
 - [ ] `start-liveorc.sh`: `--storage-dir /mnt/s3-storage` → `/var/lib/liveorc-media`
 - [ ] compose bind: `${LORC_STORAGE_DIR}:/liveorc/data/media:z` → `${LORC_STORAGE_DIR}:/liveorc/media:z`
 
+```bash
+# 1. source — local wrapper, safe to edit
+sudo sed -i 's#--storage-dir /mnt/s3-storage#--storage-dir /var/lib/liveorc-media#' \
+    /opt/LiveORC/start-liveorc.sh
+
+# 2. destination — upstream file, the actual bug. Keep the original for diffing
+#    against whatever a future upgrade ships.
+sudo cp /opt/LiveORC/docker-compose.yml /opt/LiveORC/docker-compose.yml.orig
+sudo sed -i 's#:/liveorc/data/media:z#:/liveorc/media:z#' /opt/LiveORC/docker-compose.yml
+
+grep -n storage-dir      /opt/LiveORC/start-liveorc.sh
+grep -n LORC_STORAGE_DIR /opt/LiveORC/docker-compose.yml
+```
+
 Verify in the *running* container before declaring success — the source of
 truth is the mount table, not the config:
 
@@ -317,16 +339,39 @@ sudo docker inspect liveorc_webapp \
   | grep media          # must show /var/lib/liveorc-media -> /liveorc/media
 ```
 
-#### Upgrade-safety of the compose edit
+#### Upgrade-safety: an override file will NOT work here
 
-The compose file is upstream-owned; a LiveORC upgrade overwrites it, silently
-reverting the destination fix and sending media back to the writable layer.
-Prefer a `docker-compose.override.yml` in `/opt/LiveORC` — but that only works
-if `liveorc.sh` invokes compose **without** explicit `-f` flags, since Compose
-auto-loads an override only in that case. If it passes `-f`, the override is
-ignored and the change must go through `start-liveorc.sh` (a local wrapper,
-safe to edit) instead. Resolve with the `grep` at the end of Phase 0 before
-writing this phase.
+Settled 2026-08-17. `liveorc.sh` builds an **explicit `-f` list**:
+
+```
+liveorc.sh:313   command="docker compose -f docker-compose.yml"
+liveorc.sh:324   command+=" -f docker-compose.rabbitmq.yml"
+liveorc.sh:390   command+=" -f docker-compose.s3.yml"
+liveorc.sh:402   command+=" -f docker-compose.postgis.yml"
+liveorc.sh:418   command+=" -f docker-compose.ssl.yml"
+```
+
+Compose auto-loads `docker-compose.override.yml` **only when no `-f` is
+given**, so an override file here is silently ignored. The destination fix has
+to be made in `/opt/LiveORC/docker-compose.yml` itself, which is upstream-owned
+and will be reverted by a LiveORC upgrade — silently, sending media straight
+back to the writable layer.
+
+`start-liveorc.sh` is a **local wrapper, not upstream**, so the durable defense
+goes there. See "Guards" in Phase 6.
+
+The full confirmed chain, matching what `docker inspect` shows on the running
+container:
+
+```
+--storage-dir /mnt/s3-storage → LORC_STORAGE_DIR → docker-compose.yml:8
+                                ${LORC_STORAGE_DIR}:/liveorc/data/media:z
+```
+
+`.env`'s `LORC_STORAGE_DIR=lorc_media` is dead text — `--storage-dir` overrides
+it. Leave it alone. Do not touch `docker-compose.s3.yml` (its
+`${LORC_STORAGE_DIR}:/data` bind only applies with `--storage-s3`, which this
+deployment does not pass).
 
 Note the original intent was already correct — someone meant media to land
 on the mount. It never did, because the bind targets `/liveorc/data/media`
@@ -377,12 +422,12 @@ written by hand. Verify it exists **before** editing the service:
 systemctl status "$(systemd-escape -p --suffix=mount /var/lib/liveorc-media)"
 ```
 
-Then retire s3fs and reload:
+Then retire s3fs and reload. **Nothing restarts in this phase** — the recreate
+is Phase 7:
 
 ```bash
 sudo systemctl disable --now 'mnt-s3\x2dstorage.mount'
 sudo systemctl daemon-reload
-sudo systemctl start liveorc.service     # must succeed before the next reboot
 ```
 
 **Keep the mount dependency, pointed at the right mount.** LiveORC should
@@ -392,14 +437,76 @@ no guard at all. That inversion is why ten weeks of uploads went into a
 container layer without one error, and why a disk-full s3fs failure took the
 application down.
 
+#### Guards — in `start-liveorc.sh`, because that file is ours
+
+Edit 2 above lives in an upstream file, so a LiveORC upgrade reverts it and the
+failure is silent. `start-liveorc.sh` is a local wrapper and survives, so the
+durable defense belongs there. Add both: the first refuses to start a
+misconfigured stack, the second verifies reality rather than config.
+
+```bash
+# --- BEFORE ./liveorc.sh start ---
+
+# A LiveORC upgrade replaces docker-compose.yml and reverts the media bind
+# destination. Uploads then land in the container's writable layer and vanish
+# on the next recreate. That cost 26 GB and a host outage on 2026-08-10.
+if ! grep -q '${LORC_STORAGE_DIR}:/liveorc/media' /opt/LiveORC/docker-compose.yml; then
+    echo "FATAL: docker-compose.yml media bind is not /liveorc/media." >&2
+    echo "A LiveORC upgrade has probably reverted it. See MEDIA_VOLUME_RUNBOOK.md." >&2
+    exit 1
+fi
+```
+
+```bash
+# --- AFTER ./liveorc.sh start ---
+
+# Config is not evidence; the mount table is.
+for _ in $(seq 1 30); do
+    docker inspect liveorc_webapp >/dev/null 2>&1 && break
+    sleep 2
+done
+MOUNT=$(docker inspect liveorc_webapp \
+    --format '{{range .Mounts}}{{.Source}} -> {{.Destination}}{{"\n"}}{{end}}' \
+    2>/dev/null | grep -F '-> /liveorc/media')
+if [ -z "$MOUNT" ]; then
+    echo "FATAL: /liveorc/media is NOT a mount in liveorc_webapp." >&2
+    echo "Media would accumulate in the writable layer and be lost." >&2
+    exit 1
+fi
+echo "media mount OK: $MOUNT"
+```
+
 Do **not** pass `--renew-anon-volumes` — the webapp's `/liveorc/data`
 anonymous volume must be carried across, and `docker compose up` reuses it by
 default. A manual `docker rm` followed by `up` would orphan it.
 
-### Phase 7 — Recreate and verify
+### Phase 7 — ⚠️ Recreate and verify
+
+Start through **systemd**, not compose directly:
 
 ```bash
-cd /opt/LiveORC && sudo docker compose up -d
+sudo systemctl start liveorc.service
+```
+
+**Never `cd /opt/LiveORC && docker compose up -d` here.** That bypasses
+`start-liveorc.sh`, so it passes no `--storage-dir` and neither guard runs —
+`LORC_STORAGE_DIR` falls back to `.env`'s `lorc_media` named volume, and the
+migration is silently undone. Going through the unit also exercises the real
+boot path end to end, which is the thing that has to work at the next reboot.
+
+First, the only check that actually proves the migration worked — the running
+container's mount table, not any config file:
+
+```bash
+sudo docker inspect liveorc_webapp \
+  --format '{{range .Mounts}}{{.Source}} -> {{.Destination}}{{"\n"}}{{end}}' | grep media
+```
+
+Must print `/var/lib/liveorc-media -> /liveorc/media`. If it still shows
+`/liveorc/data/media`, the destination edit did not take: media is going to the
+writable layer exactly as before. Stop and fix it before any upload arrives.
+
+```bash
 sudo docker ps -as --format '{{.Names}}\t{{.Status}}\t{{.Size}}'
 df -h / /var/lib/liveorc-media
 sudo docker exec liveorc_webapp ls /liveorc/media/videos | head
@@ -424,6 +531,21 @@ sudo du -sh /var/lib/liveorc-media   # grows instead
 
 That divergence is the whole point: media growth can no longer reach root.
 
+### Phase 9 — Re-enable boot
+
+Only once Phase 7's mount check passed:
+
+```bash
+sudo systemctl enable liveorc.service
+systemctl is-enabled liveorc.service      # enabled
+```
+
+`liveorc.service` has been disabled since 2026-08-10 because it runs
+`docker compose up -d`, which recreates the webapp and would have destroyed the
+26 GB. That is now safe — a recreate loses nothing once media is on the volume —
+and leaving it disabled would mean LiveORC silently fails to return after a
+reboot.
+
 ## Root volume repair (already done, recorded for reference)
 
 The root volume was grown 50 → 80 GiB, but the partition and filesystem were
@@ -444,6 +566,11 @@ root. If a full disk ever blocks `growpart` again, free ~1 GB first
 - [ ] Disk-space alarm on `/`. Its absence is why this ran for ten weeks.
       Needs the CloudWatch agent (EC2 metrics do not cover EBS disk usage) or
       a cron check.
+- [ ] **After any LiveORC upgrade**, re-check the media bind — the destination
+      fix is in an upstream file and will be reverted:
+      `diff /opt/LiveORC/docker-compose.yml.orig /opt/LiveORC/docker-compose.yml`
+      The `start-liveorc.sh` guards make this loud rather than silent, but the
+      fix still has to be reapplied by hand.
 - [ ] Correct `REPROCESS_RUNBOOK.md` — "the video bytes live in MinIO/S3" is
       false for this deployment, and it made "no media backup needed" unsafe.
 - [ ] Document the media volume and the `RequiresMountsFor` guard in

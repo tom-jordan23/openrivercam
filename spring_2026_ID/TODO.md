@@ -467,9 +467,9 @@ guarded the mount, so the one condition that mattered went unchecked.
       not needed. The image ships `/liveorc/media/admin-interface`, making
       Phase 4's seed step mandatory. `liveorc.service` turned out to couple
       to the s3fs mount in five places, not one.
-- [ ] **Snapshot the root EBS volume** — the 26 GB exists in exactly one
-      place. Initiated 2026-08-10; **confirm it reached `completed`**, not
-      `pending`, before relying on it.
+- [x] **Snapshot the root EBS volume** — the 26 GB exists in exactly one
+      place. Initiated 2026-08-10, confirmed complete 2026-08-17. This was
+      the gate on everything destructive downstream.
 - [x] `systemctl disable liveorc.service` (2026-08-10) — it runs
       `start-liveorc.sh` → `liveorc.sh start` → `docker compose up -d`,
       which recreates the webapp and destroys the writable layer, and the
@@ -495,13 +495,16 @@ guarded the mount, so the one condition that mattered went unchecked.
       than dropping it. `grep -rn "s3-storage"` **undercounts**: `After=`
       and `Requires=` use the escaped form `mnt-s3\x2dstorage.mount`, so
       use `grep -n 's3' /etc/systemd/system/liveorc.service` (5 hits).
-- [ ] **Decide how the compose bind is changed upgrade-safely.** The
-      compose file is upstream-owned, so editing it directly gets reverted
-      by a LiveORC upgrade — silently sending media back to the writable
-      layer. A `/opt/LiveORC/docker-compose.override.yml` is the clean
-      answer, but only works if `liveorc.sh` calls compose without `-f`.
-      Settle with:
-      `grep -n 'docker compose\|docker-compose\|-f ' /opt/LiveORC/liveorc.sh`
+- [x] Settled how the compose bind changes (2026-08-17). An override file
+      is **not** an option: `liveorc.sh` builds an explicit `-f` list
+      (`docker-compose.yml` plus rabbitmq/postgis/spatialite/ssl), and
+      Compose auto-loads `docker-compose.override.yml` only when no `-f` is
+      given. So the destination fix goes in
+      `/opt/LiveORC/docker-compose.yml:8` directly — upstream-owned, and a
+      LiveORC upgrade will revert it. The durable defense goes in
+      `start-liveorc.sh`, which is a local wrapper: a pre-flight grep that
+      refuses to start if the bind was reverted, and a post-start
+      `docker inspect` that verifies the mount table rather than the config.
 - [ ] Phase 6: repoint **both halves of the path** — `start-liveorc.sh`'s
       `--storage-dir` (the source, and the real control point since it
       overrides `.env`) **and** the compose bind's destination
@@ -513,8 +516,16 @@ guarded the mount, so the one condition that mattered went unchecked.
 - [ ] Confirm the result in the **running container**, not the config:
       `docker inspect liveorc_webapp --format '{{range .Mounts}}…'` must
       show `/var/lib/liveorc-media -> /liveorc/media`.
-- [ ] Phase 7: recreate, confirm the writable layer drops to MB and `/`
-      falls to ~20 G; open an existing video and upload a new one.
+- [ ] Phase 7: recreate with **`systemctl start liveorc.service`**, never a
+      bare `docker compose up -d` — that bypasses `start-liveorc.sh`, so no
+      `--storage-dir` is passed and neither guard runs, and
+      `LORC_STORAGE_DIR` silently falls back to `.env`'s `lorc_media` named
+      volume. Confirm the writable layer drops to MB and `/` falls to
+      ~20 G; open an existing video and upload a new one.
+- [ ] Phase 9: `systemctl enable liveorc.service` — disabled since
+      2026-08-10 so a reboot could not destroy the media. Safe once media
+      is on the volume, and leaving it disabled means LiveORC silently does
+      not come back after a reboot.
 - [ ] Add a disk-space alarm on `/` — its absence is why this ran
       undetected for ten weeks.
 - [ ] Correct the false media-backup claim in
