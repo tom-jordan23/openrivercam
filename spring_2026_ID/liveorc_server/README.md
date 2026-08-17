@@ -62,10 +62,10 @@ volumes — all unchanged. We share only the host EC2 instance.
 ### 1. Get this directory onto the server
 
 ```bash
-# If you have the repo cloned (e.g., ~/openrivercam):
+# If you have the repo cloned (on this host it is ~/code/git/openrivercam):
 sudo mkdir -p /opt/orc-additions
 sudo rsync -a --exclude='.env' --exclude='certs/' --exclude='secrets/' \
-    ~/openrivercam/spring_2026_ID/liveorc_server/ /opt/orc-additions/
+    ~/code/git/openrivercam/spring_2026_ID/liveorc_server/ /opt/orc-additions/
 sudo find /opt/orc-additions -path /opt/orc-additions/secrets -prune -o \
     -exec chown $USER:$USER {} +
 cd /opt/orc-additions
@@ -103,8 +103,8 @@ private key) into the repo:
 
 ```bash
 cp /opt/orc-additions/certs/fullchain.pem \
-   ~/openrivercam/spring_2026_ID/pi/shared/etc/orc/sensor-upload-ca.pem
-cd ~/openrivercam && git add spring_2026_ID/pi/shared/etc/orc/sensor-upload-ca.pem
+   ~/code/git/openrivercam/spring_2026_ID/pi/shared/etc/orc/sensor-upload-ca.pem
+cd ~/code/git/openrivercam && git add spring_2026_ID/pi/shared/etc/orc/sensor-upload-ca.pem
 git commit -m "Add self-signed CA cert for sensor-upload (Pi-side pinning)"
 git push
 ```
@@ -180,7 +180,7 @@ password from `.env`.
 
 ```bash
 TOKEN=<paste sukabumi token>
-SERVER_CERT=~/openrivercam/spring_2026_ID/pi/shared/etc/orc/sensor-upload-ca.pem
+SERVER_CERT=~/code/git/openrivercam/spring_2026_ID/pi/shared/etc/orc/sensor-upload-ca.pem
 
 curl --cacert "$SERVER_CERT" -sS \
     https://openrivercam.endlessprojects.info:8443/sensors/health
