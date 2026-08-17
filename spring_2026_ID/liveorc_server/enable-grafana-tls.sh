@@ -47,6 +47,15 @@ WATCHER="/usr/local/bin/orc-grafana-cert-watch.sh"
 CRONFILE="/etc/cron.d/orc-grafana-cert-watch"
 STAMP="/var/lib/orc-grafana-cert.sha256"
 
+# Where a cert copied out of a container is staged for Grafana. Deliberately
+# NOT ./certs — that holds the self-signed pair the Pi stations pin, and
+# nothing here may disturb it.
+LE_DIR="$STACK_DIR/certs-le"
+
+TMPD="$(mktemp -d)"
+cleanup() { rm -rf "$TMPD"; }
+trap cleanup EXIT
+
 MODE="apply"
 [ "${1:-}" = "--check" ]    && MODE="check"
 [ "${1:-}" = "--rollback" ] && MODE="rollback"
@@ -143,7 +152,9 @@ if [ "$MODE" = "rollback" ]; then
         || die "$OVERRIDE was not written by this script — remove it by hand"
     rm -f "$OVERRIDE"
     rm -f "$WATCHER" "$CRONFILE" "$STAMP"
-    ok "removed the override, the renewal watcher, and its cron entry"
+    # Only ever contains copies; the originals stay in their container.
+    rm -rf "$LE_DIR"
+    ok "removed the override, the staged cert copy, the watcher, and its cron"
     restart_grafana
     wait_for_grafana || die "grafana did not come back up"
     ok "reverted to the self-signed cert"
@@ -162,7 +173,7 @@ hdr "Locating a publicly trusted cert for $HOSTNAME_FQDN"
 # /var/lib/docker/volumes/<name>/_data is a stable path that outlives the
 # container, and the volume can be mounted by name. An overlay layer is
 # neither.
-CERTDIR=""; SRC_KIND=""; SRC_NAME=""
+CERTDIR=""; SRC_KIND=""; SRC_NAME=""; C_CERT=""; C_KEY=""; REL=""
 
 try_dir() {  # $1 = directory holding fullchain.pem + privkey.pem
     [ -f "$1/fullchain.pem" ] && [ -f "$1/privkey.pem" ] || return 1
@@ -198,9 +209,48 @@ if [ -z "$CERTDIR" ]; then
     done
 fi
 
+# 3. Inside a running container's writable layer. This is the case on this
+#    host: nginx and certbot run inside liveorc_webapp, and the cert sits at
+#    /liveorc/nginx/ssl/ — not on any mount, so it cannot be bind-mounted.
+#    Copy it out with `docker cp`, which only READS the source container.
+#
+#    LiveORC is upstream-owned: we never modify anything inside it, because a
+#    version upgrade would overwrite the change. Everything of ours lives in
+#    $STACK_DIR.
+#
+#    nginx's own config is the authority on which files are actually served,
+#    so parse it rather than guessing at paths.
 if [ -z "$CERTDIR" ]; then
-    die "no publicly trusted cert for $HOSTNAME_FQDN found on a host path or
-      in any docker named volume.
+    say "  not in a volume; checking inside running containers..."
+    for c in $(docker ps --format '{{.Names}}' 2>/dev/null); do
+        [ "$c" = "$CONTAINER" ] && continue
+        # `|| true`, and judge on the OUTPUT, not the exit status: grep exits
+        # non-zero when ANY named directory is missing, even though it printed
+        # perfect matches from the ones that exist. Most containers have only
+        # one of these three paths, so an exit-status check discards the answer
+        # it just found. (Verified against a mock: exit 2, correct output.)
+        conf=$(docker exec "$c" sh -c \
+            "grep -rhoE '^[[:space:]]*ssl_certificate(_key)?[[:space:]]+[^;]+' \
+             /etc/nginx /liveorc/nginx /usr/local/nginx/conf 2>/dev/null" 2>/dev/null || true)
+        [ -n "$conf" ] || continue
+        cpath=$(printf '%s\n' "$conf" | awk '$1=="ssl_certificate"{print $2; exit}')
+        kpath=$(printf '%s\n' "$conf" | awk '$1=="ssl_certificate_key"{print $2; exit}')
+        [ -n "$cpath" ] && [ -n "$kpath" ] || continue
+        say "    $c serves $cpath"
+        docker cp "$c:$cpath" "$TMPD/fullchain.pem" >/dev/null 2>&1 || continue
+        docker cp "$c:$kpath" "$TMPD/privkey.pem"   >/dev/null 2>&1 || continue
+        if try_dir "$TMPD"; then
+            CERTDIR="$TMPD"; SRC_KIND="container"; SRC_NAME="$c"
+            C_CERT="$cpath"; C_KEY="$kpath"
+            break
+        fi
+        say "    (not valid for $HOSTNAME_FQDN — skipping)"
+    done
+fi
+
+if [ -z "$CERTDIR" ]; then
+    die "no publicly trusted cert for $HOSTNAME_FQDN found on a host path,
+      in a docker named volume, or inside a running container.
 
       Check what terminates TLS on :443 and where it keeps its certs:
         sudo ss -ltnp | grep ':443 '
@@ -212,11 +262,11 @@ fi
 
 CERT="$CERTDIR/fullchain.pem"
 KEY="$CERTDIR/privkey.pem"
-if [ "$SRC_KIND" = "volume" ]; then
-    ok "found in docker volume '$SRC_NAME' at /$REL"
-else
-    ok "found $CERT"
-fi
+case "$SRC_KIND" in
+    volume)    ok "found in docker volume '$SRC_NAME' at /$REL" ;;
+    container) ok "copied out of container '$SRC_NAME' ($C_CERT)" ;;
+    *)         ok "found $CERT" ;;
+esac
 
 # ------------------------------------------------------------ cert validation
 hdr "Validating"
@@ -255,10 +305,20 @@ fi
 # Always mount the WHOLE tree (volume root, or /etc/letsencrypt), never just
 # the live/<domain>/ directory: certbot fills live/ with symlinks into
 # ../../archive/, so a narrower mount hands Grafana dangling links.
-if [ "$SRC_KIND" = "volume" ]; then
+if [ "$SRC_KIND" = "container" ]; then
+    # The source is a container's writable layer, which cannot be mounted.
+    # The cert is copied to $LE_DIR and that directory is mounted instead.
+    MOUNT_LINE="./certs-le:/certs-le:ro"
+    EXTERNAL_VOL=""
+    IN_CONT_DIR="/certs-le"
+    CERT_BASENAME="cert.pem"; KEY_BASENAME="key.pem"
+    say "    copy   : $SRC_NAME:$C_CERT -> $LE_DIR/cert.pem"
+    say "    mount  : ./certs-le -> /certs-le (ro)"
+elif [ "$SRC_KIND" = "volume" ]; then
     MOUNT_LINE="$SRC_NAME:/letsencrypt:ro"
     EXTERNAL_VOL="$SRC_NAME"
     IN_CONT_DIR="/letsencrypt${REL:+/$REL}"
+    CERT_BASENAME="fullchain.pem"; KEY_BASENAME="privkey.pem"
     say "    mount  : volume $SRC_NAME -> /letsencrypt (ro)"
 else
     MOUNT_SRC="/etc/letsencrypt"
@@ -268,9 +328,10 @@ else
     esac
     MOUNT_LINE="$MOUNT_SRC:/letsencrypt:ro"
     EXTERNAL_VOL=""
+    CERT_BASENAME="fullchain.pem"; KEY_BASENAME="privkey.pem"
     say "    mount  : $MOUNT_SRC -> /letsencrypt (ro)"
 fi
-say "    in-ctr : $IN_CONT_DIR/fullchain.pem"
+say "    in-ctr : $IN_CONT_DIR/$CERT_BASENAME"
 
 if [ "$MODE" = "check" ]; then
     hdr "Check only — nothing changed"
@@ -293,21 +354,48 @@ if [ -f "$OVERRIDE" ]; then
     fi
 fi
 
+# Provenance note embedded in the override, so the next person reading it
+# knows where these files came from without re-deriving it.
+if [ "$SRC_KIND" = "container" ]; then
+    SRC_NOTE="# nginx and certbot run INSIDE the container '$SRC_NAME', and the cert lives
+# at $C_CERT — in that container's WRITABLE LAYER, not on any mount,
+# so it cannot be bind-mounted. It is copied out with \`docker cp\` (which only
+# reads the source) into ./certs-le, and that directory is mounted here.
+#
+# Nothing inside LiveORC is modified. It is upstream-owned: any change there
+# would be overwritten by a version upgrade, so all of ours stays in
+# $STACK_DIR."
+elif [ "$SRC_KIND" = "volume" ]; then
+    SRC_NOTE="# The cert comes from the docker named volume '$SRC_NAME', mounted read-only
+# and declared external, so this stack can never create, modify, or remove it
+# — \`docker compose down -v\` here will not touch it."
+else
+    SRC_NOTE="# The cert comes from the host path $CERTDIR, mounted read-only."
+fi
+
+# Stage the copied cert before writing the override, so the files Grafana
+# will be told to read already exist when it restarts.
+if [ "$SRC_KIND" = "container" ]; then
+    mkdir -p "$LE_DIR"
+    chmod 0755 "$LE_DIR"
+    # 0644/0600 root:root, matching how certbot itself lays these out. Grafana
+    # runs as user "0:0" so it can read the key.
+    install -m 0644 -o root -g root "$CERT" "$LE_DIR/cert.pem"
+    install -m 0600 -o root -g root "$KEY"  "$LE_DIR/key.pem"
+    ok "staged $LE_DIR/{cert,key}.pem from $SRC_NAME"
+fi
+
 {
 cat <<EOF
 # Generated by enable-grafana-tls.sh — do not edit by hand.
 #
-# Points orc-grafana at the Let's Encrypt cert that LiveORC's own nginx uses,
-# so stakeholders reach the dashboard without a browser warning. On this host
-# nginx and certbot run INSIDE liveorc_webapp and keep their certs in the
-# named volume below; nothing publicly trusted exists on a host path.
+# Points orc-grafana at the same Let's Encrypt cert LiveORC's nginx serves, so
+# stakeholders reach the dashboard without a browser warning.
+#
+$SRC_NOTE
 #
 # Lives in an override rather than docker-compose.yml because the deploy rsync
 # replaces docker-compose.yml and would silently revert the change.
-#
-# The volume is mounted READ-ONLY and declared external, so this stack can
-# never create, modify, or remove it — \`docker compose down -v\` here will not
-# touch LiveORC's certs.
 #
 # sensor-upload on :8443 deliberately still uses the self-signed cert in
 # ./certs — the Pi stations pin it. Do not "unify" these.
@@ -316,8 +404,8 @@ cat <<EOF
 services:
   $SERVICE:
     environment:
-      GF_SERVER_CERT_FILE: $IN_CONT_DIR/fullchain.pem
-      GF_SERVER_CERT_KEY: $IN_CONT_DIR/privkey.pem
+      GF_SERVER_CERT_FILE: $IN_CONT_DIR/$CERT_BASENAME
+      GF_SERVER_CERT_KEY: $IN_CONT_DIR/$KEY_BASENAME
     volumes:
       - ./certs:/certs:ro
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
@@ -384,16 +472,67 @@ say "    have to be installed in that container — which means modifying the"
 say "    one container that must not be recreated (TODO-112). Instead, watch"
 say "    the cert from the host and restart only orc-grafana when it changes."
 
+if [ "$SRC_KIND" = "container" ]; then
 cat > "$WATCHER" <<EOF
 #!/bin/sh
 # Installed by enable-grafana-tls.sh.
 #
-# certbot renews inside liveorc_webapp and has no way to signal us, so poll
-# the cert it writes and restart orc-grafana when the bytes change. Restarting
-# only on change makes this a no-op on all but ~6 days a year.
+# The cert lives in $SRC_NAME's writable layer, so it cannot be mounted and
+# has to be re-copied whenever it changes. \`docker cp\` only READS the source;
+# nothing inside LiveORC is modified, since a version upgrade would overwrite
+# any change made there.
 #
-# Reads the volume's _data path directly. The container mounts the same volume
-# BY NAME; this path is only used for reading, never mounted.
+# Restarting only on change makes this a no-op on all but ~6 days a year.
+set -u
+SRC=$SRC_NAME
+C_CERT=$C_CERT
+C_KEY=$C_KEY
+DEST=$LE_DIR
+STAMP="$STAMP"
+TAG=orc-grafana-cert-watch
+
+T=\$(mktemp -d) || exit 1
+trap 'rm -rf "\$T"' EXIT
+
+docker cp "\$SRC:\$C_CERT" "\$T/cert.pem" >/dev/null 2>&1 || exit 0
+docker cp "\$SRC:\$C_KEY"  "\$T/key.pem"  >/dev/null 2>&1 || exit 0
+
+NEW=\$(cat "\$T/cert.pem" "\$T/key.pem" | sha256sum | cut -d' ' -f1)
+OLD=\$(cat "\$STAMP" 2>/dev/null || echo none)
+[ "\$NEW" = "\$OLD" ] && exit 0
+
+# Never install something worse than what is already there. A truncated or
+# half-written cert mid-renewal would otherwise take the dashboard down.
+if ! openssl x509 -in "\$T/cert.pem" -noout -checkend 0 >/dev/null 2>&1; then
+    logger -t \$TAG "copied cert is expired or unparseable; not installing"
+    exit 1
+fi
+CP=\$(openssl x509 -in "\$T/cert.pem" -noout -pubkey 2>/dev/null | sha256sum)
+KP=\$(openssl pkey -in "\$T/key.pem" -pubout 2>/dev/null | sha256sum || echo x)
+if [ "\$CP" != "\$KP" ]; then
+    logger -t \$TAG "copied cert and key do not match; not installing"
+    exit 1
+fi
+
+install -m 0644 -o root -g root "\$T/cert.pem" "\$DEST/cert.pem" || exit 1
+install -m 0600 -o root -g root "\$T/key.pem"  "\$DEST/key.pem"  || exit 1
+
+if docker restart $CONTAINER >/dev/null 2>&1; then
+    # Stamp only after a confirmed restart, so a failure retries next run.
+    echo "\$NEW" > "\$STAMP"
+    logger -t \$TAG "cert changed; reinstalled and restarted $CONTAINER"
+else
+    logger -t \$TAG "cert installed but restart of $CONTAINER FAILED"
+    exit 1
+fi
+EOF
+else
+cat > "$WATCHER" <<EOF
+#!/bin/sh
+# Installed by enable-grafana-tls.sh.
+#
+# Grafana caches its cert at startup and certbot has no way to signal us, so
+# poll the cert and restart orc-grafana when its bytes change.
 CERT="$CERT"
 STAMP="$STAMP"
 
@@ -411,12 +550,17 @@ else
     exit 1
 fi
 EOF
+fi
 chmod 0755 "$WATCHER"
 ok "installed $WATCHER"
 
-# Seed the stamp with the cert we just verified, so the first scheduled run
-# does not fire a pointless restart.
-sha256sum "$CERT" | cut -d' ' -f1 > "$STAMP"
+# Seed the stamp with what we just verified, so the first scheduled run does
+# not fire a pointless restart. Must hash the same way the watcher does.
+if [ "$SRC_KIND" = "container" ]; then
+    cat "$CERT" "$KEY" | sha256sum | cut -d' ' -f1 > "$STAMP"
+else
+    sha256sum "$CERT" | cut -d' ' -f1 > "$STAMP"
+fi
 
 cat > "$CRONFILE" <<EOF
 # Installed by enable-grafana-tls.sh. Restarts orc-grafana after certbot

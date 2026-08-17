@@ -77,3 +77,7 @@ spring_2026_ID/sukabumi_handoff/
 
 # Ad-hoc sensor-pipeline diagnostic bundles (see pi/tools/orc_collect.sh)
 orc_collect_*.txt
+
+# Let's Encrypt cert copied out of the LiveORC container by
+# enable-grafana-tls.sh. Server-local, same treatment as certs/.
+spring_2026_ID/liveorc_server/certs-le/
