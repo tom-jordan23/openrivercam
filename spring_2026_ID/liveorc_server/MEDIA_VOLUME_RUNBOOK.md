@@ -157,13 +157,32 @@ Interpreting the first command:
 `UPPER` for this migration:
 `/var/lib/docker/overlay2/6e92d3cd47b783469b9cdbb914011237b65d1880394a86f2f92ea57a6c89048f/diff`
 
-Still to read before Phase 6 (`/usr/local/bin/verify-s3mount.sh` decides
-whether that hook is rewritten or dropped):
+#### Result — the three Phase 6 inputs, read 2026-08-17
 
 ```bash
-cat /usr/local/bin/verify-s3mount.sh
 cat /opt/LiveORC/start-liveorc.sh
+cat /usr/local/bin/verify-s3mount.sh
 grep -rn "s3-storage" /opt/LiveORC/ /etc/systemd/system/ 2>/dev/null
+```
+
+| File | Finding | Consequence for Phase 6 |
+|---|---|---|
+| `start-liveorc.sh` | `./liveorc.sh start --hostname … --port 8000 --ssl --storage-local --storage-dir /mnt/s3-storage --detached` | Confirms `--storage-dir` is the control point. It is a **local wrapper, not upstream**, so editing it does not fight a LiveORC upgrade. |
+| `verify-s3mount.sh` | `mountpoint -q` **plus a write test** (`touch .test`) | **Rewrite, do not drop.** The write test catches a mount that is present but read-only — which `AssertPathIsMountPoint` does not. Rename it too; a file called `verify-s3mount.sh` guarding an EBS volume is the same naming rot that hid the original misconfiguration. |
+| `grep -rn "s3-storage"` | 3 files, 5 hits | **The grep undercounts.** `After=` and `Requires=` name the unit as `mnt-s3\x2dstorage.mount` — systemd-escaped, so the literal `s3-storage` does not match. Using this grep as the checklist leaves two dependencies pointed at a dead mount. Use `grep -n 's3' /etc/systemd/system/liveorc.service` instead. |
+
+`--ssl` also explains the TLS cert in the writable layer: `liveorc.sh` runs
+certbot for `--hostname` at container start. The recreate re-obtains it, so
+the cert is **not** a storage risk and Phase 6 needs nothing for it. Only
+caveat: Let's Encrypt allows 5 duplicate certs per week, so repeated
+recreates while debugging can exhaust it.
+
+Still to determine before Phase 6 is written (see the Phase 6 note on
+upgrade-safety):
+
+```bash
+grep -n 'docker compose\|docker-compose\|storage-dir\|storage-local\|\-f ' \
+    /opt/LiveORC/liveorc.sh | head -40
 ```
 
 ### Phase 1 — DB backup
@@ -268,6 +287,47 @@ command line. That overrides `.env`, which is why `.env` reads
 `LORC_STORAGE_DIR=lorc_media` (a named volume) while the running container
 carries a `/mnt/s3-storage` bind. Editing `.env` alone changes nothing.
 
+#### ⚠️ Both halves of the path must change, or this migration is a no-op
+
+`--storage-dir` sets the **source** of the bind. The compose file sets its
+**destination**, and that destination is the bug:
+
+```
+      source                          destination
+--storage-dir /mnt/s3-storage   →   /liveorc/data/media    ← Django never writes here
+                                    /liveorc/media         ← MEDIA_ROOT, where it must go
+```
+
+Repoint `--storage-dir` at the EBS volume and nothing else, and the migration
+completes cleanly, verifies green, and **media still accumulates in the
+writable layer** — the volume is faithfully bound to a directory nothing
+uses. The failure is silent, exactly as the original was.
+
+Checklist for Phase 6, both required:
+
+- [ ] `start-liveorc.sh`: `--storage-dir /mnt/s3-storage` → `/var/lib/liveorc-media`
+- [ ] compose bind: `${LORC_STORAGE_DIR}:/liveorc/data/media:z` → `${LORC_STORAGE_DIR}:/liveorc/media:z`
+
+Verify in the *running* container before declaring success — the source of
+truth is the mount table, not the config:
+
+```bash
+sudo docker inspect liveorc_webapp \
+  --format '{{range .Mounts}}{{.Source}} -> {{.Destination}}{{"\n"}}{{end}}' \
+  | grep media          # must show /var/lib/liveorc-media -> /liveorc/media
+```
+
+#### Upgrade-safety of the compose edit
+
+The compose file is upstream-owned; a LiveORC upgrade overwrites it, silently
+reverting the destination fix and sending media back to the writable layer.
+Prefer a `docker-compose.override.yml` in `/opt/LiveORC` — but that only works
+if `liveorc.sh` invokes compose **without** explicit `-f` flags, since Compose
+auto-loads an override only in that case. If it passes `-f`, the override is
+ignored and the change must go through `start-liveorc.sh` (a local wrapper,
+safe to edit) instead. Resolve with the `grep` at the end of Phase 0 before
+writing this phase.
+
 Note the original intent was already correct — someone meant media to land
 on the mount. It never did, because the bind targets `/liveorc/data/media`
 while `MEDIA_ROOT` is `/liveorc/media`. A single path component is the
@@ -283,9 +343,24 @@ RequiresMountsFor=/mnt/s3-storage        → /var/lib/liveorc-media
 After=docker.service mnt-s3\x2dstorage.mount     → docker.service var-lib-liveorc\x2dmedia.mount
 Requires=docker.service mnt-s3\x2dstorage.mount  → docker.service var-lib-liveorc\x2dmedia.mount
 AssertPathIsMountPoint=/mnt/s3-storage   → /var/lib/liveorc-media
-ExecStartPre=/usr/local/bin/verify-s3mount.sh    → drop, or rewrite for the new path
+ExecStartPre=/usr/local/bin/verify-s3mount.sh    → rewrite + rename (see below)
 Description=LiveORC Server with S3 Storage       → LiveORC Server
 ```
+
+**Do not use `grep -rn "s3-storage"` as this checklist.** `After=` and
+`Requires=` name the unit as `mnt-s3\x2dstorage.mount`, systemd-escaped, so
+the literal string does not match and those two lines are missed. Use:
+
+```bash
+grep -n 's3' /etc/systemd/system/liveorc.service    # expect 5 hits
+```
+
+**Rewrite `verify-s3mount.sh` rather than dropping it.** It does a real write
+test (`touch .test`), which catches a mount that is present but read-only —
+something `AssertPathIsMountPoint` cannot detect. Rename it to
+`verify-media-mount.sh` and point it at `/var/lib/liveorc-media`; a script
+called `verify-s3mount.sh` guarding an EBS volume is the same naming rot that
+kept the original misconfiguration invisible.
 
 The systemd unit name for `/var/lib/liveorc-media` must be exact — derive it
 rather than typing it:

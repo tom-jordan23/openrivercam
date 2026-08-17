@@ -1,6 +1,6 @@
 # TODO — Indonesia Spring 2026 Deployment (post-trip)
 
-**Last updated:** 2026-08-11
+**Last updated:** 2026-08-17
 
 The pre-trip task list (departure schedule day-by-day, in-country
 deferred items, etc.) was archived to `archive/` after the April 2026
@@ -408,15 +408,23 @@ without writing, silently skipping real data.
 
 | Field | Value |
 |-------|-------|
-| **Status** | PAUSED — resumes after the 2026-08-11 demo |
+| **Status** | READY TO RUN — Phase 0 complete, gated on the snapshot |
 | **Site** | LiveORC server (AWS) |
 
-**Paused 2026-08-10** with Phase 0 complete. The migration is destructive
-by design and there is a demo on 2026-08-11, so the host stays on its
-current configuration until there is slack. Until then the 26 GB of media
-lives only in the container writable layer, so **`liveorc.service` must
-stay disabled** and a root-volume snapshot is the standing safety net —
-see the warning block at the top of the runbook.
+**Unpaused 2026-08-17.** The 2026-08-11 demo it was waiting on has passed
+and Phase 0 is fully resolved, including the three files that were still
+unread. Until Phase 6 lands the 26 GB of media lives only in the container
+writable layer, so **`liveorc.service` must stay disabled** and a
+root-volume snapshot is the standing safety net — see the warning block at
+the top of the runbook.
+
+**Run it while Sukabumi is offline.** Uploads stopped 2026-08-14 (see the
+sensor outage), so the media tree is static. The awkward part of Phases
+4–6 is normally files written *between* the copy and the recreate, a race
+with no clean answer; with no uploads arriving, `rsync --itemize-changes`
+in Phase 5 means exactly what it says. Bringing the station back first
+reopens that race, so this should go **before** the station fix, not
+after.
 
 On 2026-08-10 the root filesystem hit 100% and took the host down —
 LiveORC dead, Session Manager refusing to open a shell, Run Command
@@ -480,10 +488,31 @@ guarded the mount, so the one condition that mattered went unchecked.
 - [ ] Phases 2–5: create/attach/format a 150 GiB gp3 volume at
       `/var/lib/liveorc-media`, seed image assets, copy the 26 GB,
       verify with a dry-run `rsync --itemize-changes`, snapshot.
-- [ ] Phase 6: repoint **`start-liveorc.sh`'s `--storage-dir`** (the real
-      control point — it overrides `.env`), the compose bind, and all five
-      s3fs couplings in `liveorc.service`; retire the vestigial s3fs mount
-      unit; re-enable the service.
+- [x] Read the three Phase 6 inputs (2026-08-17). `start-liveorc.sh` passes
+      `--storage-dir /mnt/s3-storage` and is a **local wrapper, not
+      upstream**, so it is safe to edit. `verify-s3mount.sh` does a write
+      test as well as a mountpoint check — rewrite and rename it rather
+      than dropping it. `grep -rn "s3-storage"` **undercounts**: `After=`
+      and `Requires=` use the escaped form `mnt-s3\x2dstorage.mount`, so
+      use `grep -n 's3' /etc/systemd/system/liveorc.service` (5 hits).
+- [ ] **Decide how the compose bind is changed upgrade-safely.** The
+      compose file is upstream-owned, so editing it directly gets reverted
+      by a LiveORC upgrade — silently sending media back to the writable
+      layer. A `/opt/LiveORC/docker-compose.override.yml` is the clean
+      answer, but only works if `liveorc.sh` calls compose without `-f`.
+      Settle with:
+      `grep -n 'docker compose\|docker-compose\|-f ' /opt/LiveORC/liveorc.sh`
+- [ ] Phase 6: repoint **both halves of the path** — `start-liveorc.sh`'s
+      `--storage-dir` (the source, and the real control point since it
+      overrides `.env`) **and** the compose bind's destination
+      (`/liveorc/data/media` → `/liveorc/media`). Changing only the first
+      completes cleanly, verifies green, and leaves media in the writable
+      layer exactly as now. Then fix all five s3fs couplings in
+      `liveorc.service`, retire the vestigial s3fs mount unit, and
+      re-enable the service.
+- [ ] Confirm the result in the **running container**, not the config:
+      `docker inspect liveorc_webapp --format '{{range .Mounts}}…'` must
+      show `/var/lib/liveorc-media -> /liveorc/media`.
 - [ ] Phase 7: recreate, confirm the writable layer drops to MB and `/`
       falls to ~20 G; open an existing video and upload a new one.
 - [ ] Add a disk-space alarm on `/` — its absence is why this ran
