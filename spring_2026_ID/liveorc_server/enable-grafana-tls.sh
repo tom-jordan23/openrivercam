@@ -175,12 +175,35 @@ hdr "Locating a publicly trusted cert for $HOSTNAME_FQDN"
 # neither.
 CERTDIR=""; SRC_KIND=""; SRC_NAME=""; C_CERT=""; C_KEY=""; REL=""
 
-try_dir() {  # $1 = directory holding fullchain.pem + privkey.pem
-    [ -f "$1/fullchain.pem" ] && [ -f "$1/privkey.pem" ] || return 1
-    openssl x509 -in "$1/fullchain.pem" -noout -checkhost "$HOSTNAME_FQDN" \
-        >/dev/null 2>&1 || return 1
+# Full usability test, not just a hostname match. Used as the accept/reject
+# gate for EVERY candidate, so an unusable one is skipped and the search keeps
+# going rather than dying on it. A host typically has several certs lying
+# around — Debian ships a snakeoil pair, and this stack has its own
+# self-signed one — and only a publicly trusted, matching pair is any use.
+# Sets REJECT to the reason, for reporting.
+REJECT=""
+cert_is_usable() {  # $1 = directory holding fullchain.pem + privkey.pem
+    REJECT=""
+    if [ ! -f "$1/fullchain.pem" ] || [ ! -f "$1/privkey.pem" ]; then
+        REJECT="missing cert or key"; return 1
+    fi
+    if ! openssl x509 -in "$1/fullchain.pem" -noout -checkhost "$HOSTNAME_FQDN" \
+         >/dev/null 2>&1; then
+        REJECT="not valid for $HOSTNAME_FQDN"; return 1
+    fi
+    i=$(openssl x509 -in "$1/fullchain.pem" -noout -issuer  2>/dev/null || true)
+    s=$(openssl x509 -in "$1/fullchain.pem" -noout -subject 2>/dev/null || true)
+    if [ "${i#issuer=}" = "${s#subject=}" ]; then
+        REJECT="self-signed"; return 1
+    fi
+    cp_=$(openssl x509 -in "$1/fullchain.pem" -noout -pubkey 2>/dev/null | openssl md5)
+    kp_=$(openssl pkey  -in "$1/privkey.pem"  -pubout        2>/dev/null | openssl md5 || echo x)
+    if [ "$cp_" != "$kp_" ]; then
+        REJECT="cert and key do not match"; return 1
+    fi
     return 0
 }
+try_dir() { cert_is_usable "$1"; }
 
 # 1. Standard host-side certbot layout.
 for d in "/etc/letsencrypt/live/$HOSTNAME_FQDN" /etc/letsencrypt/live/*/; do
@@ -233,18 +256,33 @@ if [ -z "$CERTDIR" ]; then
             "grep -rhoE '^[[:space:]]*ssl_certificate(_key)?[[:space:]]+[^;]+' \
              /etc/nginx /liveorc/nginx /usr/local/nginx/conf 2>/dev/null" 2>/dev/null || true)
         [ -n "$conf" ] || continue
-        cpath=$(printf '%s\n' "$conf" | awk '$1=="ssl_certificate"{print $2; exit}')
-        kpath=$(printf '%s\n' "$conf" | awk '$1=="ssl_certificate_key"{print $2; exit}')
-        [ -n "$cpath" ] && [ -n "$kpath" ] || continue
-        say "    $c serves $cpath"
-        docker cp "$c:$cpath" "$TMPD/fullchain.pem" >/dev/null 2>&1 || continue
-        docker cp "$c:$kpath" "$TMPD/privkey.pem"   >/dev/null 2>&1 || continue
-        if try_dir "$TMPD"; then
-            CERTDIR="$TMPD"; SRC_KIND="container"; SRC_NAME="$c"
-            C_CERT="$cpath"; C_KEY="$kpath"
-            break
-        fi
-        say "    (not valid for $HOSTNAME_FQDN — skipping)"
+        # Try EVERY pair, not just the first. A container often has several
+        # ssl_certificate directives — /etc/nginx holds Debian's default
+        # snakeoil site, while the real cert is somewhere like /liveorc/nginx —
+        # and grep -r reaches them in directory order, not importance order.
+        # Taking the first match finds the snakeoil cert and stops.
+        #
+        # Pairs each ssl_certificate with the ssl_certificate_key that follows
+        # it, which is how nginx configs are written. Deduped: the same pair
+        # usually appears once per server block.
+        pairs=$(printf '%s\n' "$conf" | awk '
+            $1=="ssl_certificate"     { c=$2 }
+            $1=="ssl_certificate_key" { if (c != "") { print c "\t" $2; c="" } }
+        ' | sort -u)
+        while IFS="$(printf '\t')" read -r cpath kpath; do
+            [ -n "${cpath:-}" ] && [ -n "${kpath:-}" ] || continue
+            docker cp "$c:$cpath" "$TMPD/fullchain.pem" >/dev/null 2>&1 || continue
+            docker cp "$c:$kpath" "$TMPD/privkey.pem"   >/dev/null 2>&1 || continue
+            if cert_is_usable "$TMPD"; then
+                say "    $c serves $cpath"
+                CERTDIR="$TMPD"; SRC_KIND="container"; SRC_NAME="$c"
+                C_CERT="$cpath"; C_KEY="$kpath"
+                break 2
+            fi
+            say "    $c: $cpath — $REJECT"
+        done <<PAIRS
+$pairs
+PAIRS
     done
 fi
 
