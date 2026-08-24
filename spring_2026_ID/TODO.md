@@ -1,6 +1,6 @@
 # TODO — Indonesia Spring 2026 Deployment (post-trip)
 
-**Last updated:** 2026-08-17
+**Last updated:** 2026-08-24
 
 The pre-trip task list (departure schedule day-by-day, in-country
 deferred items, etc.) was archived to `archive/` after the April 2026
@@ -173,7 +173,10 @@ purely PMI's, not a technical readiness one.
 - [ ] Send a separate brief for Jakarta site selection.
 - [ ] Track responses; do not block other workstreams on them.
 - [ ] **Data access — wait on PMI's approval.** Do not provision
-      ahead of it.
+      ahead of it. The *technical* side is TODO-115: read-only API
+      access is achievable natively (institute membership, no LiveORC
+      changes), and that account model can be built and proven while
+      this gate is still closed.
 - [ ] Once approved: create the LiveORC accounts, send login links,
       and confirm IPB can reach the data surfaces they actually need —
       the LiveORC web UI, Grafana (TODO-102), and the Sheet (TODO-111).
@@ -404,12 +407,367 @@ so an unset variable goes straight to live. `preview` neither appends nor
 advances the ledger. Never set `dry-run` here: it advances the cursor
 without writing, silently skipping real data.
 
+### TODO-115: Read-only LiveORC API access — the account model
+
+| Field | Value |
+|-------|-------|
+| **Status** | OPEN — foundation for TODO-114 and TODO-104's data-access strand |
+| **Site** | LiveORC server (AWS) |
+
+IPB needs programmatic access to the data, and we need an account to pull
+the backup mirror with (TODO-114). Both want the same thing: an account
+that can **read everything and change nothing**. This TODO establishes
+that account model, proves it against the running server, and writes down
+what a partner needs to actually use it.
+
+**The answer is yes, and it needs no change to LiveORC** — which matters,
+because the standing rule is that nothing a version upgrade would
+overwrite gets modified.
+
+#### How LiveORC's permissions actually work
+
+Read from the upstream source at tag **v0.3.0** (the deployed version;
+`/api/version/` confirms 0.3.0 on Django 6.0.3 / Python 3.14.3). Upstream
+has since tagged v0.3.1 — re-check this section on any upgrade.
+
+`api/permissions.py` defines a single custom class, and
+`api/views/base.py` applies it to every API viewset:
+
+```python
+class BaseModelViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsOwnerOrReadOnlyAsInstitute, IsAuthenticated]
+```
+
+`IsOwnerOrReadOnlyAsInstitute.has_object_permission`:
+
+- **Safe methods** (`GET`/`HEAD`/`OPTIONS`) — allowed if
+  `request.user.is_institute_member(obj.institute)` **or**
+  `request.user == obj.creator`.
+- **Everything else** (`PATCH`, `DELETE`) — allowed **only** if
+  `obj.creator == request.user`.
+
+So an account that is an institute member but did not create the records
+gets read on the whole institute's data and **403 on every write**. That
+is exactly the required behaviour, enforced upstream, for free.
+
+`BaseModelViewSet.list()` adds a second gate: any nested `site_pk` route
+returns **403** unless the caller is an institute member of that site (or
+a superuser). So membership is what unlocks data, and non-membership is a
+hard wall rather than an empty list.
+
+#### The gap: CREATE is not covered
+
+DRF invokes `has_object_permission` only from `get_object()` — i.e. on
+**detail** routes. `IsOwnerOrReadOnlyAsInstitute` defines no
+`has_permission`, so it defaults to `True`, and `POST` to a **collection**
+is gated by `IsAuthenticated` alone. Any authenticated account can create:
+
+| Route | Effect of a POST |
+|---|---|
+| `/api/video/` | **Uploads a video file and can enqueue a celery task** — `VideoViewSet.create()` calls `instance.create_task()` when the record is ready |
+| `/api/site/` | Creates a site |
+| `/api/site/{pk}/timeseries/` | Injects rows into the analytics series |
+| `/api/site/{pk}/cameraconfig/`, `/crosssection/`, `/videoconfig/` | Creates calibration objects |
+| `/api/recipe/`, `/api/device/` | Creates recipes / registers devices |
+
+They still cannot **modify or delete** anything they did not create, so
+existing data is safe. The exposure is additive: clutter, junk timeseries
+rows, and — the sharp one — **disk writes plus celery load from
+`POST /api/video/`**.
+
+**Decision (2026-08-24): accept the gap, control it by timing.** Adding a
+gateway to close it would mean another internet-facing service with its
+own TLS and token rotation to own, for a partner-integrity risk rather
+than a data-loss one. Instead, hand credentials to IPB only **after
+TODO-112 lands**, so an accidental upload cannot threaten the root disk.
+Revisit if the partner list grows beyond IPB.
+
+#### Two traps
+
+- **The `viewers` group does nothing.** `manage.py creategroups` builds
+  `viewers`/`editors` groups carrying Django **model** permissions. These
+  viewsets use `IsOwnerOrReadOnlyAsInstitute`, **not**
+  `DjangoModelPermissions`, so group membership has **zero effect on the
+  REST API**. It only affects `/admin/`, and only for `is_staff` users.
+  Putting IPB in `viewers` looks like read-only access and grants nothing.
+- **Never hand over the station credential.** The `creator` of every
+  existing video is whichever account ORC-OS authenticated as at
+  `/callback_url`. That account *can* delete them. IPB gets fresh users,
+  always.
+
+#### Onboarding gotchas to put in the partner doc
+
+- `GET /api/site/` returns an **empty list** for a non-superuser unless
+  `?institute=<id>` is supplied. A partner's first call looks like "there
+  is no data". Give them the institute id up front.
+- `/api/recipe/` and `/api/device/` return **empty / 404** for any
+  non-superuser: both `get_queryset()` methods filter on `institute` and
+  then fall through to `return queryset.none()`, so the filter branch is
+  dead code upstream. Fail-safe, but it means recipe and device metadata
+  are simply unavailable over the API. Camera configs and video configs
+  are reachable per-site and carry the calibration that matters.
+- Auth is JWT: `POST /api/token/` with email + password returns access +
+  refresh; `POST /api/token/refresh/` renews. Confirm the access lifetime
+  — a long pull will outlive one token.
+- `/api/schema/` serves the full OpenAPI spec and needs no auth, so a
+  partner can explore the surface before they have credentials.
+
+**Steps:**
+
+*Establish and prove the model — do this now*
+- [ ] In `/admin/`, identify the institute that owns sites **2**, **3**
+      and **4**, and record its id. Confirm sites 2/3/4 all belong to the
+      same institute — if they do not, membership has to be granted per
+      institute and the partner doc needs both ids.
+- [ ] Find out which account is `creator` on the existing videos (the
+      ORC-OS callback account) and confirm it is **not** shared with
+      anyone. Note it in the password manager as station-only.
+- [ ] Create the **mirror service account** for TODO-114: own user, not
+      staff, not superuser, added as a `Member` of that institute.
+      This is ours, not IPB's — it proves the model before any partner
+      touches it.
+- [ ] Run the verification matrix below against that account and record
+      the actual results.
+
+*Verification matrix — run against the mirror account, not an admin*
+
+| Request | Expect | Proves |
+|---|---|---|
+| `POST /api/token/` | 200 + access/refresh | credential works |
+| `GET /api/site/` | `[]` | the no-`?institute` gotcha is real |
+| `GET /api/site/?institute=<id>` | the sites | membership resolves |
+| `GET /api/site/4/video/` | 200, full list | `list()` institute gate passes |
+| `GET /api/site/4/video/{id}/` | 200 | safe method + member |
+| `GET /api/site/4/video/{id}/playback/` | video bytes | media is reachable |
+| `PATCH /api/site/4/video/{id}/` | **403** | not creator |
+| `DELETE /api/site/4/video/{id}/` | **403** | **the finding that matters** |
+| `GET /api/site/4/timeseries/` | 200 | analytics readable |
+| `DELETE /api/site/4/timeseries/{id}/` | **403** | not creator |
+| `GET /api/recipe/` | `[]` | `queryset.none()` fall-through |
+| `GET /api/site/{foreign}/video/` | 403 | non-member wall, if a foreign site exists |
+
+- [ ] **Do not POST a real video to production to test the gap.** It is
+      confirmed by source reading, and a test upload writes to the very
+      disk this whole workstream is about. If you want it confirmed
+      empirically, `POST /api/video/` with a deliberately **invalid**
+      payload: a **400** proves the permission layer let you through
+      without creating anything, a **403** would mean it did not.
+- [ ] Record the matrix results in `liveorc_server/README.md` under a new
+      "API access" section, alongside the permission explanation above.
+      This is the durable artefact — the next person should not have to
+      re-read upstream source to know what a partner account can do.
+
+*Partner provisioning — gated, do not run early*
+- [ ] Write the IPB-facing doc: base URL, token flow, the institute id,
+      the endpoint list, the `?institute=` gotcha, and a worked `curl`
+      example. Keep it in the repo; it contains no secrets.
+- [ ] **Wait for both gates.** PMI approval (TODO-104 — Dan was explicit
+      on the 2026-08-11 call that who gets access is PMI's decision) and
+      TODO-112 complete (so `POST /api/video/` cannot threaten the root
+      disk).
+- [ ] Once both clear: create one user per IPB person — never a shared
+      login — each `is_staff=False`, `is_superuser=False`, added as
+      `Member` of the institute. Send credentials out of band.
+- [ ] Re-run the verification matrix against **one real IPB account**
+      before announcing access. Membership is the only thing standing
+      between read-only and nothing, and it is set by hand.
+
+---
+
+### TODO-114: Pull an independent copy of LiveORC's data over the REST API
+
+| Field | Value |
+|-------|-------|
+| **Status** | OPEN — needs TODO-115's account; gates TODO-112 |
+| **Sites** | LiveORC server (AWS) + workstation |
+
+The 26 GB of media exists in exactly one place — `liveorc_webapp`'s
+writable layer — and the only thing standing behind it is the root-volume
+EBS snapshot from 2026-08-10. That snapshot is a real safety net, but a
+*bad* one to have to use: recovering a single video from it means
+launching an instance from the snapshot and digging through
+`overlay2/<hash>/diff` to find files Django named. It is insurance you
+cannot inspect, cannot test, and cannot restore from selectively.
+
+This TODO builds the copy you *can* inspect: pull site data down over
+LiveORC's REST API to the workstation, where the files have names, the
+inventory is a manifest you can diff, and nothing about the retrieval can
+touch the container. Then TODO-112 runs against a known-good, verified
+baseline instead of against nerve.
+
+**It also does double duty.** IPB needs programmatic access to this data
+anyway (TODO-104). Standing up API access properly — accounts, token
+flow, what a non-admin account can and cannot do — is work that has to
+happen regardless, and doing it first means the mirror *is* the test of
+the access path IPB will later use.
+
+**Why this is safe to run before TODO-112.** Every step is an
+authenticated HTTP GET against the running container. Reads do not
+recreate containers, do not invoke `docker compose`, and do not touch
+`liveorc.service` — the three things the runbook's warning block is
+about. This is the one substantial piece of TODO-112 preparation that
+carries no risk to the writable layer. See the hazard note on `/` below
+for the one thing that does need watching.
+
+**What the API exposes** — verified 2026-08-24 by unauthenticated probe
+against `https://openrivercam.endlessprojects.info`. Public HTTPS is up,
+LE cert valid (expires 2026-11-08, see TODO-102 notes), version
+**0.3.0** on Django 6.0.3 / Python 3.14.3.
+
+| Endpoint | Gives you |
+|---|---|
+| `/api/schema/` | Full OpenAPI 3.0.3 spec, **readable without auth** |
+| `/api/version/` | Version; the only anonymous data endpoint |
+| `/api/token/`, `/api/token/refresh/` | JWT access + refresh pair from username/password |
+| `/api/site/` | Site list — id, name, coordinates |
+| `/api/site/{pk}/video/` | **The manifest.** Each `Video` carries `file`, `keyframe`, `image`, `thumbnail` as URIs, plus `timestamp`, `status`, `video_config`, `time_series` |
+| `/api/site/{pk}/video/{id}/playback|image|thumbnail/` | The bytes |
+| `/api/site/{pk}/timeseries/` | `h`, `q_05`/`q_25`/`q_50`/`q_75`/`q_95` per timestamp — the analytics output |
+| `/api/site/{pk}/cameraconfig/`, `/crosssection/`, `/videoconfig/` | The calibration that makes the numbers reproducible |
+| `/api/recipe/`, `/api/device/` | Processing recipes; registered devices |
+
+`/api/site/`, `/api/site/4/video/` and `/api/site/4/timeseries/` all
+return **401** unauthenticated — the API is not leaking, and the mirror
+needs a real credential.
+
+**Known site ids** (from the reprocess work, LiveORC 0.3.0): Sukabumi =
+**4** ("Sukabumi City", 1165 videos), Jakarta = **3**, and site **2**
+("Test site", 1255 videos) which is *probably* early Sukabumi captures.
+Mirror all of them — the whole point is not having to decide later what
+mattered.
+
+**`DELETE` on the same URL as `GET` — resolved, see TODO-115.** The
+schema declares `delete` on `/api/site/{site_pk}/video/{id}/` under the
+same security block as the read, which looked alarming. Reading the
+v0.3.0 source settled it: writes require `obj.creator == request.user`,
+so a non-creator account gets 403. The mirror account creates nothing and
+is therefore structurally incapable of deleting anything. The mirror
+script should still issue no verb but `GET` — belt and braces, and it
+keeps the script honest if the permission model ever changes upstream.
+
+**Hazard — watch `/` during the pull.** The failure being guarded against
+here is a full root disk, and the mirror pulls 26 GB through Django and
+nginx on a host whose `/` sits at 62% with ~30 G free. Streaming
+responses should not spool to disk, but "should not" is exactly the
+assumption that produced this incident. Keep a `df -h /` running in a
+second Session Manager pane for the first site, throttle the client, and
+stop if free space moves. The instance is a t3.large — sustained transfer
+will also draw down CPU credits, so pace it rather than saturating.
+
+**Design notes:**
+
+- **No pagination, no filters.** `site_video_list` declares no `page`,
+  `limit`, or date parameters and returns a bare `array` of `Video`. So
+  the list call may return all 1165 records in one response, and
+  resumability has to be **client-side**: write the manifest to disk
+  first, then work down it, skipping what already exists with a matching
+  size. Never re-list to resume.
+- **`file` is nullable.** Both stations run "LiveORC sync: time series +
+  analysis images", with full-video upload disabled, so some records will
+  legitimately have no video. Record them as null in the manifest rather
+  than treating them as failures — the count of nulls is itself a result.
+- **The manifest is the deliverable, not just the bytes.** A per-site
+  JSON of every video id, timestamp, status, asset URLs and byte sizes is
+  what makes TODO-112 Phase 5's `rsync --itemize-changes` checkable
+  against something external. Right now that verification only compares
+  the host to itself.
+- **The mirror does not cover everything.** Be explicit about this in the
+  README so it is never mistaken for a full backup: it captures media and
+  the API-visible records, **not** the Postgres database (TODO-112
+  Phase 1 does that, to `s3://openrivercam-video/backups/`), not
+  `/liveorc/media/admin-interface`, and not the TimescaleDB sensor data,
+  which is a separate stack entirely and reachable via Grafana.
+- **Land it in `data/`,** which is already gitignored at the repo root.
+  This repo is public — no manifest, token, or media file gets committed.
+  610 G free on the workstation, so 26 GB is not a constraint.
+- **The mirror account is ours, not IPB's.** See the ordering constraint
+  below.
+
+**Steps:**
+
+*Phase 0 — access, before any bytes move*
+- [ ] **Done in TODO-115**: create the mirror service account and run the
+      verification matrix. The mirror runs as that account — an institute
+      member that created nothing, so upstream's
+      `IsOwnerOrReadOnlyAsInstitute` makes it read-only by construction.
+      Do not start the pull until that matrix has actually been run.
+- [ ] Confirm the access token's lifetime and that `/api/token/refresh/`
+      works — a 26 GB pull will outlive one token, so the client needs
+      refresh built in from the start rather than bolted on after a
+      mid-pull 401.
+- [ ] Note the institute id; `GET /api/site/` returns `[]` without
+      `?institute=<id>`, which would otherwise look like an empty server.
+
+*Phase 1 — inventory, no downloads*
+- [ ] `GET /api/site/` and record every site id, not just 2/3/4.
+- [ ] For each site, pull the video list and the timeseries list and
+      write `data/liveorc-mirror/<site>/manifest.json`.
+- [ ] Summarise: video count, how many have a null `file`, total bytes
+      by asset type. **Reconcile against the runbook's 26 GB video /
+      1.3 GB keyframe / 9.5 MB thumb figures.** A large gap here is
+      information, not an error — it would mean the API does not see
+      everything on disk, which changes what the mirror is worth.
+
+*Phase 2 — the pull*
+- [ ] Write `liveorc_server/mirror/orc_mirror.py` and commit it. Follow
+      the repo conventions: `--check`/dry-run default, resumable,
+      rate-limited, `--site` scoping, structured log. Read-only by
+      construction — it issues **no** verb but `GET` and the one `POST`
+      to `/api/token/`.
+- [ ] Run it against the smallest site first, verify, then the rest.
+      Watch `df -h /` on the host throughout the first site.
+- [ ] Record per-file size and a checksum in the manifest as each file
+      lands.
+
+*Phase 3 — prove the copy is good*
+- [ ] Re-run in `--check` mode: every manifest entry present, sizes
+      match, nothing missing.
+- [ ] Spot-check playability — open several mirrored videos locally,
+      spread across the date range, including one from each site and one
+      from either end of the 2026-05-14 → 2026-07-29 accumulation window.
+- [ ] Confirm the timeseries JSON matches the analytics baseline in
+      `liveorc_server/reprocess/`'s `api_timeseries.csv` where they
+      overlap.
+- [ ] Write `data/liveorc-mirror/README.md` (untracked, alongside the
+      data) stating what the mirror contains, what it does **not**, and
+      the restore path.
+
+*Phase 4 — release the gate*
+- [ ] Update TODO-112's status to note the verified independent copy
+      exists, and proceed with Phase 1 there.
+
+**Ordering constraint — do not let this provision IPB.** TODO-104 records
+Dan's explicit position from the 2026-08-11 call: who gets LiveORC access,
+and when, is **PMI's decision**, and nothing is to be provisioned ahead of
+that approval. The mirror account created in Phase 0 is an *operational
+account of ours*, for pulling our own backup — it is not IPB access and
+does not touch that gate. Keep the two separate: this TODO builds and
+proves the access path, TODO-104 decides who else walks down it. The
+useful handoff to TODO-104 is the Phase 0 findings — the token flow, the
+DELETE answer, and what a non-admin account can actually reach.
+
+**Still to run this while Sukabumi is offline.** TODO-112 notes the media
+tree is static because uploads stopped 2026-08-14. That helps here too: a
+manifest captured against a static tree stays valid, so Phase 1's
+inventory can be trusted as a baseline through Phase 3. If the station
+comes back before this finishes, re-run Phase 1 and diff.
+
+---
+
 ### TODO-112: Move LiveORC media onto a dedicated EBS volume
 
 | Field | Value |
 |-------|-------|
-| **Status** | READY TO RUN — Phase 0 complete, gated on the snapshot |
+| **Status** | READY TO RUN — Phase 0 complete, gated on TODO-114 |
 | **Site** | LiveORC server (AWS) |
+
+**Gated on TODO-114 (2026-08-24).** The root-volume snapshot is complete
+and is still the backstop, but it is insurance that cannot be inspected or
+restored from selectively. TODO-114 pulls an independent, verifiable copy
+of the media over the REST API — read-only, no risk to the writable layer —
+and produces a manifest that Phase 5's `rsync --itemize-changes` can be
+checked against externally rather than only against the host itself. Run
+that first.
 
 **Unpaused 2026-08-17.** The 2026-08-11 demo it was waiting on has passed
 and Phase 0 is fully resolved, including the three files that were still
