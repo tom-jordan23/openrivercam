@@ -411,8 +411,31 @@ without writing, silently skipping real data.
 
 | Field | Value |
 |-------|-------|
-| **Status** | OPEN — foundation for TODO-114 and TODO-104's data-access strand |
+| **Status** | **MODEL PROVEN 2026-08-25** (14 PASS / 0 FAIL) — partner provisioning still gated |
 | **Site** | LiveORC server (AWS) |
+
+**Verified against production 2026-08-25** with `verify-api-access.sh` and the
+mirror account (`user_id 18`, institute **1**). Everything below that was read
+from upstream source has now been observed on the running server:
+
+- Reads resolve for an institute member; bare `GET /api/site/` really does
+  return `[]` with a valid token, and `?institute=1` is mandatory.
+- `PATCH` → **403**. `POST /api/video/` with an invalid payload → **400**,
+  so the permission layer passes the request to validation without creating
+  anything — the CREATE gap is confirmed by observation, not just by reading.
+- `/api/recipe/` and `/api/device/` return `[]` as predicted.
+- Access token lifetime is **360 minutes**; `/api/token/refresh/` works.
+- Sites **2, 3 and 4 all belong to institute 1**, so one membership covers
+  everything and the partner doc needs one id, not two.
+- `creator` is **user 1** at site 4 and **user 3** at site 2 — two accounts,
+  not one. Neither is the mirror account, which is what makes it read-only
+  *by construction* rather than by policy.
+
+**The DELETE probe is deliberately still unrun.** `PATCH` and `DELETE` share
+one branch of `has_object_permission`, so the observed 403 on an empty-body
+PATCH exercises the same predicate without being able to destroy a production
+video. Now that the mirror exists it is safe to run:
+`./verify-api-access.sh --institute 1 --site 4 --probe-delete --video-id <id>`.
 
 IPB needs programmatic access to the data, and we need an account to pull
 the backup mirror with (TODO-114). Both want the same thing: an account
@@ -578,7 +601,7 @@ Revisit if the partner list grows beyond IPB.
 
 | Field | Value |
 |-------|-------|
-| **Status** | OPEN — needs TODO-115's account; gates TODO-112 |
+| **Status** | **DONE 2026-08-25** — complete media copy verified locally; TODO-112 gate released |
 | **Sites** | LiveORC server (AWS) + workstation |
 
 The 26 GB of media exists in exactly one place — `liveorc_webapp`'s
@@ -588,6 +611,11 @@ EBS snapshot from 2026-08-10. That snapshot is a real safety net, but a
 launching an instance from the snapshot and digging through
 `overlay2/<hash>/diff` to find files Django named. It is insurance you
 cannot inspect, cannot test, and cannot restore from selectively.
+
+> **Superseded approach.** The REST pull described below was replaced on
+> 2026-08-25 after it took production down. Media is now exported host-side
+> with `mirror/export-media-to-s3.sh`. See "What actually happened" further
+> down before acting on anything in this section.
 
 This TODO builds the copy you *can* inspect: pull site data down over
 LiveORC's REST API to the workstation, where the files have names, the
@@ -601,13 +629,22 @@ flow, what a non-admin account can and cannot do — is work that has to
 happen regardless, and doing it first means the mirror *is* the test of
 the access path IPB will later use.
 
-**Why this is safe to run before TODO-112.** Every step is an
-authenticated HTTP GET against the running container. Reads do not
-recreate containers, do not invoke `docker compose`, and do not touch
-`liveorc.service` — the three things the runbook's warning block is
-about. This is the one substantial piece of TODO-112 preparation that
-carries no risk to the writable layer. See the hazard note on `/` below
-for the one thing that does need watching.
+**Why this is safe to run before TODO-112 — PARTLY WRONG, corrected
+2026-08-25.** The claim below was that every step is an authenticated HTTP
+GET, so it carries no risk to the writable layer. The *data* reasoning held:
+reads never recreated a container, never invoked `docker compose`, never
+touched `liveorc.service`, and nothing was lost. What it missed is that
+"read-only" says nothing about **availability**. Bulk-reading media through
+Django is expensive per byte, and running it against production took the host
+down for ~90 minutes (ISS-FIELD-004). Safe for the writable layer is not the
+same as safe for the service. Original reasoning follows:
+
+> Every step is an authenticated HTTP GET against the running container.
+> Reads do not recreate containers, do not invoke `docker compose`, and do
+> not touch `liveorc.service` — the three things the runbook's warning block
+> is about. This is the one substantial piece of TODO-112 preparation that
+> carries no risk to the writable layer. See the hazard note on `/` below
+> for the one thing that does need watching.
 
 **What the API exposes** — verified 2026-08-24 by unauthenticated probe
 against `https://openrivercam.endlessprojects.info`. Public HTTPS is up,
@@ -653,6 +690,62 @@ assumption that produced this incident. Keep a `df -h /` running in a
 second Session Manager pane for the first site, throttle the client, and
 stop if free space moves. The instance is a t3.large — sustained transfer
 will also draw down CPU credits, so pace it rather than saturating.
+
+#### What actually happened — read this before the design notes below
+
+The REST pull in this TODO **took production down** on 2026-08-25 after 773 of
+2630 files (see ISS-FIELD-004). It was replaced by a host-side export. The
+design notes that follow are kept for the reasoning, but several of their
+premises were wrong:
+
+| Assumed | Measured 2026-08-25 |
+|---|---|
+| ~1165 video records | **3176** across sites 2/3/4 — 2630 at site 4, 546 at site 2, 0 at site 3 |
+| media fetched from the serializer's `file` URL | those URLs **404 with and without a JWT** — media is in MinIO behind Django's storage API, never on the nginx filesystem |
+| all assets reachable over REST | **no `/keyframe/` action exists** — 1.4 GB of keyframes are unreachable by REST at any effort |
+| site 2 holds media | site 2 has **no video files at all** (`file` null for all 546); all 29 GB is site 4 |
+
+Bytes are served by the DRF actions `/playback/`, `/image/` and `/thumbnail/`.
+The dead `file` URLs remain useful as **identifiers**: their paths give the
+storage-relative layout the reprocessor needs on disk locally.
+
+**The route that worked** — `mirror/export-media-to-s3.sh` on the host streams
+`docker exec … tar -cf -` straight into `aws s3 cp -`, throttled, touching
+neither Django nor host disk; `mirror/fetch-media-from-s3.sh` then pulls from
+S3 with no load on LiveORC at all. 30 GB moved in 61 minutes.
+
+It is also **more complete than this TODO's original design could have been**:
+it captures the 1.4 GB of keyframes REST cannot serve, and 88 keyframe + 88
+thumbnail files that exist on disk with a null database field.
+
+#### Reconciliation — the question this TODO existed to answer
+
+`videos/` holds **4463** files against 2630 records. Fully explained: LiveORC
+stores velocimetry analysis images under `videos/` alongside the mp4s, and
+exactly **1833** records have a non-null `image`. 2630 + 1833 = 4463, and
+2630 × 9.2 MB + 1833 × 2.8 MB ≈ 29 GB against the measured 29 G.
+
+**So the API accounts for everything of substance on disk.** The only real gap
+is the 88 orphaned keyframe/thumbnail files noted above.
+
+**Local mirror, verified 2026-08-25** — `data/liveorc-mirror/4/media`:
+
+| Directory | Files | Size |
+|---|---|---|
+| `videos` | 4463 (2630 mp4 + 1833 jpg) | 29 G |
+| `keyframe` | 2630 | 1.4 G |
+| `thumb` | 2630 | 11 M |
+
+Every file was checked against a host-generated list by name **and size** —
+the check that catches a truncated tar, which a matching sha256 cannot, since
+a short stream produces a valid tar whose checksum agrees at both ends. A
+sample was then re-checksummed against the API-pulled hashes from the partial
+REST pull: two independent transports agreeing on the same bytes.
+
+**Still outstanding:** a fresh DB dump. `backup_liveorc_db.sh` has not been run
+since the S3 copies of 2026-06-26/29, and without it these videos cannot be
+reprocessed — `build_staging_local.sh` needs the Fit 6 `VideoConfig`,
+camera_config and both cross-sections including `cross_section_wl`.
 
 **Design notes:**
 
@@ -758,16 +851,43 @@ comes back before this finishes, re-run Phase 1 and diff.
 
 | Field | Value |
 |-------|-------|
-| **Status** | READY TO RUN — Phase 0 complete, gated on TODO-114 |
+| **Status** | READY TO RUN — gate released 2026-08-25, but **re-scope first** (see below) |
 | **Site** | LiveORC server (AWS) |
 
-**Gated on TODO-114 (2026-08-24).** The root-volume snapshot is complete
-and is still the backstop, but it is insurance that cannot be inspected or
-restored from selectively. TODO-114 pulls an independent, verifiable copy
-of the media over the REST API — read-only, no risk to the writable layer —
-and produces a manifest that Phase 5's `rsync --itemize-changes` can be
-checked against externally rather than only against the host itself. Run
-that first.
+**Gate released (2026-08-25).** TODO-114 delivered a complete, independently
+verified copy of all 30 GB of media to `data/liveorc-mirror/`, checked file by
+file against a host-generated list. Phase 5's `rsync --itemize-changes` now has
+something external to be checked against.
+
+**Two premises of this TODO are no longer true. Re-read before running.**
+
+**1. The media tree is NOT static.** This TODO says uploads stopped 2026-08-14
+and sequences itself *before* the station fix on that basis — "with no uploads
+arriving, `rsync --itemize-changes` in Phase 5 means exactly what it says."
+Sukabumi came back on **2026-08-20**: 1 file that day, then 45, 43, 9 and 6,
+newest `created_at` **2026-08-24T21:32Z**, 104 new mp4s after the stated
+cutoff. Normal cadence is 45–48/day, so 08-23 and 08-24 were degraded and it
+has been quiet since — but the race this TODO was sequenced to avoid is open
+again. Re-run the TODO-114 inventory and diff immediately before any Phase 5
+rsync; do not trust a manifest across a gap of days.
+
+**2. `/mnt/s3-storage` may be the real problem.** The EC2 console log from the
+2026-08-10 boot shows a systemd mount unit `mnt-s3\x2dstorage.mount` ("S3
+Storage Mount for LiveORC") **failing**, and `liveorc.service` ("LiveORC Server
+with S3 Storage") dependency-failing behind it. As of 2026-08-25 that mount is
+`inactive (dead)` and `disabled`, pointing at bucket `openrivercam-video` —
+the same bucket the media export now writes to.
+
+That reframes this whole TODO. Media is *supposed* to live on an S3-backed
+mount; it is in the container writable layer because that mount failed and
+LiveORC was evidently started by hand without it. **The writable layer is a
+symptom, not the design.** Repairing `/mnt/s3-storage` may be a shorter and
+more durable fix than migrating to a dedicated EBS volume. Establish which
+before committing to the runbook below.
+
+One useful side effect of the broken mount: `liveorc.service` cannot start
+while its dependency fails, so it acts as an interlock against an accidental
+container recreate. That protection disappears the moment the mount is fixed.
 
 **Unpaused 2026-08-17.** The 2026-08-11 demo it was waiting on has passed
 and Phase 0 is fully resolved, including the three files that were still
@@ -908,3 +1028,4 @@ is preserved in git history. Run
 `git log --follow -p spring_2026_ID/TODO.md` to read it. Anything from
 that list that's still open post-trip is mentioned by reference under
 TODO-107 above.
+

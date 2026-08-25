@@ -429,3 +429,60 @@ unexplained behavior (boot issues, power anomalies), inspect TP11 area for
 a solder bridge as part of troubleshooting.
 
 ---
+
+### ISS-FIELD-004: Mirroring media through the REST API took the LiveORC host down
+
+| Field | Value |
+|-------|-------|
+| **Date opened** | 2026-08-25 |
+| **Site** | LiveORC server (AWS) |
+| **Risk** | Production availability, data access |
+| **Impact** | High — full outage, ~90 min |
+| **Status** | RESOLVED (approach replaced) |
+
+**Problem:**
+TODO-114's mirror design pulled each video through the REST API
+(`/api/site/4/video/{id}/playback/`). Run against production it managed
+773 of 2630 files (7.0 GB) before the host stopped serving: HTTPS refused
+connections, the SSM agent went offline, and the EC2 *instance*
+reachability check went red while the *system* check stayed green — the
+guest was wedged, the hypervisor was fine.
+
+CloudWatch showed CPU credit **usage** climbing from ~0.9 to a pinned 7.05
+per 5 min beginning at 14:05 UTC, which is the minute the first pull
+started. A t3.large earns 36 credits/hour and this was consuming ~85.
+
+**What it was not:**
+Not disk. `df -h /` after recovery read 66% with 27 GB free, and TODO-114
+had already documented `/` at 62%. The `No space left on device` messages
+in the EC2 console log were from the **2026-08-10** boot — the console log
+had not refreshed because the host had not rebooted since. That stale
+evidence drove an incorrect diagnosis for some time; check the timestamps
+on console output before trusting it.
+
+**Resolution:**
+A console reboot recovered the host in ~4 minutes. Nothing was lost — the
+Let's Encrypt cert in `liveorc_webapp`'s writable layer survived unchanged
+(expiry still 2026-11-08), which confirms the containers were *restarted*,
+not recreated. `liveorc.service` is confirmed `disabled`, and it depends on
+the failed `/mnt/s3-storage` mount, so it cannot start on its own.
+
+The pull approach was abandoned rather than tuned. Media is now exported
+host-side with `mirror/export-media-to-s3.sh`: `docker exec … tar -cf -`
+streams straight into `aws s3 cp -`, throttled to 8 MB/s, touching neither
+Django nor the host disk. The workstation then pulls from S3, putting zero
+load on LiveORC. The full 30 GB moved in 61 minutes at a steady 8 MB/s
+with no impact on the running service.
+
+**Lessons:**
+- Serving media through Django is expensive per byte in a way that copying
+  the same files is not. The cost is the app server, not the bytes.
+- `--delay` between requests paced politeness, not resource consumption.
+  The throttle that worked was a bandwidth cap on the transfer itself.
+- An hour-long job must not be tied to a Session Manager session. The
+  first export died at 32% when the browser terminal timed out, killing
+  `aws s3 cp` and orphaning a multipart upload. `systemd-run --unit=…`
+  survives the disconnect; `journalctl -u <unit>` needs `sudo`.
+- S3 multipart part timestamps are a good external progress signal for a
+  job whose logs are silent: if the newest part stops advancing, the
+  producer has died.

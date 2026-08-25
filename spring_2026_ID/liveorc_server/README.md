@@ -347,6 +347,134 @@ sudo docker logs -f orc-sheets-export
 The first run backfills all history (~130k rows as of August 2026) in batches
 of 2000, taking a few minutes. Steady state is ~60 rows/hour.
 
+## API access
+
+Established and verified 2026-08-25 (TODO-115). Base URL
+`https://openrivercam.endlessprojects.info`, LiveORC **v0.3.0**.
+
+### How permissions actually work
+
+`api/permissions.py` defines one class, applied to every viewset in
+`api/views/base.py`:
+
+```python
+permission_classes = [IsOwnerOrReadOnlyAsInstitute, IsAuthenticated]
+```
+
+- **Safe methods** (`GET`/`HEAD`/`OPTIONS`) — allowed if the user is an
+  institute member of the object's institute, **or** is its creator.
+- **Everything else** (`PATCH`, `DELETE`) — allowed **only** if
+  `obj.creator == request.user`.
+
+So an account that is an institute **Member** but created nothing gets read on
+the whole institute's data and 403 on every write. That is the read-only model,
+enforced upstream, needing no change to LiveORC.
+
+`BaseModelViewSet.list()` adds a second gate: nested `site_pk` routes return
+**403** to non-members, so non-membership is a wall rather than an empty list.
+
+**The gap: CREATE is not covered.** DRF calls `has_object_permission` only from
+`get_object()`, i.e. on detail routes. The class defines no `has_permission`, so
+`POST` to a *collection* is gated by `IsAuthenticated` alone. Any authenticated
+account can create — including `POST /api/video/`, which writes a file and can
+enqueue a celery task. Existing data is safe (no modify, no delete), but the
+exposure is additive.
+
+### Two traps
+
+- **The `viewers` group does nothing.** `manage.py creategroups` builds groups
+  carrying Django *model* permissions. These viewsets use
+  `IsOwnerOrReadOnlyAsInstitute`, **not** `DjangoModelPermissions`, so group
+  membership has zero effect on the REST API. It affects `/admin/` only.
+- **Never hand over a station credential.** The `creator` of existing videos is
+  whichever account ORC-OS authenticated as — user **1** at site 4, user **3**
+  at site 2. Those accounts *can* delete those records. Partners get fresh
+  users, always.
+
+### Verification matrix — measured, not assumed
+
+Run against the mirror account (`user_id 18`, institute 1), 14 PASS / 0 FAIL:
+
+| Request | Expected | Actual |
+|---|---|---|
+| `POST /api/token/` | 200 + access/refresh | 200 |
+| `GET /api/site/` (no `?institute`) | `[]` | `[]` |
+| `GET /api/site/?institute=1` | the sites | 2, 3, 4 |
+| `GET /api/site/4/video/` | 200 | 200 |
+| `GET /api/site/4/video/{id}/` | 200 | 200 |
+| `GET .../video/{id}/playback/` | 200 | 200 |
+| `GET .../video/{id}/thumbnail/` | 200 | 200 |
+| `GET /api/site/4/timeseries/` | 200 | 200 |
+| `GET /api/site/4/cameraconfig/` | 200 | 200 |
+| `GET /api/site/4/videoconfig/` | 200 | 200 |
+| `GET /api/site/4/crosssection/` | 200 | 200 |
+| `GET /api/recipe/` | `[]` | `[]` |
+| `PATCH .../video/{id}/` (empty body) | **403** | **403** |
+| `POST /api/video/` (invalid payload) | **400** | **400** |
+
+That 400 is the important one: the permission layer let the request through to
+validation without creating anything, confirming the CREATE gap by observation.
+
+`DELETE` is **not** in the run above, deliberately — see `verify-api-access.sh`.
+
+Re-run it any time, and against every new partner account before announcing
+access:
+
+```bash
+export LIVEORC_EMAIL='...'
+read -rs LIVEORC_PASSWORD && export LIVEORC_PASSWORD
+./verify-api-access.sh --institute 1 --site 4
+```
+
+### Onboarding gotchas for a partner doc
+
+- `GET /api/site/` returns **`[]`** for a non-superuser without
+  `?institute=<id>`. A partner's first call looks like an empty server. Give
+  them the institute id (**1**) up front.
+- `/api/recipe/` and `/api/device/` return empty for any non-superuser — both
+  `get_queryset()` methods fall through to `queryset.none()`. Recipe and device
+  metadata are simply unavailable over REST. Camera configs and video configs
+  *are* reachable per-site and carry the calibration that matters.
+- Auth is JWT: `POST /api/token/` with **email** + password (not username).
+  Access tokens last **360 minutes**; `/api/token/refresh/` renews.
+- `/api/schema/` serves the full OpenAPI spec unauthenticated, so a partner can
+  explore before they have credentials.
+
+### Where media actually lives
+
+**Not at the URLs the serializer returns.** The `file`, `keyframe`, `image` and
+`thumbnail` fields carry URLs under `/media/` that return **404 with and without
+a JWT** — media is in MinIO behind Django's storage API and was never on the
+nginx filesystem. Those URLs are still useful as *identifiers*: their paths give
+the storage-relative layout.
+
+Bytes come from the DRF actions on the video detail route:
+
+| Asset | Route | Verified |
+|---|---|---|
+| video | `/api/site/{s}/video/{id}/playback/` | `video/mp4` |
+| analysis image | `/api/site/{s}/video/{id}/image/` | `image/jpeg` |
+| thumbnail | `/api/site/{s}/video/{id}/thumbnail/` | `image/jpeg` |
+| keyframe | **no route exists** | unreachable over REST |
+
+All three support `HEAD` and return a correct `Content-Length`.
+
+> **Do not bulk-pull media through these routes.** Doing so took the host down
+> on 2026-08-25 after 773 files — see ISS-FIELD-004. Use `mirror/` instead:
+> `export-media-to-s3.sh` on the host, `fetch-media-from-s3.sh` locally.
+
+### Tooling in `mirror/`
+
+| Script | Runs on | Purpose |
+|---|---|---|
+| `orc_inventory.py` | workstation | record inventory + per-site manifests, no downloads |
+| `probe_media_access.py` | workstation | which routes actually serve bytes |
+| `orc_mirror.py` | workstation | per-file REST pull — **superseded**, see the warning above |
+| `export-media-to-s3.sh` | **host** | stream the media tree to S3, throttled |
+| `fetch-media-from-s3.sh` | workstation | download, verify, extract |
+
+---
+
 ## Day-2 operations
 
 ### Adding a new station
