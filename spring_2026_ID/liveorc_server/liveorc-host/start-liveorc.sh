@@ -52,11 +52,22 @@ for f in /liveorc/nginx/nginx-ssl.conf.template /liveorc/nginx/nginx-ssl.conf; d
     docker exec liveorc_webapp sed -i "$NGINX_FIX" "$f" 2>/dev/null
 done
 
-# Start nginx if the entrypoint's attempt died on the unpatched config.
-if ! docker exec liveorc_webapp pgrep -x nginx >/dev/null 2>&1; then
-    echo "nginx not running after start; starting it against the patched config"
-    docker exec -d liveorc_webapp nginx -c /liveorc/nginx/nginx-ssl.conf
+# Give the entrypoint time to launch nginx itself before concluding it failed.
+# Migrations, certbot and config generation take 10-20s, so checking straight
+# after container start races the entrypoint: we would start a second nginx
+# while its own launch was still pending, leaving two masters contending for
+# port 8000. Wait up to 90s for nginx to appear on its own.
+for _ in $(seq 1 45); do
+    docker exec liveorc_webapp pgrep -x nginx >/dev/null 2>&1 && break
     sleep 2
+done
+
+# Only if it genuinely never came up — the recreate case, where the template
+# was fresh from the image and the entrypoint's nginx died on `ssl on;`.
+if ! docker exec liveorc_webapp pgrep -x nginx >/dev/null 2>&1; then
+    echo "nginx did not start; starting it against the patched config"
+    docker exec -d liveorc_webapp nginx -c /liveorc/nginx/nginx-ssl.conf
+    sleep 3
 fi
 
 if ! docker exec liveorc_webapp pgrep -x nginx >/dev/null 2>&1; then
