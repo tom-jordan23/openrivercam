@@ -733,6 +733,69 @@ exactly this hunting. Both thresholds need reading off the device.
 currently unfalsifiable. The Witty Pi reports Vin/Vout/current over the same
 I2C link `orc-sensors` already uses.
 
+**Would more battery fix it? The energy budget says no.**
+
+Measured overnight draw, 18:00-06:00 WIB, using the BOM power budget normalised
+to the 30-minute cycle the station actually runs (48 wakes/day, not the 96 the
+budget was written for):
+
+| Night | Boots | Draw | Share of 600 Wh nominal |
+|---|---|---|---|
+| healthy, 07-19/20 | 24 | 37.3 Wh | 6.2% |
+| healthy, 08-13/14 | 24 | 37.3 Wh | 6.2% |
+| **failed 08-27 04:30** | **24** | **37.3 Wh** | **6.2%** |
+| last night, with hunting, survived | 27 | 40.1 Wh | 6.7% |
+
+**The night it died drew exactly what the nights it survived drew.** Same boot
+count, same load, and no overnight hunting on that particular night - the
+08-25/26 burst was the night before. Load is not the variable.
+
+The absolute number is the argument. A 12 V 50 Ah battery is 600 Wh nominal,
+300 Wh at a conservative 50% depth of discharge. The station asks it for **37 Wh
+across twelve hours** and it cannot deliver. Design autonomy with no sun at all
+is **4.0 days**; observed autonomy is about **ten hours**. That is not a 20-30%
+sizing shortfall a second battery would cover - it is roughly **16x**, and
+sizing out of it would mean going from 50 Ah to 800 Ah.
+
+So the battery is not too small. One of these is true instead:
+
+1. **It has lost most of its usable capacity.** The BOM records it as "existing
+   200W panel / 50Ah battery - reused from failed unit": inherited hardware, out
+   of a station that had already failed, with neither age nor chemistry written
+   down anywhere in this repo. Four months of repeated deep discharge since May
+   would finish off a lead-acid that started marginal.
+2. **The low-voltage cutoff is set too high**, so the Witty Pi cuts while most
+   of the charge is still in the battery. Costs nothing to fix, and nothing we
+   have rules it out - the value has never been read.
+3. **There is an unbudgeted parasitic load.** To actually consume 300 Wh
+   overnight the always-on draw would have to be ~25 W against a designed 1.2 W.
+   BOM Section 4 already flags that the DDR-60G converters are permanently
+   powered from TB1 with no enable pin, and TODO-107 still has "verify DDR-60G
+   quiescent draw against the 0.5 W estimate" open.
+
+All three say **do not buy a second battery yet.** Two are fixed by *replacing*
+the battery rather than adding to it - and paralleling a new battery with a
+degraded one is actively harmful: the weak one becomes a load on the good one
+and both end up chronically undercharged.
+
+**What settles it: one night of Vin.** The three separate cleanly in a single
+overnight voltage trace, with no site visit:
+
+| Observation | Conclusion |
+|---|---|
+| Terminal voltage barely moves (~12.7 -> ~12.5 V) yet the station cut out | cutoff set too high - free fix |
+| Voltage collapses below 11.5 V within 2-3 hours of sunset | battery is dead - replace it |
+| Voltage falls fast *and* falls while the Pi is asleep | parasitic load - find it before buying anything |
+
+That trace needs Witty Pi Vin logged through `orc-sensors`, which needs one good
+SSH window. It is the cheapest decisive measurement available and it gates the
+hardware spend.
+
+**What would justify adding capacity:** a Vin trace showing the battery holds
+voltage well and simply runs out across consecutive sunless days. That is a
+wet-season failure mode, and we have not seen it - the August failures followed
+a week of zero rain and high insolation.
+
 **Next steps:**
 - Collect the `wp5` power-on-reason log and both voltage thresholds the moment
   the station is reachable — before any other change.
