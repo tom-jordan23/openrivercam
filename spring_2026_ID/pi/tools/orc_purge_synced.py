@@ -144,6 +144,42 @@ def main():
     print(f"free now                 : {free_before/2**30:.2f} GiB")
     print(f"free after (projected)   : {(free_before+total)/2**30:.2f} GiB")
 
+    # Print samples even when nothing exists. "0 present" has two very different
+    # explanations — the purge already took them, or this script is resolving
+    # paths wrongly — and without the raw column value you cannot tell which.
+    if not existing and synced:
+        print("\nNOTHING PRESENT. Raw `file` values for the first 3 SYNCED rows,")
+        print("to distinguish 'already purged' from 'bad path mapping':")
+        con2 = sqlite3.connect(f"file:{DB}?mode=ro", uri=True)
+        c2 = con2.cursor()
+        c2.execute("SELECT id, file, sync_status FROM video "
+                   "WHERE sync_status='SYNCED' ORDER BY timestamp LIMIT 3")
+        for vid, f, sync in c2.fetchall():
+            d = resolve(f)
+            print(f"  id={vid} file={f!r}")
+            print(f"    -> resolved {d}  exists={d.exists() if d else None}")
+        c2.execute("SELECT id, file FROM video WHERE sync_status!='SYNCED' "
+                   "ORDER BY timestamp DESC LIMIT 3")
+        print("  and for 3 NON-synced rows (these should exist):")
+        for vid, f in c2.fetchall():
+            d = resolve(f)
+            print(f"  id={vid} file={f!r}")
+            print(f"    -> resolved {d}  exists={d.exists() if d else None}")
+        con2.close()
+        # A capped sample of the real tree. maxdepth 2 here is thousands of
+        # lines and every one of them would be a notification.
+        print("\n  actual tree (first 2 date dirs, 3 entries each):")
+        try:
+            dates = sorted(d for d in UPLOADS.iterdir() if d.is_dir())
+            print(f"    {len(dates)} date dirs, {dates[0].name} .. {dates[-1].name}")
+            for dd in dates[:2]:
+                kids = sorted(dd.iterdir())[:3]
+                print(f"    {dd}/  ({len(list(dd.iterdir()))} entries)")
+                for k in kids:
+                    print(f"      {k.name}/" if k.is_dir() else f"      {k.name}")
+        except (OSError, IndexError) as e:
+            print(f"    listing failed: {e}")
+
     if existing:
         print("\noldest 3:")
         for vid, ts, d, sz in existing[:3]:
