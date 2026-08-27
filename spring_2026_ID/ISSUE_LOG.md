@@ -949,7 +949,37 @@ battery capacity would have treated the symptom furthest from the cause.
   recovered at all.
 - Why `/home/pi/code/git` is 3.9 GB on a station.
 
-**Next steps — none taken yet, by decision**
+**ACTION TAKEN 2026-08-27 — pre-July video purged, 8.81 GiB reclaimed.**
+
+`pi/tools/orc_purge_synced.py --before-date 20260701 --apply` removed 19 date
+directories (20260515, then 20260607–20260624), 0 failures. **Free space
+5.00 -> 13.83 GiB**, well clear of the 5.0 GB threshold, so the continuous
+purge should now stop. Sukabumi is a pilot and the video was not feeding
+anything, so this was a space decision rather than a data one.
+
+The synced-only pass found **nothing** to delete — every SYNCED video had
+already been removed by ORC-OS's own purge, which means what it had started
+eating was un-synced material, the only copy. That also corrects an earlier
+claim in this entry: the purge is not sync-blind, it takes the safe material
+first and had simply run out of it.
+
+Two incidental confirmations from the deletion list. There was still a small
+20260515 directory (10 MB), so "May is gone" was not quite right. And the June
+run stops at the 24th with nothing from the 25th to the 30th — exactly the
+06-25 -> 07-02 outage in ISS-FIELD-008, corroborating that outage from an
+independent direction.
+
+**This is now a live test of the causal chain.** If the chain in this entry is
+right, the extended wakes should stop: with space available, pyorc should
+finish, the ORC-OS task should complete, `shutdown_after_task` should fire, and
+the Pi should shut down at ~2 minutes instead of running to the Witty Pi's
+25-minute backstop. Check with
+`liveorc_server/station-health/station_gaps.py` — the "long wakes" section
+should fall to zero, and the overnight battery drain with it. If long wakes
+continue with 13.8 GiB free, the disk was not the cause and this entry is
+wrong.
+
+**Next steps**
 
 Ordered for a pilot whose job is to prove the technology, not to preserve the
 video:
