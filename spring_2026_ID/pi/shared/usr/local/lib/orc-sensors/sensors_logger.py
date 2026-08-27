@@ -11,6 +11,8 @@ Each sensor gets its own CSV with its own columns and schedule.
 """
 
 import os
+import re
+import subprocess
 import sys
 import time
 import glob as globmod
@@ -256,10 +258,104 @@ def read_ds18b20(conf):
 
 
 # Registry of sensor drivers
+# ─── Witty Pi 5 power rails ─────────────────────────────────────────
+#
+# Label patterns are deliberately loose. The exact wp5 status wording has not
+# been confirmed on the device yet, so match on the concept and take the first
+# number that follows.
+_WP5_PATTERNS = {
+    "vin_v":  re.compile(r"(?:vin|input\s+voltage)\D{0,14}?([0-9]+\.?[0-9]*)", re.I),
+    "vout_v": re.compile(r"(?:vout|output\s+voltage)\D{0,14}?([0-9]+\.?[0-9]*)", re.I),
+    "iout_a": re.compile(r"(?:iout|output\s+current)\D{0,14}?([0-9]+\.?[0-9]*)", re.I),
+}
+
+
+def _wp5_sample(timeout_s):
+    """One wp5 status read. Returns (values_dict, raw_output)."""
+    proc = subprocess.run(
+        ["wp5"], input="q\n", capture_output=True, text=True, timeout=timeout_s
+    )
+    raw = (proc.stdout or "") + (proc.stderr or "")
+    vals = {}
+    for key, pat in _WP5_PATTERNS.items():
+        m = pat.search(raw)
+        if m:
+            try:
+                vals[key] = float(m.group(1))
+            except ValueError:
+                pass
+    return vals, raw
+
+
+def read_wittypi(conf):
+    """Read Witty Pi 5 input/output rails via the wp5 CLI. Returns dict.
+
+    WHY THIS EXISTS
+        ISS-FIELD-008. Sukabumi browns out overnight and nothing in the upload
+        says anything about power, so "the battery is the problem" has been
+        unfalsifiable for four months. The competing explanations — a worn pack,
+        a BMS tripping early on cell imbalance, a cutoff misconfigured for
+        LiFePO4, or an unbudgeted parasitic load — are separated by the shape of
+        the overnight Vin curve and by how far Vin sags when the camera and PoE
+        injector switch on.
+
+    HOW IT READS
+        Through the `wp5` menu, quitting immediately: the status header prints
+        the rails before any option is selected. That is the only wp5 read path
+        this repo has evidence is safe. Do NOT select numbered options from
+        here — option 1 writes the RTC (deploy.sh uses it that way), and the
+        threshold screens are setters where a stray value can disable the
+        low-voltage cutoff and over-discharge a LiFePO4 pack.
+
+    SAMPLING
+        A few samples a second apart, reported as mean/min/max. The Pi is awake
+        only ~2 minutes per cycle and the camera load lands partway through, so
+        a spread within one invocation is the cheapest way to catch sag. Vin
+        while the Pi sleeps is unobservable by definition — the Pi is off — so
+        the overnight curve is built from the waking samples either side of it.
+    """
+    samples = int(conf.get("SAMPLES", "3"))
+    gap_s = float(conf.get("SAMPLE_GAP_SEC", "1.0"))
+    timeout_s = float(conf.get("READ_TIMEOUT_SEC", "8"))
+
+    vins, lasts, raw_last = [], {}, ""
+    for i in range(max(1, samples)):
+        if i:
+            time.sleep(gap_s)
+        try:
+            vals, raw_last = _wp5_sample(timeout_s)
+        except Exception as e:
+            err(f"wittypi: wp5 read failed: {e}")
+            continue
+        if "vin_v" in vals:
+            vins.append(vals["vin_v"])
+        lasts.update(vals)
+
+    if not vins:
+        # Deliberately raise rather than write an empty row: main() catches this
+        # per-sensor so the others still log, and the raw text is what we need
+        # to fix the pattern. A blank row would look like a reading of zero.
+        raise ValueError(
+            "no Vin parsed from wp5 output; raw was: "
+            + " ".join(raw_last.split())[:300]
+        )
+
+    out = {
+        "vin_v": round(sum(vins) / len(vins), 3),
+        "vin_min_v": round(min(vins), 3),
+        "vin_max_v": round(max(vins), 3),
+    }
+    for k in ("vout_v", "iout_a"):
+        if k in lasts:
+            out[k] = round(lasts[k], 3)
+    return out
+
+
 DRIVERS = {
     "sht40": read_sht40,
     "rg15": read_rg15,
     "ds18b20": read_ds18b20,
+    "wittypi": read_wittypi,
 }
 
 
