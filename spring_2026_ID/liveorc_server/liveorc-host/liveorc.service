@@ -19,7 +19,13 @@ WorkingDirectory=/opt/LiveORC
 Environment=HOME=/home/ubuntu
 Environment=USER=ubuntu
 Environment=AWS_DEFAULT_REGION=us-east-1
-ExecStartPre=/usr/local/bin/verify-media-mount.sh
+# The '+' prefix runs this one command as root, ignoring User=ubuntu below.
+# Without it the write test fails: /var/lib/liveorc-media is root:root, and
+# ubuntu never writes media — the webapp does, from inside the container, as
+# uid 0. Testing as root also tests the right thing (is the filesystem mounted
+# read-write) rather than an irrelevant one (can ubuntu write here).
+# The old verify-s3mount.sh passed only because s3fs used allow_other.
+ExecStartPre=+/usr/local/bin/verify-media-mount.sh
 ExecStart=/opt/LiveORC/start-liveorc.sh
 ExecStop=/opt/LiveORC/liveorc.sh stop
 Restart=on-failure
