@@ -868,9 +868,20 @@ a week of zero rain and high insolation.
 |-------|-------|
 | **Date opened** | 2026-08-27 |
 | **Site** | Sukabumi |
-| **Risk** | Ongoing data loss — the purge runs every 5 minutes and deletes oldest-first |
-| **Impact** | **High** — and it is very likely the root cause behind ISS-FIELD-008 / TODO-116 |
+| **Risk** | Station is unreliable and self-limiting; sync fails on half of all captures |
+| **Impact** | **High** — very likely the root cause behind ISS-FIELD-008 / TODO-116 |
 | **Status** | OPEN — no remediation attempted, deliberately |
+
+> **The lost video itself does not matter.** Sukabumi is a pilot station being
+> used to test the technology; it is not contributing data to anything yet
+> (Tom, 2026-08-27). So none of this is a data-rescue exercise, old video can be
+> deleted freely to reclaim space, and there is no reason to attempt a bulk
+> upload of the backlog.
+>
+> What matters is the opposite reading: **a 51% sync failure rate is a finding
+> about the system**, and finding it is exactly what a pilot is for. It would be
+> disqualifying in a deployment that anyone relied on. Treat the numbers below
+> as a verdict on the design, not as an inventory of losses.
 
 **Measured on the station 2026-08-27, over three wake windows.**
 
@@ -940,13 +951,23 @@ battery capacity would have treated the symptom furthest from the cause.
 
 **Next steps — none taken yet, by decision**
 
-- [ ] Establish why sync fails. This gates everything else; space is the
-      symptom, the sync failure is the fault.
-- [ ] Determine how much of the 2744 is still on disk and therefore recoverable.
-- [ ] Only then decide on space. Roughly 5.5 GB is recoverable without touching
-      a single video (`.ORC-OS/tmp` 1.2 GB, `/home/pi/code/git` 3.9 GB and
-      re-clonable, pip cache 398 MB), which would lift free space clear of the
-      threshold and stop the purge.
+Ordered for a pilot whose job is to prove the technology, not to preserve the
+video:
+
+- [ ] **Free space, generously.** Old video can simply be deleted — there is
+      nothing to rescue. Getting well clear of the 5 GB threshold stops the
+      continuous purge, and should by itself end the processing errors, the
+      extended wakes and the overnight battery flattening. This is the cheapest
+      thing that tests the whole causal chain: if the station starts shutting
+      down at ~2 minutes again, the chain is confirmed.
+- [ ] **Then establish why sync fails.** Half of all captures never shipped.
+      Harmless here, disqualifying in a real deployment, and it is the single
+      most valuable thing this pilot has surfaced. `pi/tools/README.md` records
+      a near-identical shape for the *sensor* uploader in July — fired before
+      the LTE modem registered, all-or-nothing watermark that never advanced.
+      Check whether video sync has the same race and no retry.
+- [ ] **Size the disk properly.** 58 GB with ~12 GB/month of video is a few
+      months of runway at best, whatever else is fixed.
 - [ ] Alarm this. Three disks have now filled unnoticed in this project — the
       LiveORC root (ISS-FIELD-007), the media volume (TODO-112), and now the
       station. None were alarmed. The station has no monitoring at all.
