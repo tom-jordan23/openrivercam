@@ -851,7 +851,7 @@ comes back before this finishes, re-run Phase 1 and diff.
 
 | Field | Value |
 |-------|-------|
-| **Status** | READY TO RUN — gate released 2026-08-25, but **re-scope first** (see below) |
+| **Status** | **DONE 2026-08-27** — media on the EBS volume, `/` 51 G → 21 G |
 | **Site** | LiveORC server (AWS) |
 
 **Gate released (2026-08-25).** TODO-114 delivered a complete, independently
@@ -999,7 +999,7 @@ guarded the mount, so the one condition that mattered went unchecked.
       `start-liveorc.sh`, which is a local wrapper: a pre-flight grep that
       refuses to start if the bind was reverted, and a post-start
       `docker inspect` that verifies the mount table rather than the config.
-- [ ] Phase 6: repoint **both halves of the path** — `start-liveorc.sh`'s
+- [x] Phase 6 (2026-08-27): repointed **both halves of the path** — `start-liveorc.sh`'s
       `--storage-dir` (the source, and the real control point since it
       overrides `.env`) **and** the compose bind's destination
       (`/liveorc/data/media` → `/liveorc/media`). Changing only the first
@@ -1007,23 +1007,36 @@ guarded the mount, so the one condition that mattered went unchecked.
       layer exactly as now. Then fix all five s3fs couplings in
       `liveorc.service`, retire the vestigial s3fs mount unit, and
       re-enable the service.
-- [ ] Confirm the result in the **running container**, not the config:
+- [x] Confirmed in the **running container**, not the config:
       `docker inspect liveorc_webapp --format '{{range .Mounts}}…'` must
       show `/var/lib/liveorc-media -> /liveorc/media`.
-- [ ] Phase 7: recreate with **`systemctl start liveorc.service`**, never a
+- [x] Phase 7 (2026-08-27): recreated with **`systemctl start liveorc.service`**, never a
       bare `docker compose up -d` — that bypasses `start-liveorc.sh`, so no
       `--storage-dir` is passed and neither guard runs, and
       `LORC_STORAGE_DIR` silently falls back to `.env`'s `lorc_media` named
       volume. Confirm the writable layer drops to MB and `/` falls to
       ~20 G; open an existing video and upload a new one.
-- [ ] Phase 9: `systemctl enable liveorc.service` — disabled since
+- [ ] Phase 9: `systemctl enable liveorc.service` — pending — disabled since
       2026-08-10 so a reboot could not destroy the media. Safe once media
       is on the volume, and leaving it disabled means LiveORC silently does
       not come back after a reboot.
-- [ ] Add a disk-space alarm on `/` — its absence is why this ran
-      undetected for ten weeks.
-- [ ] Correct the false media-backup claim in
-      `liveorc_server/reprocess/REPROCESS_RUNBOOK.md`.
+- [x] Disk-space check on `/` and the media volume (2026-08-27) — 15-min
+      systemd timer, warn 75% / critical 85%, publishes `ORC/Disk/UsedPercent`.
+      **Still needs an SNS notification on the CloudWatch alarm** — journal
+      output is not an alarm.
+- [x] Corrected the false media-backup claim in
+      `liveorc_server/reprocess/REPROCESS_RUNBOOK.md` (2026-08-27).
+
+**Two things this exposed, both logged as issues:**
+
+- **ISS-FIELD-005** — LiveORC 0.3.0's nginx template uses `ssl on;`, removed in
+  nginx 1.25.1, while its own image ships 1.26.3. A hand-patched config had been
+  living in the writable layer since May with no copy anywhere. The recreate
+  deleted it and took the site down. Same failure class as the media itself.
+  Repaired durably in `start-liveorc.sh`.
+- **ISS-FIELD-006** — `LORC_DEFAULT_NODES=0`, so no worker exists and **no video
+  has been processed since the August outage**, while sensor data kept flowing
+  to Grafana and the Sheet. Emergency triage that was never reverted.
 
 ---
 

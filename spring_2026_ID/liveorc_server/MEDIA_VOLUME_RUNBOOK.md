@@ -641,6 +641,47 @@ systemctl is-enabled liveorc.service      # enabled
 and leaving it disabled would mean LiveORC silently fails to return after a
 reboot.
 
+#### Result — Phases 6-9 run 2026-08-27
+
+Phase 6 installed three files we own (`start-liveorc.sh`, `verify-media-mount.sh`,
+`liveorc.service`) from version control at `liveorc-host/`, plus the one upstream
+edit — `docker-compose.yml` line 8, `/liveorc/data/media` -> `/liveorc/media`,
+with `.orig` kept. s3 references in the unit went 5 -> 0.
+
+Phase 7 succeeded on the second attempt. **Both failures were guards working.**
+
+**Failure 1 — the mount guard.** `ExecStartPre` inherits `User=ubuntu`, but the
+volume is `root:root` and the webapp writes media as uid 0 from inside the
+container. The write test failed and the start was refused. Fixed with
+`ExecStartPre=+`, which runs that command as root — and tests the real failure
+mode (filesystem mounted read-only) rather than an irrelevant one.
+`verify-s3mount.sh` only ever passed because s3fs used `allow_other`.
+
+**Failure 2 — nginx.** See ISS-FIELD-005. LiveORC 0.3.0's nginx template uses
+`ssl on;`, removed in nginx 1.25.1, while its own image ships 1.26.3. A
+hand-patched config had been living in the writable layer since May with no copy
+anywhere; the recreate deleted it and the site went down. Repaired durably in
+`start-liveorc.sh`. **This is the same failure class as the media itself** —
+critical state in exactly one place — and the migration is what exposed it.
+
+Result: writable layer 31 GB -> **56.1 kB**, `/` 51 G/66% -> **21 G/27%**, image
+unchanged at `sha256:2f0b38cc7891...` (no version moved under the station), and
+a full `systemctl restart` exercised the real boot path end to end:
+
+```
+verify-media-mount.sh: Mount point /var/lib/liveorc-media verified successfully
+Storage: local volume at: /var/lib/liveorc-media
+LiveORC started; media mount OK: /var/lib/liveorc-media -> /liveorc/media
+```
+
+`/mnt/s3-storage` was **kept** at Tom's request as an operator convenience, but
+decoupled: nothing depends on it, `Before=docker.service` removed, and
+`ensure_diskfree=10240` added so its unbounded object cache cannot fill `/`.
+
+**Found along the way, not caused by this work:** `LORC_DEFAULT_NODES=0` in
+`.env` (`git diff` shows a local `1 -> 0`), so no `liveorc_worker` exists and no
+video has been processed since the August outage. See ISS-FIELD-006.
+
 ## Root volume repair (already done, recorded for reference)
 
 The root volume was grown 50 → 80 GiB, but the partition and filesystem were
@@ -658,16 +699,22 @@ root. If a full disk ever blocks `growpart` again, free ~1 GB first
 
 ## Follow-ups
 
-- [ ] Disk-space alarm on `/`. Its absence is why this ran for ten weeks.
-      Needs the CloudWatch agent (EC2 metrics do not cover EBS disk usage) or
-      a cron check.
+- [x] Disk-space check on `/` **and** `/var/lib/liveorc-media` — 2026-08-27.
+      `check-disk-space.sh` + `disk-space-check.timer`, every 15 min, warn 75% /
+      critical 85%. Also asserts the media path is still a *mount point*: if the
+      volume ever fails to mount, media silently returns to the root disk.
+- [ ] **Attach an SNS notification to the CloudWatch alarm.** The check
+      publishes `ORC/Disk / UsedPercent`, but journal output is not an alarm —
+      nobody reads it. Creating the alarm and its email subscription is console
+      work and is the last piece of "we would find out next time".
 - [ ] **After any LiveORC upgrade**, re-check the media bind — the destination
       fix is in an upstream file and will be reverted:
       `diff /opt/LiveORC/docker-compose.yml.orig /opt/LiveORC/docker-compose.yml`
       The `start-liveorc.sh` guards make this loud rather than silent, but the
       fix still has to be reapplied by hand.
-- [ ] Correct `REPROCESS_RUNBOOK.md` — "the video bytes live in MinIO/S3" is
-      false for this deployment, and it made "no media backup needed" unsafe.
+- [x] Corrected `REPROCESS_RUNBOOK.md` (2026-08-27) — the "video bytes live in
+      MinIO/S3" claim is gone, with a note explaining why it was dangerous
+      rather than a silent edit.
 - [ ] Document the media volume and the `RequiresMountsFor` guard in
       `README.md`.
 - [ ] Snapshot schedule for the media volume (DLM lifecycle policy).

@@ -1,0 +1,10 @@
+# Installed at /etc/systemd/system/disk-space-check.service
+[Unit]
+Description=Check disk space on the LiveORC host
+Documentation=file:///opt/orc-additions/MEDIA_VOLUME_RUNBOOK.md
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/check-disk-space.sh
+# Deliberately no Restart=: a failing check must stay visible in the journal
+# and in `systemctl list-units --failed`, not disappear into a retry loop.

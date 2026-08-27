@@ -11,6 +11,9 @@ media migration itself was fixing.
 | `verify-media-mount.sh` | `/usr/local/bin/verify-media-mount.sh` | **ours** — replaces `verify-s3mount.sh` |
 | `liveorc.service` | `/etc/systemd/system/liveorc.service` | **ours** |
 | `mnt-s3-storage.mount` | `/etc/systemd/system/mnt-s3\x2dstorage.mount` | **ours** — operator convenience, nothing depends on it |
+| `check-disk-space.sh` | `/usr/local/bin/check-disk-space.sh` | **ours** |
+| `disk-space-check.service` | `/etc/systemd/system/disk-space-check.service` | **ours** |
+| `disk-space-check.timer` | `/etc/systemd/system/disk-space-check.timer` | **ours** |
 
 ## What is deliberately NOT here
 
@@ -40,6 +43,21 @@ sudo systemctl daemon-reload
 
 Installing these does **not** restart anything. `liveorc.service` is
 `Type=oneshot` + `RemainAfterExit`, and `daemon-reload` only re-reads units.
+
+## Disk-space check
+
+`check-disk-space.sh` runs every 15 minutes via `disk-space-check.timer` and
+watches `/` and `/var/lib/liveorc-media`. Warn at 75%, critical at 85%.
+
+The absence of any disk monitoring is why the 2026-08-10 outage ran undetected
+for ten weeks. It also checks that `/var/lib/liveorc-media` is still a *mount
+point* — if the volume ever fails to mount, media silently lands on the root
+disk again, which is the original failure in a new costume.
+
+It publishes `ORC/Disk / UsedPercent` to CloudWatch when the instance role
+allows, so an alarm can be attached. **Journal output on its own is not an
+alarm** — nobody reads it. Wiring an SNS notification to the CloudWatch alarm is
+console work and is tracked as a follow-up in `MEDIA_VOLUME_RUNBOOK.md`.
 
 ## The S3 convenience mount
 

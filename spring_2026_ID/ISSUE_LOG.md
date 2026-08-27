@@ -430,6 +430,91 @@ a solder bridge as part of troubleshooting.
 
 ---
 
+### ISS-FIELD-005: LiveORC's nginx SSL config was load-bearing and existed in exactly one place
+
+| Field | Value |
+|-------|-------|
+| **Date opened** | 2026-08-27 |
+| **Site** | LiveORC server (AWS) |
+| **Risk** | Site outage on any container recreate |
+| **Impact** | High |
+| **Status** | RESOLVED 2026-08-27 |
+
+**Problem:**
+During TODO-112 Phase 7 the `liveorc_webapp` container was recreated for the
+first time since May. nginx then failed to start:
+
+```
+[emerg] unknown directive "ssl" in /liveorc/nginx/nginx-ssl.conf:32
+```
+
+LiveORC 0.3.0 generates `nginx-ssl.conf` from a template using the standalone
+`ssl on;` directive. nginx **removed** that directive in 1.25.1, and LiveORC's
+own image ships nginx 1.26.3 — so the shipped template cannot work with the
+shipped nginx. gunicorn kept running, so the container reported healthy while
+the site was unreachable; `curl` returned `000` because `docker-proxy` held
+80/443 with nothing behind it.
+
+**Why it had not been seen:** the container had run since May and was only ever
+`docker start`ed, never recreated. A hand-patched `nginx-ssl.conf` had been
+living in the writable layer, with no copy anywhere and no record that it
+existed. Deleting that layer — the entire point of the media migration —
+removed it.
+
+This is the *same failure class* the migration was fixing, in a different file:
+critical state present in exactly one place, invisible until something forced a
+rebuild. The media was the known instance. This was not.
+
+**Resolution:**
+Two idempotent `sed`s in `/opt/LiveORC/start-liveorc.sh` (a local wrapper, so it
+survives LiveORC upgrades) patch both the template and the generated config on
+every start, folding `ssl on;` into `listen 8000 ssl deferred;`. A third check
+makes "nginx not running after start" fatal, so a healthy-looking container
+serving nothing can never again pass as success.
+
+The seds match nothing once upstream fixes the template, so the repair retires
+itself rather than masking a future fix — which is why it is not a `:ro` bind
+mount over the template.
+
+**Upstream:** LiveORC 0.3.0 ships a template incompatible with its own bundled
+nginx. Worth reporting alongside TODO-105.
+
+---
+
+### ISS-FIELD-006: Video processing has been disabled since the August outage
+
+| Field | Value |
+|-------|-------|
+| **Date opened** | 2026-08-27 |
+| **Site** | LiveORC server (AWS) |
+| **Risk** | Silent data gap — videos stored but never processed |
+| **Impact** | High |
+| **Status** | OPEN |
+
+**Problem:**
+`/opt/LiveORC/.env` carries `LORC_DEFAULT_NODES=0`. `git diff` against upstream
+shows it was changed `1 -> 0` locally and is the **only** modification to that
+file. With zero nodes, no `liveorc_worker` container is created and uploaded
+video is never processed into timeseries.
+
+The timing points to emergency triage during the 2026-08-10 outage — CPU was
+pinned at ~98% for a week with the disk full, and stopping the worker is exactly
+what relieves that. It was never reverted.
+
+**Consequence:** Sukabumi resumed uploading on 2026-08-20 and 2643 mp4s are on
+the media volume, but none of the recent ones have been processed. Sensor data
+continued flowing to Grafana and the Sheet throughout, so the system looked
+healthy from a stakeholder's view while the video pipeline was doing nothing.
+
+**Open question — sequencing, not mechanism.** The fix is one line and a
+restart. But TODO-113 (reprocess retained video under changed settings) says to
+reconcile with TODO-101 first because of a cross-section reversal. Starting the
+worker generates a backlog's worth of timeseries from a camera config that is
+already known to need changing, and those results reach stakeholders through the
+same channels.
+
+---
+
 ### ISS-FIELD-004: Mirroring media through the REST API took the LiveORC host down
 
 | Field | Value |

@@ -1,0 +1,12 @@
+# Installed at /etc/systemd/system/disk-space-check.timer
+# Enable with: systemctl enable --now disk-space-check.timer
+[Unit]
+Description=Periodic disk-space check for the LiveORC host
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=15min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

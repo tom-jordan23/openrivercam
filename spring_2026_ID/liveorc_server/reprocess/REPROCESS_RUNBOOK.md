@@ -100,13 +100,28 @@ the restore+media step against a second containerized stack — see its header.)
 ./backup_liveorc_db.sh        # → liveorc-backups/<ts>/  (KEEP api_timeseries.csv = baseline)
 ```
 
-**Do I need a media (video) backup? No.** The backup is DB-only and small on
-purpose — the video bytes live in MinIO/S3, not Postgres. Reprocessing is
-**read-only on videos** (it streams them, never writes/deletes), so the only thing
-that can change — and the only thing rollback needs — is the `api_timeseries` rows,
-which the DB dump captures in full. A media backup would only matter for full
-disaster recovery (a separate `mc mirror`/`rsync` of the bucket; many GB) and is not
-part of this operation.
+**Do I need a media (video) backup? Not for *this* operation — but read why.**
+
+> **Corrected 2026-08-27.** This section used to say the video bytes "live in
+> MinIO/S3, not Postgres," and concluded no media backup was needed. **The first
+> half was false and made the second half dangerous.** This deployment runs
+> `FileSystemStorage`; the S3 path was abandoned. Until 2026-08-27 the video
+> bytes lived in the webapp container's *writable layer* — no volume, no
+> persistence, no backup. Any `--force-recreate` during a reprocess run would
+> have destroyed 26 GB silently, and the reader of this runbook would have had
+> every reason to believe it was safe. See
+> [`MEDIA_VOLUME_RUNBOOK.md`](../MEDIA_VOLUME_RUNBOOK.md).
+
+Reprocessing is **read-only on videos** (it streams them, never writes or
+deletes), so the only thing that can change — and the only thing rollback needs —
+is the `api_timeseries` rows, which the DB dump captures in full. That reasoning
+was always sound; the claim about where the bytes lived was not.
+
+Media now lives on a dedicated EBS volume at `/var/lib/liveorc-media`, bound to
+`/liveorc/media`, with its own snapshots. A recreate no longer destroys it. If
+you need a media backup for full disaster recovery, snapshot that volume — do
+**not** assume a copy exists somewhere else, which is precisely the assumption
+this paragraph used to encourage.
 
 ## Phase 2 — Dry-run + impact preview (staging, then prod)
 
