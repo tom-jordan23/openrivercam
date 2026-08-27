@@ -48,9 +48,12 @@ try 'vcgencmd measure_volts; vcgencmd measure_temp'
 say "2. WITTY PI LOGS (power-on reason)"
 try 'ls -la /home/pi/wittypi/ /var/lib/wittypi/ /var/log/wittypi/ /etc/wittypi/ 2>/dev/null'
 try 'find / -xdev \( -iname "*wittypi*" -o -iname "wp5*" \) -not -path "*/proc/*" 2>/dev/null | head -40'
-for f in /home/pi/wittypi/wittyPi.log /var/log/wittypi/wittyPi.log \
-         /var/log/wp5.log /var/log/wittypi.log; do
-    [ -f "$f" ] && { say "log: $f"; try "tail -80 '$f'"; }
+# /var/log/wp5d.log is the actual path — confirmed by the find on 2026-08-27,
+# after the guessed wittyPi.log paths (Witty Pi 4 era) all missed. This is the
+# file that should name the power-on reason, so it gets the long tail.
+for f in /var/log/wp5d.log /home/pi/wittypi/wittyPi.log \
+         /var/log/wittypi/wittyPi.log /var/log/wp5.log; do
+    [ -f "$f" ] && { say "log: $f"; try "tail -200 '$f'"; }
 done
 
 # 3. The alarm state. "Next startup in the past with nothing to re-arm it" is
@@ -62,7 +65,7 @@ try 'systemctl status wp5d --no-pager -l | head -20'
 # menu FIRST: it lists every option by number, which is how we learn where the
 # low-voltage cutoff and recovery voltage actually live. Guessing a number and
 # getting a different screen wastes the window.
-try 'printf "q\n" | timeout 8 wp5'
+try 'timeout 20 wp5 < /dev/null'
 #
 # ONLY options this repo documents as reads are exercised below. Do NOT sweep
 # unknown option numbers looking for the thresholds:
@@ -75,8 +78,10 @@ try 'printf "q\n" | timeout 8 wp5'
 # Read the menu text captured above, identify the right numbers, then add them
 # here deliberately. One extra wake window is cheap; a mutated power config is
 # not.
-try 'echo "14" | timeout 8 wp5 2>&1 | head -20'   # documented: shows RTC time
-try 'echo "7"  | timeout 8 wp5 2>&1 | head -30'   # documented: schedule status
+# NOTE: option numbering confirmed 2026-08-27 — 7 is "Set low voltage
+# threshold", a SETTER. Do not select it. The current threshold values should
+# appear in the menu header captured above once it is not truncated.
+try 'echo "14" | timeout 15 wp5 2>&1 | head -40'   # documented: shows RTC time
 try 'timeout 8 wp5 --help; timeout 8 wp5 -h'
 try 'cat /home/pi/wittypi/schedule.wpi /home/pi/wittypi/.schedule 2>/dev/null'
 try 'ls -la /home/pi/wittypi/schedules/ /etc/wittypi/schedules/ 2>/dev/null'
@@ -112,6 +117,13 @@ c=sqlite3.connect(\"/home/pi/.ORC-OS/orc-os.db\").cursor()
 c.execute(\"SELECT reboot_after, shutdown_after_task, active FROM settings\")
 print(c.fetchone())
 "'
+
+# 8. Retrieve any orc_collect.sh bundle left in /tmp by an earlier run. That
+#    script writes 200 KB to disk and prints only the path, so without this the
+#    bundle stays on the station.
+say "8. PRIOR orc_collect BUNDLE (if any)"
+try 'ls -t /tmp/orc_collect_*.txt 2>/dev/null | head -3'
+try 'f=$(ls -t /tmp/orc_collect_*.txt 2>/dev/null | head -1); [ -n "$f" ] && { echo "--- $f ---"; cat "$f"; }'
 
 echo
 echo "===== END ====="
