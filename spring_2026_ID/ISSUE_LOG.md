@@ -646,9 +646,17 @@ Boot cadence on 2026-08-27 after recovery:
 
 Sunset at Sukabumi is ~17:50 WIB. The burst starts ~45 minutes after it and
 stops after ~2.5 hours. The 08-24/25 bursts ran 06:05–10:05, just after
-sunrise. So the episodes cluster around **both** solar transitions — when the
-charge controller hands over to the battery and back — not at a particular hour
-of the night.
+sunrise.
+
+**This holds for the post-08-21 period only.** Binned by hour, 08-21 onward
+(n=66) is **zero between 11:00 and 17:00** — the whole peak-sun block — with
+everything in 18:00–02:00 and 05:00–10:00. May (n=332) does not look like that
+at all: it is roughly flat across the day, because May's episodes were
+continuous hunting that ran for hours or days at a stretch rather than bursts
+tied to a transition. Do not describe the solar-transition shape as a general
+property of the failure; it is a property of how it has behaved since the
+recovery voltage went in, and that difference may itself be the most
+informative thing here.
 
 That is the signature of Vin crossing a threshold band: the Witty Pi cuts at
 the low threshold, the unloaded battery rebounds above the recovery threshold,
