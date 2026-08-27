@@ -985,9 +985,24 @@ returns to this state. Sync is the constraint that makes retention possible.
 - [ ] Alarm this. Three disks have now filled unnoticed in this project — the
       LiveORC root (ISS-FIELD-007), the media volume (TODO-112), and now the
       station. None were alarmed. The station has no monitoring at all.
-- [ ] Revisit the BOM decision that struck out the 256 GB USB drive
-      ("REMOVED — UAS boot storm"). Storage was designed in, removed for a boot
-      problem, and the space budget was not revisited.
+- [ ] ~~Revisit the BOM decision that struck out the 256 GB USB drive.~~
+      **Not a live option — do not re-propose.** Three separate reasons, and I
+      had written this up as though it were an oversight:
+      1. ORC-OS cannot hold video on a different filesystem from its database,
+         the same wall the S3 mount hit on the server. A second disk does not
+         solve a video-space problem at all.
+      2. The removal was a blocking hardware fault, not a budget slip:
+         `build_notes/sukabumi/known_issues.md` #1 records **228 USB disconnects
+         and 158 URB errors in 12 minutes at boot, and the modem dropped off the
+         bus entirely.** The modem is the only remote access to this station, so
+         a recurrence costs a site visit.
+      3. The only fix is `usb-storage.quirks=0781:5583:u` in `cmdline.txt` —
+         `uas` and `usb-storage` are kernel built-ins so `modprobe.d` is ignored.
+         That is a boot-time parameter needing a reboot, which is not something
+         to do remotely to a solar station with a flat battery.
+
+      The drive is also not physically in the station; it was never deployed.
+      Space has to come from retention or a larger root device.
 
 ---
 

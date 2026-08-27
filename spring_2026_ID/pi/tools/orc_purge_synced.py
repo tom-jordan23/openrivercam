@@ -143,14 +143,25 @@ def purge_before_date(cutoff, apply_it):
         print("\nnothing matched.")
         return
 
+    # Delete oldest-first, one date dir at a time, reporting after each. The
+    # station is duty-cycled and can lose power mid-run, so this has to be
+    # resumable and auditable: a truncated run leaves whole dirs done and the
+    # printed log says exactly how far it got. Re-running is safe — dirs already
+    # gone are simply absent next time.
+    print("\n--- deleting oldest first ---")
     removed = failed = 0
     for name, sz in sized:
+        d = UPLOADS / name
         try:
-            shutil.rmtree(UPLOADS / name)
+            n = sum(1 for _ in d.rglob("*")) if d.exists() else 0
+            shutil.rmtree(d)
             removed += 1
+            st_now = os.statvfs("/")
+            print(f"  deleted {name}  {n:5d} entries  {sz/2**30:5.2f} GiB  "
+                  f"free now {st_now.f_bavail*st_now.f_frsize/2**30:.2f} GiB", flush=True)
         except OSError as e:
             failed += 1
-            print(f"  FAILED {name}: {e}")
+            print(f"  FAILED {name}: {e}", flush=True)
 
     st = os.statvfs("/")
     free_after = st.f_bavail * st.f_frsize
