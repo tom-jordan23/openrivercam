@@ -57,9 +57,26 @@ done
 #    the TODO-116 latch hypothesis; this either shows it or kills it.
 say "3. WP5 STATUS / SCHEDULE / THRESHOLDS"
 try 'systemctl status wp5d --no-pager -l | head -20'
-# The wp5 CLI is an interactive menu. Option 1 is the status screen on WP4-era
-# builds; feed it and quit rather than assuming a non-interactive flag exists.
-try 'printf "1\nq\n" | timeout 8 wp5'
+# The wp5 CLI is an interactive menu and the option numbers are NOT documented
+# in this repo — the docs only ever cite 5, 6, 7 and 14. So capture the bare
+# menu FIRST: it lists every option by number, which is how we learn where the
+# low-voltage cutoff and recovery voltage actually live. Guessing a number and
+# getting a different screen wastes the window.
+try 'printf "q\n" | timeout 8 wp5'
+#
+# ONLY options this repo documents as reads are exercised below. Do NOT sweep
+# unknown option numbers looking for the thresholds:
+#   - Option 1 is a WRITE. deploy.sh runs `printf '1\n14\n' | wp5` to sync the
+#     RTC from the system clock, so selecting 1 changes the device.
+#   - The threshold screens are setters. They prompt for a value, and on
+#     Witty Pi a low-voltage threshold of 0 means DISABLED. Feeding stray input
+#     to a setter risks disabling the cutoff on a LiFePO4 pack, which is how you
+#     over-discharge it. Not a acceptable risk for a diagnostic.
+# Read the menu text captured above, identify the right numbers, then add them
+# here deliberately. One extra wake window is cheap; a mutated power config is
+# not.
+try 'echo "14" | timeout 8 wp5 2>&1 | head -20'   # documented: shows RTC time
+try 'echo "7"  | timeout 8 wp5 2>&1 | head -30'   # documented: schedule status
 try 'timeout 8 wp5 --help; timeout 8 wp5 -h'
 try 'cat /home/pi/wittypi/schedule.wpi /home/pi/wittypi/.schedule 2>/dev/null'
 try 'ls -la /home/pi/wittypi/schedules/ /etc/wittypi/schedules/ 2>/dev/null'
