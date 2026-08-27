@@ -717,11 +717,28 @@ arrived out of a completely clean cadence. Do not build an alarm on it.
 **Undocumented config change:** a **recovery voltage of 13 V** was set on the
 Witty Pi around **2026-08-21**. It is recorded nowhere in this repo —
 `deploy.sh:347` excludes `pi/sukabumi/*.wpi` from the overlay, so no committed
-file would have caught it. 13 V is high for a 12 V battery (lead-acid rests
-~12.7 V full; 13 V generally appears only while charging), which raises the
-possibility that recovery cannot fire at all — that would explain a full sunny
-day on 08-27 producing no boot. But the off-schedule boots **predate the change
-by months**, so the setting did not cause them.
+file would have caught it.
+
+**The battery is LiFePO4** (Tom, 2026-08-28), and that changes what 13 V means.
+On lead-acid, 13 V is a charging voltage you rarely see at rest. On a 4S LiFePO4
+it is an utterly ordinary *resting* voltage — roughly 20–40% state of charge,
+sitting in the flattest part of the discharge curve, where the pack spends most
+of its life. So the earlier worry that recovery might never fire is wrong: 13 V
+is reached easily and often.
+
+The real problem is the opposite. A threshold planted in the middle of the flat
+plateau gets crossed by ordinary load sag in both directions — the camera/PoE
+load pulls terminal voltage under it, removing the load lets it rebound over.
+That is a hunting oscillator by construction, and it is the best explanation yet
+for the ~5-minute restarts. It also fits the shape: no hunting midday (charging
+holds 13.6–14.4 V, far above), hunting through the post-sunset settling window
+as the pack relaxes back through 13 V, then quiet again once it is solidly
+below.
+
+The off-schedule boots **predate the change by months**, so 13 V did not
+introduce the behaviour — but on this chemistry it is a poorly chosen threshold
+and a plausible amplifier. A recovery point clear of the plateau (~13.4 V, near
+full) would not sit where normal operation crosses it.
 
 The number that matters is not the recovery voltage alone but its distance from
 the **low-voltage cutoff**, measured against how far Vin sags under load. Wide
@@ -750,24 +767,33 @@ budget was written for):
 count, same load, and no overnight hunting on that particular night - the
 08-25/26 burst was the night before. Load is not the variable.
 
-The absolute number is the argument. A 12 V 50 Ah battery is 600 Wh nominal,
-300 Wh at a conservative 50% depth of discharge. The station asks it for **37 Wh
-across twelve hours** and it cannot deliver. Design autonomy with no sun at all
-is **4.0 days**; observed autonomy is about **ten hours**. That is not a 20-30%
-sizing shortfall a second battery would cover - it is roughly **16x**, and
-sizing out of it would mean going from 50 Ah to 800 Ah.
+The absolute number is the argument, and LiFePO4 makes it worse rather than
+better. A 12 V 50 Ah pack is 600 Wh nominal; the lead-acid convention derates
+that to 300 Wh at 50% depth of discharge, but LiFePO4 tolerates 80–90%, so
+usable is more like **~500 Wh**. The station asks it for **37 Wh across twelve
+hours** and it cannot deliver. Design autonomy with no sun at all is **over six
+days** on this chemistry; observed autonomy is about **ten hours**. That is not
+a 20–30% sizing shortfall a second battery would cover — it is more than
+**15x**.
 
 So the battery is not too small. One of these is true instead:
 
-1. **It has lost most of its usable capacity.** The BOM records it as "existing
-   200W panel / 50Ah battery - reused from failed unit": inherited hardware, out
-   of a station that had already failed, with neither age nor chemistry written
-   down anywhere in this repo. Four months of repeated deep discharge since May
-   would finish off a lead-acid that started marginal.
+1. **The BMS is disconnecting the pack early, most likely on cell imbalance.**
+   This is the strongest candidate on LiFePO4 and it has no lead-acid analogue.
+   In a 4S pack where one cell has drifted low, that cell hits the BMS per-cell
+   floor while the other three are still half full; the BMS opens and the pack
+   goes to zero with most of its energy still in it. That produces exactly this
+   signature — a 15x apparent shortfall from a pack that measures fine at rest
+   and holds voltage under charge. The BOM records it as "existing 200W panel /
+   50Ah battery — reused from failed unit": inherited hardware, out of a station
+   that had already failed, age unrecorded.
+   Plain capacity wear is the weaker version: LiFePO4 takes thousands of cycles,
+   so four months of deep discharge should not have worn it out, though sustained
+   38–41 °C enclosure temperatures do accelerate ageing.
 2. **The low-voltage cutoff is set too high**, so the Witty Pi cuts while most
    of the charge is still in the battery. Costs nothing to fix, and nothing we
    have rules it out - the value has never been read.
-3. **There is an unbudgeted parasitic load.** To actually consume 300 Wh
+3. **There is an unbudgeted parasitic load.** To actually consume ~500 Wh
    overnight the always-on draw would have to be ~25 W against a designed 1.2 W.
    BOM Section 4 already flags that the DDR-60G converters are permanently
    powered from TB1 with no enable pin, and TODO-107 still has "verify DDR-60G
@@ -781,11 +807,18 @@ and both end up chronically undercharged.
 **What settles it: one night of Vin.** The three separate cleanly in a single
 overnight voltage trace, with no site visit:
 
+LiFePO4 reference points (4S, at rest): ~13.4 V full, ~13.1 V at 50%, ~12.9 V
+at 20%, knee below ~12.5 V, BMS per-cell disconnect under that.
+
 | Observation | Conclusion |
 |---|---|
-| Terminal voltage barely moves (~12.7 -> ~12.5 V) yet the station cut out | cutoff set too high - free fix |
-| Voltage collapses below 11.5 V within 2-3 hours of sunset | battery is dead - replace it |
-| Voltage falls fast *and* falls while the Pi is asleep | parasitic load - find it before buying anything |
+| Sits ~13.0–13.2 V most of the night, then drops to **zero abruptly in one sample** | BMS disconnect, almost certainly cell imbalance. The pack still held most of its energy. Balance or service it — a second battery in parallel would not help and would worsen the imbalance |
+| Slides steadily 12.9 → 12.5 V and through the knee over hours | genuine capacity exhaustion — pack worn, or the real load is far above budget |
+| Still above ~12.9 V when the Witty Pi cuts | cutoff misconfigured for this chemistry — free fix |
+| Falls fast *while the Pi is asleep* | parasitic load — find it before buying anything |
+
+The flat plateau is what makes this readable: on LiFePO4 a gradual slide and an
+abrupt cliff look nothing alike, where on lead-acid both would just be a sag.
 
 That trace needs Witty Pi Vin logged through `orc-sensors`, which needs one good
 SSH window. It is the cheapest decisive measurement available and it gates the
