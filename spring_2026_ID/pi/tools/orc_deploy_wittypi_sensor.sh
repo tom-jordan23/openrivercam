@@ -71,7 +71,41 @@ set -eu
 LOGGER=/usr/local/lib/orc-sensors/sensors_logger.py
 CONF=/etc/orc-sensors/wittypi.conf
 
-# Stage beside the target, never over it, until it has compiled.
+# ── Diagnostics FIRST ────────────────────────────────────────────────
+# These are read-only and cost about a second. They run before anything can
+# abort so the wake window always yields them, even if the deploy backs out.
+# The question they answer: extended wakes are the energy problem (25 min
+# against 2 min, ~12x), and either ORC-OS's shutdown-after-task got unset, or
+# its task keeps failing before reaching the shutdown step.
+echo "--- ORC-OS settings (shutdown_after_task is the one that matters) ---"
+python3 - <<'PYEOF' 2>&1 || echo "(settings read failed)"
+import sqlite3
+c = sqlite3.connect("/home/pi/.ORC-OS/orc-os.db").cursor()
+c.execute("SELECT * FROM settings")
+cols = [d[0] for d in c.description]
+for row in c.fetchall():
+    for k, v in zip(cols, row):
+        print(f"  {k} = {v}")
+PYEOF
+
+echo "--- orc-api, this boot ---"
+journalctl -b 0 -u orc-api --no-pager -n 20 2>&1 | tail -20
+echo "--- orc-capture, this boot ---"
+journalctl -b 0 -u orc-capture --no-pager -n 12 2>&1 | tail -12
+
+# ── Pre-flight the wp5 read ──────────────────────────────────────────
+# The previous attempt installed the sensor, found wp5 returned nothing, and
+# rolled back — a whole wake window spent to learn one fact. Prove the exact
+# read works BEFORE touching anything, so a bad read costs nothing.
+echo "--- wp5 read pre-flight ---"
+PROBE="\$(printf '14\\n' | timeout 10 wp5 2>&1 | grep -m1 -i 'V-IN' || true)"
+if [ -z "\$PROBE" ]; then
+    echo "PRE-FLIGHT FAILED: no V-IN line from wp5. Nothing installed, nothing changed."
+    exit 1
+fi
+echo "  \$PROBE"
+
+# ── Install ──────────────────────────────────────────────────────────
 echo "$B64_LOGGER" | base64 -d > /tmp/sensors_logger.candidate
 echo "$B64_CONF"   | base64 -d > /tmp/wittypi.conf.candidate
 
@@ -105,26 +139,6 @@ echo "--- other sensors still writing ---"
 for s in sht40 rg15 ds18b20; do
     printf '%-9s %s\n' "\$s" "\$(tail -1 /var/log/orc/sensors/\${s}_\$(date +%F).csv 2>/dev/null || echo MISSING)"
 done
-
-# Piggyback the long-wake question onto this connection. Extended wakes are the
-# energy problem (25 min vs 2 min, ~12x), and there are two candidate causes:
-# ORC-OS's "shutdown after task" got unset, or its task keeps failing before it
-# reaches the shutdown step. These reads are ~1 s and settle the first outright.
-echo "--- ORC-OS settings (shutdown_after_task is the one that matters) ---"
-python3 - <<'PYEOF' 2>&1 || echo "(settings read failed)"
-import sqlite3
-c = sqlite3.connect("/home/pi/.ORC-OS/orc-os.db").cursor()
-c.execute("SELECT * FROM settings")
-cols = [d[0] for d in c.description]
-for row in c.fetchall():
-    for k, v in zip(cols, row):
-        print(f"  {k} = {v}")
-PYEOF
-
-echo "--- did THIS wake finish its task? ---"
-journalctl -b 0 -u orc-api --no-pager -n 25 2>&1 | tail -25
-echo "--- orc-capture this boot ---"
-journalctl -b 0 -u orc-capture --no-pager -n 15 2>&1 | tail -15
 REMOTE_EOF
 )
 

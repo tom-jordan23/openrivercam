@@ -281,15 +281,20 @@ _WP5_PATTERNS = {
 def _wp5_sample(timeout_s):
     """One wp5 status read. Returns (values_dict, raw_output).
 
-    wp5 does not exit on EOF — it sits at its menu until killed, confirmed on
-    the station 2026-08-27. So a timeout here is the NORMAL path, not a failure,
-    and the partial output is the whole point: the status header carrying
-    V-IN/V-OUT/I-OUT prints before the menu does. Read what it printed and move
-    on rather than waiting out a process that is never going to return.
+    Feed "14", which is Exit on this firmware. That matters more than it looks:
+    wp5 block-buffers when stdout is a pipe, and on EOF it does not exit at all —
+    it loops re-prompting, so the status header sits unflushed in the stdio
+    buffer and a killed process yields NOTHING. Deploying with stdin=DEVNULL
+    produced exactly that on 2026-08-27: "no Vin parsed ... raw was:" with an
+    empty raw. Selecting Exit makes wp5 terminate cleanly and flush.
+
+    deploy.sh already relies on the same convention (`printf '1\n14\n' | wp5`),
+    so 14 is not a guess. The timeout remains only as a backstop, and partial
+    output is still salvaged if it ever fires.
     """
     try:
         proc = subprocess.run(
-            ["wp5"], stdin=subprocess.DEVNULL, capture_output=True,
+            ["wp5"], input="14\n", capture_output=True,
             text=True, timeout=timeout_s
         )
         raw = (proc.stdout or "") + (proc.stderr or "")
