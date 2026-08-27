@@ -871,23 +871,30 @@ has been quiet since — but the race this TODO was sequenced to avoid is open
 again. Re-run the TODO-114 inventory and diff immediately before any Phase 5
 rsync; do not trust a manifest across a gap of days.
 
-**2. `/mnt/s3-storage` may be the real problem.** The EC2 console log from the
-2026-08-10 boot shows a systemd mount unit `mnt-s3\x2dstorage.mount` ("S3
-Storage Mount for LiveORC") **failing**, and `liveorc.service` ("LiveORC Server
-with S3 Storage") dependency-failing behind it. As of 2026-08-25 that mount is
-`inactive (dead)` and `disabled`, pointing at bucket `openrivercam-video` —
-the same bucket the media export now writes to.
+**2. `/mnt/s3-storage` is residue, not a repair target.** I suggested on
+2026-08-25 that fixing that mount might be shorter than this migration. That
+was wrong, and the runbook already answers it — see "Why EBS and not S3" in
+`MEDIA_VOLUME_RUNBOOK.md`. S3 was tried first and abandoned for two reasons
+that still hold: LiveORC's storage backend is all-or-nothing (prod runs
+`FileSystemStorage`, and `prod_reprocess.sh` execs inside the webapp precisely
+to read the *local* media volume), and `rename(2)`/`link(2)` fail with `EXDEV`
+across a mount boundary, with s3fs having no hardlink support at all.
 
-That reframes this whole TODO. Media is *supposed* to live on an S3-backed
-mount; it is in the container writable layer because that mount failed and
-LiveORC was evidently started by hand without it. **The writable layer is a
-symptom, not the design.** Repairing `/mnt/s3-storage` may be a shorter and
-more durable fix than migrating to a dedicated EBS volume. Establish which
-before committing to the runbook below.
+The dead `mnt-s3\x2dstorage.mount` is the **leftover of that abandoned
+migration**, deliberately left pointing somewhere harmless. Its failure is not
+why media went to the writable layer. The actual cause is in the runbook's root
+cause section: `MEDIA_ROOT` is `/liveorc/media`, and the compose bind pointed at
+`/liveorc/data/media` — a path Django never writes to. Nothing was mounted where
+it mattered, so writes succeeded into the container layer, silently.
 
-One useful side effect of the broken mount: `liveorc.service` cannot start
-while its dependency fails, so it acts as an interlock against an accidental
-container recreate. That protection disappears the moment the mount is fixed.
+Two things do follow from the mount being dead, and both are worth keeping:
+
+- `liveorc.service` requires it, so the unit cannot start while it fails. That
+  is a second interlock behind the `systemctl disable` this runbook mandates —
+  and it disappears in Phase 9 when the unit is re-enabled.
+- The `RequiresMountsFor` guard that Phase 6 adds must point at
+  `/var/lib/liveorc-media`, **not** the old S3 path. The unit currently
+  guards the wrong mount, which is landmine #2 in the runbook.
 
 **Unpaused 2026-08-17.** The 2026-08-11 demo it was waiting on has passed
 and Phase 0 is fully resolved, including the three files that were still
@@ -896,13 +903,14 @@ writable layer, so **`liveorc.service` must stay disabled** and a
 root-volume snapshot is the standing safety net — see the warning block at
 the top of the runbook.
 
-**Run it while Sukabumi is offline.** Uploads stopped 2026-08-14 (see the
-sensor outage), so the media tree is static. The awkward part of Phases
-4–6 is normally files written *between* the copy and the recreate, a race
-with no clean answer; with no uploads arriving, `rsync --itemize-changes`
-in Phase 5 means exactly what it says. Bringing the station back first
-reopens that race, so this should go **before** the station fix, not
-after.
+**Run this before the station fix.** Decided 2026-08-26: LiveORC storage
+first, station issues after. The reason originally given here — uploads
+stopped 2026-08-14, so the media tree is static and Phase 5's
+`rsync --itemize-changes` means exactly what it says — is **no longer
+true**; Sukabumi resumed on 2026-08-20 (premise 1 above). The ordering
+stands on its own reasoning: the 26 GB in the writable layer is what is at
+risk, and every further day of uploads adds to what an accidental recreate
+would destroy.
 
 On 2026-08-10 the root filesystem hit 100% and took the host down —
 LiveORC dead, Session Manager refusing to open a shell, Run Command
@@ -962,10 +970,18 @@ guarded the mount, so the one condition that mattered went unchecked.
 - [x] Brought LiveORC up safely for the 2026-08-11 demo with
       `docker start db rabbitmq liveorc_webapp` (never `compose up`).
       Verified: video plays from the web UI.
-- [ ] Phase 1: DB backup → `s3://openrivercam-video/backups/`.
-- [ ] Phases 2–5: create/attach/format a 150 GiB gp3 volume at
-      `/var/lib/liveorc-media`, seed image assets, copy the 26 GB,
-      verify with a dry-run `rsync --itemize-changes`, snapshot.
+- [x] Phase 1: DB backup → `s3://openrivercam-video/backups/` (2026-08-27,
+      `20260827-125253`, 3488 ts rows / 3189 video rows). The bucket prefix
+      was **empty** beforehand — three earlier backups had never left the
+      host disk. All four are now off-host.
+- [x] Phases 2–5 (2026-08-27): 150 GiB gp3 volume created, attached, ext4,
+      mounted at `/var/lib/liveorc-media` by LABEL. Seeded `admin-interface`,
+      copied **31 GB / 9775 files** out of the writable layer. Gate passed —
+      counts identical both sides, dry-run `--itemize-changes` empty. Media had
+      grown 26→31 GB, and mp4s 2630→2643, so uploads are still arriving.
+- [x] Snapshot the media volume — `liveorc-media pre-cutover 2026-08-27`,
+      completed. First time the 31 GB has existed in two places; this is
+      what makes Phase 7 reversible.
 - [x] Read the three Phase 6 inputs (2026-08-17). `start-liveorc.sh` passes
       `--storage-dir /mnt/s3-storage` and is a **local wrapper, not
       upstream**, so it is safe to edit. `verify-s3mount.sh` does a write
@@ -1029,3 +1045,15 @@ is preserved in git history. Run
 that list that's still open post-trip is mentioned by reference under
 TODO-107 above.
 
+   ### TODO-116: Witty Pi restart resiliency — a missed boot leaves the station down
+
+    | Field | Value |
+    |-------|-------|
+    | **Status** | OPEN — captured 2026-08-25, not started |
+    | **Site** | Both stations (Witty Pi scheduling) |
+
+    The station periodically misses a boot cycle — battery is the leading
+    suspect — and does not recover on its own. The failure mode is the
+    scheduler, not the power event: once a boot is missed, the Witty Pi's
+    "next start time" is left in the **past**, and nothing re-arms it. The
+    station stays down until someone physically pushes the button.

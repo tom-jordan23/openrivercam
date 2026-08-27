@@ -177,13 +177,12 @@ the cert is **not** a storage risk and Phase 6 needs nothing for it. Only
 caveat: Let's Encrypt allows 5 duplicate certs per week, so repeated
 recreates while debugging can exhaust it.
 
-Still to determine before Phase 6 is written (see the Phase 6 note on
-upgrade-safety):
-
-```bash
-grep -n 'docker compose\|docker-compose\|storage-dir\|storage-local\|\-f ' \
-    /opt/LiveORC/liveorc.sh | head -40
-```
+**Closed 2026-08-17.** That grep was run: `liveorc.sh` builds an explicit
+`-f` list (lines 313–418), so `docker-compose.override.yml` is never
+auto-loaded and the destination fix has to be made in `docker-compose.yml`
+itself. Nothing about Phase 6 is still undetermined — see "Upgrade-safety:
+an override file will NOT work here" under Phase 6 for the finding and its
+consequence.
 
 ### Phase 1 — DB backup
 
@@ -201,6 +200,40 @@ aws s3 sync ./liveorc-backups/ s3://openrivercam-video/backups/
 The database is not at risk — `db` uses named volume `liveorc_lorc_data` and
 is untouched — but it is 1.6 MB and it is the rollback if the recreate
 misbehaves.
+
+#### Result — run 2026-08-27
+
+Pre-flight first: `liveorc_webapp`'s `UpperDir` still matched the hash recorded
+on 2026-08-10, so the writable layer holding the media had never been recreated.
+`liveorc.service` `disabled`/`inactive` with the containers up — correct, they
+were started by hand. All seven containers showed `Up 45 hours` (a reboot or
+daemon restart around 2026-08-25): Docker restarted them under
+`unless-stopped` and the writable layer survived. **A restart is not a
+recreate**, and the disabled unit is why nothing ran `compose up`.
+
+`/` had grown 48 G/62% → **51 G/66%** since the root repair. That ~3 GB is the
+resumed Sukabumi uploads still landing in the container layer.
+
+Backup `20260827-125253`, PostgreSQL 16.4:
+
+| | |
+|---|---|
+| `api_timeseries` rows | **3488** |
+| `api_video` rows | **3189** |
+| `api_timeseries.csv` | 678477 B — `317e4bf5957e9ae1` |
+| `api_timeseries.sql` | 699396 B — `3bb0c16e074bc681` |
+| `api_video.csv` | 217786 B — `19efa62e2abccaca` |
+| `liveorc_full.dump` | 474464 B — `09f3fa5d684d3a66` |
+
+**`s3://openrivercam-video/backups/` was empty before this sync.** The three
+earlier backups (`20260626-161006`, `20260629-141301`, `20260701-134258`) had
+existed only on the host — the same instance disk this migration exists to stop
+depending on. All four are now in S3.
+
+`manifest.txt` reports its own size as 488 B while S3 shows 531 B. Not
+corruption: the `stat`/`sha256sum` loop runs inside the redirect that writes the
+file, so the manifest's line about itself describes a partially-written file.
+Every other row is trustworthy; the `manifest.txt` row is not, and cannot be.
 
 ### Phase 2 — Create and attach
 
@@ -251,6 +284,39 @@ sudo rsync -aHAXn --itemize-changes "$UPPER/liveorc/media/" /var/lib/liveorc-med
 An empty `--itemize-changes` means every file is present at the right size,
 mtime, and permissions. Then snapshot the volume — this is the media backup
 the old runbook wrongly assumed already existed.
+
+#### Result — Phases 3–5 run 2026-08-27
+
+Volume `liveorc-media`, 150 GiB gp3, us-east-1c, attached to
+`i-01d5ccd8c3d4a3858` as `/dev/sdf`, surfacing as `/dev/nvme1n1`.
+ext4 UUID **`158ee1aa-a1b6-4146-a6cd-a446955bd6c7`**. `fstab` mounts it by
+`LABEL=liveorc-media`, and `daemon-reload` generated
+`var-lib-liveorc\x2dmedia.mount` — loaded, active, exactly the escaped name
+Phase 6 expects.
+
+The old s3fs line in `/etc/fstab` is **commented out**. So the
+`mnt-s3\x2dstorage.mount` unit that `liveorc.service` still requires is a
+standalone unit file, not fstab-generated — Phase 6's retirement has to target
+the unit, and the already-commented fstab line is not sufficient.
+
+Copy: seed first (25.6 kB of `admin-interface`), then 32,189,265,846 B in
+9,775 files at 125 MB/s, 4m04s.
+
+| Check | Source (writable layer) | Destination (volume) |
+|---|---|---|
+| files | 9775 | 9775 |
+| bytes | 32,189,265,846 | 32,189,286,505 |
+| `rsync -n --itemize-changes` | **empty — PASS** | |
+
+Destination exceeds source by 20,659 B: the seeded `admin-interface`, which
+exists only there by design.
+
+**Media had grown 26 GB → 31 GB** since the 2026-08-10 incident, and the host
+carried **2643 mp4s against the mirror's 2630** — 13 videos uploaded after the
+TODO-114 pull on 08-25. The gate is unaffected (all 9775 files copied), but the
+independent mirror now covers 2630 of 2643 videos, and uploads are demonstrably
+still arriving. Anything landing in the writable layer between this gate and
+Phase 7 is deleted by the recreate while its DB row survives.
 
 #### Phase 5b — ~~NOT NEEDED~~ (Phase 0, 2026-08-10)
 
@@ -359,6 +425,35 @@ back to the writable layer.
 
 `start-liveorc.sh` is a **local wrapper, not upstream**, so the durable defense
 goes there. See "Guards" in Phase 6.
+
+#### Ownership, confirmed from the host 2026-08-27
+
+`/opt/LiveORC` is a **git checkout of `localdevices/LiveORC`**, so ownership is
+checkable rather than inferred:
+
+| Path | `git -C /opt/LiveORC` says | Ours? |
+|---|---|---|
+| `start-liveorc.sh` | `??` untracked | **ours** |
+| `docker-compose.yml` | tracked | upstream |
+| `.env` | tracked, and already ` M` modified | upstream, long since edited locally |
+| any `*.service` | not tracked at all | **ours** |
+| `/usr/local/bin/verify-*.sh` | outside the checkout | **ours** |
+
+**"An upgrade reverts it *silently*" was wrong.** `liveorc.sh` has no upgrade
+subcommand — `git pull|fetch|checkout|reset|upgrade)` matches nothing in it — so
+an upgrade is a hand-run `git pull`. Against a modified tracked file, `git pull`
+**aborts** ("Your local changes would be overwritten by merge"); it does not
+quietly overwrite. The edit also stays permanently visible in `git status`.
+A silent revert requires someone to force it (`git reset --hard`,
+`git checkout .`). Guard 1 is the backstop for that case, not the only defense.
+
+`.env` being already modified means a `git pull` would halt on it first,
+regardless of what we do to `docker-compose.yml`.
+
+**No env-var escape hatch.** Checked in the image: `settings.py:126` is
+`MEDIA_ROOT = os.path.join(BASE_DIR, 'media')` — hardcoded, no environment
+override. `MEDIA_ROOT` cannot be moved to meet the existing bind, so changing
+the bind destination in upstream's `docker-compose.yml` is the only route.
 
 The full confirmed chain, matching what `docker inspect` shows on the running
 container:

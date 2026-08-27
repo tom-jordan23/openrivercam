@@ -1,0 +1,31 @@
+# Installed at /etc/systemd/system/liveorc.service
+#
+# Every s3fs coupling from the original unit is repointed at the media volume.
+# Leaving any behind would keep a dead mount able to take LiveORC down, which is
+# what happened on 2026-08-10. See MEDIA_VOLUME_RUNBOOK.md.
+[Unit]
+Description=LiveORC Server
+Documentation=https://github.com/localdevices/LiveORC
+RequiresMountsFor=/var/lib/liveorc-media
+After=docker.service var-lib-liveorc\x2dmedia.mount
+Requires=docker.service var-lib-liveorc\x2dmedia.mount
+AssertPathIsMountPoint=/var/lib/liveorc-media
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+TimeoutStartSec=300
+WorkingDirectory=/opt/LiveORC
+Environment=HOME=/home/ubuntu
+Environment=USER=ubuntu
+Environment=AWS_DEFAULT_REGION=us-east-1
+ExecStartPre=/usr/local/bin/verify-media-mount.sh
+ExecStart=/opt/LiveORC/start-liveorc.sh
+ExecStop=/opt/LiveORC/liveorc.sh stop
+Restart=on-failure
+RestartSec=30
+User=ubuntu
+Group=ubuntu
+
+[Install]
+WantedBy=multi-user.target
