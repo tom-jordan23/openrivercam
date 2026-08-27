@@ -31,6 +31,41 @@ fi
   --storage-dir /var/lib/liveorc-media \
   --detached
 
+# --- Repair: nginx SSL config ----------------------------------------------
+# LiveORC 0.3.0 generates nginx-ssl.conf from a template that uses the
+# standalone `ssl on;` directive. nginx REMOVED that in 1.25.1, and the image
+# ships nginx 1.26.3 — so from a clean container nginx dies with
+#   [emerg] unknown directive "ssl" in /liveorc/nginx/nginx-ssl.conf:32
+# gunicorn still runs, so the container looks healthy while the site is down.
+#
+# This bit us on 2026-08-27: the container had run since May and was only ever
+# `docker start`ed, so a hand-patched nginx-ssl.conf had been living in the
+# writable layer. The media migration's recreate deleted it and the site went
+# down — the same "critical state in exactly one place" failure the migration
+# itself was fixing.
+#
+# Both seds are idempotent and match nothing once upstream fixes the template,
+# so this self-retires rather than masking a future fix. That is why the repair
+# lives here and not in a :ro bind mount over the template.
+NGINX_FIX='s/^\( *\)listen 8000 deferred;/\1listen 8000 ssl deferred;/; /^ *ssl on;$/d'
+for f in /liveorc/nginx/nginx-ssl.conf.template /liveorc/nginx/nginx-ssl.conf; do
+    docker exec liveorc_webapp sed -i "$NGINX_FIX" "$f" 2>/dev/null
+done
+
+# Start nginx if the entrypoint's attempt died on the unpatched config.
+if ! docker exec liveorc_webapp pgrep -x nginx >/dev/null 2>&1; then
+    echo "nginx not running after start; starting it against the patched config"
+    docker exec -d liveorc_webapp nginx -c /liveorc/nginx/nginx-ssl.conf
+    sleep 2
+fi
+
+if ! docker exec liveorc_webapp pgrep -x nginx >/dev/null 2>&1; then
+    echo "FATAL: nginx is not running in liveorc_webapp." >&2
+    echo "gunicorn may be up while the site is unreachable. Check:" >&2
+    echo "  docker logs liveorc_webapp | grep emerg" >&2
+    exit 1
+fi
+
 # --- Guard 2: reality ------------------------------------------------------
 # Config is not evidence; the mount table is. Guard 1 can pass while the
 # container still comes up wrong.
