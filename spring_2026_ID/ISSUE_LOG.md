@@ -750,6 +750,17 @@ exactly this hunting. Both thresholds need reading off the device.
 currently unfalsifiable. The Witty Pi reports Vin/Vout/current over the same
 I2C link `orc-sensors` already uses.
 
+**ROOT CAUSE FOUND 2026-08-27 — see ISS-FIELD-009.** The station's disk is
+pinned at its 5 GB purge threshold. Processing errors on 43% of videos, the
+ORC-OS task never completes, `shutdown_after_task` never fires (it is set to 1,
+confirmed on the device), and the Pi runs to the Witty Pi's 25-minute backstop
+instead of shutting down at ~2 minutes — roughly 12x the energy budget for that
+cycle. That is what flattens the battery before dawn.
+
+Everything below stands as measurement, and the conclusion it reached — that
+this is not a battery-sizing problem — was right for the wrong reason. The pack
+is the last link in the chain, not the first.
+
 **Would more battery fix it? The energy budget says no.**
 
 Measured overnight draw, 18:00-06:00 WIB, using the BOM power budget normalised
@@ -848,6 +859,100 @@ a week of zero rain and high insolation.
 - Record the active schedule and the voltage thresholds somewhere committed.
   Nothing in the repo tracks either, and the running schedule (30 min) does not
   match what the assembly docs call the default (`prod_15.wpi`).
+
+---
+
+### ISS-FIELD-009: Station disk pinned at its purge threshold; half of all captured video never reached the server
+
+| Field | Value |
+|-------|-------|
+| **Date opened** | 2026-08-27 |
+| **Site** | Sukabumi |
+| **Risk** | Ongoing data loss — the purge runs every 5 minutes and deletes oldest-first |
+| **Impact** | **High** — and it is very likely the root cause behind ISS-FIELD-008 / TODO-116 |
+| **Status** | OPEN — no remediation attempted, deliberately |
+
+**Measured on the station 2026-08-27, over three wake windows.**
+
+```
+/dev/mmcblk0p2   58G   51G  5.1G  91% /
+
+43G   /home/pi
+37G   /home/pi/.ORC-OS
+36G   /home/pi/.ORC-OS/uploads/videos
+3.9G  /home/pi/code/git
+1.2G  /home/pi/.ORC-OS/tmp
+
+disk_management: min_free_space = 5.0 GB, critical_space = 2.0 GB, frequency = 300 s
+```
+
+Free space is **5.1 GB against a 5.0 GB threshold.** Not "nearly full" — pinned to
+the line. The disk manager checks every 300 s, purges just enough to clear the
+minimum, and is back under it by the next check. The purge fires on the first
+check of every fresh boot.
+
+**The video accounting is the serious part.**
+
+```
+ORC-OS video table: 5406 rows, 2026-04-08 -> 2026-08-27
+  status       DONE 2957 | ERROR 2324 | NEW 125       -> 43% failed processing
+  sync_status  SYNCED 2536 | FAILED 2744 | LOCAL 126  -> 51% never reached the server
+
+  mp4s still on disk: 3216, oldest 2026-06-07
+  table rows with no file behind them: 2190
+```
+
+**2744 videos have never reached LiveORC** — half of everything the station has
+captured. The table reaches back to 08 April; the files only to 07 June. Roughly
+2190 records no longer have a file.
+
+This reframes two earlier findings. The 12-day video gap (2026-07-30 -> 08-11,
+recorded in ISS-FIELD-008) was read as probably server-side; it is at least as
+likely that those captures happened, failed to sync, and were purged. And
+ISS-FIELD-007's server-side error spike now has a station-side sibling that is
+larger.
+
+**Why this is very likely the root cause of ISS-FIELD-008 / TODO-116**
+
+Disk pinned at the threshold -> pyorc processing runs out of room and errors
+(43%) -> the ORC-OS task never completes -> `shutdown_after_task` never fires
+(it is set to 1, confirmed) -> the Pi runs to the Witty Pi's 25-minute backstop
+instead of shutting down at ~2 minutes -> roughly **12x the energy budget for
+that cycle** -> the battery is flat before dawn -> the overnight outage.
+
+The battery is the **last** link in that chain, not the first. The energy
+arithmetic in ISS-FIELD-008 already said the pack was being asked for 6% of its
+nameplate and failing; this explains what was actually drawing it down. Buying
+battery capacity would have treated the symptom furthest from the cause.
+
+**What is NOT yet established**
+
+- Whether the purge deletes the `.mp4` itself or only the `output/` artifacts.
+  The captured log shows it removing `piv.nc`, transects, plots and
+  `camera_config.json` under `output/`. The 2190 fileless rows strongly imply
+  the mp4s go too, but nobody has watched one disappear.
+- **Why** the 2744 syncs failed. Until that is known, freeing space delays the
+  loss rather than stopping it, and the backlog keeps growing.
+- Whether the ERROR and FAILED sets overlap, and how far back the FAILED ones
+  reach — i.e. how much of the un-synced backlog still exists on disk to be
+  recovered at all.
+- Why `/home/pi/code/git` is 3.9 GB on a station.
+
+**Next steps — none taken yet, by decision**
+
+- [ ] Establish why sync fails. This gates everything else; space is the
+      symptom, the sync failure is the fault.
+- [ ] Determine how much of the 2744 is still on disk and therefore recoverable.
+- [ ] Only then decide on space. Roughly 5.5 GB is recoverable without touching
+      a single video (`.ORC-OS/tmp` 1.2 GB, `/home/pi/code/git` 3.9 GB and
+      re-clonable, pip cache 398 MB), which would lift free space clear of the
+      threshold and stop the purge.
+- [ ] Alarm this. Three disks have now filled unnoticed in this project — the
+      LiveORC root (ISS-FIELD-007), the media volume (TODO-112), and now the
+      station. None were alarmed. The station has no monitoring at all.
+- [ ] Revisit the BOM decision that struck out the 256 GB USB drive
+      ("REMOVED — UAS boot storm"). Storage was designed in, removed for a boot
+      problem, and the space budget was not revisited.
 
 ---
 

@@ -1116,9 +1116,21 @@ battery back over a voltage threshold. The 6.5-hour outage against a prior
 range of 21 hours to 9 days suggests the 13 V recovery voltage set on ~08-21
 may be doing exactly what it was meant to.
 
-**What is actually still broken** is the trigger and the hunting: the station
-still browns out overnight, and it still restarts every ~5 minutes across both
-solar transitions, burning a camera boot each time and producing no video.
+**Root cause found 2026-08-27 — ISS-FIELD-009.** The station disk is pinned at
+its 5 GB purge threshold, 43% of videos fail processing, the ORC-OS task never
+completes, so `shutdown_after_task` never fires and the Pi runs to the Witty
+Pi's 25-minute backstop instead of ~2 minutes. That is ~12x the energy budget
+per affected cycle, and it is what flattens the battery overnight.
+
+Two things I had wrong and that are corrected in ISS-FIELD-008: the "5-minute
+restarts" were never restarts — `wp5d.log` records every startup as a scheduled
+one, and the extra rows are the sensors' own 300-second interval firing during
+an extended wake. And the battery is the last link in this chain, not the
+first.
+
+**Fix ISS-FIELD-009 before touching power settings.** A low-voltage threshold is
+worth having regardless, but the right value looks different against a station
+that is not burning 12x its budget, and the disk is where the damage starts.
 
 ---
 
