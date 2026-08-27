@@ -481,37 +481,99 @@ nginx. Worth reporting alongside TODO-105.
 
 ---
 
-### ISS-FIELD-006: Video processing has been disabled since the August outage
+### ISS-FIELD-006: `liveorc.sh` scales a worker service upstream has commented out
 
 | Field | Value |
 |-------|-------|
 | **Date opened** | 2026-08-27 |
 | **Site** | LiveORC server (AWS) |
-| **Risk** | Silent data gap — videos stored but never processed |
+| **Risk** | Any `LORC_DEFAULT_NODES > 0` takes the whole stack down |
 | **Impact** | High |
+| **Status** | RESOLVED 2026-08-27 (keep `LORC_DEFAULT_NODES=0`) |
+
+> **This issue was first written on a wrong premise** — that
+> `LORC_DEFAULT_NODES=0` had disabled video processing during the August
+> outage. It had not. Corrected the same day; the original reasoning is kept
+> below because the wrong version was acted on and briefly took the site down.
+
+**Problem:**
+`liveorc.sh:336` appends `--scale liveorc_worker=$LORC_DEFAULT_NODES` whenever
+the value is above 0. But `docker-compose.rabbitmq.yml` has the entire
+`liveorc_worker` service **commented out** upstream, under:
+
+```
+# TODO: add back workers that connect to ORC-OS API
+```
+
+`git status` confirms that file is unmodified locally — this is upstream's own
+state. So `docker compose` fails with `no such service: liveorc_worker: not
+found` and **aborts before starting anything**, taking `liveorc_webapp` and `db`
+down with it. Not a degraded start: a total one.
+
+**How it was found:** `.env` showed a local change of `LORC_DEFAULT_NODES` from
+`1` to `0`, and the October 2025 journal showed a worker running. That looked
+like emergency triage during the outage that was never reverted. Setting it back
+to `1` took LiveORC down for about six minutes. Reverting to `0` restored it.
+
+The October journal is real, but `/opt/LiveORC` was updated between then and
+now, and the newer upstream dropped the worker. **`0` is the correct value for
+this version.** Whoever set it was fixing a config that would otherwise break
+the stack.
+
+**Lesson:** a local diff against upstream shows *what* changed, not *why*, and
+"reverting to upstream's value" is not automatically safe when the surrounding
+code has moved. Check that the service being scaled still exists before scaling
+it.
+
+**Upstream:** `liveorc.sh` should not scale a service its own compose files
+comment out. Worth reporting with ISS-FIELD-005 and TODO-105.
+
+---
+
+### ISS-FIELD-007: Video processing error rate jumped 8x while the root disk filled
+
+| Field | Value |
+|-------|-------|
+| **Date opened** | 2026-08-27 |
+| **Site** | LiveORC server (AWS) / Sukabumi |
+| **Risk** | ~377 videos captured but never turned into timeseries |
+| **Impact** | Medium-High |
 | **Status** | OPEN |
 
 **Problem:**
-`/opt/LiveORC/.env` carries `LORC_DEFAULT_NODES=0`. `git diff` against upstream
-shows it was changed `1 -> 0` locally and is the **only** modification to that
-file. With zero nodes, no `liveorc_worker` container is created and uploaded
-video is never processed into timeseries.
+`api_video.status` distribution from the 2026-08-27 backup (4 = Finished,
+5 = Error):
 
-The timing points to emergency triage during the 2026-08-10 outage — CPU was
-pinned at ~98% for a week with the disk full, and stopping the worker is exactly
-what relieves that. It was never reverted.
+| Month | Finished | Error | Rate |
+|---|---|---|---|
+| 2025-11 | 518 | 28 | 5% |
+| 2026-05 | 430 | 10 | 2% |
+| 2026-06 | 700 | 20 | 3% |
+| **2026-07** | 896 | **280** | **24%** |
+| **2026-08** | 205 | **97** | **32%** |
 
-**Consequence:** Sukabumi resumed uploading on 2026-08-20 and 2643 mp4s are on
-the media volume, but none of the recent ones have been processed. Sensor data
-continued flowing to Grafana and the Sheet throughout, so the system looked
-healthy from a stakeholder's view while the video pipeline was doing nothing.
+The baseline is 2-5%. It jumps eightfold in July and stays there.
 
-**Open question — sequencing, not mechanism.** The fix is one line and a
-restart. But TODO-113 (reprocess retained video under changed settings) says to
-reconcile with TODO-101 first because of a cross-section reversal. Starting the
-worker generates a backlog's worth of timeseries from a camera config that is
-already known to need changing, and those results reach stakeholders through the
-same channels.
+**Correlation:** media began accumulating in the container writable layer on
+2026-05-14, and the root filesystem reached 100% on 2026-08-10 (TODO-112). The
+error spike tracks the disk filling. Processing writes keyframes and thumbnails
+into `MEDIA_ROOT`; on a full disk those writes fail.
+
+That is a hypothesis, not a conclusion — the error reason per video has not been
+read yet, and July's spike starts before the disk was completely full.
+
+**Why it matters:** roughly 377 videos were captured, uploaded and stored but
+never became timeseries. The video files are on the media volume, so if the
+cause was infrastructure it is very likely recoverable now that `/` sits at 27%.
+
+**Next steps:**
+- Read the actual failure reason on a sample of status-5 videos rather than
+  trusting the correlation.
+- If it is disk-related, these are candidates for reprocessing — coordinate with
+  TODO-113, which already plans a reprocess run and has to reconcile with
+  TODO-101's cross-section reversal first.
+- Nobody noticed a 32% failure rate. Whatever monitoring covers this, it is not
+  working — the same gap as the missing disk alarm.
 
 ---
 

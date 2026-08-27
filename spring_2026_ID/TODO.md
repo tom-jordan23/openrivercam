@@ -1034,9 +1034,16 @@ guarded the mount, so the one condition that mattered went unchecked.
   living in the writable layer since May with no copy anywhere. The recreate
   deleted it and took the site down. Same failure class as the media itself.
   Repaired durably in `start-liveorc.sh`.
-- **ISS-FIELD-006** — `LORC_DEFAULT_NODES=0`, so no worker exists and **no video
-  has been processed since the August outage**, while sensor data kept flowing
-  to Grafana and the Sheet. Emergency triage that was never reverted.
+- **ISS-FIELD-006** — `liveorc.sh` appends `--scale liveorc_worker=N` while
+  upstream has that service **commented out** (`# TODO: add back workers that
+  connect to ORC-OS API`), so any value above 0 makes compose abort before
+  starting anything. `LORC_DEFAULT_NODES=0` is correct for this version. Acting
+  on the opposite assumption took LiveORC down for ~6 minutes on 2026-08-27.
+- **ISS-FIELD-007** — video processing errors ran 2-5% through June, then
+  **24% in July and 32% in August**, tracking the root disk filling up. Roughly
+  377 videos were stored but never became timeseries. The files are on the media
+  volume, so if the cause was the full disk they are likely recoverable — feed
+  into TODO-113.
 
 ---
 
