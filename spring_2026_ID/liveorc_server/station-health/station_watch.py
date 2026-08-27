@@ -50,7 +50,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-REPO_ROOT = HERE.parents[2]
+# spring_2026_ID/ — parents[0] is liveorc_server, [1] is the project dir. The
+# collectors live under it at pi/tools/; parents[2] is the git root and misses.
+REPO_ROOT = HERE.parents[1]
 COLLECTOR = REPO_ROOT / "pi/tools/orc_wp5_state.sh"
 FULL_BUNDLE = REPO_ROOT / "pi/tools/orc_collect.sh"
 
