@@ -123,8 +123,13 @@ sudo mv -f "\$LOGGER.new" "\$LOGGER"
 sudo install -m 0644 /tmp/wittypi.conf.candidate "\$CONF.new"
 sudo mv -f "\$CONF.new" "\$CONF"
 
-echo "--- test run (all sensors) ---"
-if sudo /usr/local/bin/orc-sensors; then
+# Test AS THE SERVICE USER, never as root. orc-sensors.service is User=pi, and
+# running the test with sudo does two kinds of damage: it validates a path that
+# never executes in production, and it creates the day's CSV owned by root so
+# every subsequent timer run fails with EACCES. That is exactly what happened on
+# 2026-08-27 — the sensor logged once, from this test, and never again.
+echo "--- test run (all sensors, as the service user) ---"
+if sudo -u pi /usr/local/bin/orc-sensors; then
     echo "orc-sensors OK"
 else
     echo "orc-sensors FAILED — rolling back sensors_logger.py"
@@ -132,6 +137,10 @@ else
     sudo rm -f "\$CONF"
     exit 1
 fi
+
+# Belt and braces: whatever created today's CSVs, make sure the service user
+# owns them before we walk away.
+sudo chown -R pi:pi /var/log/orc/sensors 2>/dev/null || true
 
 echo "--- wittypi CSV ---"
 tail -3 /var/log/orc/sensors/wittypi_\$(date +%F).csv 2>/dev/null || echo "(no wittypi CSV yet)"
