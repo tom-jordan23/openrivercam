@@ -69,6 +69,17 @@ import station_gaps as sg  # noqa: E402
 def tailscale_online(host):
     """True if the node is on the tailnet right now.
 
+    CAUTION: this lags reality for a duty-cycled station. The Pi does not
+    disconnect cleanly — its power is cut — so the control plane keeps
+    reporting Online for minutes afterwards. On 2026-08-27 a deploy fired on a
+    stale Online flag three minutes after the station had slept, and the SSH
+    timed out. `tailscale status` was simultaneously printing
+    `active; relay "sin"` and `offline, last seen 3m ago` for the same node.
+
+    For anything that must actually connect, use port_open() instead: a TCP
+    connect to 22 is ground truth and needs no credentials. This stays as the
+    cheap wake-detection hint.
+
     Absence is not evidence of a down station — this machine may be off the
     tailnet itself — so a False here only ever defers to the sensor signal.
     """
@@ -86,6 +97,21 @@ def tailscale_online(host):
         return None
     except Exception:
         return None
+
+
+def port_open(host, port=22, timeout_s=3):
+    """True if a TCP connect to host:port succeeds right now.
+
+    Ground truth for "can I actually reach it", as opposed to what the tailnet
+    control plane last believed. No credentials, no auth attempt, no log noise
+    on the station.
+    """
+    import socket
+    try:
+        with socket.create_connection((host, port), timeout=timeout_s):
+            return True
+    except OSError:
+        return False
 
 
 def sensor_age_minutes(station):
