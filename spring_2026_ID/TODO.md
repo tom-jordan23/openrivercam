@@ -1086,7 +1086,9 @@ sunny day produced no boot at all. Read the low-voltage cutoff alongside it —
 one threshold alone says nothing about hysteresis.
 
 - [ ] Collect the `wp5` power-on-reason log and both voltage thresholds, before
-      changing anything else on the station.
+      changing anything else on the station. Run
+      `station-health/station_watch.py`; the awake window is under 60 seconds,
+      measured 08-27, so a human cannot catch it.
 - [ ] Confirm from the `wp5` source what the firmware does with a past-due
       alarm at power-on — the latch mechanism is a plausible reading, not a
       verified one.
@@ -1105,9 +1107,18 @@ one threshold alone says nothing about hysteresis.
       files `deploy.sh` already manages.** The running schedule is 30-minute
       while the assembly docs call `prod_15.wpi` the default.
 
-**Blocked on physical access.** The fix cannot be applied until someone at site
-restarts the station (TODO-104 coordination). Build and bench-prove it ready to
-deploy the moment it comes back.
+**No longer blocked on physical access.** The station recovered **on its own**
+at 11:00 WIB on 2026-08-27, 6.5 hours after failing, with nobody sent to site.
+It is up and cycling now. That also unseats this TODO's premise: "stays down
+until someone physically pushes the button" is not established, and the
+07:00-13:00 recovery cluster is at least as consistent with solar pushing the
+battery back over a voltage threshold. The 6.5-hour outage against a prior
+range of 21 hours to 9 days suggests the 13 V recovery voltage set on ~08-21
+may be doing exactly what it was meant to.
+
+**What is actually still broken** is the trigger and the hunting: the station
+still browns out overnight, and it still restarts every ~5 minutes across both
+solar transitions, burning a camera boot each time and producing no video.
 
 ---
 

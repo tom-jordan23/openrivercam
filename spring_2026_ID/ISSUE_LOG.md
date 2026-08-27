@@ -612,13 +612,49 @@ same monitoring gap ISS-FIELD-007 closes with.
 **Two patterns in the timing:**
 
 - Every failure since May begins between **23:00 and 04:30 WIB** — the bottom
-  of the battery's nightly discharge. This is what makes the battery the
-  leading suspect.
-- Every recovery lands between **07:00 and 13:00 WIB** — local business hours,
-  spread across six hours, after outages of one to nine days. That is not a
-  voltage threshold recovering the station; that is a person pressing the
-  button. Twice (07-02, 08-20) the station came up, logged one cycle, died
-  within five minutes, and needed a second visit the next morning.
+  of the battery's nightly discharge.
+- Every recovery lands between **07:00 and 13:00 WIB**. This was first read as
+  a person pressing the button during working hours. **That reading is probably
+  wrong** — see the 08-27 event below. Mid-morning is also when solar pushes a
+  depleted battery back over a voltage threshold, and the two explanations are
+  not separable by time of day alone.
+
+**The 2026-08-27 event — the station recovered on its own.**
+
+It failed at 04:30 WIB and came back at **11:00:21 WIB, 6.5 hours later**, with
+nobody asked to attend site. That is the first directly observed recovery, and
+it was unattended. It makes solar-driven voltage recovery the better
+explanation for the whole 07:00–13:00 cluster, and it means the TODO-116
+premise — "stays down until someone physically pushes the button" — is not
+established and may be false.
+
+It also makes this outage **6.5 hours against a prior range of 21 hours to 9
+days.** The 13 V recovery voltage was set around 08-21. One event is not a
+result, but the obvious hypothesis is that the setting is working as intended
+and is converting unbounded outages into single-morning ones. That inverts its
+status: it was a suspect, and it may be the fix.
+
+**The oscillation tracks the solar transitions, not the clock.**
+
+Boot cadence on 2026-08-27 after recovery:
+
+| Window (WIB) | Behaviour |
+|---|---|
+| 11:00 – 18:30 | clean 30-min schedule |
+| **18:35 – 21:00** | **restarts every ~5 min — 20 off-schedule boots** |
+| 21:30 – 00:00 | clean 30-min schedule |
+
+Sunset at Sukabumi is ~17:50 WIB. The burst starts ~45 minutes after it and
+stops after ~2.5 hours. The 08-24/25 bursts ran 06:05–10:05, just after
+sunrise. So the episodes cluster around **both** solar transitions — when the
+charge controller hands over to the battery and back — not at a particular hour
+of the night.
+
+That is the signature of Vin crossing a threshold band: the Witty Pi cuts at
+the low threshold, the unloaded battery rebounds above the recovery threshold,
+it restarts, the camera/PoE load pulls it back down, and it cuts again. Each
+hunt costs a full boot and produces no video. It is consistent with the video
+evidence below, and it is falsifiable the moment Vin is logged.
 
 **The failure is two mechanisms, and they are worth fixing separately:**
 
@@ -630,6 +666,21 @@ same monitoring gap ISS-FIELD-007 closes with.
 Fixing the latch is the higher-value half and is independent of the trigger: it
 converts an unbounded outage into a 30-minute one. Fixing the trigger is a
 solar/battery capacity question needing a site visit and hardware budget.
+
+**Cross-checked against the video path.** `sensor_readings` reaching the server
+proves the *pipeline* worked, not that the station was up. The videos travel a
+completely separate route (station -> LiveORC API), so the two together
+separate a station outage from a broken path. From the TODO-114 mirror
+manifest:
+
+| Both paths dark | Station was genuinely off — 06-25, 08-15, 08-20 boundaries match to the minute |
+| Sensors dark, video flowing | 05-16 -> 06-07. Not a station outage: this is the known sensor-upload incident (LTE warm-up race + alphabetical starvation), diagnosed and fixed 2026-07-07 — see `pi/tools/README.md` |
+| Video dark, sensors clean 48/day | 06-21 -> 06-22, and **07-30 -> 08-11 (12 days)**. The station was healthy throughout. The August one ends the day after LiveORC was restored for the demo, so it is very likely server-side, alongside ISS-FIELD-007 |
+
+Two consequences. The station-down total is **~22.7 days, not 25.4** — the
+05-16 sensor gap was three days longer than the outage under it. And there is a
+12-day hole in captured video that has nothing to do with power and that nobody
+noticed.
 
 **Off-schedule boots — a second, unexplained behaviour:**
 
@@ -677,6 +728,10 @@ I2C link `orc-sensors` already uses.
 **Next steps:**
 - Collect the `wp5` power-on-reason log and both voltage thresholds the moment
   the station is reachable — before any other change.
+  `liveorc_server/station-health/station_watch.py` waits for the station and
+  runs `pi/tools/orc_wp5_state.sh` over Tailscale automatically. The awake
+  window measured on 08-27 was **under 60 seconds**, so this cannot be done by
+  hand.
 - Log Witty Pi Vin plus the power-on reason through `orc-sensors`, so this stops
   being inferred from missing rows. Also closes TODO-012's open question about
   DDR-60G quiescent draw.
