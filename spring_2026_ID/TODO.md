@@ -1045,6 +1045,19 @@ guarded the mount, so the one condition that mattered went unchecked.
   volume, so if the cause was the full disk they are likely recoverable — feed
   into TODO-113.
 
+### TODO-116: Witty Pi restart resiliency — a missed boot leaves the station down
+
+| Field | Value |
+|-------|-------|
+| **Status** | OPEN — captured 2026-08-25, not started |
+| **Site** | Both stations (Witty Pi scheduling) |
+
+The station periodically misses a boot cycle — battery is the leading
+suspect — and does not recover on its own. The failure mode is the
+scheduler, not the power event: once a boot is missed, the Witty Pi's
+"next start time" is left in the **past**, and nothing re-arms it. The
+station stays down until someone physically pushes the button.
+
 ---
 
 ## DONE — post-trip
@@ -1064,16 +1077,3 @@ is preserved in git history. Run
 `git log --follow -p spring_2026_ID/TODO.md` to read it. Anything from
 that list that's still open post-trip is mentioned by reference under
 TODO-107 above.
-
-   ### TODO-116: Witty Pi restart resiliency — a missed boot leaves the station down
-
-    | Field | Value |
-    |-------|-------|
-    | **Status** | OPEN — captured 2026-08-25, not started |
-    | **Site** | Both stations (Witty Pi scheduling) |
-
-    The station periodically misses a boot cycle — battery is the leading
-    suspect — and does not recover on its own. The failure mode is the
-    scheduler, not the power event: once a boot is missed, the Witty Pi's
-    "next start time" is left in the **past**, and nothing re-arms it. The
-    station stays down until someone physically pushes the button.
