@@ -200,6 +200,24 @@ sudo ls -la /var/orc/sensors/sukabumi/
 `--cacert` is required because the cert is self-signed. Without it, curl
 refuses to connect with `unable to get local issuer certificate`.
 
+## Station health
+
+`station-health/station_gaps.py` reconstructs a station's boot history from
+`sensor_readings` — the station writes rows on every wake, so their absence
+dates every outage exactly, and the spacing between them exposes boots the
+schedule never asked for. Read-only, runs from a workstation against the
+anonymous Grafana proxy: no credentials, no SSH, no Session Manager.
+
+```bash
+./station-health/station_gaps.py                    # sukabumi, all history
+./station-health/station_gaps.py --since 2026-08-20
+```
+
+Written for ISS-FIELD-008 / TODO-116 (Sukabumi misses a Witty Pi wake and stays
+down until someone presses the button — 22% downtime since May). Read the
+issue before drawing conclusions from the "extra boots" section: two different
+mechanisms produce identical timestamps there.
+
 ## Google Sheets export
 
 `sheets-export` appends rows from `sensor_readings` to a Google Sheet once an

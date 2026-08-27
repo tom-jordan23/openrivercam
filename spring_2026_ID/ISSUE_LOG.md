@@ -577,6 +577,121 @@ cause was infrastructure it is very likely recoverable now that `/` sits at 27%.
 
 ---
 
+### ISS-FIELD-008: Sukabumi misses a wake and stays down — 22% downtime since May
+
+| Field | Value |
+|-------|-------|
+| **Date opened** | 2026-08-27 |
+| **Site** | Sukabumi |
+| **Risk** | Station is down now, and has been unavailable ~1 day in 5 since May |
+| **Impact** | High |
+| **Status** | OPEN |
+
+**Problem:**
+The station periodically misses a Witty Pi wake and does not recover on its
+own. TODO-116 recorded the mechanism; this is the measurement behind it,
+reconstructed from `sensor_readings` — the station writes rows on every wake,
+so their absence is an exact record of when it was down.
+
+Run `liveorc_server/station-health/station_gaps.py` to regenerate any of this.
+
+| Went down (WIB) | Came back (WIB) | Down |
+|---|---|---|
+| 05-02 06:31 | 05-02 07:31 | 1.0 h |
+| 05-11 23:01 | 05-13 13:03 | 38 h |
+| 05-16 00:47 | 05-25 07:00 | **9.3 d** |
+| 06-25 04:30 | 07-02 10:38 | **7.3 d** |
+| 07-02 10:43 | 07-03 09:47 | 23 h |
+| 08-15 01:30 | 08-20 10:39 | **5.4 d** |
+| 08-20 10:39 | 08-21 08:14 | 22 h |
+| **08-27 04:30** | **— still down** | **ongoing** |
+
+**25.4 days down out of 117.9 observed — 22%.** Nobody noticed, which is the
+same monitoring gap ISS-FIELD-007 closes with.
+
+**Two patterns in the timing:**
+
+- Every failure since May begins between **23:00 and 04:30 WIB** — the bottom
+  of the battery's nightly discharge. This is what makes the battery the
+  leading suspect.
+- Every recovery lands between **07:00 and 13:00 WIB** — local business hours,
+  spread across six hours, after outages of one to nine days. That is not a
+  voltage threshold recovering the station; that is a person pressing the
+  button. Twice (07-02, 08-20) the station came up, logged one cycle, died
+  within five minutes, and needed a second visit the next morning.
+
+**The failure is two mechanisms, and they are worth fixing separately:**
+
+1. **The trigger** — a brownout kills a wake cycle. Suspected battery,
+   unproven (see below).
+2. **The latch** — the missed cycle leaves the Witty Pi's next-startup alarm in
+   the past and nothing re-arms it, so one missed cycle becomes nine days.
+
+Fixing the latch is the higher-value half and is independent of the trigger: it
+converts an unbounded outage into a 30-minute one. Fixing the trigger is a
+solar/battery capacity question needing a site visit and hardware budget.
+
+**Off-schedule boots — a second, unexplained behaviour:**
+
+The station also wakes when the schedule says it should be off, in episodes,
+typically at 5-minute spacing. Counts by month: **April 924** (bring-up, mostly
+hands-on work — discount it), **May 332, June 20, July 5, August 49.** The
+densest run was the night of 2026-08-25→26, restarting every five minutes from
+22:05 to 02:30 with no charge source — a battery being cycled under load all
+night for no captures worth having.
+
+Two candidate mechanisms, **not distinguishable from timestamps**:
+
+- A voltage threshold restarting the Pi as Vin crosses it.
+- The Witty Pi re-powering the Pi inside its own 25-minute `ON` window after
+  ORC-OS shuts down early. Note the 5-minute spacing is exactly the `OFF M5`
+  window in `prod_30.wpi`, which is suggestive and nothing more.
+
+The `wp5` power-on-reason log on the Pi records `alarm` vs voltage vs button.
+**It is the single highest-value artefact to collect the moment the station is
+back up, before anything else touches it.**
+
+**What this signal is not:** it is tempting to read it as a precursor, and it
+isn't one. The May 07–09 episodes were followed by no outage. The 08-15 outage
+arrived out of a completely clean cadence. Do not build an alarm on it.
+
+**Undocumented config change:** a **recovery voltage of 13 V** was set on the
+Witty Pi around **2026-08-21**. It is recorded nowhere in this repo —
+`deploy.sh:347` excludes `pi/sukabumi/*.wpi` from the overlay, so no committed
+file would have caught it. 13 V is high for a 12 V battery (lead-acid rests
+~12.7 V full; 13 V generally appears only while charging), which raises the
+possibility that recovery cannot fire at all — that would explain a full sunny
+day on 08-27 producing no boot. But the off-schedule boots **predate the change
+by months**, so the setting did not cause them.
+
+The number that matters is not the recovery voltage alone but its distance from
+the **low-voltage cutoff**, measured against how far Vin sags under load. Wide
+gap gives hysteresis; narrow gap, or a load sag that straddles it, gives
+exactly this hunting. Both thresholds need reading off the device.
+
+**No power telemetry exists.** `sensor_readings` carries `ds18b20`, `rg15` and
+`sht40` and nothing electrical, so "battery is the leading suspect" is
+currently unfalsifiable. The Witty Pi reports Vin/Vout/current over the same
+I2C link `orc-sensors` already uses.
+
+**Next steps:**
+- Collect the `wp5` power-on-reason log and both voltage thresholds the moment
+  the station is reachable — before any other change.
+- Log Witty Pi Vin plus the power-on reason through `orc-sensors`, so this stops
+  being inferred from missing rows. Also closes TODO-012's open question about
+  DDR-60G quiescent draw.
+- Bench-reproduce on the Jakarta station, which is in the US and already wanted
+  as a soak rig by TODO-108: load `prod_30.wpi`, set the same 13 V, sweep the
+  input voltage and watch for the hunting band directly.
+- Before asking PMI to send someone, decide whether they should back the
+  recovery voltage off while on site, and have them read the battery at the
+  terminals first — two of the previous trips bought a single cycle.
+- Record the active schedule and the voltage thresholds somewhere committed.
+  Nothing in the repo tracks either, and the running schedule (30 min) does not
+  match what the assembly docs call the default (`prod_15.wpi`).
+
+---
+
 ### ISS-FIELD-004: Mirroring media through the REST API took the LiveORC host down
 
 | Field | Value |

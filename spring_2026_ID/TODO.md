@@ -1,6 +1,6 @@
 # TODO — Indonesia Spring 2026 Deployment (post-trip)
 
-**Last updated:** 2026-08-24
+**Last updated:** 2026-08-27
 
 The pre-trip task list (departure schedule day-by-day, in-country
 deferred items, etc.) was archived to `archive/` after the April 2026
@@ -1049,7 +1049,7 @@ guarded the mount, so the one condition that mattered went unchecked.
 
 | Field | Value |
 |-------|-------|
-| **Status** | OPEN — captured 2026-08-25, not started |
+| **Status** | OPEN — captured 2026-08-25; measured 2026-08-27, see ISS-FIELD-008 |
 | **Site** | Both stations (Witty Pi scheduling) |
 
 The station periodically misses a boot cycle — battery is the leading
@@ -1057,6 +1057,57 @@ suspect — and does not recover on its own. The failure mode is the
 scheduler, not the power event: once a boot is missed, the Witty Pi's
 "next start time" is left in the **past**, and nothing re-arms it. The
 station stays down until someone physically pushes the button.
+
+**Measured 2026-08-27 (ISS-FIELD-008).** Eight outages since May, **25.4 days
+down out of 117.9 — 22%**, including one of 9.3 days. Sukabumi is down right
+now, since 08-27 04:30 WIB. Every failure since May starts between 23:00 and
+04:30 WIB; every recovery lands in local business hours, which is what a button
+press looks like, not a voltage threshold. Regenerate any of this with
+`liveorc_server/station-health/station_gaps.py`.
+
+**Split the work along the two mechanisms.** The *latch* (alarm left in the
+past, nothing re-arms it) is independent of the *trigger* (whatever kills the
+cycle) and is the higher-value half: it turns an unbounded outage into a
+30-minute one, and it is worth fixing even if the battery diagnosis is wrong.
+
+**The mechanism has a second candidate now.** The station also boots
+off-schedule in episodes, at 5-minute spacing — 332 such boots in May, 49 in
+August, and a run every five minutes from 22:05 to 02:30 on the night of
+08-25→26. That is either a voltage threshold or the Witty Pi re-powering the Pi
+inside its own 25-minute `ON` window; the 5-minute spacing equals `OFF M5` in
+`prod_30.wpi`. Timestamps cannot separate them. **Do not design a fix until the
+`wp5` power-on-reason log has been read** — it names the cause directly, and it
+is the first thing to collect when the station is reachable.
+
+**A live, undocumented variable:** a 13 V recovery voltage was set around
+2026-08-21 and is recorded in no committed file. It did not cause the
+off-schedule boots (they predate it by months), but it may be why 08-27's full
+sunny day produced no boot at all. Read the low-voltage cutoff alongside it —
+one threshold alone says nothing about hysteresis.
+
+- [ ] Collect the `wp5` power-on-reason log and both voltage thresholds, before
+      changing anything else on the station.
+- [ ] Confirm from the `wp5` source what the firmware does with a past-due
+      alarm at power-on — the latch mechanism is a plausible reading, not a
+      verified one.
+- [ ] Add Witty Pi Vin + power-on reason to `orc-sensors`, so the battery
+      hypothesis stops being unfalsifiable. Closes TODO-012's DDR-60G question
+      as a side effect.
+- [ ] Bench-reproduce on Jakarta — merge with TODO-108, which already wants it
+      on a soak rig. Sweep Vin and find the hunting band directly.
+- [ ] Fix the latch: prefer a config threshold if the firmware has one;
+      otherwise a boot-time re-arm unit that sets the next alarm unconditionally,
+      early enough that ORC-OS cannot shut the box down first. Then a human
+      button press also re-arms the schedule instead of buying one cycle.
+- [ ] Commit the active schedule and voltage thresholds. `deploy.sh:347`
+      excludes `*.wpi` from the overlay, so schedule changes reach the Witty Pi
+      only by USB-C drag-drop or the `wp5` menu — **prefer fixes that live in
+      files `deploy.sh` already manages.** The running schedule is 30-minute
+      while the assembly docs call `prod_15.wpi` the default.
+
+**Blocked on physical access.** The fix cannot be applied until someone at site
+restarts the station (TODO-104 coordination). Build and bench-prove it ready to
+deploy the moment it comes back.
 
 ---
 
