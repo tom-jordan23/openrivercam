@@ -260,22 +260,45 @@ def read_ds18b20(conf):
 # Registry of sensor drivers
 # ─── Witty Pi 5 power rails ─────────────────────────────────────────
 #
-# Label patterns are deliberately loose. The exact wp5 status wording has not
-# been confirmed on the device yet, so match on the concept and take the first
-# number that follows.
+# Confirmed against a real Witty Pi 5.0.0 status header, 2026-08-27:
+#
+#   V-IN: 12.673V   V-OUT: 5.273V   I-OUT: 0.902A
+#
+# The hyphen matters. An earlier version of these patterns looked for "vin" and
+# matched nothing at all, which would have shipped a driver that raised on every
+# single read. Hence `v\s*-?\s*in` — and hence testing patterns against
+# captured output rather than against an imagined format.
+#
+# The wordier alternatives are kept as a fallback in case another firmware build
+# spells it out.
 _WP5_PATTERNS = {
-    "vin_v":  re.compile(r"(?:vin|input\s+voltage)\D{0,14}?([0-9]+\.?[0-9]*)", re.I),
-    "vout_v": re.compile(r"(?:vout|output\s+voltage)\D{0,14}?([0-9]+\.?[0-9]*)", re.I),
-    "iout_a": re.compile(r"(?:iout|output\s+current)\D{0,14}?([0-9]+\.?[0-9]*)", re.I),
+    "vin_v":  re.compile(r"(?:v\s*-?\s*in\b|input\s+voltage)\D{0,10}?([0-9]+\.?[0-9]*)", re.I),
+    "vout_v": re.compile(r"(?:v\s*-?\s*out\b|output\s+voltage)\D{0,10}?([0-9]+\.?[0-9]*)", re.I),
+    "iout_a": re.compile(r"(?:i\s*-?\s*out\b|output\s+current)\D{0,10}?([0-9]+\.?[0-9]*)", re.I),
 }
 
 
 def _wp5_sample(timeout_s):
-    """One wp5 status read. Returns (values_dict, raw_output)."""
-    proc = subprocess.run(
-        ["wp5"], input="q\n", capture_output=True, text=True, timeout=timeout_s
-    )
-    raw = (proc.stdout or "") + (proc.stderr or "")
+    """One wp5 status read. Returns (values_dict, raw_output).
+
+    wp5 does not exit on EOF — it sits at its menu until killed, confirmed on
+    the station 2026-08-27. So a timeout here is the NORMAL path, not a failure,
+    and the partial output is the whole point: the status header carrying
+    V-IN/V-OUT/I-OUT prints before the menu does. Read what it printed and move
+    on rather than waiting out a process that is never going to return.
+    """
+    try:
+        proc = subprocess.run(
+            ["wp5"], stdin=subprocess.DEVNULL, capture_output=True,
+            text=True, timeout=timeout_s
+        )
+        raw = (proc.stdout or "") + (proc.stderr or "")
+    except subprocess.TimeoutExpired as e:
+        def _txt(x):
+            if x is None:
+                return ""
+            return x if isinstance(x, str) else x.decode("utf-8", "replace")
+        raw = _txt(e.stdout) + _txt(e.stderr)
     vals = {}
     for key, pat in _WP5_PATTERNS.items():
         m = pat.search(raw)
