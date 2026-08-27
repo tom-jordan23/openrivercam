@@ -81,3 +81,8 @@ orc_collect_*.txt
 # Let's Encrypt cert copied out of the LiveORC container by
 # enable-grafana-tls.sh. Server-local, same treatment as certs/.
 spring_2026_ID/liveorc_server/certs-le/
+
+# Any .env anywhere in the tree. There are explicit rules for several of these
+# below/above, and spring_2026_ID/.env still slipped through — this repo is
+# public and these files carry live credentials, so match the class, not paths.
+.env

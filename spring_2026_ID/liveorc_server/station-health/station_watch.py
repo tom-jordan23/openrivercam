@@ -45,6 +45,7 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -102,6 +103,50 @@ def sensor_age_minutes(station):
     return float(rows[0]["age_min"])
 
 
+def load_password():
+    """Read the pi account password from spring_2026_ID/.env, or None.
+
+    Accepts either a bare password on its own line or KEY=VALUE. The file is
+    gitignored (this repo is public); nothing here writes it anywhere, and the
+    value is handed to ssh through the environment rather than argv so it never
+    appears in the process list.
+    """
+    env = REPO_ROOT / ".env"
+    if not env.is_file():
+        return None
+    for line in env.read_text().splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        return line.split("=", 1)[1].strip() if "=" in line else line
+    return None
+
+
+def askpass_env(password):
+    """Env + helper script letting ssh answer its own password prompt.
+
+    OpenSSH >= 8.4 honours SSH_ASKPASS_REQUIRE=force, which uses the helper even
+    when a tty is present. That avoids an sshpass dependency and, unlike
+    `sshpass -p`, keeps the secret out of argv. BatchMode must be off for the
+    prompt to happen at all.
+    """
+    helper = Path(tempfile.gettempdir()) / "orc-askpass.py"
+    helper.write_text(
+        "#!/usr/bin/env python3\n"
+        "import os, sys\n"
+        "sys.stdout.write(os.environ['ORC_SSH_PASSWORD'])\n"
+    )
+    helper.chmod(0o700)
+    env = dict(os.environ)
+    env.update({
+        "ORC_SSH_PASSWORD": password,
+        "SSH_ASKPASS": str(helper),
+        "SSH_ASKPASS_REQUIRE": "force",
+        "DISPLAY": env.get("DISPLAY", ":0"),
+    })
+    return env
+
+
 def collect(user, host, outdir, full=False):
     """Run the read-only collectors over SSH, newest-value-first.
 
@@ -123,19 +168,39 @@ def collect(user, host, outdir, full=False):
             results.append(f"{name}: MISSING {script}")
             continue
         dest = outdir / f"{host}-{name}-{stamp}.txt"
+        password = load_password()
+        env = askpass_env(password) if password else None
         cmd = [
             "ssh",
-            "-o", "BatchMode=yes",
+            "-o", f"BatchMode={'no' if password else 'yes'}",
             "-o", "StrictHostKeyChecking=accept-new",
             "-o", "ConnectTimeout=10",
+            "-o", "NumberOfPasswordPrompts=1",
             f"{user}@{host}",
-            "sudo bash -s",
+            # -S so sudo takes the same password on stdin... except stdin is the
+            # script. Rely on NOPASSWD (deploy.sh assumes it throughout) and let
+            # a sudo prompt fail loudly rather than hang the window.
+            "sudo -n bash -s",
         ]
         try:
             with open(script, "rb") as fh, open(dest, "wb") as out:
                 p = subprocess.run(cmd, stdin=fh, stdout=out,
-                                   stderr=subprocess.STDOUT, timeout=150)
+                                   stderr=subprocess.STDOUT, timeout=150, env=env)
             size = dest.stat().st_size
+
+            # If sudo is not NOPASSWD, -n refuses instantly. Most of the
+            # collector still works unprivileged (vcgencmd, wp5, uptime), and a
+            # partial grab inside a 60-second window beats an empty one, so
+            # retry without sudo rather than surrender the window.
+            head = dest.read_bytes()[:400].decode("utf-8", "replace")
+            if "sudo:" in head or (p.returncode != 0 and size < 2000):
+                cmd_nosudo = cmd[:-1] + ["bash -s"]
+                with open(script, "rb") as fh, open(dest, "wb") as out:
+                    p = subprocess.run(cmd_nosudo, stdin=fh, stdout=out,
+                                       stderr=subprocess.STDOUT, timeout=150, env=env)
+                size = dest.stat().st_size
+                results.append(f"{name}: sudo refused, retried unprivileged")
+
             results.append(f"{name}: rc={p.returncode} {size}B -> {dest}")
             if name == "wp5-state" and p.returncode == 0 and size > 2000:
                 ok = True
