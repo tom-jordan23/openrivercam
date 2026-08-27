@@ -1,0 +1,29 @@
+# Installs to /etc/systemd/system/mnt-s3\x2dstorage.mount
+# (systemd requires the escaped name; derive it with
+#  systemd-escape -p --suffix=mount /mnt/s3-storage)
+#
+# Operator convenience ONLY. Nothing may depend on this mount.
+#
+# History: this unit used to carry Before=docker.service, and liveorc.service
+# carried Requires=/After= on it plus AssertPathIsMountPoint. When s3fs failed,
+# LiveORC could not start — a 4 KB mount nothing used could take the whole
+# application down, while the real media path had no guard at all. Both of those
+# couplings were removed on 2026-08-27 (TODO-112 Phase 6). Do not add them back.
+[Unit]
+Description=S3 bucket mount (openrivercam-video) - operator convenience
+Documentation=https://github.com/s3fs-fuse/s3fs-fuse
+Requires=network-online.target
+After=network-online.target
+
+[Mount]
+What=openrivercam-video
+Where=/mnt/s3-storage
+Type=fuse.s3fs
+# ensure_diskfree=10240 keeps 10 GB free on the root disk: s3fs caches whole
+# objects under use_cache with no size limit of its own, and this bucket holds
+# ~30 GB of media plus the DB backups. A full / took this host down on
+# 2026-08-10.
+Options=_netdev,allow_other,use_cache=/tmp/s3fs,ensure_diskfree=10240,iam_role=auto,url=https://s3.us-east-1.amazonaws.com
+
+[Install]
+WantedBy=remote-fs.target

@@ -10,6 +10,7 @@ media migration itself was fixing.
 | `start-liveorc.sh` | `/opt/LiveORC/start-liveorc.sh` | **ours** — local wrapper, survives a LiveORC upgrade |
 | `verify-media-mount.sh` | `/usr/local/bin/verify-media-mount.sh` | **ours** — replaces `verify-s3mount.sh` |
 | `liveorc.service` | `/etc/systemd/system/liveorc.service` | **ours** |
+| `mnt-s3-storage.mount` | `/etc/systemd/system/mnt-s3\x2dstorage.mount` | **ours** — operator convenience, nothing depends on it |
 
 ## What is deliberately NOT here
 
@@ -39,6 +40,22 @@ sudo systemctl daemon-reload
 
 Installing these does **not** restart anything. `liveorc.service` is
 `Type=oneshot` + `RemainAfterExit`, and `daemon-reload` only re-reads units.
+
+## The S3 convenience mount
+
+`/mnt/s3-storage` is kept for operator convenience only. It is **not** part of
+LiveORC's storage path — media lives on the EBS volume at
+`/var/lib/liveorc-media`.
+
+Two properties must hold, and both were violated before 2026-08-27:
+
+1. **Nothing depends on it.** `liveorc.service` used to carry `Requires=`,
+   `After=`, `RequiresMountsFor=` and `AssertPathIsMountPoint` against this
+   mount, so an s3fs failure took the whole application down. The unit also
+   carried `Before=docker.service`, putting it ahead of Docker at boot.
+2. **It cannot fill the root disk.** `use_cache` has no size limit of its own
+   and s3fs caches whole objects, so `ensure_diskfree=10240` keeps 10 GB free
+   on `/`. A full root disk took this host down on 2026-08-10.
 
 ## The two guards
 
