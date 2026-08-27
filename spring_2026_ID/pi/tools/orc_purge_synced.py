@@ -82,13 +82,98 @@ def resolve(raw):
     return p if p.is_dir() else p.parent
 
 
+def purge_before_date(cutoff, apply_it):
+    """Drop whole uploads/videos/<YYYYMMDD>/ directories older than cutoff.
+
+    WHY A SECOND MODE
+        The synced-only pass found nothing to delete, and the station is sitting
+        below its purge threshold destroying un-synced video oldest-first on a
+        5-minute timer. Taking the oldest month deliberately removes what that
+        purge was about to take anyway, and the headroom it buys is what stops
+        the purge reaching July and August. Doing nothing is not the
+        conservative option here.
+
+        Sukabumi is a pilot and its video is not feeding anything, so this is a
+        space decision, not a data one (Tom, 2026-08-27).
+
+    WHY IT IGNORES THE DATABASE
+        Date directories are named YYYYMMDD on disk. Deciding from the tree
+        needs no `file` column mapping, so it cannot be wrong in the way the
+        synced-only pass might be. Guardrails: immediate children of the uploads
+        root only, name must be exactly 8 digits, date must be strictly before
+        the cutoff.
+    """
+    import re
+    if not re.fullmatch(r"\d{8}", cutoff):
+        sys.exit(f"--before-date must be YYYYMMDD, got {cutoff!r}")
+    if not UPLOADS.is_dir():
+        sys.exit(f"no uploads dir at {UPLOADS}")
+
+    victims, kept = [], []
+    for d in sorted(UPLOADS.iterdir()):
+        if not d.is_dir() or not re.fullmatch(r"\d{8}", d.name):
+            kept.append((d.name, "not a date dir"))
+            continue
+        (victims if d.name < cutoff else kept).append(
+            (d.name, "older" if d.name < cutoff else "kept"))
+
+    st = os.statvfs("/")
+    free_before = st.f_bavail * st.f_frsize
+
+    total = 0
+    sized = []
+    for name, _ in victims:
+        sz = dir_size(UPLOADS / name)
+        sized.append((name, sz))
+        total += sz
+
+    print(f"cutoff                 : {cutoff} (strictly before)")
+    print(f"date dirs to delete    : {len(victims)}")
+    print(f"date dirs kept         : {len([k for k in kept if k[1]=='kept'])}")
+    print(f"reclaimable            : {total/2**30:.2f} GiB")
+    print(f"free now               : {free_before/2**30:.2f} GiB")
+    print(f"free after (projected) : {(free_before+total)/2**30:.2f} GiB")
+    for name, sz in sized:
+        print(f"  {name}  {sz/2**30:6.2f} GiB")
+
+    if not apply_it:
+        print("\nDRY RUN — nothing deleted. Re-run with --apply.")
+        return
+    if not sized:
+        print("\nnothing matched.")
+        return
+
+    removed = failed = 0
+    for name, sz in sized:
+        try:
+            shutil.rmtree(UPLOADS / name)
+            removed += 1
+        except OSError as e:
+            failed += 1
+            print(f"  FAILED {name}: {e}")
+
+    st = os.statvfs("/")
+    free_after = st.f_bavail * st.f_frsize
+    print(f"\ndeleted {removed} date dirs, {failed} failed")
+    print(f"free before : {free_before/2**30:.2f} GiB")
+    print(f"free after  : {free_after/2**30:.2f} GiB")
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--apply", action="store_true",
                     help="actually delete (default is a dry run)")
     ap.add_argument("--limit", type=int, default=0,
                     help="only act on the N oldest synced videos (0 = all)")
+    ap.add_argument("--before-date", metavar="YYYYMMDD",
+                    help="instead of the synced-only pass, drop whole date "
+                         "directories older than this. Works off the filesystem, "
+                         "not the database, so it does not depend on the `file` "
+                         "column mapping.")
     args = ap.parse_args()
+
+    if args.before_date:
+        return purge_before_date(args.before_date, args.apply)
 
     if not DB.is_file():
         sys.exit(f"no database at {DB}")
