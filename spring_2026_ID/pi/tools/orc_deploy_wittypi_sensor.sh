@@ -79,8 +79,15 @@ python3 -m py_compile /tmp/sensors_logger.candidate || {
     echo "REMOTE py_compile FAILED — nothing changed"; exit 1; }
 
 sudo cp -a "\$LOGGER" "\$LOGGER.bak"
-sudo install -m 0755 /tmp/sensors_logger.candidate "\$LOGGER"
-sudo install -m 0644 /tmp/wittypi.conf.candidate "\$CONF"
+# Stage into the TARGET directory then rename. install(1) copies in place, and
+# this station can lose power at any moment — a truncated sensors_logger.py
+# would break sht40, rg15 and ds18b20 as well as the new sensor. rename(2) on
+# the same filesystem is atomic, so the file is either the old one or the new
+# one and never half of either.
+sudo install -m 0755 /tmp/sensors_logger.candidate "\$LOGGER.new"
+sudo mv -f "\$LOGGER.new" "\$LOGGER"
+sudo install -m 0644 /tmp/wittypi.conf.candidate "\$CONF.new"
+sudo mv -f "\$CONF.new" "\$CONF"
 
 echo "--- test run (all sensors) ---"
 if sudo /usr/local/bin/orc-sensors; then
@@ -98,6 +105,26 @@ echo "--- other sensors still writing ---"
 for s in sht40 rg15 ds18b20; do
     printf '%-9s %s\n' "\$s" "\$(tail -1 /var/log/orc/sensors/\${s}_\$(date +%F).csv 2>/dev/null || echo MISSING)"
 done
+
+# Piggyback the long-wake question onto this connection. Extended wakes are the
+# energy problem (25 min vs 2 min, ~12x), and there are two candidate causes:
+# ORC-OS's "shutdown after task" got unset, or its task keeps failing before it
+# reaches the shutdown step. These reads are ~1 s and settle the first outright.
+echo "--- ORC-OS settings (shutdown_after_task is the one that matters) ---"
+python3 - <<'PYEOF' 2>&1 || echo "(settings read failed)"
+import sqlite3
+c = sqlite3.connect("/home/pi/.ORC-OS/orc-os.db").cursor()
+c.execute("SELECT * FROM settings")
+cols = [d[0] for d in c.description]
+for row in c.fetchall():
+    for k, v in zip(cols, row):
+        print(f"  {k} = {v}")
+PYEOF
+
+echo "--- did THIS wake finish its task? ---"
+journalctl -b 0 -u orc-api --no-pager -n 25 2>&1 | tail -25
+echo "--- orc-capture this boot ---"
+journalctl -b 0 -u orc-capture --no-pager -n 15 2>&1 | tail -15
 REMOTE_EOF
 )
 
