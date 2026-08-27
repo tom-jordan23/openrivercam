@@ -966,8 +966,22 @@ video:
       a near-identical shape for the *sensor* uploader in July — fired before
       the LTE modem registered, all-or-nothing watermark that never advanced.
       Check whether video sync has the same race and no retry.
-- [ ] **Size the disk properly.** 58 GB with ~12 GB/month of video is a few
-      months of runway at best, whatever else is fixed.
+- [ ] **Size the disk properly — but not by adding one.** 58 GB against
+      ~12 GB/month of video is a few months of runway at best. **A second disk
+      is not the answer and has already been tried:** ORC-OS cannot handle video
+      living on a different filesystem from its database (Tom, 2026-08-27). That
+      is the same wall the S3 storage mount hit on the server. The 256 GB USB
+      drive struck out of `BOM_Sukabumi.md` ran into this as well as the UAS boot
+      storm, so the BOM's stated reason is only half the story.
+
+      That leaves two real options: a larger root device (whole system, not a
+      video-only mount), or bounded retention — which only becomes safe once
+      sync is trustworthy, because today deleting an un-synced video loses it.
+
+**Note the shape of this.** Fixing sync is not just a quality finding, it is the
+structural fix: with reliable sync, video can be deleted shortly after upload
+and 58 GB stops mattering. Without it, any disk fills eventually and the station
+returns to this state. Sync is the constraint that makes retention possible.
 - [ ] Alarm this. Three disks have now filled unnoticed in this project — the
       LiveORC root (ISS-FIELD-007), the media volume (TODO-112), and now the
       station. None were alarmed. The station has no monitoring at all.
