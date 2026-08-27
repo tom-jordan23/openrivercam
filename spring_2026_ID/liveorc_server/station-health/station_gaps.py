@@ -6,14 +6,17 @@ WHY
     then stays down — for days — until someone at site presses the button. For
     four months that was a paragraph of anecdote. It is not: the station writes
     a sensor row every wake, so the *absence* of rows is a precise record of
-    when it was down, and the spacing between them is a precise record of when
-    it booted more often than the schedule allows.
+    when it was down, and the spacing between them says how long each wake ran.
 
     Nobody noticed 25 days of downtime out of 118. Nobody noticed the station
-    restarting every 5 minutes through the night of 2026-08-25. Both were
-    sitting in the database the whole time. This script exists so that
-    "is it up, how long was it down, and is it booting when it shouldn't"
-    is one command instead of a research project.
+    staying awake for hours on the night of 2026-08-25. Both were sitting in the
+    database the whole time. This script exists so that "is it up, how long was
+    it down, and is it burning the battery while awake" is one command instead
+    of a research project.
+
+    Read the caveat under `long wakes` before drawing any conclusion from the
+    second section. Row spacing does not distinguish a boot from a sensor tick,
+    and reading it as boots produced a confident and completely wrong theory.
 
     Two distinct signals, deliberately reported separately:
 
@@ -24,22 +27,25 @@ WHY
                     discharge; recoveries cluster in local business hours,
                     which is what a human pressing a button looks like).
 
-      extra boots   gaps far SHORTER than the duty cycle — the station woke
-                    when the schedule said it should be off. There is no quiet
-                    baseline to compare against: this has run in episodes since
-                    at least 2026-05-07 (332 in May, 20 in June, 5 in July, 49
-                    in August), so ALWAYS look at a long window before calling
-                    any month a change. Something is starting the Pi that isn't
-                    the alarm — a voltage threshold, or the Witty Pi re-powering
-                    inside its own ON window. Timestamps alone cannot tell those
-                    apart; the wp5 power-on-reason log on the Pi is what
-                    separates them.
+      long wakes    sensor rows far CLOSER together than the duty cycle. These
+                    are NOT extra boots, and an earlier version of this file
+                    said they were. `/var/log/wp5d.log` on the station settled
+                    it on 2026-08-27: over a 9.5-hour window it recorded exactly
+                    20 startups, all "Scheduled Startup", all on the :00/:30
+                    slots — while 14 sensor rows landed off-slot. No boot
+                    happened for any of them.
 
-                    Note what this signal is NOT: episodes have passed with no
-                    outage after them (2026-05-07..09), and the 2026-08-15
-                    outage arrived out of a completely clean cadence. It is not
-                    a reliable precursor and must not be built into an alarm as
-                    though it were.
+                    What they actually mean: sht40/rg15/ds18b20 all log on a
+                    300-second interval, so a Pi that stays awake past its usual
+                    ~2 minutes writes another row every 5 minutes. Off-slot rows
+                    are therefore EXTENDED WAKE WINDOWS — cycles where ORC-OS
+                    did not shut down after its task and the Pi ran on to the
+                    Witty Pi's 25-minute backstop.
+
+                    That makes them an energy signal, and a large one: a 25-min
+                    window costs roughly 12x a 2-min one. It is also the same
+                    signal as the video yield collapsing, since a capture that
+                    never completes is a task that never triggers the shutdown.
 
 WHAT IT TOUCHES
     Nothing. It runs one read-only SQL query through Grafana's anonymous
@@ -167,26 +173,29 @@ def fetch_last_seen(station, tz, grafana, ca_path):
 
 
 def summarise(gaps, cycle_min, outage_factor, extra_floor_min):
-    """Split intervals into outages and extra boots.
+    """Split intervals into outages and long-wake markers.
 
     An outage is anything longer than outage_factor whole cycles — generous
     enough that a late wake or a slow shutdown is not mistaken for a failure.
-    An extra boot is anything shorter than half a cycle but longer than
-    extra_floor_min, which filters the multi-second spread within one wake.
+    A long-wake marker is anything shorter than half a cycle but longer than
+    extra_floor_min, which filters the multi-second spread within one tick.
+    These mark extended wakes, NOT extra boots — only wp5d.log knows about boots.
     """
     outage_threshold = cycle_min * outage_factor
     extra_ceiling = cycle_min / 2.0
 
-    outages, extras, normal = [], [], 0
+    outages, long_wakes, normal = [], [], 0
     for row in gaps:
         minutes = float(row["gap_min"])
         if minutes > outage_threshold:
             outages.append({**row, "gap_min": minutes})
         elif extra_floor_min < minutes < extra_ceiling:
-            extras.append({**row, "gap_min": minutes})
+            # Not a boot — a second sensor tick inside one long wake. See the
+            # module docstring; wp5d.log disproved the boot reading.
+            long_wakes.append({**row, "gap_min": minutes})
         else:
             normal += 1
-    return outages, extras, normal
+    return outages, long_wakes, normal
 
 
 def main():
@@ -224,7 +233,7 @@ def main():
     if not gaps:
         sys.exit(f"no sensor rows for station '{args.station}'")
 
-    outages, extras, normal = summarise(
+    outages, long_wakes, normal = summarise(
         gaps, args.cycle_min, args.outage_factor, args.extra_floor_min
     )
     last = fetch_last_seen(args.station, args.tz, args.grafana, args.ca)
@@ -243,7 +252,7 @@ def main():
                 "downtime_min": round(down_min, 1),
                 "span_min": round(span_min, 1),
                 "outages": outages,
-                "extra_boots": extras,
+                "long_wake_rows": long_wakes,
             },
             sys.stdout,
             indent=2,
@@ -273,24 +282,24 @@ def main():
         )
 
     print(
-        f"\n--- extra boots ({args.extra_floor_min:g} < gap < "
-        f"{args.cycle_min / 2:g} min — station woke off-schedule) ---"
+        f"\n--- long wakes ({args.extra_floor_min:g} < gap < "
+        f"{args.cycle_min / 2:g} min — extra sensor ticks in one wake) ---"
     )
-    if not extras:
+    if not long_wakes:
         print("  none")
     else:
         by_day = {}
-        for e in extras:
+        for e in long_wakes:
             by_day.setdefault(e["to_local"][:10], []).append(e)
         for day in sorted(by_day):
             times = " ".join(x["to_local"][11:] for x in by_day[day][:12])
             more = "" if len(by_day[day]) <= 12 else f" +{len(by_day[day]) - 12} more"
             print(f"  {day}  {len(by_day[day]):>3}  {times}{more}")
         print(
-            "\n  A step change here is not self-explaining. Voltage-recovery restarts "
-            "and\n  the Witty Pi re-powering inside its own ON window look identical "
-            "from\n  timestamps — read the wp5 power-on-reason log on the Pi to tell them "
-            "apart."
+            "\n  These are NOT boots. Sensors log every 300 s, so a Pi that stays "
+            "awake\n  past its usual ~2 minutes writes more rows. Each of these marks a "
+            "cycle\n  where ORC-OS did not shut down after its task and ran to the "
+            "25-minute\n  backstop — roughly 12x the energy of a normal wake."
         )
 
     print(f"\n  {normal} wakes at the expected cadence.")
