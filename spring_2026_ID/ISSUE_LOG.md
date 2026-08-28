@@ -1092,6 +1092,87 @@ better match for the current outage's clean final 6 hours. Reproduced by
 `liveorc_server/station-health/station_gaps.py` plus the analysis in this
 entry; the scripts are throwaway, the queries are read-only.
 
+**WHAT HAPPENED ON 2026-08-15 (investigated 2026-08-28).**
+
+The precursor test above made 08-15 the most informative event on record: a
+5.4-day outage out of clean cadence. Four things were checked, and the first
+three all came back negative.
+
+**It did not die mid-cycle.** The final wake at 01:30 WIB wrote a complete row
+set — sht40 temp and humidity, ds18b20, rg15 interval and total, all five
+values, T23.0 degC / RH 77 / 0.0 mm. The station finished its wake and shut
+down normally; the next scheduled boot simply never happened. (An apparently
+truncated 01:00 wake is not a signature: the identical split — sht40 at :00 and
+ds18b20 spilling to :01 — appears in the healthy 08-13 control. It is the
+one-wire read taking an extra second.)
+
+**There was no drain event.** Zero extended wakes in the preceding 72 h, and
+exactly **48 sensor rows per day for 42 consecutive days** — the duty cycle
+delivered perfectly, 2026-07-04 through 08-14, no missed wake and no long wake.
+
+**Solar harvest was not declining.** With no panel telemetry the available
+proxy is the enclosure's diurnal swing (daily max minus min sht40). Over those
+42 days: median 15.3 degC, first third 15.1, last third 14.3 — flat. 08-14
+itself swung 16.7, above median. A slowly failing charge source would have to
+show here and does not.
+
+**What did turn up is in how the outages END.** On-cadence wakes hold the Witty
+Pi's :00/:30 grid very tightly — median 0.37 min off-slot, p99 1.20 min, over
+4915 wakes. Recoveries do not:
+
+| onset (WIB) | duration | recovery | off-slot |
+|---|---|---|---|
+| 2026-04-17 06:23 | 4.7 h | 04-17 11:03:39 | 3.6 min |
+| 2026-04-17 15:01 | 2.1 h | 04-17 17:10:41 | 10.7 min |
+| 2026-04-18 11:33 | 0.9 h | 04-18 12:26:10 | 3.8 min |
+| 2026-04-19 08:20 | 4.9 h | 04-19 13:17:22 | 12.6 min |
+| 2026-04-19 14:09 | 18.3 h | 04-20 08:30:03 | 0.1 min — on grid |
+| 2026-04-20 14:13 | 19.5 h | 04-21 09:43:09 | 13.1 min |
+| 2026-05-02 06:31 | 1.0 h | 05-02 07:31:10 | 1.2 min — on grid |
+| 2026-05-11 23:01 | 38.0 h | 05-13 13:03:54 | 3.9 min |
+| 2026-05-16 00:47 | 9.3 d | 05-25 07:00:21 | 0.3 min — on grid |
+| 2026-06-25 04:30 | 7.3 d | 07-02 10:38:26 | 8.4 min |
+| 2026-07-02 10:43 | 23.1 h | 07-03 09:47:08 | 12.9 min |
+| **2026-08-15 01:30** | **5.4 d** | **08-20 10:39:01** | **9.0 min** |
+| 2026-08-20 10:39 | 21.6 h | 08-21 08:14:56 | 14.9 min |
+
+**10 of 13 outages end on an unscheduled boot** — 3.6 to 14.9 minutes off-slot,
+against a p99 of 1.2 min for a scheduled startup. These outages are not being
+cleared by the Witty Pi alarm. Power is being restored to a station that was
+not going to wake up by itself, which is precisely the TODO-116 failure mode
+stated as a measurement rather than an anecdote.
+
+And **every one of the 13 recoveries falls between 07:00 and 17:10 WIB.** None
+overnight, where 58% of a uniform distribution would land.
+
+**Two readings of that, and the evidence here does not separate them.**
+
+1. *Someone goes to the site and presses the button.* Fits the daylight-only
+   window and the off-grid boots exactly.
+2. *Power returns on its own in daylight* — e.g. a BMS that opened on
+   undervoltage re-closing once solar has put charge back, which boots the Pi
+   immediately rather than at an alarm. This also predicts off-grid daytime
+   boots.
+
+Reading 2 has a problem: solar should re-close a BMS within hours, not 5.4 or
+9.3 days. That gap is explained if the charge controller will not start into a
+pack the BMS has disconnected — a known MPPT behaviour when it sees no battery
+voltage — which latches the station off until a human intervenes. That would
+make reading 2 collapse into reading 1 for the long outages while still being
+the trigger, and it is the best mechanism currently on the table for a station
+that dies abruptly, shows no precursor, and then stays dead.
+
+**It is decidable, cheaply, and not from this data.** Two things settle it:
+the Witty Pi power-on-reason log (still ungrabbed — see TODO-117 and the
+watcher), and simply asking whether anyone attended the site on 2026-08-20 and
+08-21. If nobody did, reading 1 is dead and the trigger is electrical.
+
+**Corrected en route.** The first version of this test calibrated grid
+discipline on "every wake outside an outage", which includes the 5-minute
+long-wake ticks — off-grid by construction. That put p99 at 13.8 min and made
+all 13 recoveries look scheduled, i.e. the exact opposite conclusion. The
+reference set has to be wakes arriving one duty cycle apart.
+
 **Next steps**
 
 Ordered for a pilot whose job is to prove the technology, not to preserve the
