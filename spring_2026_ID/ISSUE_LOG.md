@@ -1162,10 +1162,43 @@ make reading 2 collapse into reading 1 for the long outages while still being
 the trigger, and it is the best mechanism currently on the table for a station
 that dies abruptly, shows no precursor, and then stays dead.
 
-**It is decidable, cheaply, and not from this data.** Two things settle it:
-the Witty Pi power-on-reason log (still ungrabbed — see TODO-117 and the
-watcher), and simply asking whether anyone attended the site on 2026-08-20 and
-08-21. If nobody did, reading 1 is dead and the trigger is electrical.
+**Settled by asking (Tom, 2026-08-28): someone pressed the button.** The
+08-20/08-21 recoveries were attended, and the 13.0 V recovery voltage was
+configured some time after that. Reading 1 is correct for the off-grid boots.
+**The station does not clear these outages by itself.**
+
+**Which makes the three on-grid recoveries a separate mode, and they split
+cleanly by clock:**
+
+| mode | n | recovery window (WIB) | reading |
+|---|---|---|---|
+| on-grid (<= 1.2 min off-slot) | 3 | 07:00, 07:31, 08:30 | scheduled alarm finally succeeded |
+| off-grid (3.6–14.9 min) | 10 | 08:14 – 17:10 | attended; button press |
+
+The on-grid three all land in the 90 minutes after sunrise (~05:50) and nowhere
+else. That is what a genuine self-recovery should look like: the pack takes
+first charge at dawn, the next scheduled alarm has enough to boot, and the
+station rejoins its own grid. The off-grid ten spread across the working day,
+which is what site attendance looks like. So the station *can* self-recover
+from a missed wake — it did so three times, once after 9.3 days — but it
+usually does not, and 10 of 13 times a person had to go.
+
+**Operational consequence for the outage running now.** It began 08-28 05:30
+WIB. Two dawns (08-28, and 08-29 if it runs that long) are the moments an
+unattended recovery would show, on-grid, between 07:00 and 08:30 WIB. The
+08-28 dawn passed with nothing. On the base rate — 10 of 13 needing a visit,
+and night onsets running 38 h to 9.3 d — this most likely needs a site visit,
+and that call should not wait on the hope of a self-clear.
+
+Note also that the 13.0 V recovery voltage postdates every outage in the table
+above except the current one, so this outage is the **first test of that
+setting**. Against that, the low-voltage threshold is still UNSET, and recovery
+voltage may be inert without it (see ISS-FIELD-008) — which would mean the
+setting cannot help here and the station is waiting on a person.
+
+The remaining question is the *trigger*, not the recovery: what stops a station
+that has run 42 flawless days. The Witty Pi power-on-reason log is the artefact
+that speaks to it, still ungrabbed — see TODO-117 and the watcher.
 
 **Corrected en route.** The first version of this test calibrated grid
 discipline on "every wake outside an outage", which includes the 5-minute
