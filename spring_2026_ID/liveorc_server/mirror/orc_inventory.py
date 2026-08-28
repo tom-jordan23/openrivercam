@@ -371,6 +371,10 @@ def recompute_totals(inv):
     inv["unreachable_over_api"] = dict(unreachable)
 
 
+SECRETS_FILE = (Path(__file__).resolve().parents[1]
+                / "secrets" / "liveorc-api.env")
+
+
 def main():
     ap = argparse.ArgumentParser(description="Inventory the LiveORC API (TODO-114 Phase 1)")
     ap.add_argument("--institute", required=True, help="institute id; /api/site/ is empty without it")
@@ -385,7 +389,31 @@ def main():
     email = os.environ.get("LIVEORC_EMAIL")
     password = os.environ.get("LIVEORC_PASSWORD")
     if not email or not password:
-        sys.exit("ERROR: set LIVEORC_EMAIL and LIVEORC_PASSWORD")
+        # Fall back to the gitignored secrets file. Exported variables do not
+        # survive between separate shell invocations, so "export then run" only
+        # works if both happen in one command — which in practice means the
+        # password ends up in shell history, or pasted into a transcript. A
+        # file read at 0600 avoids both. secrets/ is gitignored explicitly
+        # (.gitignore:32) and *.env again anywhere (.gitignore:88); this repo
+        # is public, so that belt-and-braces matters.
+        creds = SECRETS_FILE
+        if creds.is_file():
+            for line in creds.read_text().splitlines():
+                line = line.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                k, v = line.split("=", 1)
+                v = v.strip().strip("'\"")
+                if k.strip() == "LIVEORC_EMAIL" and not email:
+                    email = v
+                elif k.strip() == "LIVEORC_PASSWORD" and not password:
+                    password = v
+    if not email or not password:
+        sys.exit(
+            "ERROR: set LIVEORC_EMAIL and LIVEORC_PASSWORD, or write them to\n"
+            f"       {SECRETS_FILE}\n"
+            "       as two KEY=value lines (mode 0600; the path is gitignored)."
+        )
 
     out_dir = Path(args.out) if args.out else Path(__file__).resolve().parents[3] / "data" / "liveorc-mirror"
     out_dir.mkdir(parents=True, exist_ok=True)

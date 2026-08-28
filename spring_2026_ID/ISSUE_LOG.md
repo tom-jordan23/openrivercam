@@ -1314,6 +1314,70 @@ long-wake ticks — off-grid by construction. That put p99 at 13.8 min and made
 all 13 recoveries look scheduled, i.e. the exact opposite conclusion. The
 reference set has to be wakes arriving one duty cycle apart.
 
+**VIDEO CAPTURE COLLAPSED TO A 01:00–05:00 WIB WINDOW ON 2026-08-23.**
+
+Prompted by Tom noticing no daytime video. Checked against the API inventory
+(`mirror/orc_inventory.py --institute 1 --site 4`, 2649 records), and the
+observation is correct and sharper than expected.
+
+| day (WIB) | videos | first–last | daytime 06–18 |
+|---|---|---|---|
+| 08-22 | 45 | 00:01 – 23:31 | 22 |
+| 08-23 | 14 | 00:01 – 09:01 | 5 |
+| 08-24 | 6 | 01:31 – 05:01 | **0** |
+| 08-25 | 6 | 01:31 – 04:31 | **0** |
+| 08-26 | 7 | 01:45 – 05:03 | **0** |
+| 08-27 | 6 | 01:01 – 04:01 | **0** |
+| 08-28 | 6 | 01:31 – 04:31 | **0** |
+
+Since 08-24 the station has produced **6–7 videos a day against 48 wakes**, all
+inside 01:00–05:00 WIB, while logging a full 48 sensor rows a day — it was
+awake the whole time. By awake hour since 08-24: 19 of 20 hours in 01:00–04:00
+produced video; **0 of 72 hours from 06:00 to 00:00 did.**
+
+**The timestamps are trustworthy.** Video times align to the minute with outage
+boundaries derived independently from sensor rows: capture runs every half hour
+through 08-14 and stops at 08-15 01:31, one minute after the 01:30 onset;
+resumes 08-20 10:40 against the 10:39 recovery, and 08-21 08:16 against
+08:14:56. Two datasets that have never been compared before agree exactly.
+
+**It is not temperature.** Video never occurs above 25.9 degC, which looked like
+a thermal ceiling, but hours 18:00–23:00 and 06:00–07:00 sit at the same
+temperatures and produced nothing at all. Temperature is collinear with hour
+here and hour is what survives.
+
+**It is not a configured window.** `orc-capture.conf` has no hour-based gate;
+its only clock settings are `NIGHT_START=11:00`/`NIGHT_END=23:00`, which are
+UTC and switch the camera *profile* at 18:00/06:00 WIB. Those boundaries do not
+match 01:00–05:00.
+
+**It is not the upload.** Every record that exists reached the server within
+~50 seconds of capture — median lag 0.8 min, max 0.9 min over the last 60
+records. There is no sync backlog behind this. **The missing daytime videos
+were never captured**, which distinguishes it from the 2744 historic
+never-synced videos above.
+
+**Unconfirmed chain worth testing, because it would unify this entry.**
+`orc-capture` failing outside that window would produce exactly what is
+observed AND explain the long wakes: a capture that never completes is an
+ORC-OS task that never completes, so `shutdown_after_task` never fires and the
+Pi runs to the Witty Pi's 25-minute backstop. The timing fits — long wakes
+resume on 08-23/08-24, the same day daytime capture stops, and they fall
+outside 01:00–05:00 (08-24 06:05–10:05, 08-25 07:05–09:35 and 19:35–22:15,
+08-27 18:35–21:00). If true, the 12x energy drain and the video collapse are
+one fault, not two.
+
+Note it cuts against the obvious power reading, though: the camera is
+power-cycled with the Pi (`RELAY_MODE=cycle`) and draws most on IR at night, so
+a supply that cannot start the camera should fail at night first. It does the
+opposite. Do not assume the cause is power without evidence.
+
+**What would settle it** is `orc-capture`'s own failure reason — the quality
+gate it tripped, or whether the camera answered at all — which nothing
+currently uploads. That is the same gap ISS-FIELD-010 just closed for the Witty
+Pi power-on reason, and the same fix applies: push the last capture outcome
+with the sensor CSVs instead of waiting for an SSH window.
+
 **Next steps**
 
 Ordered for a pilot whose job is to prove the technology, not to preserve the
