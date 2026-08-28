@@ -1372,6 +1372,37 @@ power-cycled with the Pi (`RELAY_MODE=cycle`) and draws most on IR at night, so
 a supply that cannot start the camera should fail at night first. It does the
 opposite. Do not assume the cause is power without evidence.
 
+**The day/night camera profile was proposed and does not explain it (Tom,
+2026-08-28).** Worth testing — the working window does sit inside the night
+profile — but the profile is not the discriminator:
+
+- The night profile is one continuous span, **18:00 → 06:00 WIB**
+  (`NIGHT_START=11:00`/`NIGHT_END=23:00`, UTC on the station). Within that
+  single span, 18:00–00:00 WIB produced video in **0 of 24** awake hours and
+  01:00–04:00 WIB in **19 of 20**. Nothing switches at 01:00 or 05:00 WIB, so
+  a wrong profile cannot be what separates them.
+- The "stuck in night mode" mechanism is not present either.
+  `orc-camera-profile-switch` writes its state file only *after* a successful
+  `camtool push` — it exits non-zero before the write if the push fails — so a
+  failed push leaves the state stale and the next wake retries. There is no
+  path where a failed transition is recorded as a completed one.
+- The variant "captured, but failed to process because settings were nocturnal"
+  is excluded by the record shape: that produces an `error` record, and there
+  are **zero daytime records of any status** since 08-24.
+
+**A latent fragility this did surface, though.** The switch pushes only on
+transition — twice a day — and trusts a local state file to say what the camera
+holds. But `RELAY_MODE=cycle` power-cycles the camera on every wake, ~48 times
+a day. If a power cycle ever reverted the camera's stored image settings, the
+state file would still read "night", no push would occur, and the camera would
+stay wrong until the next scheduled transition. Not the cause here, but it
+should be a `--force` push on some cadence, or a read-back verify, rather than
+state we assume.
+
+Note also that no timer in this repo fires near 01:00 WIB / 18:00 UTC — the
+only one is `orc-sensors` at 60 s — so whatever anchors the window is ORC-OS
+side or on the station, not in our configuration.
+
 **What would settle it** is `orc-capture`'s own failure reason — the quality
 gate it tripped, or whether the camera answered at all — which nothing
 currently uploads. That is the same gap ISS-FIELD-010 just closed for the Witty
