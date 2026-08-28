@@ -278,6 +278,172 @@ _WP5_PATTERNS = {
 }
 
 
+# ─── Witty Pi boot context (ISS-FIELD-010) ──────────────────────────
+
+# Lines look exactly like this in /var/log/wp5d.log, confirmed against the
+# 2026-08-27 station capture in data/station-forensics/:
+#     [2026-08-27 09:00:17] Startup reason: Scheduled Startup
+#     [2026-08-27 12:54:59] Shutdown reason: Scheduled Shutdown
+_WP5D_REASON_RE = re.compile(
+    r"^\[(?P<ts>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\]\s+"
+    r"(?P<kind>Startup|Shutdown)\s+reason:\s*(?P<reason>.+?)\s*$"
+)
+
+# Sentinels. Negative values mean "we could not determine this", and are
+# deliberately distinguishable — "the log is unreadable" and "the log had no
+# such line" call for completely different fixes.
+REASON_UNREADABLE = -2.0   # log missing, or not readable by the service user
+REASON_ABSENT = -1.0       # log read, but no matching line in the tail
+REASON_UNRECOGNISED = 0.0  # line found, text not in the table below
+
+# ONLY "Scheduled Startup" and "Scheduled Shutdown" have ever been observed on
+# this hardware (20 and 1 occurrences in the 2026-08-27 capture). Every other
+# entry below is a GUESS at strings this firmware might emit, and guessing at
+# device output is how this project once shipped a driver that matched nothing:
+# regexes were written for `vin` when the device prints `V-IN`.
+#
+# So the guesses are made safe rather than avoided. Anything unmatched scores
+# REASON_UNRECOGNISED and the raw text is written to the CSV beside it, so a
+# code of 0 means "the station told us something we have no mapping for — read
+# the text column and add it here". That is a finding, not a failure.
+# Matched in order, so longer qualifiers precede the bare term.
+_REASON_CODES = (
+    ("schedul", 1.0),        # VERIFIED on hardware
+    ("button", 2.0),         # guess
+    ("low voltage", 7.0),    # guess — must precede the bare "voltage" entry
+    ("over temp", 8.0),      # guess
+    ("voltage", 3.0),        # guess
+    ("restor", 3.0),         # guess
+    ("alarm", 4.0),          # guess
+    ("extern", 5.0),         # guess
+    ("reboot", 6.0),         # guess
+)
+
+# Read only the tail. The daemon has appended since March and re-reading the
+# whole file twice a wake is waste; 64 KiB spans many boots' worth of the
+# handful of lines each one writes.
+_WP5D_TAIL_BYTES = 65536
+
+
+def _reason_code(text):
+    t = (text or "").lower()
+    for needle, code in _REASON_CODES:
+        if needle in t:
+            return code
+    return REASON_UNRECOGNISED
+
+
+def _csv_safe(text):
+    """Strip anything that would shift the CSV's columns.
+
+    A comma in a reason string would displace every field after it, corrupting
+    the row for the voltage metrics too. The boot context is a passenger in
+    this CSV and must not be able to damage its host.
+    """
+    return re.sub(r"[,\r\n]+", " ", str(text)).strip()[:80]
+
+
+def _parse_wp5d_ts(s):
+    try:
+        return datetime.strptime(s, "%Y-%m-%d %H:%M:%S")
+    except (ValueError, TypeError):
+        return None
+
+
+def read_wp5d_boot_context(path=None):
+    """Why the Witty Pi powered this boot, and what the previous one did.
+
+    WHY
+        ISS-FIELD-010. Every artefact that would settle TODO-116 lives on the
+        station and has only ever been readable over SSH — and SSH rides
+        Tailscale, which on 2026-08-28 failed to establish (tx 11232 rx 0)
+        while the sensor upload over the public internet succeeded in the same
+        wake. Two paths that fail independently, and we were watching only the
+        broken one. So the power-on reason stops waiting to be pulled and rides
+        the upload that already works.
+
+        `downtime_s` is the point of the exercise. It is measured by the
+        station's own clock across the gap, so it says how long the station was
+        actually off, independent of whether any row reached the server. That
+        is precisely the question the row record cannot always answer: on 08-28
+        the station kept waking at 06:00 and 06:30 while the server recorded it
+        as down since 05:30.
+
+    NEVER RAISES
+        Returns sentinel codes instead. This is a passenger on the wittypi row;
+        failing to read a log file must not cost the voltage telemetry, which
+        is the thing that has to survive.
+    """
+    path = path or "/var/log/wp5d.log"
+    out = {
+        "power_on_reason_code": REASON_UNREADABLE,
+        "prev_shutdown_reason_code": REASON_UNREADABLE,
+    }
+    try:
+        size = os.path.getsize(path)
+        with open(path, "rb") as fh:
+            if size > _WP5D_TAIL_BYTES:
+                fh.seek(-_WP5D_TAIL_BYTES, os.SEEK_END)
+            blob = fh.read()
+        text = blob.decode("utf-8", "replace")
+        if size > _WP5D_TAIL_BYTES:
+            # The seek almost certainly landed mid-line, and a partial line
+            # cannot be trusted to parse.
+            text = text.split("\n", 1)[-1]
+    except Exception as e:
+        err(f"wittypi: cannot read {path}: {e}")
+        return out
+
+    # Keep append order. The daemon writes its boot banner using the RTC's
+    # pre-sync time — the 2026-08-27 capture has [2026-03-26 17:50:04] lines
+    # sitting in the middle of an August log — so sorting by timestamp would
+    # reorder boots. Position in the file is the only reliable sequence, which
+    # is why these are indexed rather than looked up by their text: the same
+    # reason string recurs on every boot.
+    events = []
+    for line in text.splitlines():
+        m = _WP5D_REASON_RE.match(line.strip())
+        if m:
+            events.append((m.group("kind"), m.group("ts"), m.group("reason")))
+
+    up_i = next((i for i in range(len(events) - 1, -1, -1)
+                 if events[i][0] == "Startup"), None)
+    if up_i is None:
+        out["power_on_reason_code"] = REASON_ABSENT
+        out["prev_shutdown_reason_code"] = REASON_ABSENT
+        return out
+
+    _, ts_up, reason_up = events[up_i]
+    out["power_on_reason_code"] = _reason_code(reason_up)
+    out["power_on_reason"] = _csv_safe(reason_up)
+
+    up_dt = _parse_wp5d_ts(ts_up)
+    if up_dt:
+        age = (datetime.now() - up_dt).total_seconds()
+        # A stale RTC would make this absurd; only ship a plausible value.
+        if 0 <= age <= 86400:
+            out["boot_age_s"] = round(age, 1)
+
+    # The shutdown preceding THIS startup, by file position.
+    down_i = next((i for i in range(up_i - 1, -1, -1)
+                   if events[i][0] == "Shutdown"), None)
+    if down_i is None:
+        out["prev_shutdown_reason_code"] = REASON_ABSENT
+        return out
+
+    _, ts_down, reason_down = events[down_i]
+    out["prev_shutdown_reason_code"] = _reason_code(reason_down)
+    out["prev_shutdown_reason"] = _csv_safe(reason_down)
+    down_dt = _parse_wp5d_ts(ts_down)
+    if up_dt and down_dt:
+        gap = (up_dt - down_dt).total_seconds()
+        # Guard both directions: a negative gap means the clock moved
+        # backwards, and 60 days exceeds every outage on record.
+        if 0 <= gap <= 60 * 86400:
+            out["downtime_s"] = round(gap, 1)
+    return out
+
+
 def _wp5_sample(timeout_s):
     """One wp5 status read. Returns (values_dict, raw_output).
 
@@ -442,6 +608,13 @@ def read_wittypi(conf):
         # curve still works — but the row cannot support a fit, and a consumer
         # must be able to tell that apart from a genuine zero.
         out["samples_paired_n"] = 0
+
+    # Boot context rides along on this row rather than in a file of its own.
+    # ISS-FIELD-010: the 08-28 wake uploaded sht40 and rg15 and then stopped,
+    # so files late in the queue never shipped. Adding a whole new CSV would put
+    # the most valuable datum we have at the back of exactly that queue; folding
+    # it into the row that already carries the power telemetry does not.
+    out.update(read_wp5d_boot_context(conf.get("WP5D_LOG")))
 
     return out
 

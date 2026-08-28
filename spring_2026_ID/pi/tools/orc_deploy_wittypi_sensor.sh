@@ -15,6 +15,11 @@
 #   and header row with no whitelist.
 #
 # WHY IT IS SHAPED LIKE THIS
+#   Also ships the Witty Pi BOOT CONTEXT (ISS-FIELD-010): power-on reason,
+#   previous shutdown reason, and downtime_s measured by the station's own
+#   clock, folded into the wittypi row so they ride the sensor upload instead of
+#   waiting for an SSH window Tailscale has repeatedly failed to provide.
+#
 #   The station is awake under a minute per cycle, so this is ONE ssh round trip
 #   with both files inlined — no scp handshakes, no second connection.
 #
@@ -149,6 +154,29 @@ fi
 # Belt and braces: whatever created today's CSVs, make sure the service user
 # owns them before we walk away.
 sudo chown -R pi:pi /var/log/orc/sensors 2>/dev/null || true
+
+# ISS-FIELD-010: the boot context is read from /var/log/wp5d.log by the SERVICE
+# USER, and nothing has ever verified that pi can read it. The 2026-08-27
+# capture proves only that ROOT could — the collector ran under sudo. If pi
+# cannot, the feature degrades quietly to power_on_reason_code = -2 and we would
+# not find out until a week of rows came back empty, which is the whole failure
+# pattern this deploy script exists to break.
+echo "--- wp5d.log readability (as the service user) ---"
+ls -l /var/log/wp5d.log 2>/dev/null || echo "(wp5d.log missing)"
+if sudo -u pi test -r /var/log/wp5d.log; then
+    echo "wp5d.log readable by pi — boot context will populate"
+else
+    echo "wp5d.log NOT readable by pi — boot context would emit -2 (unreadable)"
+    # A read bit on a daemon log is harmless and reversible, and the
+    # alternative is waiting another week for a window to fix it by hand.
+    sudo chmod o+r /var/log/wp5d.log 2>/dev/null || true
+    if sudo -u pi test -r /var/log/wp5d.log; then
+        echo "  -> granted o+r; NOTE this may not survive wp5d rotating its log,"
+        echo "     so check power_on_reason_code in the uploaded rows stays > -2"
+    else
+        echo "  -> STILL unreadable; boot context will not populate"
+    fi
+fi
 
 echo "--- wittypi CSV ---"
 tail -3 /var/log/orc/sensors/wittypi_\$(date +%F).csv 2>/dev/null || echo "(no wittypi CSV yet)"

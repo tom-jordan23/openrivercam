@@ -934,12 +934,35 @@ all.
       Every future wake should be checked for whether the tailnet return path
       establishes. If it never does, remote recovery is impossible and the
       station needs an out-of-band path.
-- [ ] **Reconsider the collection path.** If Tailscale cannot be relied on for
-      a 60-second window, the station should push its own diagnostics on wake
-      rather than waiting to be pulled — the sensor upload demonstrably works
-      when SSH does not. Uploading the Witty Pi power-on reason alongside the
-      sensor CSVs would have answered the TODO-116 question weeks ago without
-      anyone catching a wake window.
+- [x] **Reconsider the collection path — done 2026-08-28, awaiting deploy.**
+      `read_wp5d_boot_context()` parses `/var/log/wp5d.log` and the wittypi row
+      now carries `power_on_reason_code`, `prev_shutdown_reason_code`,
+      `downtime_s` and `boot_age_s`, plus the raw reason strings as text.
+      It rides the existing wittypi CSV rather than a new file, deliberately:
+      the 08-28 wake died partway through its upload queue, so a new file would
+      put the most valuable datum we have at the back of exactly that queue.
+
+      `downtime_s` is the one that matters — measured by the station's own
+      clock across the gap, it reports how long the station was really off
+      regardless of whether any row reached the server, which is precisely what
+      the row record could not tell us on 08-28.
+
+      The text columns do not parse as floats, so `sensor-ingest/app.py` skips
+      them and only the codes reach Grafana; the raw text stays in the CSV on
+      the server for when a code comes back 0 (= reason string we have no
+      mapping for). Only "Scheduled Startup"/"Scheduled Shutdown" have ever
+      been observed, so every other mapping is an explicit guess that degrades
+      to 0 rather than to a wrong code.
+
+      Tested end-to-end against the real ingest parser, including that a comma
+      in a reason string cannot shift the numeric columns. **Not deployed** —
+      the station has been unreachable since. Ships with TODO-117.
+- [ ] **Confirm `pi` can read `/var/log/wp5d.log`.** Unverified: the 08-27
+      capture proves only that *root* could, because the collector ran under
+      sudo. If pi cannot, the boot context degrades to code -2 and we learn
+      nothing. `orc_deploy_wittypi_sensor.sh` now checks this as the service
+      user and grants `o+r` if needed, but that may not survive wp5d rotating
+      its log — so watch that `power_on_reason_code` stays above -2.
 - [ ] **Re-check outage durations for upload-failure contamination**, at least
       for gaps under 30 days old where backfill would have survived rotation.
 - [ ] Alarm on a station that is uploading but unreachable. It currently reads
