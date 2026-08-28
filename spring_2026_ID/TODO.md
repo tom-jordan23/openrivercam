@@ -1,6 +1,6 @@
 # TODO — Indonesia Spring 2026 Deployment (post-trip)
 
-**Last updated:** 2026-08-27
+**Last updated:** 2026-08-28
 
 The pre-trip task list (departure schedule day-by-day, in-country
 deferred items, etc.) was archived to `archive/` after the April 2026
@@ -1044,6 +1044,55 @@ guarded the mount, so the one condition that mattered went unchecked.
   377 videos were stored but never became timeseries. The files are on the media
   volume, so if the cause was the full disk they are likely recoverable — feed
   into TODO-113.
+
+### RESUME HERE — state at 2026-08-28 07:45 WIB
+
+Session of 2026-08-27/28. **Station is DOWN** since 08-28 05:30 WIB (four wakes
+missed, Tailscale offline). It has self-recovered mid-morning before — 08-27 at
+11:00 WIB, unattended — so check whether it came back on its own.
+
+**Done and left in place on the station:**
+
+- Pre-July video purged: 19 date dirs, 8.81 GiB. Free space **5.00 -> 13.83 GiB**
+  (`pi/tools/orc_purge_synced.py --before-date 20260701 --apply`).
+- **Witty Pi telemetry live**: new `wittypi` sensor logs `vin_v / vin_min_v /
+  vin_max_v / vout_v / iout_a` through the existing upload path into
+  `sensor_readings`. No server-side change was needed. It logs on the timer
+  (~1 row per wake, one cycle of upload lag).
+- Sensor CSV ownership corrected to `pi` — my deploy had created it as root,
+  which silently broke every timer run.
+
+**Nothing else was changed, by instruction.** The low-voltage threshold is still
+UNSET (menu option 7, no value). Recovery voltage is 13.0 V (option 8). The
+2744 failed syncs are untouched. `/home/pi/code/git` has 3 uncommitted local
+changes, left alone.
+
+**The open question.** ISS-FIELD-009 said the disk was very likely the root
+cause. Two hours after the purge, with 13.83 GiB free, the station failed
+anyway. That prediction did not hold. But the actual test — whether the
+18:30-21:00 WIB long-wake window is clean with a healthy disk — has still never
+run, because the outage came at dawn first. Untested, not disproved.
+
+**First three things to do next session:**
+
+1. `liveorc_server/station-health/station_gaps.py` — is it back, and did the
+   18:30-21:00 long-wake window run clean? That is the deferred test.
+2. Fit V-IN against load across the accumulated `wittypi` rows to get an
+   effective source resistance for the battery-to-WittyPi path. A 0.479 V sag
+   was seen in 2 seconds on 08-28 04:30. **Ohms means a bad connection (fuse
+   holder, terminal, crimp) rather than a worn pack** — cheap to fix, and it
+   would change the remedy completely. Milliohms points back at the cells.
+3. Re-arm the watcher. Monitors are session-local and did not survive; the
+   script is at `scratchpad/watch_passes.py` in the prior session dir, and is
+   read-only Grafana polling.
+
+**Access notes.** SSH is `pi@orc-sukabumi` over Tailscale with the password in
+the gitignored `spring_2026_ID/.env`, driven via `SSH_ASKPASS` +
+`SSH_ASKPASS_REQUIRE=force`. Trigger on **tcp/22**, never on Tailscale's
+`Online` flag — it stays stale for minutes after this station sleeps. The awake
+window is **under 60 seconds**, so nothing can be done by hand.
+
+---
 
 ### TODO-116: Witty Pi restart resiliency — a missed boot leaves the station down
 
