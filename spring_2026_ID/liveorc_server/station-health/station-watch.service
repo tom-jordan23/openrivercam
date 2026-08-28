@@ -33,7 +33,14 @@ After=network-online.target
 [Service]
 Type=simple
 WorkingDirectory=%h/code/git/openrivercam/spring_2026_ID/liveorc_server/station-health
-ExecStart=%h/code/git/openrivercam/spring_2026_ID/liveorc_server/station-health/station_watch.py
+# Was station_watch.py, which polls tcp/22 every 15 s and then runs the broad
+# collector. That was sized for a ~60 s wake and cannot win the seconds-long
+# ones this station now has: the 2026-08-29 00:00 WIB wake pushed two files and
+# was never seen with tcp/22 open. pounce.py triggers on Tailscale LastSeen
+# advancing (earlier in the boot than sshd), probes once a second, and grabs
+# wp5d.log first and alone. Only one process may race for the window, so this
+# unit runs pounce and station_watch.py is not run at all.
+ExecStart=%h/code/git/openrivercam/spring_2026_ID/liveorc_server/station-health/pounce.py
 # The station is down for days at a time; the poller is meant to outlast that.
 Restart=always
 RestartSec=30

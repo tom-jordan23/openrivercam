@@ -999,6 +999,26 @@ that has never been seen above 12.87 V under load. That is a cheap change to
 get wrong in the safe direction, and it is already flagged in ISS-FIELD-008's
 next steps.
 
+**Is the tcp/22 probe itself wrong? (Tom, 2026-08-28: "I used to ssh
+routinely, SSH would always be available when the station was pingable.")** A
+fair challenge, and `port_open()` had never actually gated a successful collect
+— it was only wired into the trigger path on 08-28, so it had no production
+track record. Checked:
+
+- **The probe is sound.** `port_open()` returns OPEN against three endpoints
+  known to be listening, including port 22 on two of them
+  (`openrivercam.endlessprojects.info:9443`, `github.com:22`, `127.0.0.1:22`).
+  MagicDNS resolves `orc-sukabumi` to 100.64.12.52 correctly.
+- **The station is not pingable either.** ICMP `ping -c 3` returns 100% packet
+  loss and `tailscale ping` gets no reply at all.
+
+So the rule holds rather than being violated: ping and SSH are failing
+*together*, which is what an asleep station looks like, not a port-specific
+fault. Combined with the `rx 0` retraction above, there is no evidence of any
+SSH-specific problem at this station. What we have is a station that is off,
+and wakes too short to catch — which is a window problem, and the reason
+collection moved to `pounce.py`.
+
 **Next steps**
 
 - [ ] **Determine whether `rx 0` is systematic.** One wake is not a pattern.
