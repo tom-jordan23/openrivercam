@@ -37,8 +37,13 @@ ExecStart=%h/code/git/openrivercam/spring_2026_ID/liveorc_server/station-health/
 # The station is down for days at a time; the poller is meant to outlast that.
 Restart=always
 RestartSec=30
-StandardOutput=journal
-StandardError=journal
+# Append to the same log the hand-run watcher has always written, rather than
+# the journal. The continuity of that file across every arming of the watcher
+# is the record of what the station did while nobody was watching; a unit that
+# started a fresh stream in the journal would break exactly the thing the
+# watcher exists to produce. journalctl still shows unit start/stop/restarts.
+StandardOutput=append:%h/code/git/openrivercam/data/station-forensics/station-watch.log
+StandardError=append:%h/code/git/openrivercam/data/station-forensics/station-watch.log
 
 [Install]
 WantedBy=default.target
