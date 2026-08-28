@@ -1045,11 +1045,15 @@ guarded the mount, so the one condition that mattered went unchecked.
   volume, so if the cause was the full disk they are likely recoverable — feed
   into TODO-113.
 
-### RESUME HERE — state at 2026-08-28 20:30 WIB
+### RESUME HERE — state at 2026-08-28 21:40 WIB
 
-Session of 2026-08-28. **Station is still DOWN.** Last sensor row 08-28 05:30
-WIB; 15 h and 30 missed wakes later there is nothing. `tcp/22` closed,
-Tailscale `offline, last seen 14h ago`. Genuinely down, not an upload fault.
+Session of 2026-08-28, **ended deliberately to restart under tmux** — nothing
+was interrupted, the tree is clean and both commits are in. **First action on
+resume is to re-arm the watcher; see "Restarting" at the end of this block.**
+
+**Station is still DOWN.** Last sensor row 08-28 05:30 WIB; 16 h and 32 missed
+wakes later there is nothing. `tcp/22` closed, Tailscale `offline, last seen
+14h ago`. Genuinely down, not an upload fault.
 
 **The self-recovery did not come.** The previous resume block expected one —
 "it has self-recovered mid-morning before, unattended". 11:00 WIB came and
@@ -1150,6 +1154,31 @@ changes, left alone.
    there is nothing to check by hand first.
 4. Install the watcher unit properly, so this is the last time "re-arm the
    watcher" appears in a resume block.
+
+**Restarting (2026-08-28 21:40 WIB).** Branch `iss-field-009-wittypi-paired-vi`,
+two commits (`a7799f7`, `2df987f`), working tree clean, nothing staged or
+stashed. Nothing is half-finished; the only live thing was the watcher.
+
+**The watcher was running in the previous session's terminal and died with
+it.** That is the failure this block has now described twice, so re-arm it
+first — under tmux this time, where it will outlive the Claude session:
+
+    tmux new -d -s orcwatch \
+      'cd spring_2026_ID/liveorc_server/station-health && \
+       ./station_watch.py --interval 15 \
+         2>&1 | tee -a ../../../data/station-forensics/station-watch.log'
+
+Better still, install the unit and stop hand-rolling this — the file is
+committed at `liveorc_server/station-health/station-watch.service`:
+
+    ln -sf "$PWD/station-watch.service" ~/.config/systemd/user/station-watch.service
+    systemctl --user daemon-reload && systemctl --user enable --now station-watch
+    sudo loginctl enable-linger $USER    # or it still dies at logout
+
+The log so far is `data/station-forensics/station-watch.log` — append to it
+rather than starting a new one, the continuity is the point. Nothing was
+collected unattended: the two `orc-sukabumi-*` grabs in that directory are from
+08-27, before the outage.
 
 **Access notes.** SSH is `pi@orc-sukabumi` over Tailscale with the password in
 the gitignored `spring_2026_ID/.env`, driven via `SSH_ASKPASS` +
