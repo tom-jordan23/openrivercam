@@ -1144,8 +1144,10 @@ changes, left alone.
    `data/station-forensics/` for anything the watcher grabbed unattended.
 2. If it is back — the deferred test. Does the 18:30–21:00 WIB window run clean
    with a healthy disk? Untested since 08-27, and still untested.
-3. Land TODO-117 so the resistance question becomes answerable on the next
-   boot. It is a small change and it gates the remedy.
+3. TODO-117 is written and tested but **not deployed** — the station has been
+   unreachable since. Run `pi/tools/orc_deploy_wittypi_sensor.sh` the moment
+   tcp/22 opens; the pre-flight now runs `test_wittypi_pairing.py` itself, so
+   there is nothing to check by hand first.
 4. Install the watcher unit properly, so this is the last time "re-arm the
    watcher" appears in a resume block.
 
@@ -1265,7 +1267,7 @@ untouched by this and still stands.
 
 | Field | Value |
 |-------|-------|
-| **Status** | OPEN — found 2026-08-28 |
+| **Status** | IN PROGRESS — found and driver reworked 2026-08-28; **not yet deployed**, the station has been down since 05:30 WIB that morning |
 | **Site** | Sukabumi (and any station running `orc-sensors`) |
 
 The `wittypi` sensor was added to settle whether the overnight failures come
@@ -1302,19 +1304,39 @@ loop instead of averaging one and taking the last of the other, and emit enough
 of the pairing to fit a line. Minimum viable: `iout_min_a` / `iout_max_a` plus
 the `vin` recorded at each, so every row carries at least two paired points.
 
-- [ ] Rework `read_wittypi()` to collect `(vin, vout, iout)` per sample and emit
-      paired extremes rather than mean-vs-last. Extend `CSV_HEADER` to match —
-      `sensor-ingest` derives metric names from the header with no whitelist, so
-      no server-side change is needed (same reasoning that let the sensor ship).
-- [ ] Raise `SAMPLES` above 2 so a row carries a usable spread of load points.
-      Budget it against the wake: `wp5` never exits on its own, so each read
-      costs the full `READ_TIMEOUT_SEC` (currently 6 s) and the current setting
-      is deliberately bounded at ~12 s per tick.
-- [ ] Make the sampling straddle the camera/PoE switch-on, which is the only
-      large load step available and therefore the widest lever arm for the fit.
+- [x] Rework `read_wittypi()` to collect `(vin, vout, iout)` per sample and emit
+      paired extremes rather than mean-vs-last. `CSV_HEADER` extended with
+      `iout_min_a`, `iout_max_a`, `vin_at_imin_v`, `vin_at_imax_v`, `samples_n`,
+      `samples_paired_n`; `sensor-ingest` derives metric names from the header
+      with no whitelist, so no server-side change was needed. **Semantic change:
+      `iout_a` and `vout_v` were the last sample and are now means over the same
+      samples as `vin_v`, which makes `(vin_v, iout_a)` a legitimate paired point
+      for an across-wake fit. Rows before this carry the old meaning.**
+- [x] Raise `SAMPLES` above 2 — now 6 at 2.0 s, ~10 s per tick. The old budget
+      note was stale: it claimed each read costs the full `READ_TIMEOUT_SEC`
+      because `wp5` never exits, which stopped being true when `_wp5_sample`
+      started feeding it Exit. Measured 2026-08-28, sht40 logged at 04:30:26 and
+      wittypi at 04:30:27 with two samples and a mandatory 1.0 s gap, so reads
+      cost well under a second and the budget was pessimistic by ~10x.
+- [x] Add `pi/tools/test_wittypi_pairing.py` and wire it into the deploy
+      pre-flight. `py_compile` proves only that the file parses; it passed
+      happily on the broken driver. The test drives the sampling logic against
+      synthetic `wp5` status headers (through the module's own regexes, since
+      those have broken before on the `V-IN` hyphen), asserts the emitted keys
+      match `CSV_HEADER` in both directions, and asserts the specific defect —
+      a Vin spread reported against a zero load spread — cannot recur.
+- [ ] **Deploy.** Blocked only on the station being reachable. Run
+      `orc_deploy_wittypi_sensor.sh`; the watcher will say when tcp/22 opens.
+- [ ] Widen the lever arm if the first day's rows are still cramped. ~10 s of
+      wall time may or may not straddle the camera/PoE switch-on, which is the
+      largest load step available. If `iout_max_a - iout_min_a` stays small,
+      raise `SAMPLES` further or move the tick — do not raise it blind, the
+      wake budget is real even if the old number was wrong.
 - [ ] Then fit, and read the answer: **ohms means a bad connection** — fuse
       holder, terminal, crimp — which is cheap to fix and changes the remedy
-      completely. **Milliohms points back at the cells.**
+      completely. **Milliohms points back at the cells.** Convert through the
+      buck first (`I_in ~ Vout*Iout/(eta*Vin)`); it shifts magnitude, not the
+      ohms-vs-milliohms verdict.
 
 **Do not set a low-voltage threshold before this resolves.** The right value
 differs depending on whether the sag is connection resistance or pack

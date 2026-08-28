@@ -335,18 +335,56 @@ def read_wittypi(conf):
         threshold screens are setters where a stray value can disable the
         low-voltage cutoff and over-discharge a LiFePO4 pack.
 
-    SAMPLING
-        A few samples a second apart, reported as mean/min/max. The Pi is awake
-        only ~2 minutes per cycle and the camera load lands partway through, so
-        a spread within one invocation is the cheapest way to catch sag. Vin
-        while the Pi sleeps is unobservable by definition — the Pi is off — so
-        the overnight curve is built from the waking samples either side of it.
+    SAMPLING — AND WHY THE PAIRING MATTERS (TODO-117)
+        The first version of this function aggregated voltage across samples
+        and took current from the last one:
+
+            vins.append(vals["vin_v"])   # accumulated
+            lasts.update(vals)           # overwritten
+            out = {"vin_v": mean(vins), "vin_min_v": min(vins), ...}
+            out["iout_a"] = lasts["iout_a"]          # sample N only
+
+        So every row described a voltage swing and a current measured at
+        DIFFERENT INSTANTS. That is not a rounding problem, it is the whole
+        measurement: the question this sensor exists to answer is an effective
+        source resistance, R = dV/dI, and dividing a sag by a current that was
+        not flowing during it answers nothing. On 2026-08-28 the uploaded rows
+        said iout 0.852 A with a 0.009 V spread at 04:02:15 and iout 0.852 A
+        with a 0.479 V spread at 04:30:27 — identical current, 53x the sag. No
+        fixed resistance produces both, and the fit over all 11 rows came back
+        at R^2 = 0.232. The sag was real; the load that caused it was never
+        measured.
+
+        So: keep whole samples. `vin_v`/`vout_v`/`iout_a` are now all means over
+        the SAME set of samples, which makes (vin_v, iout_a) a legitimate paired
+        point for an across-wake fit. `iout_min_a`/`iout_max_a` and the Vin
+        recorded at each give a within-row slope from the widest load separation
+        this invocation actually saw.
+
+        NOTE THE SEMANTIC CHANGE: `iout_a` and `vout_v` used to be the last
+        sample and are now means. Rows before 2026-08-28 carry the old meaning.
+
+    WHAT IS DELIBERATELY NOT COMPUTED HERE
+        No resistance. A two-point slope off one wake is noisy, and shipping it
+        as a number invites reading it as an answer. Ship paired points; fit
+        them where the caveats live. Note also that `iout_a` is the 5 V rail, so
+        input current has to be inferred through the buck (~Vout*Iout/(eta*Vin))
+        before any resistance means anything — another reason not to bake a
+        conclusion into the row.
+
+    COST
+        wp5 exits cleanly now that _wp5_sample feeds it Exit, so a read costs
+        well under a second rather than the full READ_TIMEOUT_SEC. Measured
+        2026-08-28: sht40 logged at 04:30:26 and wittypi at 04:30:27, with
+        SAMPLES=2 and a mandatory 1.0 s gap between them. The old "every read
+        costs the full timeout" budget predates that fix and was pessimistic by
+        roughly 10x, which is why SAMPLES could stay at 2 for so long.
     """
     samples = int(conf.get("SAMPLES", "3"))
     gap_s = float(conf.get("SAMPLE_GAP_SEC", "1.0"))
     timeout_s = float(conf.get("READ_TIMEOUT_SEC", "8"))
 
-    vins, lasts, raw_last = [], {}, ""
+    vins, pairs, raw_last = [], [], ""
     for i in range(max(1, samples)):
         if i:
             time.sleep(gap_s)
@@ -355,9 +393,14 @@ def read_wittypi(conf):
         except Exception as e:
             err(f"wittypi: wp5 read failed: {e}")
             continue
-        if "vin_v" in vals:
-            vins.append(vals["vin_v"])
-        lasts.update(vals)
+        if "vin_v" not in vals:
+            continue
+        vins.append(vals["vin_v"])
+        # A sample only enters the fit if BOTH rails parsed from the SAME read.
+        # That condition is the entire point of TODO-117; do not relax it to
+        # backfill a missing current from a neighbouring sample.
+        if "iout_a" in vals:
+            pairs.append((vals["iout_a"], vals["vin_v"], vals.get("vout_v")))
 
     if not vins:
         # Deliberately raise rather than write an empty row: main() catches this
@@ -372,10 +415,34 @@ def read_wittypi(conf):
         "vin_v": round(sum(vins) / len(vins), 3),
         "vin_min_v": round(min(vins), 3),
         "vin_max_v": round(max(vins), 3),
+        "samples_n": len(vins),
     }
-    for k in ("vout_v", "iout_a"):
-        if k in lasts:
-            out[k] = round(lasts[k], 3)
+
+    if pairs:
+        iouts = [p[0] for p in pairs]
+        vouts = [p[2] for p in pairs if p[2] is not None]
+        out["iout_a"] = round(sum(iouts) / len(iouts), 3)
+        if vouts:
+            out["vout_v"] = round(sum(vouts) / len(vouts), 3)
+
+        # The widest load separation this invocation saw, with the Vin measured
+        # in the same read as each end. Two paired points, so a consumer can
+        # take a slope; samples_paired_n says how much to trust it.
+        lo = min(pairs, key=lambda p: p[0])
+        hi = max(pairs, key=lambda p: p[0])
+        out.update({
+            "iout_min_a": round(lo[0], 3),
+            "iout_max_a": round(hi[0], 3),
+            "vin_at_imin_v": round(lo[1], 3),
+            "vin_at_imax_v": round(hi[1], 3),
+            "samples_paired_n": len(pairs),
+        })
+    else:
+        # Vin parsed but current never did. Worth uploading — the overnight Vin
+        # curve still works — but the row cannot support a fit, and a consumer
+        # must be able to tell that apart from a genuine zero.
+        out["samples_paired_n"] = 0
+
     return out
 
 

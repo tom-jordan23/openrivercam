@@ -63,6 +63,14 @@ python3 -m py_compile "$LOGGER" || { echo "local py_compile failed" >&2; exit 1;
 grep -q '"wittypi": read_wittypi' "$LOGGER" || {
     echo "logger has no wittypi driver registered" >&2; exit 1; }
 
+# py_compile only proves the file parses. TODO-117 shipped a driver that parsed
+# perfectly and paired voltage with a current from a different sample, which was
+# not visible until a day of uploaded rows turned out to be unfittable. This
+# exercises the sampling logic against synthetic wp5 output and checks the
+# emitted keys against CSV_HEADER, in-process, before the window opens.
+"$HERE/test_wittypi_pairing.py" >/dev/null 2>&1 || {
+    echo "wittypi pairing test FAILED — run test_wittypi_pairing.py" >&2; exit 1; }
+
 B64_LOGGER="$(base64 -w0 "$LOGGER")"
 B64_CONF="$(base64 -w0 "$CONF")"
 
