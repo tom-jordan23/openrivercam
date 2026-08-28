@@ -890,8 +890,22 @@ can only fall if a newer row landed. Three measurements, taken together:
 **1. The station was awake at 06:00 and 06:30 WIB on 08-28 and logged sensor
 rows then.** It did not stop at 05:30. What stopped at 05:30 was the *upload*.
 So for this event the row gap measures upload failure, not downtime — at least
-for that first hour, and the ds18b20/wittypi rows for those same two wakes are
-still missing, so the upload was cut short partway through its file list.
+for that first hour.
+
+**Correction (later the same evening): the upload was NOT cut short.** This
+entry first said the missing ds18b20/wittypi rows for those two wakes meant the
+upload stopped partway through its file list. The upload order disproves that.
+`orc-sensors-upload` sends oldest-mtime-first, and `sensors_logger` writes the
+sensors in config-filename order — ds18b20, rg15, sht40, wittypi — so if
+ds18b20 had logged at 06:00/06:30 its file would have sorted *ahead* of rg15
+and sht40 and shipped first. It never arrived; both of theirs did.
+
+So ds18b20 and wittypi **did not write rows at all** at 06:00 and 06:30. Their
+reads failed. That is a more informative failure than a truncated upload: the
+Pi booted far enough to run orc-sensors and read sht40 (I2C) and rg15 (UART),
+while the 1-wire probe and the Witty Pi HAT both came back with nothing — which
+is what a degraded or brownout boot looks like, and is worth checking against
+the power-on reason once TODO-117 ships.
 
 This is a direct qualification of `station_gaps.py`'s stated premise, that "the
 station writes a sensor row every wake, so the *absence* of rows is a precise
