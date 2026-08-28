@@ -862,6 +862,91 @@ a week of zero rain and high insolation.
 
 ---
 
+### ISS-FIELD-010: The station can be alive and uploading while completely unreachable — and "no sensor rows" is not the same as "down"
+
+| Field | Value |
+|-------|-------|
+| **Date opened** | 2026-08-28 |
+| **Site** | Sukabumi |
+| **Risk** | Every recovery window is missed; outage durations may be overstated |
+| **Impact** | **High** — undermines both the watcher's trigger and the premise of `station_gaps.py` |
+| **Status** | OPEN |
+
+**Caught live at 2026-08-28 17:21Z (00:21 WIB 08-29), 17.8 h into the current
+outage.** The monitor's `sensor_age` went *down* — 1070 min to 1066 min. Age
+can only fall if a newer row landed. Three measurements, taken together:
+
+- **8 new rows appeared**, total 28959 -> 28967: exactly the sht40 (temp,
+  humidity) and rg15 (interval, totalacc) sets for **06:00:25 and 06:30:26
+  WIB on 08-28** — timestamps *after* the 05:30 "outage onset". They were
+  absent from a query of that same window run at ~15:00Z.
+- **`tailscale status` read `offline, last seen 24m ago`**, against `14h ago`
+  earlier the same day. The node was on the tailnet around 00:01 WIB.
+- The same line read **`tx 11232 rx 0`** — the station transmitted and received
+  nothing back — and a direct tcp/22 probe timed out.
+
+**Two independent conclusions, both consequential.**
+
+**1. The station was awake at 06:00 and 06:30 WIB on 08-28 and logged sensor
+rows then.** It did not stop at 05:30. What stopped at 05:30 was the *upload*.
+So for this event the row gap measures upload failure, not downtime — at least
+for that first hour, and the ds18b20/wittypi rows for those same two wakes are
+still missing, so the upload was cut short partway through its file list.
+
+This is a direct qualification of `station_gaps.py`'s stated premise, that "the
+station writes a sensor row every wake, so the *absence* of rows is a precise
+record of when it was down". It is a good premise and most of the record still
+supports it, but it is not unconditional, and this is the second time this
+project has been bitten by silently failing sensor uploads (TODO-103, fixed
+2026-07-07).
+
+*What still holds:* a station that is up but cannot upload accumulates rows
+locally and backfills them on reconnect. The 13 historical outages are still
+empty in the record long after their recoveries, so those were genuine
+downtime — except where the 30-day CSV rotation could have destroyed the
+backlog first, which is a real caveat for gaps older than 30 days. **The
+2026-08-15 analysis is unaffected**: it recovered 08-20, well inside the
+rotation window, and the gap never filled in.
+
+**2. The upload path and the SSH path fail independently, and the watcher
+watches only the SSH path.** Sensor upload goes to LiveORC over the public
+internet via LTE. SSH goes over the Tailscale overlay. On this wake the first
+worked and the second did not — `rx 0` means the return path never came up, so
+SSH was never going to establish no matter how fast the poll.
+
+`station_watch.py` triggers on tcp/22 and explicitly declines to act on a fresh
+sensor row, on the grounds that a row "proves the station booted within the last
+cycle, not that it is powered on now", and that "a collect that cannot connect
+is a window spent for nothing". The reasoning is sound as far as it goes and the
+tcp/22 change was still right — but it is not a superset of "the station is
+alive", and treating it as one made a live station look dead. A second watch was
+added that polls the server for advancing sensor data, which is
+Tailscale-independent.
+
+**This does not give us a collect.** If the tailnet return path is broken on
+wake, there is no SSH window to win. That makes the Tailscale failure itself the
+thing blocking every artefact we need — the Witty Pi power-on-reason log above
+all.
+
+**Next steps**
+
+- [ ] **Determine whether `rx 0` is systematic.** One wake is not a pattern.
+      Every future wake should be checked for whether the tailnet return path
+      establishes. If it never does, remote recovery is impossible and the
+      station needs an out-of-band path.
+- [ ] **Reconsider the collection path.** If Tailscale cannot be relied on for
+      a 60-second window, the station should push its own diagnostics on wake
+      rather than waiting to be pulled — the sensor upload demonstrably works
+      when SSH does not. Uploading the Witty Pi power-on reason alongside the
+      sensor CSVs would have answered the TODO-116 question weeks ago without
+      anyone catching a wake window.
+- [ ] **Re-check outage durations for upload-failure contamination**, at least
+      for gaps under 30 days old where backfill would have survived rotation.
+- [ ] Alarm on a station that is uploading but unreachable. It currently reads
+      as identical to a dead one.
+
+---
+
 ### ISS-FIELD-009: Station disk pinned at its purge threshold; half of all captured video never reached the server
 
 | Field | Value |
