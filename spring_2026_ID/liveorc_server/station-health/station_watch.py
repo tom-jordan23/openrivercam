@@ -32,12 +32,24 @@ USAGE
     Leave it running in a terminal, or install the systemd user unit in
     station-watch.service.
 
-WHY TWO SIGNALS
-    Tailscale sees the station join the tailnet within seconds of boot, but
-    only while this machine is on the same tailnet and the node is not
-    expired. The sensor row is authoritative and independent of the local
-    machine but lags by however long the upload takes. Either one firing is
-    enough; requiring both would lose the race we are trying to win.
+WHICH SIGNAL FIRES IT
+    A TCP connect to port 22, and nothing else. That is ground truth for "can
+    I actually reach it", needs no credentials, and is the only thing that can
+    justify spending an under-60-second window on an SSH.
+
+    NOT Tailscale's Online flag. The Pi never disconnects cleanly — its power
+    is cut — so the control plane keeps reporting Online for minutes after the
+    station has slept. On 2026-08-27 a deploy fired on exactly that and the
+    SSH timed out; `tailscale status` was printing `active; relay "sin"` and
+    `offline, last seen 3m ago` for the same node in the same breath. This
+    file carried that warning in two docstrings while check() went on trusting
+    the flag anyway. It no longer does.
+
+    NOT a fresh sensor row either. A row proves the station booted within the
+    last cycle, not that it is powered on now. It is still polled and printed,
+    throttled to --sensor-poll, so an off-tailnet workstation learns the
+    station is running — but it never triggers a collect, because a collect
+    that cannot connect is a window spent for nothing.
 """
 
 import argparse
@@ -249,24 +261,49 @@ def save_state(path, state):
     path.write_text(json.dumps(state, indent=2))
 
 
+# Sensor age costs a round trip to Grafana, and the port poll now runs every
+# few seconds. Cache it so the fast loop does not hammer the server.
+_age_cache = {"at": 0.0, "value": None}
+
+
+def cached_sensor_age(station, max_age_s):
+    """sensor_age_minutes(), re-queried at most every max_age_s seconds."""
+    now = time.monotonic()
+    if _age_cache["value"] is None or now - _age_cache["at"] >= max_age_s:
+        _age_cache["value"] = sensor_age_minutes(station)
+        _age_cache["at"] = now
+    return _age_cache["value"]
+
+
 def check(args):
-    """One evaluation. Returns (is_up, human_readable_reason)."""
+    """One evaluation. Returns (reachable, alive, human_readable_reason).
+
+    reachable   a TCP connect to 22 succeeded right now. This is the ONLY
+                signal that justifies spending the window on an SSH, and the
+                only one that gates a collect.
+
+    alive       a sensor row landed within one duty cycle. Says the station
+                booted recently, NOT that it is powered on now — it is awake
+                ~2 min in 30. Reported so an off-tailnet workstation still
+                learns the station is running; never triggers a collect,
+                because a collect it cannot connect for is a wasted window.
+
+    Tailscale's Online flag is printed and deliberately trusted for nothing.
+    It stays stale for minutes after this station sleeps — on 2026-08-27 a
+    deploy fired on it three minutes after the Pi had slept and the SSH timed
+    out. That is the bug this function used to have.
+    """
+    reachable = port_open(args.host, 22)
     ts_online = tailscale_online(args.host)
-    age = sensor_age_minutes(args.station)
+    age = cached_sensor_age(args.station, args.sensor_poll)
+    alive = age is not None and age <= args.fresh_min
 
-    reasons = []
-    reasons.append(
-        "tailscale=" + {True: "ONLINE", False: "offline", None: "unknown"}[ts_online]
-    )
-    reasons.append("sensor_age=" + ("unknown" if age is None else f"{age:.0f}m"))
-
-    fresh = age is not None and age <= args.fresh_min
-    # Tailscale is the only real-time signal. A fresh sensor row means the
-    # station was alive within the cycle, NOT that it is powered on now — it is
-    # awake ~2 min in 30. Falling back to freshness when Tailscale cannot see
-    # the node at all keeps this useful off-tailnet, but never overrides it.
-    up = fresh if ts_online is None else ts_online
-    return up, ", ".join(reasons)
+    reasons = [
+        "tcp/22=" + ("OPEN" if reachable else "closed"),
+        "tailscale=" + {True: "ONLINE", False: "offline", None: "unknown"}[ts_online],
+        "sensor_age=" + ("unknown" if age is None else f"{age:.0f}m"),
+    ]
+    return reachable, alive, ", ".join(reasons)
 
 
 def main():
@@ -274,7 +311,12 @@ def main():
     ap.add_argument("--station", default="sukabumi")
     ap.add_argument("--host", default=DEFAULT_HOST, help="Tailscale name to SSH to")
     ap.add_argument("--user", default=DEFAULT_USER)
-    ap.add_argument("--interval", type=int, default=60, help="seconds between polls")
+    # The awake window is under 60 seconds, so a 60-second poll can miss a
+    # whole wake. The port probe is cheap (one TCP connect, 3 s timeout);
+    # the expensive Grafana query is throttled separately by --sensor-poll.
+    ap.add_argument("--interval", type=int, default=15, help="seconds between polls")
+    ap.add_argument("--sensor-poll", type=int, default=300,
+                    help="seconds between Grafana sensor-age queries (default 300)")
     ap.add_argument(
         "--fresh-min",
         type=float,
@@ -294,17 +336,25 @@ def main():
     was_up = state.get("up", False)
     already = state.get("collected_for_boot", False)
 
+    was_alive = state.get("alive", False)
+
     while True:
         now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%SZ")
-        up, why = check(args)
+        up, alive, why = check(args)
 
         if up and not was_up:
-            print(f"[{now}] *** STATION IS BACK *** ({why})", flush=True)
+            print(f"[{now}] *** STATION IS BACK — tcp/22 OPEN *** ({why})", flush=True)
             already = False
         elif not up and was_up:
-            print(f"[{now}] station went down ({why})", flush=True)
+            print(f"[{now}] station unreachable again ({why})", flush=True)
+        elif alive and not was_alive:
+            # Rows resumed but we cannot connect: it booted and we lost the
+            # window, or this workstation is off the tailnet. Either way it is
+            # news, and it is NOT grounds to try an SSH.
+            print(f"[{now}] *** SENSOR ROWS RESUMED (not reachable) *** ({why})",
+                  flush=True)
         else:
-            print(f"[{now}] {'up' if up else 'down'} ({why})", flush=True)
+            print(f"[{now}] {'reachable' if up else 'down'} ({why})", flush=True)
 
         if up and not already:
             if args.dry_run:
@@ -320,8 +370,9 @@ def main():
                 if not ok:
                     print("  grab failed — will retry on the next wake", flush=True)
 
-        was_up = up
-        state.update({"up": up, "collected_for_boot": already, "last_check": now})
+        was_up, was_alive = up, alive
+        state.update({"up": up, "alive": alive,
+                      "collected_for_boot": already, "last_check": now})
         save_state(args.state, state)
 
         if args.once:

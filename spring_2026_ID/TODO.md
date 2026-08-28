@@ -1045,46 +1045,109 @@ guarded the mount, so the one condition that mattered went unchecked.
   volume, so if the cause was the full disk they are likely recoverable — feed
   into TODO-113.
 
-### RESUME HERE — state at 2026-08-28 07:45 WIB
+### RESUME HERE — state at 2026-08-28 20:30 WIB
 
-Session of 2026-08-27/28. **Station is DOWN** since 08-28 05:30 WIB (four wakes
-missed, Tailscale offline). It has self-recovered mid-morning before — 08-27 at
-11:00 WIB, unattended — so check whether it came back on its own.
+Session of 2026-08-28. **Station is still DOWN.** Last sensor row 08-28 05:30
+WIB; 15 h and 30 missed wakes later there is nothing. `tcp/22` closed,
+Tailscale `offline, last seen 14h ago`. Genuinely down, not an upload fault.
 
-**Done and left in place on the station:**
+**The self-recovery did not come.** The previous resume block expected one —
+"it has self-recovered mid-morning before, unattended". 11:00 WIB came and
+went. Two corrections to that expectation, both from the sensor record:
 
-- Pre-July video purged: 19 date dirs, 8.81 GiB. Free space **5.00 -> 13.83 GiB**
-  (`pi/tools/orc_purge_synced.py --before-date 20260701 --apply`).
-- **Witty Pi telemetry live**: new `wittypi` sensor logs `vin_v / vin_min_v /
-  vin_max_v / vout_v / iout_a` through the existing upload path into
-  `sensor_readings`. No server-side change was needed. It logs on the timer
-  (~1 row per wake, one cycle of upload lag).
-- Sensor CSV ownership corrected to `pi` — my deploy had created it as root,
-  which silently broke every timer run.
+- There was **no sensor outage on 2026-08-27 at all** — zero gaps over 31
+  minutes anywhere between 08-25 and 05:30 today. Whatever came back at 11:00
+  WIB on 08-27 was SSH/Tailscale reachability, not the station. The precedent
+  was weaker than it was written up as.
+- Sorting the 13 historical outages by onset hour splits them cleanly.
+  Daylight onsets (06:23, 06:31, 08:20, 10:39, 10:43, 11:33, 14:09, 14:13,
+  15:01) ran 0.9 h – 23.1 h. **Night onsets (23:01, 00:47, 01:30, 04:30) ran
+  38 h, 9.3 d, 5.4 d and 7.3 d** — the four longest outages on record. This
+  one started at 05:30. n=4, so suggestive rather than proven, but the odds of
+  it clearing unattended are poor and a site visit may be the only way back.
 
-**Nothing else was changed, by instruction.** The low-voltage threshold is still
-UNSET (menu option 7, no value). Recovery voltage is 13.0 V (option 8). The
+**How the night actually ran.** Better than expected, then abrupt:
+
+| Window (WIB) | Behaviour |
+|---|---|
+| 08-27 18:35 – 20:51 | extended wakes — 17, running to the 25-min backstop |
+| 08-27 21:00 – 08-28 05:30 | **18 consecutive clean on-cadence wakes**, one tick each, dead on :00/:30 |
+| 08-28 06:00 → | nothing |
+
+Two things in that timeline cut against the working theory:
+
+1. **The extended wakes stopped at 21:00 WIB, 6.5 hours before the purge**
+   (purge landed 03:32 WIB). Nothing had been deployed to the station at that
+   point and the disk was still at 5.00 GiB free. They ceased on their own, so
+   the purge cannot be credited with the clean run that followed.
+2. **The station died out of the clean stretch, not out of a long-wake
+   window.** The final reading is unremarkable: V-IN 12.717 V, both samples
+   identical, iout 0.923 A.
+
+The 18:30–21:00 long-wake test **still has not run on a healthy disk.** It did
+not run tonight either — 08-28 18:30 passed with the station down.
+
+**What the Witty Pi telemetry says.** Only 11 rows exist, all 02:30–05:30 WIB
+on 08-28; the 03:00 and 03:30 wakes were lost to the root-owned CSV, which the
+04:01 WIB deploy fixed (rows resume at 04:00, confirmed working). V-IN sits
+**12.56 – 12.85 V** across three hours with **no downward slide**, then the
+station vanishes. Against the decision table in `wittypi.conf` that is not the
+capacity-exhaustion signature — there is no knee — and flatness across three
+sleep intervals disfavours a large parasitic drain, though the LiFePO4 plateau
+is flat enough to mask real SoC change. Five wakes of data, none at the moment
+of failure. Thin, and it should not be leaned on.
+
+**The source-resistance fit cannot be done with this sensor's output.** It was
+attempted: R² = 0.232 over 11 points and a 0.358 A load span. The fit is not
+merely weak, it is impossible, and the reason is a direct contradiction —
+
+    04:02:15   iout 0.852 A   V-IN span 0.009 V
+    04:30:27   iout 0.852 A   V-IN span 0.479 V
+
+Same current, 53x the sag. No fixed source resistance produces both. Reading
+`read_wittypi()` explains it: with `SAMPLES=2` and `SAMPLE_GAP_SEC=1.0`,
+`vin_v` is the **mean** of two samples, `vin_min_v`/`vin_max_v` are the min and
+max **of those same two** — so the "spread" is just the delta across one second
+— while `vout_v` and `iout_a` come from `lasts`, i.e. **the last sample only**.
+Voltage and current are therefore read at different instants, and the instant
+that sagged has no current measurement at all. The 0.479 V sag is real; the
+load that caused it was never measured, so it cannot be divided into ohms.
+
+**Ohms vs milliohms — bad connection vs worn pack — remains undecided, and
+will stay undecided until the driver emits paired V and I.** See TODO-117.
+
+**Still unchanged on the station, by instruction.** Low-voltage threshold still
+UNSET (menu option 7). Recovery voltage 13.0 V (option 8) — note this is
+probably inert while the threshold is unset, which is worth confirming. The
 2744 failed syncs are untouched. `/home/pi/code/git` has 3 uncommitted local
 changes, left alone.
 
-**The open question.** ISS-FIELD-009 said the disk was very likely the root
-cause. Two hours after the purge, with 13.83 GiB free, the station failed
-anyway. That prediction did not hold. But the actual test — whether the
-18:30-21:00 WIB long-wake window is clean with a healthy disk — has still never
-run, because the outage came at dawn first. Untested, not disproved.
+**Changed on the workstation this session:**
 
-**First three things to do next session:**
+- `station_watch.py` now triggers on **tcp/22**, not Tailscale's `Online` flag.
+  `port_open()` had been present and documented as ground truth since it was
+  written, and `check()` never called it — the file carried the warning in two
+  docstrings while doing the wrong thing anyway. Poll interval 60 s -> 15 s
+  (the awake window is under 60 s, so a 60 s poll can miss a whole wake); the
+  Grafana query is throttled separately by `--sensor-poll`, default 300 s. A
+  fresh sensor row is now reported but never triggers a collect, because a
+  collect that cannot connect is a window spent for nothing.
+- Added `station-watch.service`, the systemd user unit the module docstring has
+  referenced since it was written and which did not exist. **Not installed** —
+  it needs `systemctl --user enable --now station-watch` and, to survive
+  logout, `sudo loginctl enable-linger $USER`. Until that happens the watcher
+  is still session-local, which is the whole reason it keeps needing re-arming.
 
-1. `liveorc_server/station-health/station_gaps.py` — is it back, and did the
-   18:30-21:00 long-wake window run clean? That is the deferred test.
-2. Fit V-IN against load across the accumulated `wittypi` rows to get an
-   effective source resistance for the battery-to-WittyPi path. A 0.479 V sag
-   was seen in 2 seconds on 08-28 04:30. **Ohms means a bad connection (fuse
-   holder, terminal, crimp) rather than a worn pack** — cheap to fix, and it
-   would change the remedy completely. Milliohms points back at the cells.
-3. Re-arm the watcher. Monitors are session-local and did not survive; the
-   script is at `scratchpad/watch_passes.py` in the prior session dir, and is
-   read-only Grafana polling.
+**Next session, in order:**
+
+1. Check whether it came back: `station_gaps.py`, and
+   `data/station-forensics/` for anything the watcher grabbed unattended.
+2. If it is back — the deferred test. Does the 18:30–21:00 WIB window run clean
+   with a healthy disk? Untested since 08-27, and still untested.
+3. Land TODO-117 so the resistance question becomes answerable on the next
+   boot. It is a small change and it gates the remedy.
+4. Install the watcher unit properly, so this is the last time "re-arm the
+   watcher" appears in a resume block.
 
 **Access notes.** SSH is `pi@orc-sukabumi` over Tailscale with the password in
 the gitignored `spring_2026_ID/.env`, driven via `SSH_ASKPASS` +
@@ -1093,6 +1156,7 @@ the gitignored `spring_2026_ID/.env`, driven via `SSH_ASKPASS` +
 window is **under 60 seconds**, so nothing can be done by hand.
 
 ---
+
 
 ### TODO-116: Witty Pi restart resiliency — a missed boot leaves the station down
 
@@ -1180,6 +1244,88 @@ first.
 **Fix ISS-FIELD-009 before touching power settings.** A low-voltage threshold is
 worth having regardless, but the right value looks different against a station
 that is not burning 12x its budget, and the disk is where the damage starts.
+
+**Correction 2026-08-28 — the 08-27 "self-recovery" was not one.** This entry
+says the station "was down since 08-27 04:30 WIB" and "recovered **on its own**
+at 11:00 WIB", and rests the "No longer blocked on physical access" conclusion
+on it. The sensor record does not support it: there is **no gap over 31 minutes
+anywhere between 08-25 and 08-28 05:30**, so the station was logging normally
+straight through 08-27 04:30–11:00. The natural reading is that the outage was
+in *reachability* — SSH/Tailscale — and not in the station, which is exactly
+the confusion `station_watch.py` was carrying in `check()` (fixed 08-28). A
+station that is up but unreachable produces no sensor gap; a station that is
+down cannot log at all.
+
+That withdraws the evidence for "it recovers without a site visit", and with it
+the inference that the 13 V recovery voltage is working. Both go back to
+unknown. The 07:00–13:00 recovery cluster across the *other* twelve outages is
+untouched by this and still stands.
+
+### TODO-117: Witty Pi sensor must emit paired V and I, or the battery question stays unanswerable
+
+| Field | Value |
+|-------|-------|
+| **Status** | OPEN — found 2026-08-28 |
+| **Site** | Sukabumi (and any station running `orc-sensors`) |
+
+The `wittypi` sensor was added to settle whether the overnight failures come
+from a **worn pack** or a **bad connection** — ohms versus milliohms in the
+battery-to-Witty-Pi path. That is decided by an effective source resistance,
+which needs `V_in` and `I_in` measured **at the same instant**. The driver does
+not provide that, so the question cannot be answered from what it uploads.
+
+**What `read_wittypi()` actually emits.** With `SAMPLES=2` and
+`SAMPLE_GAP_SEC=1.0` in `wittypi.conf`:
+
+| Field | What it is |
+|---|---|
+| `vin_v` | **mean** of the two samples |
+| `vin_min_v` / `vin_max_v` | min and max **of those same two** — so the "spread" is one 1-second delta, not an extremum over the wake |
+| `vout_v`, `iout_a` | `lasts[...]` — **the last sample only** |
+
+So the voltage figures and the current figure come from different instants, and
+whichever instant sagged has no current reading attached to it at all.
+
+**How it fails in practice.** Fitting `V_in` against load across the 11 rows
+from 2026-08-28 gives R² = 0.232 over a 0.358 A span — but the fit is not
+merely weak, it is ruled out:
+
+    04:02:15   iout 0.852 A   V-IN span 0.009 V
+    04:30:27   iout 0.852 A   V-IN span 0.479 V
+
+Identical current, 53x the sag. No fixed source resistance produces both. The
+0.479 V sag is real and it is the most interesting number in the dataset; the
+load that caused it was simply never measured.
+
+**The fix is small.** Keep per-sample `(vin, iout)` pairs inside the sampling
+loop instead of averaging one and taking the last of the other, and emit enough
+of the pairing to fit a line. Minimum viable: `iout_min_a` / `iout_max_a` plus
+the `vin` recorded at each, so every row carries at least two paired points.
+
+- [ ] Rework `read_wittypi()` to collect `(vin, vout, iout)` per sample and emit
+      paired extremes rather than mean-vs-last. Extend `CSV_HEADER` to match —
+      `sensor-ingest` derives metric names from the header with no whitelist, so
+      no server-side change is needed (same reasoning that let the sensor ship).
+- [ ] Raise `SAMPLES` above 2 so a row carries a usable spread of load points.
+      Budget it against the wake: `wp5` never exits on its own, so each read
+      costs the full `READ_TIMEOUT_SEC` (currently 6 s) and the current setting
+      is deliberately bounded at ~12 s per tick.
+- [ ] Make the sampling straddle the camera/PoE switch-on, which is the only
+      large load step available and therefore the widest lever arm for the fit.
+- [ ] Then fit, and read the answer: **ohms means a bad connection** — fuse
+      holder, terminal, crimp — which is cheap to fix and changes the remedy
+      completely. **Milliohms points back at the cells.**
+
+**Do not set a low-voltage threshold before this resolves.** The right value
+differs depending on whether the sag is connection resistance or pack
+condition, and a threshold chosen against the wrong one over-discharges a
+LiFePO4 pack or cuts a healthy station off early.
+
+Deploys via `pi/tools/orc_deploy_wittypi_sensor.sh`, which already backs up,
+`py_compile`s before going live, and rolls back on failure. Note the 2026-08-27
+lesson recorded in that script's history: **test as the service user** — a
+root-created CSV silently broke every timer run, and cost the 03:00 and 03:30
+WIB rows on the night the station died.
 
 ---
 

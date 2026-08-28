@@ -1,0 +1,44 @@
+# station-watch.service — keep the Sukabumi recovery watch alive across sessions.
+#
+# WHY THIS FILE EXISTS
+#   station_watch.py has referenced "the systemd user unit" since it was
+#   written, and the unit did not exist. So every arming of the watcher was a
+#   process in somebody's terminal, and every one of them died with the
+#   session — which is exactly why the 2026-08-28 resume block had to list
+#   "re-arm the watcher" as a task. A recovery that lands while nobody is
+#   logged in is the whole case for the watcher, and was the case it could not
+#   cover.
+#
+# INSTALL
+#   mkdir -p ~/.config/systemd/user
+#   ln -sf "$PWD/station-watch.service" ~/.config/systemd/user/station-watch.service
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now station-watch.service
+#
+#   Survives logout ONLY with lingering enabled, which needs root once:
+#       sudo loginctl enable-linger $USER
+#   Without it the unit stops at logout and this is no better than a terminal.
+#
+# WATCH
+#   systemctl --user status station-watch
+#   journalctl --user -u station-watch -f
+#
+# It changes nothing on the station: one TCP probe to port 22, one anonymous
+# read-only Grafana query, and on reconnect a read-only collector over SSH.
+
+[Unit]
+Description=Sukabumi station recovery watch (ISS-FIELD-008 / TODO-116)
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/code/git/openrivercam/spring_2026_ID/liveorc_server/station-health
+ExecStart=%h/code/git/openrivercam/spring_2026_ID/liveorc_server/station-health/station_watch.py
+# The station is down for days at a time; the poller is meant to outlast that.
+Restart=always
+RestartSec=30
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target
