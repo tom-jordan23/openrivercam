@@ -882,8 +882,9 @@ can only fall if a newer row landed. Three measurements, taken together:
   absent from a query of that same window run at ~15:00Z.
 - **`tailscale status` read `offline, last seen 24m ago`**, against `14h ago`
   earlier the same day. The node was on the tailnet around 00:01 WIB.
-- The same line read **`tx 11232 rx 0`** — the station transmitted and received
-  nothing back — and a direct tcp/22 probe timed out.
+- A direct tcp/22 probe timed out. The same line read `tx 11232 rx 0`, which
+  this entry originally read as proof the return path was broken. **That was
+  wrong — see the correction below.**
 
 **Two independent conclusions, both consequential.**
 
@@ -925,8 +926,22 @@ rotation window, and the gap never filled in.
 **2. The upload path and the SSH path fail independently, and the watcher
 watches only the SSH path.** Sensor upload goes to LiveORC over the public
 internet via LTE. SSH goes over the Tailscale overlay. On this wake the first
-worked and the second did not — `rx 0` means the return path never came up, so
-SSH was never going to establish no matter how fast the poll.
+worked and the second did not.
+
+**Correction — the `rx 0` reasoning was wrong (2026-08-28, prompted by Tom
+asking whether SSH behaviour was new).** This entry claimed `rx 0` showed the
+tailnet return path never came up. It shows nothing of the kind. Every offline
+peer on this tailnet reads `tx 0 rx 0`; the only online one reads tx 4.5 MB /
+rx 4.3 MB. `orc-sukabumi` reads `tx 3432 rx 0` purely because **our own watcher
+is sending it a SYN every 15 seconds** and an offline peer does not answer. The
+counters are our traffic, not a diagnosis, and they reset per relay session —
+which is why the figure has read 11232, 6240, 7176 and 3432 within two hours.
+
+There is **no evidence of an SSH-specific fault.** SSH worked normally right up
+to the failure: read-only collections succeeded at 2026-08-27 18:00Z and
+18:30Z, and the wittypi sensor deploy went in at 21:01Z, ninety minutes before
+the station's last full wake at 22:30Z. What we actually have is a station that
+is either off or awake for only seconds.
 
 `station_watch.py` triggers on tcp/22 and explicitly declines to act on a fresh
 sensor row, on the grounds that a row "proves the station booted within the last
@@ -937,10 +952,14 @@ alive", and treating it as one made a live station look dead. A second watch was
 added that polls the server for advancing sensor data, which is
 Tailscale-independent.
 
-**This does not give us a collect.** If the tailnet return path is broken on
-wake, there is no SSH window to win. That makes the Tailscale failure itself the
-thing blocking every artefact we need — the Witty Pi power-on-reason log above
-all.
+**This still does not give us a collect, but for a plainer reason than the one
+first written here.** The 2026-08-29 00:00 WIB wake registered with the
+Tailscale control plane and pushed two files; the watcher was polling tcp/22
+every 15 s throughout and never saw it open. A wake of a few tens of seconds is
+not long enough for the tailnet path to establish *and* be used, and no poll
+rate fixes a window that short. The case for pushing diagnostics rather than
+pulling them is unchanged and if anything stronger — it does not depend on the
+tailnet being broken, only on the window being too small to win.
 
 **Next steps**
 
