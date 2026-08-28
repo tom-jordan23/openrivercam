@@ -969,6 +969,44 @@ run stops at the 24th with nothing from the 25th to the 30th — exactly the
 06-25 -> 07-02 outage in ISS-FIELD-008, corroborating that outage from an
 independent direction.
 
+**FIRST RESULT — THE STATION FAILED ANYWAY (2026-08-28 05:30 WIB).**
+
+Two hours after the purge, with 13.83 GiB free, the station stopped. All four
+sensors cease at the same instant; Tailscale offline; four consecutive wakes
+missed (06:00, 06:30, 07:00, 07:30). This is a TODO-116 outage on a station
+whose disk problem had just been fixed.
+
+**So "the disk is very likely the root cause" was overstated, and I am
+recording that rather than quietly softening it.** The chain below is coherent
+and every measurement in it stands, but its first prediction failed.
+
+What the failure does NOT settle:
+
+- **The pack may simply have had nothing left.** Free space fixes the *drain*,
+  not the *reserve*. If weeks of extended wakes had already run the battery
+  down, one good night was never going to refill it. The purge would then still
+  be necessary and merely insufficient.
+- **The long-wake test has not actually run yet.** Extended wakes are an
+  evening phenomenon (18:30-21:00 WIB); the outage happened at dawn, before
+  that window came round. Zero long wakes between 00:00 and 05:30 proves
+  nothing — that period was always quiet.
+
+What it does support: the **battery is back in play as a primary fault**, not
+merely the last link. Two details point that way. The failure came at 05:30,
+essentially at sunrise (~05:50) and the very bottom of the discharge curve,
+later than the historical 23:00-04:30 window. And V-IN had been sitting at
+12.56-12.72 V all night — on a 4S LiFePO4 that is already near the knee, where
+a pack can fall away quickly.
+
+Set against that: the 05:30 sample read 12.717 V with **zero** sag, which is
+not the signature of a pack about to drop out. Something happened between
+05:30 and 06:00 that the 30-minute sampling interval cannot see.
+
+**Next honest test:** whether it self-recovers mid-morning as it did on 08-27
+(11:00 WIB, unattended), and whether the 18:30-21:00 long-wake window is clean
+once it is back. Until the evening window runs with a healthy disk, the disk
+hypothesis is untested rather than disproved.
+
 **This is now a live test of the causal chain.** If the chain in this entry is
 right, the extended wakes should stop: with space available, pyorc should
 finish, the ORC-OS task should complete, `shutdown_after_task` should fire, and
