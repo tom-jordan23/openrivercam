@@ -1045,7 +1045,7 @@ guarded the mount, so the one condition that mattered went unchecked.
   volume, so if the cause was the full disk they are likely recoverable — feed
   into TODO-113.
 
-### RESUME HERE — state at 2026-08-28 21:40 WIB
+### RESUME HERE — state at 2026-08-28 22:05 WIB
 
 Session of 2026-08-28, **ended deliberately to restart under tmux** — nothing
 was interrupted, the tree is clean and both commits are in. **First action on
@@ -1142,43 +1142,53 @@ changes, left alone.
   logout, `sudo loginctl enable-linger $USER`. Until that happens the watcher
   is still session-local, which is the whole reason it keeps needing re-arming.
 
+**Session of 2026-08-28 (under tmux), what changed:**
+
+- **The watcher did not die.** The previous block twice predicted it would.
+  It had been reparented to init and was still polling on resume, with an
+  unbroken log. The prediction was wrong; the underlying fragility was not.
+- **It is now a systemd user unit and no longer session-local.**
+  `station-watch.service` is installed, enabled and running. Its logging was
+  changed from the journal to `append:` on
+  `data/station-forensics/station-watch.log`, so the one continuous record is
+  preserved — the hand-run watcher's last line is 14:43:14Z and the unit's
+  first is 14:43:34Z, no gap. **Still needs one manual step to survive logout:**
+  `sudo loginctl enable-linger tjordan` (root, interactive).
+- **The long-wake precursor was tested across all 13 outages** — see
+  ISS-FIELD-009. Long wakes precede 9/12 usable onsets vs 10% of baseline
+  windows (p = 2.7e-07), which is the first quantitative support the energy
+  mechanism has had. But they are **not necessary**: 2026-08-15, the 5.4-day
+  outage, came out of 42.6 days of clean cadence with zero long wakes in the
+  preceding 72 h. A cold-temperature explanation was tested and killed.
+
+**The station did not come back.** Still down at 22:05 WIB, ~16.6 h and 33
+missed wakes. Nothing collected unattended. The night-onset pattern continues
+to hold.
+
 **Next session, in order:**
 
 1. Check whether it came back: `station_gaps.py`, and
-   `data/station-forensics/` for anything the watcher grabbed unattended.
+   `data/station-forensics/` for anything the unit grabbed unattended.
+   The watcher now runs unattended for real, so an overnight recovery
+   should finally be captured.
 2. If it is back — the deferred test. Does the 18:30–21:00 WIB window run clean
    with a healthy disk? Untested since 08-27, and still untested.
 3. TODO-117 is written and tested but **not deployed** — the station has been
    unreachable since. Run `pi/tools/orc_deploy_wittypi_sensor.sh` the moment
    tcp/22 opens; the pre-flight now runs `test_wittypi_pairing.py` itself, so
    there is nothing to check by hand first.
-4. Install the watcher unit properly, so this is the last time "re-arm the
-   watcher" appears in a resume block.
+4. **Work out what happened on 2026-08-15.** That outage is now the most
+   informative event on record: 5.4 days, no drain, no disk pressure signature,
+   out of six weeks of clean running — and it is the better analogue for the
+   current outage than anything in ISS-FIELD-009. The station-side artefact
+   that would settle it is the Witty Pi power-on-reason log, which is another
+   reason step 3 matters.
+5. Run `sudo loginctl enable-linger tjordan` so the watcher survives logout.
 
-**Restarting (2026-08-28 21:40 WIB).** Branch `iss-field-009-wittypi-paired-vi`,
-two commits (`a7799f7`, `2df987f`), working tree clean, nothing staged or
-stashed. Nothing is half-finished; the only live thing was the watcher.
-
-**The watcher was running in the previous session's terminal and died with
-it.** That is the failure this block has now described twice, so re-arm it
-first — under tmux this time, where it will outlive the Claude session:
-
-    tmux new -d -s orcwatch \
-      'cd spring_2026_ID/liveorc_server/station-health && \
-       ./station_watch.py --interval 15 \
-         2>&1 | tee -a ../../../data/station-forensics/station-watch.log'
-
-Better still, install the unit and stop hand-rolling this — the file is
-committed at `liveorc_server/station-health/station-watch.service`:
-
-    ln -sf "$PWD/station-watch.service" ~/.config/systemd/user/station-watch.service
-    systemctl --user daemon-reload && systemctl --user enable --now station-watch
-    sudo loginctl enable-linger $USER    # or it still dies at logout
-
-The log so far is `data/station-forensics/station-watch.log` — append to it
-rather than starting a new one, the continuity is the point. Nothing was
-collected unattended: the two `orc-sukabumi-*` grabs in that directory are from
-08-27, before the outage.
+**Restarting.** Branch `iss-field-009-wittypi-paired-vi`, working tree clean.
+The watcher is a systemd unit now — `systemctl --user status station-watch` to
+check it, and there is nothing to re-arm by hand. If it ever needs stopping,
+`systemctl --user stop station-watch`, not a kill.
 
 **Access notes.** SSH is `pi@orc-sukabumi` over Tailscale with the password in
 the gitignored `spring_2026_ID/.env`, driven via `SSH_ASKPASS` +

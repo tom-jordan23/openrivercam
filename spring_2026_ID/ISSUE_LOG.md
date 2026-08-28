@@ -1017,6 +1017,81 @@ should fall to zero, and the overnight battery drain with it. If long wakes
 continue with 13.8 GiB free, the disk was not the cause and this entry is
 wrong.
 
+**THE LONG-WAKE PRECURSOR, TESTED ACROSS THE WHOLE RECORD (2026-08-28).**
+
+Everything above argues the energy chain from one or two nights. With the
+station unreachable there was no new station-side evidence to collect, but the
+claim is testable server-side: if extended wakes drain the pack, onsets should
+be preceded by long wakes far more often than an ordinary window is. All 13
+outages plus the ongoing one, against every non-precursor window as baseline.
+
+Two corrections had to be made before the numbers meant anything:
+
+- **The April cluster.** Six of the 13 outages fall in 2026-04-17..20, a
+  stretch when long wakes ran continuously. On the raw comparison precursor
+  windows looked overwhelming (median 23 long-wake ticks vs 0 baseline), but
+  temporal clustering alone reproduces that. Reported split below.
+- **Dead windows.** The 07-02 10:43 and 08-20 10:39 onsets each begin *minutes
+  after the previous outage ended*, so their preceding 6 h is mostly inside
+  that outage — no rows, therefore zero long wakes by construction. Scoring
+  them as "no precursor" would have been backwards. Both are excluded by a
+  coverage screen (observed wakes / wakes expected at the duty cycle >= 80%).
+
+Screened result, 6 h window:
+
+| | with a long wake in the prior 6 h |
+|---|---|
+| outage onsets (12 usable of 14) | **9/12 = 75%** |
+| baseline windows | 40/418 = 10% |
+| | Fisher exact, one-sided: **p = 2.7e-07** |
+| post-April onsets only | 3/6 = 50% |
+| post-April baseline | 26/370 = 7% |
+
+**This is the first real quantitative support the energy mechanism has had.**
+It survives removing the April cluster, though on 6 post-April onsets that
+half of the test is suggestive rather than conclusive.
+
+**But long wakes are NOT necessary, and that is the more important half.**
+Three usable onsets had none in the preceding 6 h, and two had none anywhere
+in the preceding **72 h**:
+
+| onset (WIB) | outage | clean cadence before it | long wakes in 72 h |
+|---|---|---|---|
+| 2026-05-02 06:31 | 1.0 h | 9.4 d | 0 |
+| 2026-08-15 01:30 | **5.4 d** | **42.6 d** | 0 |
+| 2026-08-28 05:30 | ongoing | 0.36 d | 58 (17 in 12 h, 0 in 6 h) |
+
+2026-08-15 is the one that matters: **the second-longest outage on record came
+out of 42.6 days of unbroken clean cadence with no extended wake within three
+days.** No amount of disk space would have prevented it, because there was no
+drain to prevent. There is a second failure path, it produces long outages, and
+this entry does not describe it.
+
+That also cuts against the chain independently: ISS-FIELD-007 has processing
+errors rising through July (24%) and August (32%) as the disk filled, yet the
+station ran clean from 07-03 to 08-15. Disk pressure and extended wakes are not
+locked together the way this entry assumes.
+
+**A temperature explanation was tested and killed.** The two clean-cadence
+outages had the coldest 72 h minima in the onset table (19.8 and 18.8 degC),
+which looked like a lead. It is not: 18.8 degC is only the **12th percentile**
+of the site's own distribution, the baseline reaches 17.2 degC, and the coldest
+decile (<= 18.0 degC) contains **zero** onsets. Recording it because eyeballing
+a 12-row table is exactly how the April cluster nearly got through.
+
+**Caveats, stated rather than buried.** This is association, not mechanism — a
+long wake and an outage could share a third cause (a failing capture) with
+energy playing no part. Long wakes are episodic and clustered, which inflates
+any window-based comparator; the post-April split is the honest number. And the
+"ongoing" row is the current outage, whose duration is not yet known.
+
+**What it changes.** The purge was worth doing and the drain is real, but the
+open question is no longer "is the disk the cause". It is **what killed the
+station on 2026-08-15**, since whatever that was is still present and is the
+better match for the current outage's clean final 6 hours. Reproduced by
+`liveorc_server/station-health/station_gaps.py` plus the analysis in this
+entry; the scripts are throwaway, the queries are read-only.
+
 **Next steps**
 
 Ordered for a pilot whose job is to prove the technology, not to preserve the
