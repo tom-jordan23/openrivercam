@@ -961,6 +961,44 @@ rate fixes a window that short. The case for pushing diagnostics rather than
 pulling them is unchanged and if anything stronger — it does not depend on the
 tailnet being broken, only on the window being too small to win.
 
+**Could the 13.0 V recovery voltage be oscillating it? (Tom, 2026-08-28.)**
+The observable half of that is correct — the station does come back and die
+immediately — but the timing says the trigger is the schedule, not the
+threshold. A voltage-triggered recovery fires at an arbitrary moment, which is
+what the 10 historical off-grid recoveries look like (3.6–14.9 min off-slot).
+Every wake since the failure is on the grid: 05:30, 06:00 and 06:30 WIB all
+land 24–29 s past the slot, which is just the sensor-logging delay after boot,
+and the 08-29 wake registered with Tailscale at **00:00:00.1 WIB**. Those are
+scheduled alarms. A boot too brief to log or register would be invisible, so
+fast oscillation is not excluded, only unsupported.
+
+**The voltage data suggests the opposite failure, and it is worth more.** All
+11 V-IN samples ever collected sit between 12.558 and 12.868 V — **the pack has
+never been observed above 12.87 V, and the recovery voltage is set to 13.0 V.**
+If that setting gates power-on at all, it does not cycle the station, it
+**latches it off**, because the condition to return can never be met. That fits
+the record better than oscillation: 10 of 13 outages needed a person on site,
+and this is the first outage under this setting.
+
+Two things stop that being a conclusion:
+
+- **The samples are all from the pre-dawn trough** (02:30–05:30 WIB on 08-28),
+  the bottom of the discharge. Daylight bulk charge on a 4S LiFePO4 should push
+  well past 13.0 V, so "never reaches 13.0 V" is established for that window
+  only. If the panel is charging at all, recovery should be reachable by
+  mid-morning — and the station still does not come back, which pushes the
+  question back to whether charge is reaching the pack (ISS-FIELD-009's
+  BMS/charge-controller latch).
+- **The setting may simply be inert.** The low-voltage threshold is still UNSET
+  (menu option 7), and recovery voltage may do nothing without it — unconfirmed
+  against the firmware, see ISS-FIELD-008.
+
+**Actionable regardless:** whoever next attends the site should read the pack
+voltage at the terminals and reconsider a 13.0 V recovery threshold on a pack
+that has never been seen above 12.87 V under load. That is a cheap change to
+get wrong in the safe direction, and it is already flagged in ISS-FIELD-008's
+next steps.
+
 **Next steps**
 
 - [ ] **Determine whether `rx 0` is systematic.** One wake is not a pattern.
