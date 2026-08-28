@@ -1160,6 +1160,18 @@ changes, left alone.
   mechanism has had. But they are **not necessary**: 2026-08-15, the 5.4-day
   outage, came out of 42.6 days of clean cadence with zero long wakes in the
   preceding 72 h. A cold-temperature explanation was tested and killed.
+- **2026-08-15 investigated.** Three explanations ruled out: it did not die
+  mid-cycle (the 01:30 final wake is complete), there was no drain (48 rows/day
+  for 42 consecutive days), and harvest was not declining (flat diurnal swing,
+  08-14 above median). What turned up instead is in how outages *end* —
+  **10 of 13 recoveries are unscheduled boots**, 3.6–14.9 min off the :00/:30
+  grid against a p99 of 1.20 min for on-cadence wakes.
+- **Tom confirms those are button presses at the site**, and that the 13 V
+  recovery voltage was set *after* the 08-21 recovery. Two consequences: the
+  station does not clear these outages by itself, and **the current outage is
+  the first test of the recovery-voltage setting.** The three on-grid
+  recoveries (07:00, 07:31, 08:30 WIB, all within 90 min of sunrise) are the
+  signature of a genuine self-recovery — that is what to look for.
 
 **The station did not come back.** Still down at 22:05 WIB, ~16.6 h and 33
 missed wakes. Nothing collected unattended. The night-onset pattern continues
@@ -1177,12 +1189,13 @@ to hold.
    unreachable since. Run `pi/tools/orc_deploy_wittypi_sensor.sh` the moment
    tcp/22 opens; the pre-flight now runs `test_wittypi_pairing.py` itself, so
    there is nothing to check by hand first.
-4. **Work out what happened on 2026-08-15.** That outage is now the most
-   informative event on record: 5.4 days, no drain, no disk pressure signature,
-   out of six weeks of clean running — and it is the better analogue for the
-   current outage than anything in ISS-FIELD-009. The station-side artefact
-   that would settle it is the Witty Pi power-on-reason log, which is another
-   reason step 3 matters.
+4. **Decide on a site visit.** 08-15 is now largely worked out (see
+   ISS-FIELD-009) and the conclusion is operational: 10 of 13 outages needed
+   someone at the site. An unattended recovery would appear **on-grid between
+   07:00 and 08:30 WIB**; the 08-28 dawn passed with nothing. The open
+   question is no longer the recovery but the **trigger** — what stops a
+   station that has run 42 flawless days — and the artefact that speaks to it
+   is the Witty Pi power-on-reason log, which is what step 3 unlocks.
 5. Run `sudo loginctl enable-linger tjordan` so the watcher survives logout.
 
 **Restarting.** Branch `iss-field-009-wittypi-paired-vi`, working tree clean.
