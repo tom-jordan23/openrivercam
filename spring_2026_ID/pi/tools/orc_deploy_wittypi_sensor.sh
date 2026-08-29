@@ -31,6 +31,7 @@
 # WHAT IT TOUCHES
 #   /usr/local/lib/orc-sensors/sensors_logger.py  (replaced, backup kept)
 #   /etc/orc-sensors/wittypi.conf                 (new)
+#   /etc/orc-sensors/orccapture.conf              (new)
 #   Nothing else. No systemd units, no schedule, no Witty Pi settings. The
 #   sensor timer picks the new config up on its next tick.
 #
@@ -49,6 +50,7 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 SHARED="$HERE/../shared"
 LOGGER="$SHARED/usr/local/lib/orc-sensors/sensors_logger.py"
 CONF="$SHARED/etc/orc-sensors/wittypi.conf"
+CAPCONF="$SHARED/etc/orc-sensors/orccapture.conf"
 
 TARGET="pi@orc-sukabumi"
 DRY=0
@@ -75,14 +77,20 @@ grep -q '"wittypi": read_wittypi' "$LOGGER" || {
 # emitted keys against CSV_HEADER, in-process, before the window opens.
 "$HERE/test_wittypi_pairing.py" >/dev/null 2>&1 || {
     echo "wittypi pairing test FAILED — run test_wittypi_pairing.py" >&2; exit 1; }
+# The capture driver classifies which fault a wake hit. A misclassification is
+# worse than no data — it would send a site visit after the wrong component.
+"$HERE/test_orccapture.py" >/dev/null 2>&1 || {
+    echo "orccapture test FAILED — run test_orccapture.py" >&2; exit 1; }
 
 B64_LOGGER="$(base64 -w0 "$LOGGER")"
 B64_CONF="$(base64 -w0 "$CONF")"
+B64_CAPCONF="$(base64 -w0 "$CAPCONF")"
 
 REMOTE=$(cat <<REMOTE_EOF
 set -eu
 LOGGER=/usr/local/lib/orc-sensors/sensors_logger.py
 CONF=/etc/orc-sensors/wittypi.conf
+CAPCONF=/etc/orc-sensors/orccapture.conf
 
 # ── Diagnostics FIRST ────────────────────────────────────────────────
 # These are read-only and cost about a second. They run before anything can
@@ -121,6 +129,7 @@ echo "  \$PROBE"
 # ── Install ──────────────────────────────────────────────────────────
 echo "$B64_LOGGER" | base64 -d > /tmp/sensors_logger.candidate
 echo "$B64_CONF"   | base64 -d > /tmp/wittypi.conf.candidate
+echo "$B64_CAPCONF" | base64 -d > /tmp/orccapture.conf.candidate
 
 python3 -m py_compile /tmp/sensors_logger.candidate || {
     echo "REMOTE py_compile FAILED — nothing changed"; exit 1; }
@@ -134,6 +143,8 @@ sudo cp -a "\$LOGGER" "\$LOGGER.bak"
 sudo install -m 0755 /tmp/sensors_logger.candidate "\$LOGGER.new"
 sudo mv -f "\$LOGGER.new" "\$LOGGER"
 sudo install -m 0644 /tmp/wittypi.conf.candidate "\$CONF.new"
+sudo install -m 0644 /tmp/orccapture.conf.candidate "\$CAPCONF.new"
+sudo mv -f "\$CAPCONF.new" "\$CAPCONF"
 sudo mv -f "\$CONF.new" "\$CONF"
 
 # Test AS THE SERVICE USER, never as root. orc-sensors.service is User=pi, and
@@ -177,6 +188,24 @@ else
         echo "  -> STILL unreadable; boot context will not populate"
     fi
 fi
+
+# Same class of risk as wp5d.log: the capture driver reads the journal AS THE
+# SERVICE USER, and journalctl needs adm or systemd-journal group membership.
+# Nothing has ever verified pi has it, and if it does not the driver degrades
+# quietly to capture_result_code = -2.
+echo "--- journal readability (as the service user) ---"
+if sudo -u pi journalctl -u orc-capture.service -n 1 --no-pager >/dev/null 2>&1 \
+   || sudo -u pi journalctl -t orc-capture -n 1 --no-pager >/dev/null 2>&1; then
+    echo "journal readable by pi — capture outcome will populate"
+else
+    echo "journal NOT readable by pi — capture_result_code would be -2"
+    sudo usermod -aG systemd-journal pi 2>/dev/null || true
+    echo "  -> added pi to systemd-journal; takes effect on the NEXT boot,"
+    echo "     so expect -2 for one cycle and a real code after that"
+fi
+
+echo "--- orccapture CSV ---"
+tail -2 /var/log/orc/sensors/orccapture_\$(date +%F).csv 2>/dev/null || echo "(no orccapture CSV yet)"
 
 echo "--- wittypi CSV ---"
 tail -3 /var/log/orc/sensors/wittypi_\$(date +%F).csv 2>/dev/null || echo "(no wittypi CSV yet)"

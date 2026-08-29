@@ -619,11 +619,133 @@ def read_wittypi(conf):
     return out
 
 
+
+# ─── orc-capture outcome (ISS-FIELD-010) ────────────────────────────
+
+# Terminal outcomes, matched against the journal tail. The LAST match wins, not
+# the first: a run ending "All 3 attempts failed" also contains the "Quality
+# gate FAILED" lines that produced it, and the final line describes the run.
+_CAPTURE_OUTCOMES = (
+    (re.compile(r"Delivered:"), 1.0, "delivered"),
+    (re.compile(r"Capture disabled via ORC-OS"), 2.0, "disabled-via-orc-os"),
+    (re.compile(r"MAINTENANCE MODE .*skipping"), 3.0, "maintenance-skip"),
+    (re.compile(r"Camera unreachable"), 4.0, "camera-unreachable"),
+    (re.compile(r"All \d+ attempts failed"), 5.0, "all-attempts-failed"),
+    (re.compile(r"Quality gate FAILED"), 6.0, "quality-gate-failed"),
+)
+
+# Which gate rejected the frame. This separates a camera that answered with a
+# bad picture (bitrate/resolution) from one that barely answered at all
+# (empty/corrupt) — the distinction ISS-FIELD-010 needs to tell a camera fault
+# from a power fault.
+_CAPTURE_GATES = (
+    (re.compile(r"FAIL: file is empty or missing"), 1.0, "empty"),
+    (re.compile(r"FAIL: ffprobe cannot parse"), 2.0, "corrupt"),
+    (re.compile(r"FAIL: resolution"), 3.0, "resolution"),
+    (re.compile(r"FAIL: duration"), 4.0, "duration"),
+    (re.compile(r"FAIL: bitrate"), 5.0, "bitrate"),
+)
+
+_CAPTURE_ATTEMPT_RE = re.compile(r"Attempt (\d+)/(\d+)")
+_JOURNAL_TS_RE = re.compile(r"^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})")
+
+CAPTURE_UNREADABLE = -2.0   # journal not readable by the service user
+CAPTURE_ABSENT = -1.0       # journal readable, no orc-capture run in the tail
+
+
+def _journal_tail(unit, ident, lines, timeout_s):
+    """Journal lines for the capture service, by unit then by syslog tag.
+
+    Two lookups because the unit is created by ORC-OS under a name this repo
+    does not own, while the script's own "[orc-capture]" prefix is stable. If
+    the unit name is ever wrong, the tag still finds it.
+    """
+    for argv in (["journalctl", "-u", unit, "-n", str(lines), "-o", "short-iso", "--no-pager"],
+                 ["journalctl", "-t", ident, "-n", str(lines), "-o", "short-iso", "--no-pager"]):
+        try:
+            p = subprocess.run(argv, capture_output=True, text=True, timeout=timeout_s)
+        except Exception:
+            continue
+        out = p.stdout or ""
+        if p.returncode == 0 and "[orc-capture]" in out:
+            return out
+    return None
+
+
+def read_orccapture(conf):
+    """Classify the most recent orc-capture run from the journal.
+
+    WHY
+        ISS-FIELD-010. "No daytime video" turned out to be two different
+        failures: at midday the station wakes, finishes fast and produces
+        nothing; in the evening it hangs for the full ON window. Both are
+        described in orc-capture's own log, and nothing uploads it — so the
+        distinction that separates a camera fault from a power fault from a
+        software fault has never left the station.
+
+        This ships the outcome of the last run on the same path as the sensor
+        CSVs, for the same reason as the Witty Pi power-on reason: the upload
+        works when SSH does not.
+
+    NEVER RAISES
+        Returns sentinels. A missing or unreadable journal must not cost the
+        row — the rule the Witty Pi boot context already follows.
+    """
+    unit = conf.get("CAPTURE_UNIT", "orc-capture.service")
+    ident = conf.get("CAPTURE_IDENT", "orc-capture")
+    tail_lines = int(conf.get("JOURNAL_LINES", "300"))
+    timeout_s = float(conf.get("READ_TIMEOUT_SEC", "10"))
+
+    out = {"capture_result_code": CAPTURE_UNREADABLE}
+    text = _journal_tail(unit, ident, tail_lines, timeout_s)
+    if text is None:
+        err("orccapture: journal not readable (needs adm/systemd-journal group?)")
+        return out
+
+    last_code = last_label = last_ts = None
+    gate_code = gate_label = None
+    attempts = None
+    for line in text.splitlines():
+        for pat, code, label in _CAPTURE_OUTCOMES:
+            if pat.search(line):
+                last_code, last_label = code, label
+                m = _JOURNAL_TS_RE.match(line)
+                if m:
+                    last_ts = m.group(1)
+        for pat, code, label in _CAPTURE_GATES:
+            if pat.search(line):
+                gate_code, gate_label = code, label
+        m = _CAPTURE_ATTEMPT_RE.search(line)
+        if m:
+            attempts = float(m.group(1))
+
+    if last_code is None:
+        out["capture_result_code"] = CAPTURE_ABSENT
+        return out
+
+    out["capture_result_code"] = last_code
+    out["capture_result"] = _csv_safe(last_label)
+    if gate_code is not None:
+        out["capture_gate_code"] = gate_code
+        out["capture_gate"] = _csv_safe(gate_label)
+    if attempts is not None:
+        out["capture_attempts"] = attempts
+    if last_ts:
+        try:
+            age = (datetime.now() - datetime.strptime(last_ts, "%Y-%m-%dT%H:%M:%S")).total_seconds()
+            if 0 <= age <= 86400:
+                out["capture_age_s"] = round(age, 1)
+        except ValueError:
+            pass
+    return out
+
+
 DRIVERS = {
     "sht40": read_sht40,
     "rg15": read_rg15,
     "ds18b20": read_ds18b20,
     "wittypi": read_wittypi,
+    "orccapture": read_orccapture,
 }
 
 
