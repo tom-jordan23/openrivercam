@@ -1069,6 +1069,56 @@ mode, whether the Pi and the PoE injector are fed from the controller's LOAD
 terminals or straight off the battery, and bus voltage measured at midday and
 after dark.
 
+**THE STATION IS FED FROM THE CONTROLLER'S LOAD TERMINALS (Tom, 2026-08-29).**
+That makes the charge controller a **series element in the station's power
+path**, not merely a battery charger, and it is the first fact that makes the
+day/night asymmetry mechanically explicable.
+
+Two stages that had been treated as separate problems are one fault
+progressing:
+
+| period | Pi power | camera / video |
+|---|---|---|
+| 08-23 → 08-27 | fine — 48 wakes/day, around the clock | **fails all day**; works 01:00–05:00 WIB only |
+| 08-28 → now | **fails all day**; one wake, 00:00 WIB | nothing |
+
+The load output first cannot carry the **large** load (PoE injector + camera,
+~30 W with inrush) during the day, and later cannot carry even the **small**
+one. Monotonic, day-worst, and worsening.
+
+**A thermal mechanism fits, and it answers the objection that killed the
+earlier temperature test.** A controller's load switch derates when hot, and in
+daylight it is both sitting in a 33–38 degC enclosure and dissipating its own
+charging heat. Earlier this entry rejected temperature because 18:00–23:00 WIB
+has the same *enclosure air* temperature as 01:00–05:00 yet produces no video.
+That test used the wrong body: the controller's heatsink lags ambient by hours,
+having charged all day, and is only genuinely cool by ~01:00. Air temperature
+and device temperature are not the same measurement, and the earlier
+disconfirmation does not apply to the controller.
+
+**Still a hypothesis.** Nothing here has been measured at the controller — this
+investigation has never looked at it. Do not treat it as established.
+
+**The decisive test is a rewire, not a measurement.** Feed the station from the
+**battery terminals through a fuse** instead of the LOAD terminals. If daytime
+operation returns, it is the controller, and the station is usable again the
+same afternoon. It is a five-minute change with screw terminals, which is what
+`DESIGN_SPECS.md` requires of any field repair. The LiFePO4 pack's own BMS
+still provides low-voltage protection, so removing the controller's LVD from
+the path does not leave the battery unprotected — though it does mean nothing
+will disconnect the load on a deeply discharged pack except the BMS, which
+should be stated to whoever does the work.
+
+**Supporting measurements to take while there**, in priority order:
+
+1. Voltage at the **LOAD terminals vs the battery terminals**, under load, at
+   **midday and after dark**. A drop across the controller that appears in
+   daylight and disappears at night is the fault, directly measured.
+2. The controller's make, model and **load-output mode** — several have a
+   dusk-to-dawn or timed street-lighting mode that energises the load only at
+   night, which would produce this signature with nothing failing at all.
+3. Whether the controller is hot to the touch in the afternoon.
+
 **Next steps**
 
 - [ ] **Determine whether `rx 0` is systematic.** One wake is not a pattern.
