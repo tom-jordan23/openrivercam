@@ -1251,6 +1251,68 @@ successful theory has to account for that, and at present none of the four
 does. It is the sharpest unexplained fact in this entry and should not be
 smoothed over.
 
+**TOM'S THEORY, AND WHAT THE DATA DOES TO IT (2026-08-29).** Proposed: the
+disk failures extended runtime and completely discharged the battery in a way
+never done before; the station then tries to boot before the pack has any depth
+of charge and drops below shutdown voltage.
+
+**The drain component is not supported — and its failure strengthens the
+conclusion.** Long-wake ticks in the four days before this outage total **65**.
+April's worst four-day window is **659**, an order of magnitude more; May
+reaches 201. This outage was preceded by a *mild* drain by this station's own
+history.
+
+That inverts into a quantitative argument for pack degradation: **if 65 units
+of drain now does what 659 did not in April, the usable capacity is a fraction
+of what it was.** The discharge may well have been the deepest ever in relative
+terms — the pack simply got there on a tenth of the energy. The failure
+profiles agree:
+
+| | drain / 4 d | outages | character |
+|---|---|---|---|
+| April | 659 | 6 in 4 days | shallow, self-cleared in hours |
+| August | 65 | rare | catastrophic, days, needs a person |
+
+High drain against decent capacity gives frequent shallow failures that clear
+themselves. Low drain against a spent pack gives rare unrecoverable ones. That
+is the transition, reached from the other direction.
+
+**The boot-before-depth mechanism, extended, answers the daytime question —
+which nothing else in this entry has.**
+
+1. First true deep discharge -> **BMS undervoltage lockout**; the pack
+   electrically disconnects.
+2. The MPPT controller sees ~0 V where the battery should be and **will not
+   start** — most refuse to output into a disconnected pack. No charging
+   happens at all, all day, in full sun.
+3. Hours of rest relax the cells above the BMS release threshold; it recloses,
+   the station boots (**00:00 WIB**), the load collapses the cell in seconds,
+   the BMS reopens.
+4. Repeat.
+
+Nothing happens during the day because the pack is not merely low, it is
+*absent*. That accounts for two dawns producing nothing, for the single wake
+arriving in the small hours after maximum rest, and for 10 of 13 outages
+needing a person — a deadlock cannot clear itself.
+
+**It makes a sharp, pending prediction.** `wp5d.log` should show dense
+`Scheduled Startup` entries every 30 minutes right through the outage: the
+Witty Pi firing faithfully into a pack that cannot hold it. That is exactly the
+DYING EARLY verdict `wp5d_verdict.py` is built to return, and it is what
+`pounce.py` is waiting to collect.
+
+**A related test was run and came back inconclusive**, recorded so it is not
+re-run in hope. If concurrent load were what blocks capture, long-wake hours
+and capture hours should be mutually exclusive. Since 08-24: capture in 3/23
+long-wake hours (13%) against 18/80 short-wake hours (22%). Both low, and the
+two populations sit in different clock hours by construction, so the comparison
+mostly measures the hour effect. It neither supports nor refutes.
+
+**Still unexplained by this theory**, and it should not be papered over: the
+18:00–00:00 dead zone, and the 01:00–05:00 capture window of 08-24 to 08-27,
+which predates the total discharge and belongs to the run-in rather than the
+deadlock.
+
 **Next steps**
 
 - [ ] **Determine whether `rx 0` is systematic.** One wake is not a pattern.
