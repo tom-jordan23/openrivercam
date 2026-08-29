@@ -1383,6 +1383,51 @@ maintenance for more than a few hours should raise an alert; the mode is
 readable from the GitHub API without touching the station, so the check is
 trivial and could sit alongside the TODO-103 staleness alerting.
 
+**COULD THE STATION BE STUCK IN MAINTENANCE MODE? (Tom, 2026-08-29.)** Asked
+because the disk problems might have gummed up the maintenance chain. The
+literal version is ruled out by design, but the question lands next to a worse
+failure mode that had not been noticed.
+
+**The flag cannot be stuck.** `orc-capture` tests `/run/orc-maintenance-mode`,
+and `/run` is tmpfs — the flag is destroyed on every power cycle and recreated
+only if GitHub returns `maintenance`. `orc-capture`'s own comment says so.
+Every failure path in `orc-maintenance-check` also `rm -f`s the flag: missing
+config, unresolvable hostname, unreachable GitHub, and any unrecognised value
+all fall through to production. There is no path where a failure leaves the
+station in maintenance.
+
+**But the CHECK can stall the capture chain, and that is a real exposure.**
+
+```
+After=network-online.target
+Before=orc-api.service
+Type=oneshot
+```
+
+The fetch retries **12 times at up to 15 s each — up to 180 seconds** — and the
+unit is ordered *before* `orc-api`. So an unreachable or slow GitHub delays the
+capture chain by up to three minutes on every boot, which is longer than an
+entire healthy wake (~2 min). That would produce **long wakes and missing video
+with maintenance mode never set** — precisely the "capture fails the way
+maintenance mode makes it skip" gap this issue is trying to close, and it needs
+no hardware fault at all.
+
+It also offers the first candidate mechanism for the **diurnal pattern**, which
+nothing else has explained: capture succeeding only 01:00–05:00 WIB and failing
+18:00–00:00 matches Indonesian mobile-network load, quietest in the small hours
+and heaviest in the evening. That is a hypothesis, not a finding — sensor
+uploads to our own server succeeded at all hours over the same period, so any
+degradation would have to be specific to the GitHub API path rather than to
+connectivity in general. Worth noting that these are different endpoints,
+different TLS, and only one of them is retried for 180 s in front of capture.
+
+**`pounce.py`'s primary grab now collects the evidence** so the next catch
+settles it: `ls -la /run/orc-maintenance-mode` (the flag directly, rather than
+by tmpfs argument), `findmnt /run`, the last 40 `orc-maintenance` journal lines
+(which branch ran, and the timestamps show how long the fetch took), and
+`systemctl status orc-maintenance-check` — alongside `wp5d.log`, `df -h /` and
+`vcgencmd get_throttled`.
+
 **Next steps**
 
 - [ ] **Determine whether `rx 0` is systematic.** One wake is not a pattern.

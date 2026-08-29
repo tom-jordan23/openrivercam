@@ -58,7 +58,26 @@ POUNCE_SECS = 240        # how long to keep trying after a sign of life
 PRIMARY_CMD = (
     "echo '--- date ---'; date -u; "
     "echo '--- uptime ---'; uptime; "
+    # 1. The pivot: dying early or staying off. Everything else is secondary.
     "echo '--- wp5d.log tail ---'; tail -n 400 /var/log/wp5d.log; "
+    # 2. The maintenance chain. The flag itself cannot be stuck — /run is tmpfs
+    #    and every failure path in orc-maintenance-check rm -f's it — but the
+    #    CHECK retries GitHub 12 times at up to 15 s and is ordered
+    #    Before=orc-api.service, so an unreachable GitHub stalls the capture
+    #    chain for up to 180 s on every boot. That is longer than a healthy
+    #    wake, and would produce long wakes and missing video with maintenance
+    #    mode never set. The journal timestamps show which branch ran and how
+    #    long it took; the ls settles the flag question directly rather than
+    #    from the tmpfs argument.
+    "echo '--- maintenance flag ---'; ls -la /run/orc-maintenance-mode 2>&1 || true; "
+    "echo '--- /run is tmpfs? ---'; findmnt -no FSTYPE /run 2>/dev/null || true; "
+    "echo '--- orc-maintenance journal ---'; "
+    "journalctl -t orc-maintenance -n 40 --no-pager 2>/dev/null || true; "
+    "echo '--- maintenance unit ---'; "
+    "systemctl status orc-maintenance-check --no-pager -n 5 2>/dev/null || true; "
+    # 3. Cheap context: disk is ISS-FIELD-009's whole thesis, and undervolt bits
+    #    are the only power evidence available without the Witty Pi.
+    "echo '--- disk ---'; df -h / | tail -2; "
     "echo '--- throttled ---'; vcgencmd get_throttled 2>/dev/null || true"
 )
 
