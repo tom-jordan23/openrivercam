@@ -1019,6 +1019,56 @@ SSH-specific problem at this station. What we have is a station that is off,
 and wakes too short to catch — which is a window problem, and the reason
 collection moved to `pounce.py`.
 
+**RETRACTED: the recovery voltage is not gating power-on (2026-08-29).** The
+entry above floated a 13.0 V threshold latching the station off. Tom objected
+that the pack failing at the same moment he set the threshold is an implausible
+coincidence. He is right, and the wake record settles it — after the setting
+went in, the station hit **every scheduled slot for six days**:
+
+| day | wake-slots hit (48 = all) |
+|---|---|
+| 08-22 | 48 |
+| 08-23 | 49 |
+| 08-24 | 55 |
+| 08-25 | 65 |
+| 08-26 | 67 |
+| 08-27 | 62 |
+
+(Counts above 48 are long wakes adding extra sensor ticks.) A threshold that
+gated power-on could not produce a perfect boot record. Drop it.
+
+**THE CENTRAL ANOMALY, RESTATED: this station works at night and not in the
+day.** Two independent signals agree, and every power-shortage explanation
+tried so far predicts the opposite:
+
+- The **only** wake in this entire outage was at **00:00 WIB** — midnight.
+- Video, since 08-24, occurs **only in 01:00–05:00 WIB**, 0 of 72 daylight
+  awake hours.
+- Since continuous monitoring began at 01:47 WIB on 08-29, there have been
+  **zero wakes across all of 08-29 daylight**, 06:00–20:00 WIB. On 08-28 the
+  last data was 06:30 WIB, as the day began.
+
+Daylight is when the panel charges, when bus voltage is highest, and when a
+flat pack should recover. A battery-capacity story, the ISS-FIELD-009 energy
+chain, the recovery threshold and the thermal explanation **all predict
+night-worst**. The station is day-worst. That is why each of them has failed to
+fit, and it should be the organising fact from here rather than an oddity noted
+at the end.
+
+**Untested candidate, named but not built on:** many solar charge controllers
+have a load output with a dusk-to-dawn or timed mode — a street-lighting
+feature — that energises the load only at night, and a controller either set
+that way or failing while charging would reproduce this signature without
+anything about the battery having changed. There is no evidence for it yet. It
+is recorded so a site visit can check the controller's mode and its load
+terminals, which nothing in this investigation has ever looked at.
+
+**What this changes for a site visit.** The controller moves to the top of the
+list, above the battery. Ask for: the controller's make/model and load-output
+mode, whether the Pi and the PoE injector are fed from the controller's LOAD
+terminals or straight off the battery, and bus voltage measured at midday and
+after dark.
+
 **Next steps**
 
 - [ ] **Determine whether `rx 0` is systematic.** One wake is not a pattern.
