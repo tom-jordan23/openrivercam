@@ -1313,6 +1313,76 @@ mostly measures the hour effect. It neither supports nor refutes.
 which predates the total discharge and belongs to the run-in rather than the
 deadlock.
 
+**MAINTENANCE MODE EXPLAINS 9 OF THE 13 OUTAGES (2026-08-29).** Tom asked that
+room be left for human error — forgetting to take the station out of
+maintenance mode, and the like. That turned out to be the most productive
+prompt of the investigation, though not in the way either of us expected.
+
+**What maintenance mode does.** `orc-maintenance-check` fetches
+`pi/<station>/station_mode` from the public repo `tom-jordan23/orc-pmi-stations`
+on every boot. In `maintenance` it touches `/run/orc-maintenance-mode`, which
+makes `orc-capture` **skip capture entirely** — and, in the script's own words,
+"the Pi stays awake for the full Witty Pi ON window". That is exactly the
+signature this investigation has been chasing:
+
+- no video (capture skipped)
+- long wakes (full 25-min ON window instead of ~2 min — the 12x drain)
+- sensors logging normally throughout (independent of capture)
+
+**It was NOT left on before this outage.** The file currently reads
+`production`, and its last change was **2026-06-24**. Checked directly against
+the GitHub API, the same endpoint the station uses.
+
+**But its history is a natural experiment, and the chain fires every time.**
+Seven maintenance windows totalling 549 h, 17% of the observation span:
+
+| | long-wake ticks | rate |
+|---|---|---|
+| inside maintenance | 870 | **1.59/h** |
+| outside | 477 | 0.18/h |
+
+**8.8x the long-wake rate inside maintenance mode.** And the outage record:
+
+| onset (WIB) | duration | relation |
+|---|---|---|
+| 04-17 06:23 – 04-20 14:13 (six outages) | 0.9–19.5 h | **all inside** the 04-08→04-21 window |
+| 05-11 23:01 | 38.0 h | inside |
+| 05-16 00:47 | **9.3 d** | inside |
+| 06-25 04:30 | **7.3 d** | 7 h after a window closed |
+| 05-02, 07-02, 08-15, 08-20 | | not associated |
+
+**Nine of thirteen**, including the two longest in the historical set.
+
+**Three consequences.**
+
+1. **The extended-runtime → drain → outage chain is confirmed, not merely
+   inferred.** Nine outages have an independently known cause for the extended
+   runtime, and the chain completes every time. Tom's deep-discharge theory
+   rests on measured ground now.
+
+2. **Earlier statistics in this issue were contaminated, and one inference is
+   withdrawn.** The "April cluster" agonised over above **is** the April
+   maintenance window. And the headline result — long wakes precede 9/12 onsets
+   at p = 2.7e-07 — is real as an association but its causal reading was wrong:
+   maintenance mode was generating both terms. The chain survives on the
+   natural experiment; the inference drawn from that correlation does not.
+
+3. **It sharpens the open question rather than closing it.** Maintenance has
+   been off since 06-24, so the genuinely unexplained outages are **08-15
+   (5.4 d)** and **the current one** — and both carry the full maintenance-mode
+   signature with maintenance mode not set. Something is making capture *fail*
+   the way maintenance mode makes it *skip*. That is ISS-FIELD-009's territory
+   (disk pinned at the purge threshold, pyorc failing, task never completing),
+   and this is the strongest support that entry has had.
+
+**Process finding, worth acting on independently of the fault.** Maintenance
+mode has been left on for multi-day stretches repeatedly — 05-14 to 05-19 is
+five days, 06-21 to 06-24 three — and nothing anywhere warns about it. It costs
+roughly 12x the energy budget and produces no data at all. A station in
+maintenance for more than a few hours should raise an alert; the mode is
+readable from the GitHub API without touching the station, so the check is
+trivial and could sit alongside the TODO-103 staleness alerting.
+
 **Next steps**
 
 - [ ] **Determine whether `rx 0` is systematic.** One wake is not a pattern.
