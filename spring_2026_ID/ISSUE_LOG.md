@@ -1119,6 +1119,62 @@ should be stated to whoever does the work.
    night, which would produce this signature with nothing failing at all.
 3. Whether the controller is hot to the touch in the afternoon.
 
+**THE WEATHER DID NOT CHANGE, SO TEMPERATURE IS NOT THE CAUSE (Tom,
+2026-08-29).** The thermal framing above needs correcting. Measured:
+
+| | daily max enclosure temp |
+|---|---|
+| before 08-23 (45 days, full coverage) | median **36.0 degC**, mean 35.7, max 39.6 |
+| from 08-23 (5 days) | median **35.5 degC**, mean 36.0, max 37.9 |
+
+Identical, marginally cooler since the fault. And **the hottest day on record —
+39.6 degC on 2026-07-26 — falls inside the stretch when the station was working
+perfectly**, 48 wakes/day with full 24-hour video. It has never failed on a day
+as hot as ones it ran through without trouble.
+
+So temperature can be the *stress that reveals* a fault whose margin has eroded,
+but it cannot be what changed. Something in the station changed, and the dating
+is tight: **the enclosure was opened on 08-20 and 08-21** (the two button-press
+recoveries), and the degradation begins **08-23**.
+
+**A loose or oxidising connection fits every feature, and needs nothing
+environmental to move:**
+
+- It dissipates I²R, so it is worst when current is highest — daylight, with
+  the PoE injector and camera energised. That is the day-worst signature.
+- Its resistance rises with temperature, so heating begets heating. Progressive
+  and self-accelerating.
+- It degrades further with each thermal cycle, so onset is dated to a
+  disturbance rather than to weather.
+- It fails the large load first and the small load later, which is exactly the
+  08-23 (camera) then 08-28 (Pi) progression.
+
+**This is the hypothesis TODO-117 was built to measure**, and the framing is
+already in `wittypi.conf`: an effective source resistance separating *ohms*
+(fuse holder, terminal, crimp) from *milliohms* (worn pack). The single sample
+with a genuine load step showed a **0.479 V sag** (04:30:27, vin_min 12.318 /
+vin_max 12.797), which is large. The fit was never completed because voltage
+and current came from different instants — the defect the paired-sampling
+change corrects. Once TODO-117 ships, a handful of wakes settles ohms vs
+milliohms directly.
+
+**Site brief, reordered again — connections before the controller:**
+
+1. `/var/log/wp5d.log`, before touching anything.
+2. **Every connection in the power path, checked under load**: the controller's
+   LOAD screw terminals, the fuse holder, every crimp and lug. Warm or
+   discoloured under a daytime camera cycle is the finding. Re-torque and
+   inspect for oxidation — and note that simply re-seating them may *clear* the
+   fault, so measure and photograph before disturbing anything.
+3. Voltage drop LOAD terminals vs battery terminals under load, midday and
+   after dark.
+4. The bypass (battery through a fuse) as test and interim fix.
+5. TODO-117 deploy.
+
+Item 2 outranks the controller because a joint explains the dated onset and the
+controller does not: the controller was not touched on 08-20/08-21, and its
+thermal environment is unchanged.
+
 **Next steps**
 
 - [ ] **Determine whether `rx 0` is systematic.** One wake is not a pattern.
