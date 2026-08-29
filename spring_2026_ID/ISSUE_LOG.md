@@ -1428,6 +1428,38 @@ by tmpfs argument), `findmnt /run`, the last 40 `orc-maintenance` journal lines
 `systemctl status orc-maintenance-check` — alongside `wp5d.log`, `df -h /` and
 `vcgencmd get_throttled`.
 
+**THE STALL HYPOTHESIS DOES NOT COVER MIDDAY, AND THERE ARE TWO NO-CAPTURE
+REGIMES (2026-08-29).** Tested immediately rather than left to look stronger
+than it is. Since 08-24, by WIB hour:
+
+| window | videos | long-wake ticks | reading |
+|---|---|---|---|
+| 01:00–04:00 | **29** | 11 | capture works |
+| 11:00–17:00 | 0 | **0** | capture fails, wake stays short |
+| 18:00–23:00 | 0 | **30** | capture fails, wake runs long |
+
+Midday has neither capture nor stalls, so a boot stall cannot be the general
+explanation: the station wakes, finishes quickly, and produces nothing. Evening
+is the opposite failure — it hangs. **These are two different regimes and have
+been treated as one ("no daytime video") throughout this issue.**
+
+**A limitation of the instrument, which should have been stated earlier.** The
+"long wake" detector only sees wakes longer than about five minutes, because it
+counts extra 300-second sensor ticks. A capture that dies on the 90-second
+`CAMERA_BOOT_TIMEOUT` produces no extra tick and is invisible to it. So
+throughout this investigation **"short wake" has never meant "healthy wake"** —
+it means "under five minutes", which includes a fast camera failure. Every
+statement here of the form "the station was running normally at N wakes/day"
+carries that caveat, including the 48-slots-per-day evidence used above to
+clear the recovery-voltage theory. That evidence still stands for *booting*; it
+was never evidence that the wakes were doing useful work.
+
+The midday regime is consistent with `orc-capture` failing fast — camera not
+answering, or the quality gate rejecting three attempts — and the evening one
+with something hanging. Both are visible in `orc-capture`'s own log, which
+nothing uploads. That is the second artefact the station should be pushing, and
+the argument for it is now the same as for the Witty Pi power-on reason.
+
 **Next steps**
 
 - [ ] **Determine whether `rx 0` is systematic.** One wake is not a pattern.
