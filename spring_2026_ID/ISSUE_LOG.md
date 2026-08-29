@@ -1175,6 +1175,82 @@ Item 2 outranks the controller because a joint explains the dated onset and the
 controller does not: the controller was not touched on 08-20/08-21, and its
 thermal environment is unchanged.
 
+**ALTERNATES THAT REQUIRE NO COINCIDENCE (Tom, 2026-08-29).** Tom's objection:
+the scenarios above keep needing a sudden change on a specific date, and the
+likelier story is that the recovery voltage badly aggravated a **pre-existing**
+condition. That is better-disciplined than what preceded it and the alternates
+below are recorded as first-class, not as fallbacks.
+
+**First, the device's own menu, which should have been read before any of this
+was theorised** (2026-08-27 capture, section 3):
+
+```
+  7. Set low voltage threshold                  <-- no value in brackets: UNSET
+  8. Set recovery voltage threshold [13.0V]
+  V-IN: 12.717V   V-OUT: 5.290V   I-OUT: 0.995A
+```
+
+The station was running normally at **12.717 V**, well below 13.0 V, so the
+recovery threshold is not a gate on *running*. It is a live setting sitting
+above where this system actually operates.
+
+**Second, a constraint that had been walked past and that breaks most of the
+scenarios above, including the connection one.** Capture works 01:00–05:00 WIB
+— the pre-dawn trough, the pack's *lowest* state of charge — and fails
+18:00–00:00 WIB, straight after a full day of charging, at its *highest*.
+**Capture is anti-correlated with state of charge.** This is inference from
+solar physics, not measurement — every V-IN sample we hold is from 02:30–05:30
+— and confirming or killing it is the single most valuable thing TODO-117 will
+deliver, because it needs only V-IN across a full day. If it holds, every
+capacity-shortage explanation is dead, including the ones this entry has been
+building.
+
+**A. Smooth margin erosion crossing a step — no event at all.**
+Nothing happened on 08-23. Something in the power path has degraded for months
+(13 outages since April); 08-23 is where a smooth decline crossed the camera's
+inrush requirement and 08-28 where it crossed the Pi's. The dates are
+thresholds being crossed, not things happening. Requires no disturbance, no
+setting, and no weather change, and it fits the two-stage progression better
+than any discrete-event story.
+*Discriminator:* source resistance trend once TODO-117 ships — a rising trend
+with no step is this; a step is an event.
+
+**B. Two cascaded voltage gates that do not know about each other — Tom's, made
+mechanical.** The station is LOAD-fed, so the Witty Pi's V-IN *is* the
+controller's LOAD output. The controller carries its own LVD and reconnect
+thresholds, almost certainly factory-set for **lead-acid** on a reused system,
+which places them inside a LiFePO4 pack's normal working band. Adding a second
+gate at 13.0 V puts two independent cut/restore points in series with no
+knowledge of each other. A marginal pack that previously just sagged now trips
+a gate and must reach a higher voltage to clear it than the system can present
+under load. **The condition is old; the setting is what made it
+unrecoverable.**
+*Discriminator:* read the controller's LVD/reconnect values and chemistry
+profile on site, and check whether Witty Pi V-IN reads **0 V** (load
+disconnected) rather than merely low — the two are completely different faults
+and the current sampling cannot tell them apart.
+
+**C. BMS cell imbalance under load.** One weak cell sags under the camera's
+draw, the BMS opens, the load drops, voltage recovers, the BMS recloses. Worst
+at highest current, progressive as imbalance grows, no coincidence. This was
+the leading hypothesis before ISS-FIELD-009 displaced it, and nothing has
+actually falsified it.
+*Discriminator:* per-cell voltages at the pack; and V-IN collapsing abruptly to
+zero rather than sagging.
+
+**D. Controller output stage degrading while actively switching.** With no PV
+at night the controller passes battery to load essentially statically; in
+daylight it switches at high frequency to regulate charge. A degrading output
+stage is far worse under switching. Day-worst, progressive, weather-independent.
+*Discriminator:* LOAD-vs-battery terminal drop under load, midday against after
+dark; and whether ripple is visible on the LOAD output while charging.
+
+**What none of these explain yet** is the 18:00–00:00 dead zone: six hours
+after sunset, controller passive, pack full, and still no capture. Any
+successful theory has to account for that, and at present none of the four
+does. It is the sharpest unexplained fact in this entry and should not be
+smoothed over.
+
 **Next steps**
 
 - [ ] **Determine whether `rx 0` is systematic.** One wake is not a pattern.
