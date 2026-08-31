@@ -549,17 +549,6 @@ def content_box(slide, prs):
 
 
 def add_title_slide(prs):
-    # Deliberately not the template's "Title Slide" layout: that centres the
-    # American Red Cross logo alone above the title, which is the arrangement
-    # equal billing rules out. Title Only carries no logo, so the four-logo row
-    # below is the only mark on the slide.
-    if logo_files():
-        layout = find_layout(prs, "title only", fallback=12)
-    else:
-        layout = find_layout(prs, "title slide", "title slide 1", "title",
-                             fallback=0)
-    slide = prs.slides.add_slide(layout)
-
     lines = [
         (DOC_TITLE, 20, INK, 0),
         (SUBTITLE, 12, MUTED, 0),
@@ -567,23 +556,44 @@ def add_title_slide(prs):
         ("2026-08-31  ·  " + STATUS, 9, MUTED, 0),
     ]
 
-    has_logos = place_logo_row(slide, prs, Inches(0.6), Inches(0.55),
-                               prs.slide_width - Inches(1.2), Inches(0.72))
-
-    title = style_title(slide, DOC_TITLE, size=20)
-    bodies = body_placeholders(slide)
-
-    if title is None:
-        # The Classic template's title slide carries the logo plus a single text
-        # placeholder and no title placeholder at all.
-        if bodies:
+    if not logo_files():
+        # No partner artwork: fall back to the template's own title slide.
+        layout = find_layout(prs, "title slide", "title slide 1", "title",
+                             fallback=0)
+        slide = prs.slides.add_slide(layout)
+        title = style_title(slide, DOC_TITLE, size=20)
+        bodies = body_placeholders(slide)
+        if title is None and bodies:
             write(bodies[0].text_frame, lines)
-        else:
-            box = slide.shapes.add_textbox(Inches(1.5), Inches(2.6),
-                                           prs.slide_width - Inches(3.0), Inches(2.0))
-            write(box.text_frame, lines)
-    elif bodies:
-        write(bodies[0].text_frame, lines[1:])
+        elif bodies:
+            write(bodies[0].text_frame, lines[1:])
+        clear_empty_placeholders(slide)
+        return slide
+
+    # With artwork, the template's title slide is not usable: it centres the
+    # American Red Cross mark alone above the title. Title Only is a blank
+    # canvas, so the slide is composed here — logo row first, then the title
+    # block beneath it, with all four organisations at one size in one row.
+    layout = find_layout(prs, "title only", fallback=12)
+    slide = prs.slides.add_slide(layout)
+    cover_master_logo(slide, prs)
+
+    place_logo_row(slide, prs, Inches(0.8), Inches(0.72),
+                   prs.slide_width - Inches(1.6), Inches(0.62))
+
+    title = slide.shapes.title
+    if title is not None:
+        title.left, title.top = Inches(0.5), Inches(1.95)
+        title.width, title.height = prs.slide_width - Inches(1.0), Inches(0.85)
+        write(title.text_frame, [(DOC_TITLE, 22, INK, 0)])
+
+    box = slide.shapes.add_textbox(Inches(0.9), Inches(2.95),
+                                   prs.slide_width - Inches(1.8), Inches(1.5))
+    tf = box.text_frame
+    tf.word_wrap = True
+    write(tf, lines[1:])
+    for p in tf.paragraphs:
+        p.alignment = PP_ALIGN.CENTER
 
     clear_empty_placeholders(slide)
     return slide
@@ -694,6 +704,39 @@ def logo_files():
         if path.is_file():
             found.append((path, org))
     return found
+
+
+# The master's own mark, from the Classic template: 1.54 x 0.71 in at
+# (0.34, 4.89). Covered rather than deleted — a shape inherited from the master
+# cannot be removed from an individual slide.
+MASTER_LOGO = (Inches(0.30), Inches(4.86), Inches(1.66), Inches(0.74))
+
+
+def cover_master_logo(slide, prs):
+    """Hide the template's single-organisation mark on a content slide."""
+    from pptx.enum.shapes import MSO_SHAPE
+    left, top, width, height = MASTER_LOGO
+    shape = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, left, top, width, height)
+    shape.fill.solid()
+    shape.fill.fore_color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
+    shape.line.fill.background()
+
+    # The theme gives every shape an outline and a drop shadow, which would draw
+    # a visible box exactly where the point is that nothing should show. Those
+    # come from the shape's <p:style> reference rather than from spPr, so the
+    # whole style element goes; then an empty effect list makes the absence
+    # explicit for renderers that would otherwise fall back to the theme.
+    from pptx.oxml.ns import qn
+    el = shape._element
+    for style in el.findall(qn("p:style")):
+        el.remove(style)
+    spPr = el.spPr
+    for tag in ("a:effectLst", "a:effectRef"):
+        for e in spPr.findall(qn(tag)):
+            spPr.remove(e)
+    spPr.append(spPr.makeelement(qn("a:effectLst"), {}))
+    set_alt_text(shape, "")
+    return shape
 
 
 def place_logo_row(slide, prs, left, top, width, height):
@@ -882,18 +925,17 @@ def add_footers(prs, skip_first=True):
 
         footer_rect, number_rect = layout_chrome(slide)
 
-        # NOTE: content slides still carry the American Red Cross logo alone,
-        # from the template's slide master at (0.34, 4.89). A partner row cannot
-        # simply be added beside it — it would land on top of it, and the space
-        # between it and the footer text placeholder is too narrow for three more
-        # marks at equal height. Giving every slide equal billing means taking
-        # the bottom band over entirely: cover the master mark, drop the footer
-        # text, and lay all four logos across the band with the slide number kept
-        # at the right. That overrides the template's own branding, so it is left
-        # as a decision rather than assumed. The title slide already gives all
-        # four equal billing; the footer text names all four on every slide.
-
-        if footer_rect is not None:
+        # The template stamps the American Red Cross logo alone at the bottom
+        # left of every content slide, from the slide master. Equal billing means
+        # that arrangement has to go: the master mark is covered, the footer text
+        # is dropped, and all four logos run across the band at a common height.
+        # The slide number keeps its place at the right. Approved 2026-08-31.
+        if logo_files():
+            cover_master_logo(slide, prs)
+            place_logo_row(slide, prs, Inches(0.34),
+                           prs.slide_height - Inches(0.62), Inches(6.5),
+                           Inches(0.40))
+        elif footer_rect is not None:
             box = slide.shapes.add_textbox(*footer_rect)
             write(box.text_frame, [(FOOTER, 8, MUTED, 0)])
             box.text_frame.paragraphs[0].alignment = PP_ALIGN.CENTER
