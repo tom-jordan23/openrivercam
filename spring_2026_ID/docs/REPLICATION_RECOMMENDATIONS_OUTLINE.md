@@ -1,9 +1,11 @@
 # Outline — Recommendations for Replication of the OpenRiverCam Station Design
 
-**Status:** Draft outline for internal review. Not for circulation.
+**Status:** Outline agreed; D1-D5 resolved 2026-08-31. Full draft at `REPLICATION_RECOMMENDATIONS.md`.
+**Scope rule (D5):** technology only. No hydrology conclusions.
+**Not for circulation** in outline form.
 **Prepared for:** IPB and BHLK (Balai Hidrologi dan Lingkungan Keairan), following
 the PMI / IPB / BHLK meeting at Sukabumi, 21 August 2026.
-**Secondary audience:** PMI NHQ (to be confirmed — see D3).
+**Secondary audience:** none. PMI NHQ is not an audience for this document (D3).
 **Target length:** 10 pages.
 **Audience level:** Scientific, non-specialist in embedded hardware. No part
 numbers, wiring detail or code in the body; those are referenced in the appendix.
@@ -11,14 +13,15 @@ numbers, wiring detail or code in the body; those are referenced in the appendix
 
 ---
 
-## Decisions to resolve before drafting
+## Decisions — RESOLVED 2026-08-31
 
-| # | Decision | Notes |
+| # | Decision | Resolution |
 |---|---|---|
-| **D1** | Does §6 stay in the document? | §6 sets out where hydrological correction can and cannot repair a measurement difference, and disagrees with a position recorded in the 21 August meeting ("differences in data resulting from ORC measurements are not a major issue; these can be corrected through hydrological calculations"). It is technically material to the drought use case. Options: keep as drafted, soften, move to appendix, or remove and raise verbally. |
-| **D2** | How far to go on permission and licensing in §1. | Currently one paragraph: ORC and ORC-OS are open source under LocalDevices; the hardware design documentation and field record are ours; the permission question recorded at the meeting is being handled separately. Expand, shorten, or remove. |
-| **D3** | Is PMI NHQ an audience for this document? | If yes, §2 and §9 each need a short paragraph on what PMI is being asked to commit to. |
-| **D4** | Confidence level on unresolved findings. | The two unexplained outages and the 13 V recovery-voltage behaviour are open. Outline currently reports them as open in §10 rather than omitting them. Confirm that is the right posture for this audience. |
+| **D1** | Does §6 stay in the document? | **Keep, reframed as acceptance conditions.** §6 leads with the conditions for the output to be additive to the BBWS record, and presents the correctable / not-correctable distinction as a precondition for meeting those conditions rather than as a rebuttal of the meeting position. Same technical content, no direct contradiction. *Narrowed by D5:* the conditions are now reproduced as design constraints only, and the section no longer positions ORC output against the BBWS rating curve. |
+| **D2** | How far to go on permission and licensing in §1. | **Reduce to one sentence** stating that permission and licensing are being handled separately. No detail in the body. |
+| **D3** | Is PMI NHQ an audience for this document? | **No — IPB and BHLK only.** The conditional paragraphs flagged in §2 and §9 are dropped. §9 still describes PMI's role, as context rather than as an ask. What PMI is being asked to commit to is a separate conversation. |
+| **D4** | Confidence level on unresolved findings. | **Keep §10 as drafted.** All five open items stated as open. |
+| **D5** | Does the report draw hydrology conclusions? | **No — technology only.** How the output is applied, and what accuracy any application demands, is for IPB, BHLK and their federal partners. Removed: the low-flow / drought area-error argument (§2, exec finding 1, Figure F2), the model-validation argument (§2, §6), the rating-curve positioning (§6), and our comparison of the 30-minute cycle against the 15-minute minimum (§6, R11, A7.3). §2 and §6 are kept, restated as requirements the technology has to meet. Externally-set requirements are still cited, as recorded from BHLK rather than proposed by us. |
 
 ## Assumptions
 
@@ -42,34 +45,27 @@ numbers, wiring detail or code in the body; those are referenced in the appendix
   recommend changing before units are built.
 - Standing and limits of the evidence, stated at the outset: one site, one river,
   one season, and a calibration not certified for absolute discharge.
-- Permission and licensing paragraph (see **D2**).
+- Permission and licensing: one sentence stating both are being handled separately (D2).
 
 *Figure candidate: none.*
 
-## 2. Intended use, and what it requires of the design — 0.75 p
+## 2. What the pilot requires of the design — 0.5 p
 
-The purposes recorded at the meeting — drought assessment linked to BNPB
-preventive measures, and validation of a modelling framework — impose
-requirements that flood monitoring does not.
+Per D5, this section no longer states what the output is for. It states three
+properties of the technology that constrain any duplicated unit.
 
-- **Low flow is the harder measurement case.** Discharge is velocity × area. At
-  low flow the wetted section may be 20–40% of bankfull, so a 10 cm vertical
-  error in a 0.3 m deep section can produce a 30% area error and a proportional
-  discharge error. Survey accuracy therefore matters *more* for drought work than
-  for flood work, not less.
-  Source: `survey/research/professional_surveyor_and_escape_hatch.md` §"Where Errors Actually Matter in ORC".
-- **Surface velocimetry depends on trackable surface features.** Low-flow,
-  low-turbulence conditions supply fewer of them. Performance in this regime is
-  documented in the literature (Pearce et al., 2020) and should be established at
-  the pilot sites rather than assumed.
-- **Use as a validation reference requires a stated uncertainty.** A measurement
-  without an uncertainty band cannot validate a model. This makes the survey and
-  cross-section requirements in §5 binding rather than advisory.
-- If PMI NHQ is an audience (**D3**), add: what PMI is committing to as the user
-  of the derived information.
+- **Surface velocimetry depends on trackable features on the water surface.**
+  Performance is a function of surface state, not a fixed property of the camera,
+  and has not been characterised at Sukabumi. Measure it at the pilot sites across
+  the conditions those sites present.
+- **The surveyed geometry is an input the processing chain cannot recover.**
+  Nothing in the video constrains the bed, so survey error propagates through to
+  the result. This is what R2 rests on now that the drought argument is out.
+- **Reporting cadence is a design parameter, separate from measurement quality.**
+  Set by the power architecture: every wake pays a fixed 30–60 s camera boot, so
+  shortening the cycle raises energy faster than sample rate. Leads to R11.
 
-*Figure candidate: schematic of wetted area at low vs high stage, showing how a
-fixed vertical error propagates into a proportionally larger area error at low flow.*
+*Figure candidate: none. The low-flow area-error schematic (F2) is withdrawn under D5.*
 
 ## 3. The design as built, and its cost — 0.75 p
 
@@ -96,10 +92,30 @@ non-technical register. Reuse/simplify from `docs/SPLIT_ARCHITECTURE_DESIGN.md`.
 Measurements with their derivation. Attributions that were subsequently withdrawn
 are identified as withdrawn.
 
-**4.1 Availability.** 22.7 days unavailable of 118 days observed, in 13 discrete
-outages, reconstructed from the sensor-row record held on the server. No alerting
-was in place during the period; the outages were identified retrospectively.
-Source: `spring_2026_ID/ISSUE_LOG.md` ISS-FIELD-008; `liveorc_server/station-health/station_gaps.py`.
+**4.1 A missed wake cycle does not self-correct.** 13 discrete interruptions over
+133.5 days observed (2026-04-16 to 2026-08-28), reconstructed from the sensor-row
+record held on the server. The reportable property is the **duration
+distribution**, not the total: 9 under 24 h, 1 at 24-48 h, **none between 2 and 5
+days**, 3 at 5 days and over (5.4, 7.3, 9.3 d). The absent middle is the
+signature of the latch — a missed cycle leaves the next-startup alarm in the past
+and nothing re-arms it. Trigger and latch are separable faults; fixing the latch
+converts an open-ended interruption into a 30-minute one. Qualification: at least
+one interruption ended unattended in 6.5 h, so recovery may also be
+charging-driven (§10).
+
+**Register note (Tom, 2026-08-31): do not dwell on downtime totals.** This is a
+volunteer-supported installation and criticising response times is not fair
+comment. Every §4 result is framed as a property of the *design* — a fault the
+system did not report, a mode with no expiry, two paths nothing reconciles — not
+as an operational failing. §1 carries the framing paragraph: the station is
+volunteer-supported and rarely visited, so tolerating long unattended periods is
+a design requirement. This strengthens R4/R5/R7 rather than weakening them.
+
+Superseded figure: an earlier draft gave "22.7 days of 118 days observed, in 13
+outages", and an availability percentage. The first paired ISS-FIELD-008's
+May-onward duration and window with ISS-FIELD-010's April-onward outage count;
+the second is out of scope per the register note. Regenerated 2026-08-31 over a
+single April-onward window via `station_gaps.py --since 2026-04-01`.
 
 **4.2 Attribution.** Nine of the 13 outages are attributable to maintenance mode
 being left active. The mode suppresses video capture and holds the processor awake
@@ -202,25 +218,27 @@ Source: `spring_2026_ID/docs/SPLIT_ARCHITECTURE_DESIGN.md`.
 *Figure candidate: comparison diagram, co-located station vs camera-only node with
 indoor compute.*
 
-## 6. Measurement differences, correction, and data acceptance — 0.75 p
+## 6. Output conditions the design must satisfy — 0.75 p
 
-See **D1** — this section addresses a position recorded in the meeting.
+Reframed per D1 and narrowed per D5: the conditions are reproduced because they
+constrain the design, the BOM and the installation procedure, not as an assessment
+of whether the output should be accepted.
 
-- A stable bias is correctable: a systematic offset against a reference can be
-  removed by a rating or index-velocity relationship.
-- Two cases in the current record are not correctable that way. Random geometric
-  error from a poor survey varies between points and has no single correction
-  factor. Error at low flow scales disproportionately into area error (§2).
-- Correction requires an independent reference. Where ORC is intended to validate
-  a modelling framework, correcting ORC output using that framework removes its
-  independence as a validation source.
-- Conditions for output to be additive to BBWS time series: level referenced to
-  the local staff-gauge zero in metres; 15-minute time step minimum, 5-minute
-  preferred for flood-warning ingest; SIH3 / SIHLSDA format, CSV or HTTP POST;
-  paired daily manual readings during commissioning; uncertainty documented per
-  **SNI 8066:2015** and WMO-No. 168 Ch. 5; camera-derived discharge positioned as
-  supplementary to the BBWS rating curve rather than as a replacement for it.
+- Conditions recorded for output to be additive to BBWS time series: level
+  referenced to the local staff-gauge zero in metres; 15-minute time step minimum,
+  5-minute preferred; SIH3 / SIHLSDA format, CSV or HTTP POST; paired daily manual
+  readings during commissioning; uncertainty documented per **SNI 8066:2015** and
+  WMO-No. 168 Ch. 5; site report with datum and calibration record.
   Source: `spring_2026_ID/research/indonesia_hydrometric_standards.md`.
+  The station's 30-minute cycle is stated as a fact against the time-step
+  condition; the comparison is left to the reader (D5).
+- **Dropped under D5:** the rating-curve positioning bullet, the low-flow
+  correction argument, and the model-validation independence argument.
+- What survives of the correction material is metrology rather than hydrology: a
+  stable bias is correctable by a fitted relationship, random geometric survey
+  error is not and enters the uncertainty budget, and correction of either kind
+  needs a reference independent of the ORC output. This is what ties §6 back to
+  R1 and R2.
 
 ## 7. Data hosting — 0.5 p
 
@@ -265,13 +283,12 @@ field operations are distinct disciplines:
   mission scope, maintenance, and spares held locally.
 
 Recommend this is written into the collaboration agreement rather than held as an
-informal understanding between individuals. If PMI NHQ is an audience (**D3**),
-add what PMI is being asked to commit to.
+informal understanding between individuals.
 Source: `spring_2026_ID/LESSONS_LEARNED.md` §10.
 
 ## 10. Open questions — 0.25 p
 
-Stated as open, not resolved (see **D4**):
+Stated as open, not resolved (D4: keep as drafted).
 
 - The cause of the two unexplained outages, which carry the maintenance-mode
   signature without the mode set.
@@ -280,7 +297,7 @@ Stated as open, not resolved (see **D4**):
 - Whether a staff gauge can be read directly from the camera image, removing the
   need for a separate level sensor.
 - Absolute discharge accuracy at Sukabumi, unresolved pending the survey.
-- Low-flow velocimetry performance at the pilot sites.
+- Velocimetry performance across the surface conditions at the pilot sites.
 
 ## 11. Summary of recommendations — 0.25 p
 
@@ -321,13 +338,33 @@ Pointers, not content:
 Listed here so the figure work is scoped when the draft is written. Five figures
 is the right count for ten pages.
 
-| # | Section | Figure |
-|---|---|---|
-| F1 | §3 | System block diagram, non-technical register |
-| F2 | §2 | Vertical error propagating into area error at low vs high stage |
-| F3 | §4.1–4.2 | Availability timeline, 13 outages, maintenance windows shaded |
-| F4 | §4.3 | Hour-of-day pass/fail, or day/night S/N distribution |
-| F5 | §5 R8 | Co-located station vs camera-only node with indoor compute |
+**Produced 2026-08-31.** Renumbered F1–F4 plus one appendix figure, after F2 was
+withdrawn under D5. All are generated by `docs/figures/build_figures.py`; the two
+data figures are computed from the recorded data rather than drawn, so they cannot
+drift from the record.
+
+| # | Section | Figure | Source |
+|---|---|---|---|
+| 1 | §3.1 | How a measurement is made — system flow, non-technical register | schematic |
+| 2 | §4.1 | Availability: timeline of the 13 interruptions, and their duration on a log scale | appendix §A4 |
+| 3 | §4.3 | Optical detection: pass/fail by hour of day, and the S/N distribution against the gate | `findings/ipb_optical_wl_s2n_2026-07-08_to_14.csv` |
+| 4 | §5 R8 | Two configurations — everything at the river against camera-only with indoor compute | schematic |
+| A1 | app. §A1.2 | The capture path, intended against implemented, and the delivered bitrate | appendix §A1.3 |
+
+*Withdrawn:* the old F2 (vertical error into area error at low stage) went with the
+drought argument under D5.
+
+**Photographs.** Five are used, all from the build; there are no field photographs
+of the deployed station anywhere in the repository. Every image was opened and
+checked before use — `build_photos/PHOTO_METADATA.md` has at least one wrong entry
+(IMG_1345, listed as the camera on a pole, is a basement water filter).
+
+**Accessibility.** Two-series palette validated with the data-viz validator (worst
+CVD ΔE 24.7, all six checks pass on white). Colour is never the only channel: the
+second series is hatched as well as coloured, every series is direct-labelled, and
+the figures were checked in greyscale. Each SVG carries `<title>` and `<desc>`;
+each figure carries a descriptive caption; every picture in the deck carries alt
+text.
 
 A slide deck derived from this report is a separate deliverable; §2, §4, §5 and §9
 are the sections that carry over.

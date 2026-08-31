@@ -1,0 +1,223 @@
+/* Print stylesheet for ORC station documentation — WeasyPrint engine.
+   Reproduces the running header/footer of the LaTeX build path. */
+
+@page {
+    size: letter;
+    margin: 22mm 20mm 20mm 20mm;
+
+    @top-left   { content: string(doctitle);
+                  font-size: 8pt; color: #444; }
+    @top-right  { content: string(docversion);
+                  font-size: 8pt; color: #444; }
+    @bottom-left  { content: "ORC Indonesia Deployment — PMI / American Red Cross";
+                    font-size: 8pt; font-style: italic; color: #444; }
+    @bottom-right { content: "Page " counter(page) " of " counter(pages);
+                    font-size: 8pt; color: #444; }
+}
+
+body {
+    font-family: "DejaVu Sans", "Liberation Sans", Helvetica, Arial, sans-serif;
+    font-size: 10.5pt;
+    line-height: 1.45;
+    color: #1a1a1a;
+    hyphens: auto;
+}
+
+/* ── Title block ───────────────────────────────────────────────── */
+
+header#title-block-header {
+    break-after: page;
+    padding-top: 45mm;
+    text-align: center;
+    border: none;
+}
+header#title-block-header h1.title {
+    font-size: 24pt;
+    line-height: 1.25;
+    border: none;
+    margin-bottom: 8mm;
+}
+header#title-block-header p.subtitle {
+    font-size: 13pt;
+    color: #444;
+    margin-bottom: 14mm;
+}
+header#title-block-header p.author,
+header#title-block-header p.date {
+    font-size: 10pt;
+    color: #444;
+    margin: 2mm 0;
+}
+
+/* Carry the title and version into the running header. */
+h1.hidden-title  { string-set: doctitle content(); }
+p.hidden-version { string-set: docversion content(); }
+/* Zero-height in-flow boxes. They sit at the top of the body, so string(doctitle)
+   and string(docversion) are still unset on the title and contents pages and
+   those come out with the footer only. */
+.hidden-title, .hidden-version {
+    display: block;
+    font-size: 0.1pt;
+    line-height: 0.1pt;
+    color: transparent;
+    margin: 0; padding: 0; border: none;
+}
+
+/* ── Table of contents ─────────────────────────────────────────── */
+
+nav#TOC { break-after: page; }
+nav#TOC > h1,
+nav#TOC > h2 {
+    font-size: 16pt;
+    font-weight: bold;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 4px;
+    margin: 0 0 10px 0;
+}
+nav#TOC ul { list-style: none; padding-left: 0; margin: 0; }
+nav#TOC ul ul { padding-left: 6mm; }
+nav#TOC li { margin: 1.5mm 0; }
+nav#TOC a {
+    text-decoration: none;
+    color: #1a1a1a;
+}
+nav#TOC a::after {
+    content: leader(dotted) target-counter(attr(href), page);
+    color: #666;
+}
+
+/* ── Headings ──────────────────────────────────────────────────── */
+
+h1 { font-size: 17pt; border-bottom: 2px solid #333; padding-bottom: 5px;
+     margin-top: 10mm; break-after: avoid; }
+h2 { font-size: 14pt; border-bottom: 1px solid #ccc; padding-bottom: 3px;
+     margin-top: 9mm; break-after: avoid; }
+h3 { font-size: 11.5pt; margin-top: 6mm; break-after: avoid; }
+h4 { font-size: 10.5pt; font-style: italic; margin-top: 5mm; break-after: avoid; }
+
+p { margin: 0 0 3mm 0; orphans: 2; widows: 2; }
+
+/* ── Tables ────────────────────────────────────────────────────── */
+
+table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 4mm 0;
+    font-size: 9pt;
+    break-inside: auto;
+}
+/* pandoc gives every column of a pipe table an equal inline width. Override it
+   so narrow columns (R-numbers, counts) stop claiming a full share. */
+table col { width: auto !important; }
+
+thead { display: table-header-group; }
+tr { break-inside: avoid; }
+th, td {
+    border: 1px solid #bbb;
+    padding: 1.6mm 2.2mm;
+    text-align: left;
+    vertical-align: top;
+}
+th { background: #f0f0f0; font-weight: bold; }
+
+/* ── Code ──────────────────────────────────────────────────────── */
+
+pre, code {
+    font-family: "DejaVu Sans Mono", "Liberation Mono", monospace;
+    font-size: 8.5pt;
+}
+pre {
+    background: #f6f6f6;
+    border: 1px solid #ddd;
+    padding: 2.5mm;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    break-inside: avoid;
+}
+code { background: #f2f2f2; padding: 0 1px; }
+pre code { background: none; padding: 0; }
+
+/* ── Block quotes: used for figure placeholders and callouts ───── */
+
+blockquote {
+    margin: 4mm 0;
+    padding: 2.5mm 4mm;
+    border-left: 3px solid #999;
+    background: #fafafa;
+    color: #333;
+    break-inside: avoid;
+}
+
+hr { border: none; border-top: 1px solid #ccc; margin: 6mm 0; }
+
+a { color: #14508c; text-decoration: none; }
+
+img { max-width: 100%; }
+
+ul, ol { margin: 0 0 3mm 0; padding-left: 6mm; }
+li { margin: 1mm 0; }
+
+/* ── Figures ───────────────────────────────────────────────────── */
+/* Two kinds. Pandoc turns a standalone image paragraph into a
+   <figure><img><figcaption>, which is what the SVG figures use — they are
+   authored at 468 pt, the exact content width, so they run full measure.
+   Photographs are hand-wrapped in <figure> in the source because they are
+   480 x 640 originals: at full width they would print at 74 dpi, so they are
+   held to roughly a third of the page and reach about 150 dpi. */
+
+figure {
+    margin: 5mm 0;
+    break-inside: avoid;
+}
+
+figure img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+}
+
+/* The SVG figures come through pandoc as an unclassed <figure>. Their intrinsic
+   width is 468 CSS px, which WeasyPrint lays out at 4.88 in — narrower than the
+   6.5 in measure. Scale them to the full measure; the artwork is vector, so the
+   type scales with it and reads larger, not softer. */
+figure:not([class]) img { width: 100%; }
+
+figcaption {
+    font-size: 8.5pt;
+    line-height: 1.35;
+    color: #444;
+    margin-top: 2mm;
+    padding-left: 0;
+}
+
+/* A single photograph, or a pair side by side. */
+figure.photo img,
+figure.photo-row img {
+    border: 1px solid #ddd;
+    border-radius: 2px;
+}
+
+/* Inline-block rather than flex: WeasyPrint lays this out reliably, and the
+   pair only ever needs one row. 74 mm holds a 480 px original at about
+   165 dpi. */
+figure.photo-row { font-size: 0; }
+figure.photo-row img {
+    display: inline-block;
+    width: 74mm;
+    vertical-align: top;
+    margin-right: 4mm;
+}
+figure.photo-row img:last-of-type { margin-right: 0; }
+figure.photo-row figcaption { font-size: 8.5pt; }
+
+figure.photo img { max-width: 62mm; }
+figure.photo-wide img { max-width: 78mm; }
+
+/* Float a portrait photograph beside the text it illustrates. WeasyPrint
+   honours floats, and the caption floats with the figure. */
+figure.photo-right {
+    float: right;
+    width: 66mm;
+    margin: 0 0 4mm 5mm;
+}
+figure.photo-right figcaption { font-size: 8pt; }

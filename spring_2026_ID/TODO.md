@@ -307,7 +307,7 @@ risk the runbook already warns about — never `compose up` or
 
 | Field | Value |
 |-------|-------|
-| **Status** | IN PROGRESS — outline drafted, awaiting Tom's review |
+| **Status** | IN PROGRESS — D1-D4 resolved, full draft written, awaiting review |
 | **Opened** | 2026-08-31 |
 | **Trigger** | PMI / IPB / BHLK meeting at Sukabumi, 2026-08-21 |
 
@@ -325,22 +325,29 @@ information.
 scientific but non-specialist audience. Visuals and a slide deck follow as
 separate deliverables — five candidate figures are already scoped in the outline.
 
-**State.** The outline is at
-`spring_2026_ID/docs/REPLICATION_RECOMMENDATIONS_OUTLINE.md`: eleven sections
-plus appendix, page budget totalling 10.0, every claim carrying the repository
-path it comes from. It sits in `docs/` so `docs/build_pdf.sh` will produce the
-English and Bahasa Indonesia PDFs of the finished report without extra setup.
+**State.** D1-D4 were resolved 2026-08-31 and the full draft is written to
+`spring_2026_ID/docs/REPLICATION_RECOMMENDATIONS.md` (~5,500 words against the
+10-page budget, F1-F5 marked as placeholders). The outline at
+`REPLICATION_RECOMMENDATIONS_OUTLINE.md` records the resolutions and the
+superseded figures. Both are registered in `docs/build_pdf.sh` (ALL_DOCS and
+DOC_AUDIENCE = "IPB and BHLK"), so the English and Bahasa Indonesia PDFs build
+without extra setup. **Built 2026-08-31: 18 pages for the report, 15 for the
+appendix.** Neither pandoc nor xelatex was installed, so `build_pdf.sh` gained a
+second engine — pandoc to HTML then WeasyPrint, styled by `docs/pdf_print.css` —
+and a `docs/.venv-pdf` toolchain that installs without root. The LaTeX path is
+still preferred and still selected automatically wherever xelatex is present.
 
 **Two findings drive the recommendations and are worth knowing independently of
 the report.**
 
-1. **The drought use case inverts the accuracy argument.** Low flow is the harder
-   measurement case, not the easier one — at 20–40% of bankfull a 10 cm vertical
-   error can produce a 30% area error. So the survey quality gate matters *more*
-   for BHLK's stated purpose than for flood work, and the meeting position that
-   differences "can be corrected through hydrological calculations" holds only
-   for a stable bias, not for random geometric error and not where ORC is meant
-   to stay independent as a validation reference.
+1. **The survey method failed reproducibly and nothing caught it on site.** Two
+   RTK surveys on consecutive days, same equipment and crew, reproduced
+   check-point spreads of ~99 cm H / ~139 cm V — roughly 30× the applicable
+   tolerance. The surveyed geometry is an input the processing chain cannot
+   recover, so this bounds everything downstream of it. *This finding was
+   originally written as the drought/low-flow accuracy argument; under the D5
+   scope rule it now rests on the reproducibility failure alone, which is the
+   part that is ours to state.*
 2. **Optical water-level detection fails through daylight at Sukabumi** and each
    failure loses the whole discharge measurement, not just the level
    (`findings/optical_wl_daytime_glint.md`). Any duplicated unit should carry an
@@ -348,26 +355,152 @@ the report.**
    view referenced to the *papan duga air* zero. This is R1 in the outline and
    the highest-value single change to the design.
 
-**Four decisions are open for Tom (D1–D4 at the top of the outline):**
+**D1–D4 resolved 2026-08-31:**
 
-- [ ] **D1** — does §6 stay? It disagrees, on technical grounds, with the
-      meeting position on correcting measurement differences.
-- [ ] **D2** — how far to go on permission and licensing in §1.
-- [ ] **D3** — is PMI NHQ an audience? If so §2 and §9 each need a paragraph on
-      what PMI is committing to.
-- [ ] **D4** — do the unresolved findings (two unexplained outages, the 13 V
-      recovery behaviour) belong in a document going to a government partner?
+- [x] **D1** — §6 **stays, reframed as acceptance conditions.** It now leads with
+      the conditions for the output to be additive to the BBWS record, and
+      presents the correctable / not-correctable distinction as a precondition
+      for meeting them rather than as a rebuttal of the meeting position.
+- [x] **D2** — permission and licensing **reduced to one sentence** in §1.
+- [x] **D3** — **PMI NHQ is not an audience.** The conditional §2 and §9
+      paragraphs are dropped; §9 states PMI's role as the meeting recorded it and
+      says explicitly that it has not been agreed with PMI NHQ.
+- [x] **D4** — **§10 kept as drafted**, all five items stated as open.
+
+**Scope added 2026-08-31 (Tom), after the first full draft.** Four additions, all
+written:
+
+1. **§3.2 The cost ceiling and how it was applied.** ~USD 3,000 for two stations
+   = a USD 1,500/station ceiling. The ceiling was applied *component by
+   component* — cheapest part meeting the functional requirement — which prices
+   each part against its datasheet and not against what its limits cost the rest
+   of the system.
+2. **§3.3 What the camera choice cost.** ANNKE C1200 at ~USD 60/camera against a
+   professional 12MP Hikvision at ~USD 1,268 (20x, more than four-fifths of the
+   station budget on its own). Three firmware-imposed costs: ANNKE strips
+   `ContentMgmt/download` so Profile C (SD record, HTTP fetch at full CBR) died
+   and capture fell back to RTSP at ~15.5 Mbps against pyorc's recommended 20;
+   the white-LED boot flash is pre-OS and unsuppressable (ISS-004), and 24/7
+   camera power was rejected at 425 Wh/day vs 118; 30-60 s boot paid every wake.
+3. **§3.4 Firmware replacement risks.** **Note the terminology gap:** Tom asked
+   about *open source* firmware; what the repo actually researched
+   (`research/annke_hikvision_crossflash_research.md`) is cross-flashing
+   *genuine Hikvision* firmware — proprietary, different vendor. §3.4 says so
+   explicitly and notes no open-source stack was evaluated against this
+   hardware. Risks documented: bricking with TFTP/UART recovery inside an IP67
+   housing, hardware-revision-specific community recipe, no support path, void
+   warranty, spares no longer interchangeable (conflicts with the 5-minute
+   replaceability constraint), and it does not fix the boot flash.
+4. **R9, R10, R11.** R9 — budget per station and screen the control interface
+   before buying. R10 — Pi 5 native RTC instead of the Witty Pi where the site
+   allows; this was the *original* design, reinstated only because the ML-2020
+   connector failed on both boards, and it changes the §4.1 latch failure mode.
+   Keep the Witty Pi on solar (low-voltage cutoff, 6-30 V input, true power cut).
+   R11 — where real-time monitoring is required, build always-on and AC-powered.
+
+**R11 is the one that ties the report together.** The 30-minute duty cycle misses
+§6's 15-minute *minimum* time step and cannot reach the 5-minute preferred
+flood-warning cadence, because every wake costs a 30-60 s camera boot. It is also
+the origin of the §4.1 latch and of R5's too-short diagnostic window. And the
+grid configuration is *cheaper* (~USD 1,030 vs 1,340). Wired into §2, §5 preamble
+and §6.
+
+**Restructured 2026-08-31 (Tom): exec summary -> report proper -> appendix**, to
+match Indonesian professional report convention. Now two documents:
+
+- `REPLICATION_RECOMMENDATIONS.md` — ~1 p executive summary, then §1-§12.
+- `REPLICATION_RECOMMENDATIONS_APPENDIX.md` — A1 camera firmware detail,
+  A2 firmware replacement, A3 survey SOW, A4 availability record, A5 optical WL
+  dataset, A6 data delivery, A7 power/scheduling/always-on comparison, A8 source
+  index. ~7.6 p.
+
+Both registered in `build_pdf.sh`. Register adjustments for the audience: full
+institution names on first use, offers acknowledged before findings,
+recommendations framed as offered for consideration, PMI NHQ named in full.
+
+**PAGE BUDGET: 10 p is no longer reachable.** Report body is **~12.7 p text plus
+~0.7 p of figures, about 13.5 p**, after moving §3.3/§3.4 detail, the R2 contract
+terms, the R10 comparison and figures F2/F5 to the appendix. The added scope —
+cost ceiling, camera firmware, firmware replacement, R9/R10/R11, and the
+executive summary — is roughly double the original brief; three compression
+passes are now returning ~1% each. Further reduction means deleting content, not
+relocating it. **Decide: accept ~13 p, or name what to cut.** Candidate cuts if
+10 p is firm: §6 conditions list to the appendix (-0.5 p, but D1 kept §6 in the
+body), §11 summary table (-0.8 p, duplicates §5), §2 folded into the executive
+summary (-0.7 p).
 
 **Next steps:**
-- [ ] Tom reviews and comments on the outline.
-- [ ] Write the full draft against the agreed outline and page budget.
-- [ ] Produce F1–F5.
-- [ ] Derive the slide deck; §2, §4, §5 and §9 are the sections that carry over.
+- [x] Tom reviews and comments on the outline.
+- [x] Write the full draft against the agreed outline and page budget.
+- [ ] **Accept ~13 p or name what to cut** (see candidates above). Blocks the
+      figure work, since F1-F5 have to fit whatever is decided.
+- [ ] Confirm the BHLK expansion — the repo cites PUSAIR's *Balai Hidrologi dan
+      Tata Air*, the meeting notes give *Balai Hidrologi dan Lingkungan
+      Keairan*. Get the name right before this goes out.
+- [x] Build the PDFs and check the real page count against the 10-page budget.
+      **18 p report, 15 p appendix** — the report is 8 pages over the budget, so
+      the cut decision above is still open and is now measured rather than
+      estimated.
+- [x] Produce the figures. **Four in the report, one in the appendix**, generated
+      by `docs/figures/build_figures.py` (SVG for the PDF, header-cropped PNG for
+      the deck). The two data figures are computed from the record, not drawn.
+      The old F2 went with the drought argument under D5.
+- [x] Add photographs. Five, all from the build — **there are no field
+      photographs of the deployed station in the repo**, worth fixing on the next
+      visit. `build_photos/PHOTO_METADATA.md` is not reliable: IMG_1345 is
+      described as the camera on a pole and is actually a basement water filter.
+      Open every image before using it.
+- [x] Derive the slide deck; §2, §4, §5 and §9 are the sections that carry over.
+      `docs/build_deck.py`, **31 slides on the American Red Cross Classic
+      template** (`/home/tjordan/code/templates/AmCross/English PowerPoint
+      Templates/`), which is now the script's default. Content is held in the
+      script; `--no-template` builds on a neutral base. The Classic template is
+      16:9 at 10 × 5.62 in with a 3.35 in body, roughly half the content height
+      of the neutral template, so the deck was re-cut to fit rather than only
+      re-skinned — the dense slides were split. Six visual slides were added on top
+      of that. Verified: no slide overflows the footer band, and every picture
+      carries alt text.
+
+**Correction forced by the figures (2026-08-31).** Plotting the optical
+signal-to-noise data falsified a claim that was in both the report and the
+appendix: "passing captures cluster at 3–5, failing ones at 1.3–1.8, with almost
+nothing between." **36 of the 100 passes fall between 2.0 and 3.0**, so there is
+no empty middle, and the absence of overlap at the gate is definitional rather
+than a result. Both documents now state what the data supports: failures are not
+marginal (median 1.63, only 23 of 100 reach 1.8), and a substantial share of
+accepted levels sit close to the threshold — which argues for R1 rather than for
+adjusting the gate. The general lesson is to draw the data before writing the
+sentence about it.
+
+**Scope note (Tom, 2026-08-31). No hydrology conclusions — technology only.**
+How the output is applied is for IPB and their federal partners. Removed from the
+report: the low-flow/drought area-error argument, the model-validation argument,
+the rating-curve positioning, and our comparison of the 30-minute cycle against
+the 15-minute minimum. §2 and §6 were kept and restated as requirements the
+technology has to meet. This applies to F1–F5 and the deck as well — F2, the
+low-flow area-error schematic, is withdrawn. Recorded as D5 in the outline.
 
 **Register note.** Tom stopped the first outline draft over its writing style —
 no aphorisms, no punchy closing clauses, no editorial asides. Plain professional
 register throughout; the numbers carry the argument. This applies to the report,
 the figures' captions and the deck.
+
+**Framing note (Tom, 2026-08-31). Do not dwell on downtime totals.** Sukabumi is
+a volunteer-supported installation and criticising response times is not fair
+comment. The §4 field record is therefore framed entirely as properties of the
+*design*: a fault the system never reported, a mode with no expiry or alarm, two
+data paths nothing reconciles. §4.1 leads on the **duration distribution** — 9
+interruptions under 24 h, none between 2 and 5 days, 3 at 5 days and over — as
+evidence of the re-arm latch, rather than on an availability percentage. §1
+carries the framing: the station is volunteer-supported and rarely visited, so
+tolerating long unattended periods is a design requirement, not an operational
+expectation. This makes the case for R4/R5/R7 stronger, not weaker.
+
+**Corrected figure.** The outline's "22.7 days of 118 days observed, in 13
+outages" was wrong — it paired ISS-FIELD-008's May-onward duration and window
+(117.9 d, 8 outages) with ISS-FIELD-010's April-onward outage count. Regenerated
+over one window with `station_gaps.py --since 2026-04-01`: **13 interruptions
+over 133.5 days, 2026-04-16 to 2026-08-28.**
 
 ---
 

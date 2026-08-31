@@ -8,9 +8,20 @@
 #   ./build_pdf.sh --lang id          # convert all docs (Bahasa Indonesia)
 #   ./build_pdf.sh --lang id OPERATOR_GUIDE.md  # one doc, Indonesian
 #   ./build_pdf.sh --list             # list available docs
+#   ./build_pdf.sh --engine html      # force the HTML/WeasyPrint path
 #
-# Prerequisites:
-#   sudo apt install pandoc texlive-xetex texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended
+# Engines:
+#   latex  pandoc + xelatex. Preferred where a TeX installation is present.
+#   html   pandoc + WeasyPrint, styled by pdf_print.css. No TeX needed.
+#   Selection is automatic: xelatex if found, otherwise WeasyPrint.
+#
+# Prerequisites (either engine):
+#   LaTeX: sudo apt install pandoc texlive-xetex texlive-latex-recommended \
+#          texlive-latex-extra texlive-fonts-recommended
+#   HTML:  no root needed. Create the toolchain venv once with:
+#          uv venv .venv-pdf --python 3.12
+#          uv pip install --python .venv-pdf/bin/python pypandoc_binary weasyprint
+#          ln -sf ../lib/python3.12/site-packages/pypandoc/files/pandoc .venv-pdf/bin/pandoc
 #   For Indonesian: pip install googletrans==4.0.0-rc1 (in docs/.venv)
 #
 # Output:
@@ -27,13 +38,18 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 DOCS_DIR="$SCRIPT_DIR"
 PDF_DIR="$SCRIPT_DIR/pdf"
 LANG="en"
+ENGINE="auto"
 
-# Parse --lang flag
+# Parse flags
 args=()
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --lang)
             LANG="$2"
+            shift 2
+            ;;
+        --engine)
+            ENGINE="$2"
             shift 2
             ;;
         *)
@@ -50,17 +66,70 @@ fi
 
 mkdir -p "$PDF_DIR"
 
-# ─── Check dependencies ─────────────────────────────────────────
-for cmd in pandoc xelatex; do
-    if ! command -v "$cmd" &>/dev/null; then
-        echo "ERROR: $cmd not found."
-        echo "Install with: sudo apt install pandoc texlive-xetex texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended"
+# ─── Resolve the toolchain ──────────────────────────────────────
+# Prefer anything on PATH; fall back to the local .venv-pdf toolchain, which
+# needs no root to install. See the header comment for how to create it.
+
+PANDOC=""
+if command -v pandoc &>/dev/null; then
+    PANDOC="$(command -v pandoc)"
+elif [ -x "$SCRIPT_DIR/.venv-pdf/bin/pandoc" ]; then
+    PANDOC="$SCRIPT_DIR/.venv-pdf/bin/pandoc"
+fi
+
+WEASYPRINT=""
+if command -v weasyprint &>/dev/null; then
+    WEASYPRINT="$(command -v weasyprint)"
+elif [ -x "$SCRIPT_DIR/.venv-pdf/bin/weasyprint" ]; then
+    WEASYPRINT="$SCRIPT_DIR/.venv-pdf/bin/weasyprint"
+fi
+
+if [ -z "$PANDOC" ]; then
+    echo "ERROR: pandoc not found on PATH or in $SCRIPT_DIR/.venv-pdf/bin/."
+    echo "See the Prerequisites block at the top of this script."
+    exit 1
+fi
+
+# Pick an engine if one was not forced.
+if [ "$ENGINE" = "auto" ]; then
+    if command -v xelatex &>/dev/null; then
+        ENGINE="latex"
+    elif [ -n "$WEASYPRINT" ]; then
+        ENGINE="html"
+    else
+        echo "ERROR: no PDF engine available — neither xelatex nor weasyprint."
+        echo "See the Prerequisites block at the top of this script."
         exit 1
     fi
-done
+fi
+
+case "$ENGINE" in
+    latex)
+        if ! command -v xelatex &>/dev/null; then
+            echo "ERROR: --engine latex requested but xelatex not found."
+            exit 1
+        fi
+        ;;
+    html)
+        if [ -z "$WEASYPRINT" ]; then
+            echo "ERROR: --engine html requested but weasyprint not found."
+            exit 1
+        fi
+        if [ ! -f "$SCRIPT_DIR/pdf_print.css" ]; then
+            echo "ERROR: --engine html requires pdf_print.css alongside this script."
+            exit 1
+        fi
+        ;;
+    *)
+        echo "ERROR: unknown engine '$ENGINE'. Use 'latex' or 'html'."
+        exit 1
+        ;;
+esac
 
 # ─── Document list (ordered for printing) ────────────────────────
 ALL_DOCS=(
+    REPLICATION_RECOMMENDATIONS.md
+    REPLICATION_RECOMMENDATIONS_APPENDIX.md
     OPERATOR_GUIDE.md
     FIELD_SURVEY_GUIDE.md
     TROUBLESHOOTING.md
@@ -78,6 +147,8 @@ ALL_DOCS=(
 
 # ─── Per-document audience ───────────────────────────────────────
 declare -A DOC_AUDIENCE=(
+    [REPLICATION_RECOMMENDATIONS.md]="IPB and BHLK"
+    [REPLICATION_RECOMMENDATIONS_APPENDIX.md]="IPB and BHLK — technical staff"
     [OPERATOR_GUIDE.md]="PMI field staff"
     [FIELD_SURVEY_GUIDE.md]="PMI field survey teams"
     [TROUBLESHOOTING.md]="Field technicians, PMI staff"
@@ -112,6 +183,12 @@ extract_version() {
 extract_title() {
     local md_file="$1"
     grep -m1 '^# ' "$md_file" | sed 's/^# //' || echo "${md_file%.md}"
+}
+
+# The full version string may carry a parenthetical status note. The running
+# header wants the leading date only; the title page keeps the whole thing.
+short_version() {
+    echo "$1" | sed 's/ *(.*//' | xargs
 }
 
 # ─── Generate LaTeX header file ──────────────────────────────────
@@ -219,6 +296,57 @@ LATEXEOF
 LATEXEOF
 }
 
+# ─── Render via HTML + WeasyPrint ────────────────────────────────
+
+render_html() {
+    local source_md="$1" pdf_file="$2" title="$3" version="$4"
+    local audience="$5" subtitle="$6" toc_title="$7" build_date="$8"
+
+    local body_md html_file
+    body_md=$(mktemp /tmp/orc-body-XXXXXX.md)
+    html_file=$(mktemp /tmp/orc-html-XXXXXX.html)
+
+    # Hidden carriers for the running header, read through string-set in
+    # pdf_print.css. They go at the top of the body rather than before it, so
+    # the strings are still unset on the title and contents pages and those two
+    # come out without a running header.
+    {
+        printf '<h1 class="hidden-title">%s</h1>\n\n' "$title"
+        printf '<p class="hidden-version">v%s | Built %s</p>\n\n' \
+            "$(short_version "$version")" "$build_date"
+        # Drop the leading H1: the generated title page already carries it, and
+        # leaving it in duplicates the title in the body and in the contents.
+        awk 'NR==1 && /^# / { next } { print }' "$source_md"
+    } > "$body_md"
+
+    "$PANDOC" "$body_md" \
+        --from markdown \
+        --to html5 \
+        --standalone \
+        --resource-path="$DOCS_DIR" \
+        --toc --toc-depth=2 \
+        --css pdf_print.css \
+        --metadata title="$title" \
+        --metadata subtitle="$subtitle" \
+        --metadata author="American Red Cross / Palang Merah Indonesia" \
+        --metadata date="Version ${version} | Audience: ${audience} | Built ${build_date}" \
+        --metadata toc-title="$toc_title" \
+        -o "$html_file"
+
+    local rc=$?
+    if [ $rc -ne 0 ]; then
+        rm -f "$body_md" "$html_file"
+        return $rc
+    fi
+
+    # -u sets the base URL so pdf_print.css and images resolve from docs/.
+    "$WEASYPRINT" -u "$DOCS_DIR/" "$html_file" "$pdf_file" 2>/dev/null
+    rc=$?
+
+    rm -f "$body_md" "$html_file"
+    return $rc
+}
+
 # ─── Convert one document ────────────────────────────────────────
 
 convert_one() {
@@ -262,7 +390,27 @@ convert_one() {
         title=$(grep -m1 '^# ' "$source_md" | sed 's/^# //' || echo "$title")
     fi
 
-    echo "  Converting: $md_file (v${version}, ${LANG}) → $(basename "$pdf_file")"
+    echo "  Converting: $md_file (v${version}, ${LANG}, ${ENGINE}) → $(basename "$pdf_file")"
+
+    local toc_title="Contents"
+    local subtitle="Indonesia ORC Deployment --- Spring 2026"
+    if [ "$LANG" = "id" ]; then
+        toc_title="Daftar Isi"
+        subtitle="Penempatan ORC Indonesia --- Musim Semi 2026"
+    fi
+
+    if [ "$ENGINE" = "html" ]; then
+        local html_subtitle="${subtitle//---/—}"
+        render_html "$source_md" "$pdf_file" "$title" "$version" \
+            "$audience" "$html_subtitle" "$toc_title" "$build_date"
+        local rc=$?
+        [ -n "$translated_tmp" ] && rm -f "$translated_tmp"
+        if [ $rc -ne 0 ]; then
+            echo "    FAILED: $md_file"
+            return 1
+        fi
+        return 0
+    fi
 
     header_file=$(mktemp /tmp/orc-latex-XXXXXX.tex)
     make_latex_header "$title" "$version" > "$header_file"
@@ -272,14 +420,7 @@ convert_one() {
     safe_title=$(echo "$title" | sed 's/&/\\&/g; s/_/\\_/g; s/#/\\#/g; s/%/\\%/g')
     safe_audience=$(echo "$audience" | sed 's/&/\\&/g; s/_/\\_/g; s/#/\\#/g; s/%/\\%/g')
 
-    local toc_title="Contents"
-    local subtitle="Indonesia ORC Deployment --- Spring 2026"
-    if [ "$LANG" = "id" ]; then
-        toc_title="Daftar Isi"
-        subtitle="Penempatan ORC Indonesia --- Musim Semi 2026"
-    fi
-
-    pandoc "$source_md" \
+    "$PANDOC" "$source_md" \
         --from markdown \
         --to pdf \
         --resource-path="$DOCS_DIR" \
@@ -334,7 +475,7 @@ fi
 LANG_LABEL="English"
 [ "$LANG" = "id" ] && LANG_LABEL="Bahasa Indonesia"
 
-echo "Building PDFs (LaTeX, ${LANG_LABEL})..."
+echo "Building PDFs (${ENGINE}, ${LANG_LABEL})..."
 echo "Output: $PDF_DIR/"
 echo ""
 

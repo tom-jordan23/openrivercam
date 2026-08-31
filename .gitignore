@@ -39,6 +39,11 @@ spring_2026_ID/liveorc_server/devdata/
 # Python venv for doc tools (translation)
 spring_2026_ID/docs/.venv/
 
+# Python venv for the PDF/figure toolchain (pandoc, weasyprint, cairosvg).
+# uv writes its own .gitignore inside it, but be explicit so a venv created
+# another way is still ignored.
+spring_2026_ID/docs/.venv-pdf/
+
 # Python venvs anywhere in the repo (created for pyorc etc.)
 .venv/
 venv/
