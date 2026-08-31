@@ -92,6 +92,13 @@ meeting its specification but running a reseller's firmware with capability
 removed, so recorded video cannot be fetched and capture falls back to a lower
 quality live stream.
 
+There is a common root worth naming. The computer's own clock battery uses a
+small connector that **broke on both boards**. Losing it is why a separate
+scheduling board was fitted, which is what split the sleep and wake cycle across
+two systems in the first place. A computer with storage, power and timekeeping
+already integrated and protected would have removed that whole sequence, and it
+is the strongest recommendation we have.
+
 **The station cannot say what is wrong with it.** No interruption announced
 itself. The record had to be reconstructed afterwards from the server database,
 and a fault the system never reports cannot be found by watching for it. Related:
@@ -127,6 +134,19 @@ The Jakarta station was meant to be that test station and never became one.
 
 The full set is indexed at the back and detailed in the working list. The
 headlines:
+
+**Use an industrial Raspberry Pi carrier with storage, power and timekeeping
+already integrated.** We would advocate for this strongly, because most of the
+failures above meet at one place. The Pi's own clock battery uses a small
+connector that broke on both boards; losing it is why a separate scheduling board
+was added, which is what split shutdown and startup across two systems. And the
+USB drive fault left the operating system and all video on the SD card, which is
+what filled the disk. A carrier with NVMe on board, a protected battery-backed
+clock, wide-input power with an integrated UPS that reports voltage and current,
+and often a modem slot, removes all of that in a single part. It costs more per
+unit and it is a single-source component, which is a real trade against the
+commodity-parts rule — but it is done by people who do it repeatedly, and it is
+the change that would have prevented the largest number of our problems. **R37**
 
 **Build the test station first.** A working station, mains-powered, always on,
 somewhere someone can watch it, open it and break it deliberately. It is where a
@@ -276,6 +296,7 @@ procedures are in the companion appendix.
 
 | | Recommendation |
 |---|---|
+| **R37** | Use an industrial Raspberry Pi carrier with storage, power and timekeeping already integrated |
 | **R9** | These stations were built with low unit cost as the primary goal, and some of those choices raise operating cost at volume |
 | **R25** | Three specific parts cost more than they saved |
 | **R26** | Check the control interface before buying anything under software control |

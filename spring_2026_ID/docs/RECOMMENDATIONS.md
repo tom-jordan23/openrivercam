@@ -306,6 +306,48 @@ and we would carry them into any new design.
 
 ## Choose parts for operating cost, not just purchase price
 
+- **R37 — Use an industrial Raspberry Pi carrier with storage, power and timekeeping
+  already integrated.** We would advocate for this strongly. It is the single
+  change that would have prevented the largest number of the problems on this
+  list.
+
+  Trace the failures back and most of them meet at the same place. The Pi 5's own
+  real-time clock battery uses a small ML-2020 JST-SH connector, and **that
+  connector broke on both boards**. Losing it meant the Pi could no longer keep
+  time or set its own wake alarm, which is why the Witty Pi scheduling board was
+  reinstated late in the build. That is what split shutdown and startup across two
+  systems (R10), which is the failure that turned a bad video into a flat battery
+  and a multi-day outage. Separately, the USB storage drive caused a boot fault
+  and was removed, leaving the operating system and all video on the SD card
+  (R25), which is what filled the disk and made processing fail in the first
+  place.
+
+  An industrial carrier board or enclosure for the Pi's compute module addresses
+  all of that in one part, because these are the problems that class of hardware
+  exists to solve:
+
+  - **NVMe storage on the board**, so there is no SD card and no USB drive. This
+    removes both the boot fault and the disk-pressure failure.
+  - **An integrated supercapacitor or battery-backed clock**, protected rather
+    than hanging off a fragile surface-mount connector. Timekeeping and wake
+    scheduling stay with the computer, so one process can own the whole cycle.
+  - **Wide-input power with an integrated UPS**, which accepts a battery bus
+    directly, rides out brownouts, and usually reports voltage and current —
+    which is the telemetry R6 asks for.
+  - **Often a modem slot as well**, removing the mini-PCIe adapter and its USB
+    dependency.
+
+  The trade is honest and should be stated: a carrier of this kind costs more per
+  unit than a bare Pi, a scheduling board and an SD card, and it is a
+  single-source part in a design that otherwise avoids them (R30). Against that,
+  it removes three of the parts we had trouble with, and the integration work is
+  done by someone who does it repeatedly rather than by whoever is building the
+  station.
+
+  We did not evaluate specific products, and we are not recommending one. What we
+  are recommending is the class, and that it be priced against operating cost
+  rather than purchase price.
+
 - **R9 — These stations were built with low unit cost as the primary goal, and
   some of those choices raise operating cost at volume.** That trade was
   reasonable for two prototypes and should be re-examined for a network. Apply

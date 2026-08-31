@@ -233,6 +233,9 @@ DECK = [
             (0, "Two lessons: shutdown and startup are split across two systems "
                 "and neither owns the cycle; and cheap parts can carry expensive "
                 "operating costs."),
+            (0, "A common root: the computer's own clock battery connector broke "
+                "on both boards. Losing it is why a separate scheduling board was "
+                "fitted, which is what split the cycle. R37"),
         ],
     }),
 
@@ -258,6 +261,9 @@ DECK = [
     ("bullets", {
         "title": "The changes with the greatest effect",
         "bullets": [
+            (0, "Use an industrial Pi carrier with NVMe, a protected clock and an "
+                "integrated UPS. Most of the failures above meet at one place, "
+                "and this removes them in a single part. R37"),
             (0, "Build the test station first, so a fault can be reproduced and a "
                 "fix tried before it goes to a river. R36"),
             (0, "Build monitoring for a fleet, not for one station. This is the "
