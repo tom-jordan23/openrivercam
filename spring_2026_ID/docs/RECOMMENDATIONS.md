@@ -31,6 +31,72 @@ Draft, to open the report:
 
 ---
 
+## What is worth keeping
+
+The rest of this list is what we would change. These are the things that worked,
+and we would carry them into any new design.
+
+- **R30 — Keep the five constraints.** Commodity parts with more than one
+  supplier; no soldering, every connection a screw terminal, plug or header; no
+  specialist assembly skills; common hand tools; any part replaceable in five
+  minutes. This is the reason the design can be copied and repaired locally at
+  all, and it should survive every other change on this list.
+
+- **R31 — Keep spare switched outputs, and design for community alerting.** The
+  relay module has four channels; one powers the camera and **three are left
+  free** — CH2, CH3 and CH4, wired to GPIO with screw terminals on the 12 V side
+  and no load attached, identical on both stations. That is deliberate. It means
+  a station can drive a siren, a beacon, a public-address relay or an SMS gateway
+  without opening the design up again, which is what turns a measurement station
+  into something a community can act on. The rules are already documented: fuse
+  every new load, use normally-open contacts so the load drops out if the
+  computer loses power, label both ends, record it on the door sheet, and test
+  before leaving site. **We would ask that any replication keeps this spare
+  capacity rather than designing it out to save a few dollars.**
+
+- **R32 — Keep the camera factory-sealed.** The unit Sukabumi replaced failed
+  from trapped humidity in a combined camera-and-computer enclosure. Using a
+  sealed commercial camera removed that entire failure class, and nothing since
+  has come back to it.
+
+- **R33 — Keep the recovery kit with the station.** A USB drive holding the
+  operating system image, the configuration and the written procedure means a
+  station can be rebuilt by whoever is standing in front of it. Keep the
+  operator and assembly documentation in both English and Bahasa Indonesia, and
+  keep spares at the local PMI chapter so a failure is a part swap rather than a
+  shipment.
+
+- **R34 — Keep aligning with existing practice.** Referencing the *papan duga
+  air* zero and BBWS conventions is what makes the output usable by the people
+  who already run the network, rather than a parallel dataset nobody can file.
+
+- **R35 — Keep the software stack open.** There is no vendor lock-in anywhere in
+  the processing chain, which is what makes it possible for IPB or BHLK to
+  change, extend or replace any part of it without asking permission.
+
+## Keep a station you can break
+
+- **R36 — Put a test station on a bench, online, and keep it there.** This is the
+  gap we feel most.
+
+  Everything we know about the failures at Sukabumi was learned from a solar
+  station, on a river, on a 30-minute cycle, reachable for tens of seconds at a
+  time, that we could not touch. We could not reproduce a fault, could not try a
+  fix before committing it to a remote machine, and could not tell the difference
+  between "the change worked" and "the fault did not happen this week". Several
+  of the diagnoses on this list took months for that reason alone.
+
+  The Jakarta station was intended to be that test station and never became one.
+  Its absence has cost more than the site it was built for.
+
+  A test station is not a spare. It is a working station, mains-powered and
+  always on, sitting where someone can watch it, open it and break it
+  deliberately. It is where you reproduce a fault before you diagnose it
+  remotely, where you test a software change before it goes to a river, where you
+  rehearse a server upgrade before it obliges every station to follow, and where
+  someone new learns the system without risking a real record. **We would treat
+  it as the first station a pilot builds, not the last.**
+
 ## Choose the site before anything else
 
 - **R16 — Treat site selection as a measurement decision, not a logistics one.**

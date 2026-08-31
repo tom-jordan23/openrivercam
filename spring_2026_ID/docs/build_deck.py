@@ -65,6 +65,24 @@ DECK = [
     ("title", {}),
 
     ("bullets", {
+        "title": "Thank you",
+        "bullets": [
+            (0, "None of this exists without the people who built it and looked "
+                "after it."),
+            (0, "PMI volunteers and staff at Sukabumi and Jakarta gave their time "
+                "to a system that was new to them and that did not always work."),
+            (0, "IPB re-surveyed the site with a total station after our own "
+                "survey failed twice. That survey is what the station runs on "
+                "today."),
+            (0, "BHLK brought the standards knowledge, and the offer of server "
+                "capacity, that make a pilot possible at all."),
+            (0, "What follows is largely a list of things we would do "
+                "differently. Every one was learned because someone did the work "
+                "that made it visible."),
+        ],
+    }),
+
+    ("bullets", {
         "title": "The pilot, and what we think comes next",
         "bullets": [
             (0, "The pilot has been a good experience. A station in the water, "
@@ -198,6 +216,26 @@ DECK = [
         ],
     }),
 
+    ("bullets", {
+        "title": "A twenty-five dollar decision caused most of the outages",
+        "bullets": [
+            (0, "No single step in the chain looks like a mistake."),
+            (1, "The USB storage drive caused a driver fault at boot, so it was "
+                "removed rather than fixed."),
+            (1, "That left the SD card as the only volume — small enough to sit "
+                "at the level where it deletes old recordings."),
+            (1, "That caused processing to fail on 43% of videos."),
+            (1, "The station shuts down after processing finishes, so a failed "
+                "run never shut down: awake to a 25-minute backstop instead of "
+                "two minutes, about twelve times the energy."),
+            (1, "Repeated across a night, that flattened the battery. A missed "
+                "wake then left the next-startup alarm in the past."),
+            (0, "Two lessons: shutdown and startup are split across two systems "
+                "and neither owns the cycle; and cheap parts can carry expensive "
+                "operating costs."),
+        ],
+    }),
+
     ("figure", {
         "title": "The station measures water level reliably only at night",
         "image": "fig2_optical.png",
@@ -301,6 +339,46 @@ DECK = [
                    "manufacturer's software.",
         "alt": "The camera as delivered, on a workbench mat with its mounting "
                "hardware, waterproof cable boot and printed manual.",
+    }),
+
+    ("bullets", {
+        "title": "Build the test station first",
+        "bullets": [
+            (0, "Everything we know about the failures was diagnosed on a solar "
+                "station, on a river, awake for tens of seconds, that we could "
+                "not touch."),
+            (1, "We could not reproduce a fault, test a fix before committing it "
+                "remotely, or tell a working change from a quiet week. Several "
+                "diagnoses took months for that reason alone."),
+            (0, "The Jakarta station was meant to be that test station and never "
+                "became one. Its absence cost more than the site it was built "
+                "for."),
+            (0, "A test station is not a spare: mains-powered, always on, "
+                "somewhere someone can watch it, open it and break it "
+                "deliberately."),
+            (0, "We would treat it as the first station a pilot builds, not the "
+                "last."),
+        ],
+    }),
+
+    ("bullets", {
+        "title": "What is worth keeping",
+        "bullets": [
+            (0, "The five constraints: commodity parts, no soldering, no "
+                "specialist skills, common tools, five-minute replacement."),
+            (0, "The spare switched outputs. The relay module has four channels; "
+                "one drives the camera and three are deliberately left free, "
+                "wired and ready."),
+            (1, "That is what lets a station drive a siren, a beacon or an "
+                "alerting relay without reopening the design — and what turns a "
+                "measurement station into something a community can act on."),
+            (1, "We would ask that any replication keeps that spare capacity "
+                "rather than removing it to save a few dollars."),
+            (0, "The factory-sealed camera, which removed the humidity failure "
+                "that killed the previous unit."),
+            (0, "The recovery kit, documentation in both languages, and spares at "
+                "the local PMI chapter."),
+        ],
     }),
 
     ("bullets", {

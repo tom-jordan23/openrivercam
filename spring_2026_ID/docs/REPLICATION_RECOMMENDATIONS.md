@@ -8,79 +8,32 @@ dan Lingkungan Keairan · American Red Cross
 **Prepared for:** IPB and BHLK, following the PMI / IPB / BHLK meeting at
 Sukabumi, 21 August 2026.
 
-**Reading time:** about twelve minutes.
+**Reading time:** about eight minutes, plus the index at the back.
 
-**Companion document:** *Appendix — Recommendations for Replication of the
-OpenRiverCam Station Design*, written for the engineers who will build, procure
-and operate the units. Every measurement, interface specification and procedure
-referred to below is held there.
+**Companion documents:** the *Appendix*, which holds the measurements, interface
+specifications and procedures behind everything below; and
+`docs/RECOMMENDATIONS.md`, the working list this report is drawn from.
 
 ---
 
-## The pilot, and what we think comes next
+## Thank you
 
-The pilot has been a good experience. It put a station in the water, gave us four
-months of behaviour to learn from, and produced something more valuable than
-either: a working relationship between PMI, IPB and BHLK that did not exist
-before. Colleagues who had not worked together now share a problem, a site and a
-vocabulary for both. We would do it again.
+None of this exists without the people who built it and looked after it. PMI
+volunteers and staff at Sukabumi and Jakarta gave their time to a system that was
+new to them and that did not always work. IPB re-surveyed the site with a total
+station after our own survey failed twice, and that survey is what the station
+runs on today. BHLK brought the standards knowledge, and the offer of server
+capacity, that make a pilot possible at all.
 
-**Our recommendation is that the next step is yours.** Not because the partnership
-has run its course, but because of what the pilot actually produced. It produced
-knowledge rather than a body of measurements, and knowledge is worth more to you
-as an input to your own approach than as a set of parts to copy. We would rather
-help you start your own design than hand you ours to maintain.
+What follows is largely a list of things we would do differently. Every one of
+them was learned because someone did the work that made it visible.
 
-This document is that knowledge, offered in full and including the parts that
-reflect badly on choices we made. It is written to give an accurate basis for your
-decision rather than an encouraging one.
-
-At Sukabumi on 21 August, BHLK offered to build one to three stations as a pilot,
-offered server capacity for the data, and recommended moving the present site to
-open ground. We welcome all three offers, and this document responds to them and
-to the request to study the current design.
-
-**The scope is the technology only.** We describe the station as built, what four
-months in the field revealed about it, and what we would do differently. We do not assess what the resulting data is fit to
-support, or what accuracy any particular application requires. Those judgements
-belong with IPB, BHLK and their federal partners. Where a measurement requirement
-appears below, it is one recorded from you rather than proposed by us.
-
-**The evidence is thin, and we ask you to treat it as thin.** One station, on one
-river, observed across part of one season. A second station was built but never
-installed. The calibration the station runs on today was recovered from a survey
-that failed. What the deployment has produced so far is knowledge about the
-design, not a body of measurements.
-
-## Why a low-cost station is worth studying
-
-A river gauge is only useful if there are enough of them. How many stations an
-agency can afford determines how much of a catchment it can observe, and that is
-a different question from how good any single station is.
-
-The station described here came to **USD 1,340 in materials**. That figure is the
-electronics and enclosure only: Sukabumi already had a 200 W panel and a 50 Ah
-battery on site, so no solar array is included in it, and a new solar site would
-have to add one. A mains site does not. The lowest-cost automatic water-level
-station we could confirm on the Indonesian government e-catalogue is the
-domestically assembled IDDATA RL03 with GSM telemetry, at **Rp 58,000,000,
-approximately USD 3,600 before VAT**, and it measures stage only. The comparison
-is not like for like: the RL03 is a supported commercial instrument, and this is a
-pilot-stage assembly. The reason it is worth stating is that at this price a basin
-authority can consider a network where it might otherwise consider a single
-gauge.
-
-That possibility is the whole of the argument for studying the design. Everything
-else in this document is about whether the thing can be made reliable enough to
-deserve it.
-
-## What is being offered for study
+## What we did
 
 A camera on a pole watches the river. A small computer in a weatherproof box
 turns the video into a water level and a discharge figure, and a mobile data link
-sends both, with the video, to a server. At Sukabumi the station runs on solar
-power and wakes on a thirty-minute cycle: it starts, captures, processes, uploads,
-and shuts down again.
+sends both, with the video, to a server. Sukabumi runs on solar power and wakes
+every thirty minutes: it starts, records, processes, uploads and shuts down.
 
 ![The camera on its pole sends video to the station computer, which derives water
 level and discharge; both travel over the mobile network to the server. The three
@@ -88,334 +41,274 @@ things the computer depends on are shown beneath it. The whole sequence happens
 inside a waking period of about two minutes, of which the first thirty to sixty
 seconds is spent waiting for the camera to start.](figures/fig1_system.svg)
 
-Five constraints governed every choice of part, and they are the reason the design
-can be copied at all: commodity electronics with more than one supplier; no
-soldering, with every connection made by screw terminal, plug or header; no
-specialist assembly skills; common hand tools; and any part replaceable in five
-minutes.
+The station came to **USD 1,340 in materials** — electronics and enclosure only,
+since Sukabumi already had a solar panel and battery on site. For comparison, the
+lowest-cost automatic water-level station we could confirm on the Indonesian
+government e-catalogue is about **USD 3,600 before VAT**, and it measures stage
+only. That price difference is the whole argument for studying this design: how
+many stations an agency can afford decides how much of a catchment it can
+observe.
 
-<figure class="photo-row">
-<img src="../build_photos/sukabumi/IMG_0048.png" alt="Components laid out on a workbench before assembly: enclosure mounting plate, two lengths of DIN rail, three fuse holders, the camera, the rain gauge dome, a small computer with its screw-terminal riser, a power converter, terminal blocks, a relay board, the mobile data modem and its antenna.">
-<img src="images/sukabumi/complete-system-before-power.png" alt="The same components assembled onto the mounting plate and wired, with a bench power supply alongside reading 12.08 volts.">
-<figcaption>The parts for one station, and the same parts wired onto the mounting
-plate under bench power. Nothing here is fabricated, and nothing is
-single-source. A technician with a screwdriver can replace any of it.</figcaption>
-</figure>
-
-Those constraints are what make local repair possible, and local repair is what
-keeps a station working in a place where the nearest specialist is a day away. We
-would ask you to hold them even where they are inconvenient.
-
-## What four months in the field taught us
-
-Three design gaps matter more than the rest. Each is something the station should
-have been able to do and could not, and for each we say what we would build
-instead. The measurements behind them are in the appendix, recorded there as known
-failure modes of this design rather than as a performance record.
-
-**The station cannot report its own condition.** When it stopped, it stopped
-quietly. Nothing in the design let an interruption announce itself, so periods
-when it was not running had to be reconstructed afterwards by querying the server
-database. A fault the system never reports cannot be found by watching for it, and
-no amount of attention from the field makes up for a machine that cannot say what
-is wrong. There is a related gap: a maintenance setting that suppresses recording
-and holds the processor awake has no time limit and raises no alarm, so it can
-stay on without anyone being told.
-
-*What we would build instead:* the station reports its own state on every waking,
-and any mode that suppresses data or raises energy use expires on its own and
-raises an alert while it is set. Health reporting belongs in the requirements
-alongside the measurement, not added afterwards when something has already gone
-quiet. That is R4 and R5.
-
-**Nothing reconciles what was recorded against what arrived.** The station knows
-what it captured and the server knows what it received, and no part of the design
-compares the two. Video and sensor readings also travel by separate paths and fail
-separately, so neither confirms the other. Data can go missing without producing a
-symptom at either end, which is the kind of loss that is found late or not at all.
-
-*What we would build instead:* a scheduled comparison of the station's own record
-against the server's, raising a difference as an alert. It is a small piece of
-software and it should have been in the first version. That is R7.
-
-**Water level is read from the image, and daylight defeats it.** Sukabumi has no
-water-level sensor and derives the level from the video. In a sample of 200
-captures every rejection fell between 06:00 and 19:00, and none at night. Because
-the water level is worked out first, a daytime rejection costs the whole discharge
-measurement and not only the level.
-
-*What we would build instead:* an independent water-level reference — a sensor, or
-a staff gauge inside the camera's view — so the measurement does not depend on a
-single optical method succeeding. Deriving the level from the image is a good
-capability to have and a poor one to rely on alone. That is R1, and it is the
-change with the clearest benefit.
-
-![Captures counted by hour of day, and the confidence score of all 200 captures
-against the threshold at which a water level is accepted. Rejections peak in
-mid-morning and again in mid-afternoon, with fewer in the early afternoon — the
-pattern a sun-angle effect produces and a general brightness effect would
-not.](figures/fig2_optical.svg)
-
-The cause is most likely reflected sunlight, and that reading is well supported by
-the shape of the day, but it is not settled. The recommendation below rests on the
-failure, which is measured, and not on the explanation.
-
-## Eleven things we would do differently
-
-These are offered as input to your design rather than as corrections to ours. Some
-will not apply to the approach you choose, and we would not expect them to be
-adopted as a set. The appendix gives the observation behind each and the detail
-needed to act on it. They fall into three groups, and the first two decide whether
-a station produces information anyone can use.
-
-**Let the station account for itself.** A station that cannot report its own
-condition cannot be looked after from a distance, and travelling to a river to
-learn whether a computer is running is an expensive way to find out. Nothing in
-this group is difficult or costly. The maintenance setting described above was
-readable remotely the whole time, and no software ever asked. **R4, R5, R6,
-R7.**
-
-**Make the measurement trustworthy.** Two changes carry most of the weight here.
-The station needs an independent water-level reference (**R1**) — a sensor, or a
-staff gauge inside the camera's view tied to the same *papan duga air* zero BBWS
-uses — because without one it measures dependably only at night.
-
-And the survey should be planned as professional work from the start (**R2**),
-because the surveyed shape of the riverbed is an input the processing cannot
-recover. We learned this the hard way, and IPB fixed it. Two RTK surveys at
-Sukabumi on consecutive days, with the same equipment and the same crew, disagreed
-with themselves by about **99 cm horizontally and 139 cm vertically**, and nothing
-in our workflow caught it on site. **IPB's total-station survey replaced that
-approach and is what the station runs on today** — a camera configuration built
-from IPB data alone, fitted at **3.7 cm RMSE** against a 5 cm target. The lesson
-for a new site is to plan for that standard of survey from the beginning rather
-than arriving at it after two failures, and to carry an independent field check of
-a different kind so a survey problem is caught before people go home.
-
-**Make the units buildable and maintainable in Indonesia.** BHLK will buy in
-Indonesia under Indonesian procurement rules, so substitution is the expected
-case rather than a risk to be managed. Documenting which properties bind and
-which do not (**R3**) is what allows that without every substitution becoming a
-question referred back to us. **R8** and **R11** change where the equipment lives
-and how it is powered, and both make the station easier to keep running; **R9**
-and **R10** are about how parts are chosen and one board fewer.
-
-| | Change | What it buys | Cost |
-|---|---|---|---|
-| **R1** | Fit an independent water-level reference | Measurement through the day, not only at night | A level sensor, or a staff gauge in view |
-| **R2** | Commission a professional survey first | The one input the processing cannot recover | Rp 5–15 million per site |
-| **R3** | Specify interfaces, not part numbers | Local procurement without referring back to us | Documentation only |
-| **R4** | Health reporting and mode alarms as requirements | The station reports its own condition | Negligible |
-| **R5** | Station sends diagnostics; no login required | Support that works inside a short waking period | Small |
-| **R6** | Record voltage and current together | Separates a failing battery from a heavy load | A current-sensing module |
-| **R7** | Compare recorded against received, automatically | Loss is noticed rather than discovered later | Negligible |
-| **R8** | Put the computer indoors | Removes it from heat, humidity, dust and travel | Designed, not yet field tested |
-| **R9** | Budget per station; check the interface before buying | Keeps a network affordable without hidden costs | Screening effort |
-| **R10** | Use the computer's own clock where the site allows | One less board to fail | Saves about USD 50 per station |
-| **R11** | Build on mains and leave it running, where continuous reporting is wanted | Removes most of the gaps above | No solar array to buy; constrains siting |
-
-**R8 deserves a note, because it is the least proven and possibly the most
-useful.** Camera and sensors stay at the river; the computer runs at a BHLK or IPB
-facility over a network link. That reduces the work at the riverbank to mounting a
-camera, puts the computer where temperature, humidity, dust and access are
-controlled, and lowers what has to be asked of a landowner. Where the field unit
-is a standard security camera, installation and support also fall within a supply
-chain that already exists across Indonesia. Stated plainly: this arrangement is
-designed and **not yet field tested**. We offer it as the pilot's first
-experiment, not as a proven alternative.
-
-![As built, the camera, computer, modem and power system all sit in one enclosure
-at the riverbank, and all of it is in the weather. As proposed for the pilot units,
-only the camera stays at the river. The right-hand arrangement is designed and not
-yet field tested.](figures/fig3_configurations.svg)
-
-### One lesson about method
+Five constraints governed every choice of part, and they are why the design can be
+copied at all: commodity parts with more than one supplier; no soldering, every
+connection a screw terminal, plug or header; no specialist assembly skills; common
+hand tools; and any part replaceable in five minutes.
 
 <figure class="photo photo-right">
-<img src="images/components/annke_c1200_camera.png" alt="The camera as delivered, on a workbench mat with its mounting hardware, waterproof cable boot and printed manual.">
-<figcaption>Capable hardware, running a reseller's version of the manufacturer's
-software. Every limitation we met came from that software rather than from the
-optics or the sensor.</figcaption>
+<img src="../build_photos/sukabumi/IMG_0048.png" alt="Components laid out on a workbench before assembly: mounting plate, DIN rail, fuse holders, the camera, the rain gauge dome, a small computer with its screw-terminal riser, a power converter, terminal blocks, a relay board, the modem and its antenna.">
+<figcaption>The parts for one station. Nothing is fabricated and nothing is
+single-source.</figcaption>
 </figure>
 
-The budget was applied part by part: for each function, the cheapest item meeting
-the requirement. That produced a working station at USD 1,340, and it has one
-failure this deployment demonstrated. **It prices each part against its
-specification sheet, not against what that part's limits cost the rest of the
-system.**
+Two stations were built. Sukabumi was installed in April and has run since. The
+Jakarta station was finished and tested, but permission for its intended site did
+not arrive, and it is still at Wisma PMI, unpowered since April.
 
-The camera is the clear case. At about USD 60 against a professional alternative
-near USD 1,268, it was not really a choice. The unit meets every line of its
-specification and still costs the system a fifth of its video quality, a slower
-measurement cycle, and thirty to sixty seconds of battery on every waking — none
-of which appeared in the comparison that selected it. Its light also fires at full
-brightness whenever it starts and cannot be turned off, which at the present site
-is forty-eight flashes a day. That is a reason to weigh siting and cycle length,
-and not only the power budget.
+## What we learned
 
-## Building and looking after the units in Indonesia
+Sukabumi is a volunteer-supported pilot. It is visited rarely and looked after
+remotely by people doing it alongside other work. It was never built to production
+standards of availability, and measuring it against an industrial instrument would
+be the wrong test. The useful question is narrower: what does this design make
+hard?
 
-The design was made to be built by people who are not electronics specialists,
-with tools they already own. That intent only becomes real if the parts can be
-bought locally and the documentation supports substitution, which is what R3
-addresses.
+**A twenty-five dollar decision caused most of the outages**, and no single step
+in the chain looks like a mistake. The USB storage drive caused a driver fault at
+boot, so it was removed rather than fixed. That left the SD card as the only
+volume, small enough to sit permanently at the level where it deletes old
+recordings. That caused processing to fail on 43% of videos. Because the station
+shuts down *after processing finishes*, a failed run meant it never shut down: it
+stayed awake to the scheduling board's 25-minute backstop instead of stopping
+after two minutes, roughly twelve times the energy for that cycle. Repeated
+across a night, that flattened the battery — and a missed wake left the
+next-startup alarm in the past with nothing to reset it, so one missed cycle
+became days.
 
-For maintenance, the pattern that has worked is a small stock of spares held at
-the local PMI chapter, so a failure is a part swap rather than a shipment. Where
-the field unit is a standard security camera (R8), installation and support fall
-within a supply chain that already exists across Indonesia, with a deeper set of
-suppliers than specialist hydrometric equipment.
+Two lessons follow. **Shutdown and startup are controlled by two different
+systems and neither owns the whole cycle**, so when processing fails they fail
+together. And **cheap parts can carry expensive operating costs** — the camera is
+the other example, bought for about USD 60 against an alternative near USD 1,268,
+meeting its specification but running a reseller's firmware with capability
+removed, so recorded video cannot be fetched and capture falls back to a lower
+quality live stream.
 
-We would rather help build the capacity to maintain these stations than remain the
-place they are sent when they break.
+**The station cannot say what is wrong with it.** No interruption announced
+itself. The record had to be reconstructed afterwards from the server database,
+and a fault the system never reports cannot be found by watching for it. Related:
+nothing compares what the station recorded against what the server received, so
+data can go missing with no symptom at either end.
 
-## Hosting the data in Indonesia
+**Water level is the weakest measurement, and it fails in daylight.** The station
+reads the level from the video. In a 200-capture sample, every rejection fell
+between 06:00 and 19:00 and none at night. It matters more than a missing level
+because level is computed first — when it fails the whole measurement is
+discarded, including the surface velocity that succeeded — and because level feeds
+the cross-sectional area, so an error in it scales the discharge figure directly.
 
-BHLK's offer of server capacity suits the pilot well, and holding the data in
-Indonesia carries a clear benefit for a government-partnered deployment. The
-server software is packaged for straightforward installation. Two constraints are
-worth designing for rather than discovering: the video store and the database must
-share one filesystem, so plan storage as a single volume; and the server and
-station software versions are tied together, so a server upgrade obliges the
-stations to follow, which a remote station cannot do on demand.
+![Captures counted by hour of day, and how confident each reading was against the
+threshold at which a water level is accepted. Rejections peak in mid-morning and
+again in mid-afternoon, with fewer in the early afternoon — the pattern a
+sun-angle effect produces.](figures/fig2_optical.svg)
 
-We would suggest running the BHLK instance alongside the existing one, receiving
-the same data, until it has completed a full operating cycle including an upgrade.
-It would also be worth agreeing in writing, in advance, where the authoritative
-copy sits, who administers it, who has access, and what the retention policy is.
+**The survey is unforgiving, and IPB fixed it.** Two RTK surveys on consecutive
+days, with the same equipment and crew, disagreed with themselves by about 99 cm
+horizontally and 139 cm vertically. Repeating a method that has failed reproduces
+the same noise. IPB's total-station survey replaced the approach and is what the
+station runs on today, at 3.7 cm RMSE.
 
-## Choosing the sites
+**We had no station we could break.** Everything above was diagnosed on a solar
+station, on a river, awake for tens of seconds at a time, that we could not touch.
+We could not reproduce a fault, test a fix before committing it to a remote
+machine, or tell the difference between a change working and the fault simply not
+happening that week. Several of these diagnoses took months for that reason alone.
+The Jakarta station was meant to be that test station and never became one.
 
-BHLK's recommendation to move to open ground free of obstruction is supported, and
-the field record adds independent evidence for it. An open site helps with three
-separate problems at once: satellite positioning is degraded by nearby buildings,
-which is among the leading candidate causes of the survey trouble at the present
-site; the angle between sun, water and camera can be chosen to avoid the daytime
-failure through more of the day; and the view across the section determines how
-much of the flow the camera can resolve.
+## What we recommend
 
-Two things to plan for. A move costs a fresh survey and a fresh calibration, not
-only a physical relocation, and the survey is the expensive part. And site
-permission should be settled before a unit is built for a particular site: a
-complete station was built and tested for an intended Jakarta site whose
-permission was expected and fell through during the April visit. We would not
-build to a specific site again before being told the permission is in place.
+The full set is indexed at the back and detailed in the working list. The
+headlines:
 
-**That station is still available, and we would suggest a particular use for it.**
-It is complete and software-ready, held at Wisma PMI in Jakarta, and has not been
-powered on since April. The plan had been to transfer it to IPB to install at a
-river.
+**Build the test station first.** A working station, mains-powered, always on,
+somewhere someone can watch it, open it and break it deliberately. It is where a
+fault is reproduced before it is diagnosed remotely, where a software change is
+tried before it goes to a river, and where a server upgrade is rehearsed before it
+obliges every station to follow. We would treat it as the first station a pilot
+builds, not the last. **R36**
 
-We would suggest it serves you best as a study and test unit: a complete working
-example to open, trace, power up, take apart and rebuild while your own units are
-built — and, if that is useful, installed somewhere convenient and local so it can
-be exercised against real water. That answers the request recorded at the meeting,
-access to the current design in order to study it, with hardware rather than only
-with documents.
+**Build monitoring for a fleet, not for one station.** What ORC-OS reports is
+enough for a single station watched by the people who built it. An agency running
+ten or fifty will need more: whether each station woke and shut down, time awake
+per cycle, voltage and current together, free disk space against its deletion
+threshold, captured against delivered, processing outcome per video, and last
+contact per station. This is the highest-value work on the list. **R4–R7**
 
-What we would not recommend is putting it into service as an operational station
-with expectations of availability and consistent data. It was built to the design
-this document recommends changing, so it carries the problems described above.
-Those are acceptable in something you are learning from, and a poor foundation for
-a record anyone depends on.
+**Fit an independent water-level reference, and plan the survey as skilled work
+from the start.** A level sensor or a staff gauge in the camera's view removes the
+dependence on one optical method. And carry an independent field check of a
+different kind, so a survey problem is found before the team leaves site. **R1,
+R2, R19, R20**
 
-## Working together
+**Give one process control of the whole sleep and wake cycle**, set the next wake
+as part of shutting down, and make shutdown happen on a timer regardless of what
+processing does. **R10, R12**
 
-The division recorded at the meeting matches what this project's experience
-supports. Technology development and field operations are different disciplines,
-and where the responsibilities blur, field problems land in research inboxes and
-wait.
+**Make mains power the default, and use solar only where mains is not
+available.** An always-on station removes the wake cycle and, with it, most of
+what is described above. **R11**
 
-- **BHLK** — data processing, conformance with standards, and the route to
-  acceptance within PUPR data systems. Offers server capacity.
-- **IPB** — design, calibration methodology, training material, and the
-  development path for future sensor types.
-- **PMI** — user of the information, and the operational side: installation and
-  maintenance, siting within its mission, response when something fails, and
-  spares held at the local chapter.
+**Choose the site before anything else, and confirm permission in writing before
+building for it.** The site fixes limits nothing later can undo: satellite
+positioning for the survey, sun angle for the water level, and how much of the
+flow the camera resolves. **R16–R18**
 
-Two suggestions offered for your consideration. Writing the split into the
-collaboration agreement, rather than holding it as an understanding between the
-people currently working together, so that it survives staff changes on any side.
-And keeping a light joint forum — a regular call, or a shared issue list — for the
-cases that do not sort cleanly into one of the three roles.
+**Keep what works.** The five constraints above all. And **keep the spare
+switched outputs** — the relay module has four channels, one drives the camera and
+three are deliberately left free, wired and ready. That is what lets a station
+drive a siren, a beacon or an alerting relay without reopening the design, and it
+is what turns a measurement station into something a community can act on. We
+would ask that any replication keeps that spare capacity rather than removing it
+to save a few dollars. **R30–R35**
 
-The commitments this implies for PMI have not been discussed with PMI National
-Headquarters. They are recorded here as the meeting recorded them, not as an
-agreed position.
+## The path forward
 
-## Meeting the conditions for the data to be accepted
+Our recommendation is that the next step is yours. The pilot produced knowledge
+rather than a body of measurements, and knowledge is worth more as an input to
+your own design than as a set of parts to copy. We would rather help you start
+your own approach than hand you ours to maintain.
 
-We reproduce the conditions the BBWS record is kept to because they constrain the
-design, the parts list and the installation: a unit lacking the necessary hardware
-cannot meet them afterwards. Whether the output should be accepted, and on what
-terms, is not ours to assess.
+The Jakarta station is available and we would suggest a particular use for it: a
+study and test unit. Open it, trace it, power it up, take it apart, and install it
+locally if that is useful. What we would not recommend is putting it into service
+as an operational station with expectations of availability, because it carries
+the design this report recommends changing.
 
-Stage in metres above local datum, referenced to the same *papan duga air* zero,
-at 1 cm resolution or better. A time step of 15 minutes at minimum and 5 minutes
-preferred for SIH3 and SIHLSDA ingest; the station as built reports every 30
-minutes. Discharge in m³/s with uncertainty documented following **SNI 8066:2015**
-principles, or WMO-No. 168 Chapter 5. A standard transfer format carrying value,
-timestamp and station identifier. Paired daily manual readings against the
-co-located staff gauge during commissioning. A site report recording coordinates,
-local benchmark, gauge zero elevation, sensor height and the calibration record.
-
-Documenting uncertainty is the condition that bears hardest on the equipment. A
-steady offset can be corrected afterwards. Error that varies from point to point
-across the section cannot: there is no single correction factor, and it enters the
-uncertainty rather than being removed from it. That is why R2 and R1 are not
-separable from these conditions, and why neither can be added cheaply once a unit
-is installed.
+We are not proposing to build your stations. What we can offer is the record —
+this report, the appendix, the operator and assembly documentation in English and
+Bahasa Indonesia, the software, and the built station to take apart — along with
+whatever else is useful: reviewing a design, answering a question about something
+that surprised us, looking at data that does not behave. Sukabumi will keep
+running and we will keep reporting what it does, including the parts that go
+wrong.
 
 ## Questions for consideration
 
-We offer these as open, because they are.
+- Who should hold the Jakarta station as a study and test unit, IPB or BHLK?
+- Can a staff gauge be read from the camera image accurately enough? If it can,
+  R1 needs no separate sensor.
+- Two interruptions remain unexplained, with the energy signature of the
+  maintenance setting without that setting being on.
+- How does the velocity measurement perform across the surface conditions the
+  pilot sites present? This has not been characterised.
+- Absolute discharge accuracy at Sukabumi, unresolved pending further survey work.
 
-- Who should hold the Jakarta station as a study and test unit? It was to
-  transfer to IPB for deployment. Whether IPB or BHLK is better placed to hold it
-  is a question for the two of you, and we will support either.
-- Can a staff gauge be read from the camera image accurately enough? If it can, R1
-  needs no separate sensor and the station aligns directly with BBWS practice.
-- Two interruptions remain unexplained. They carry the energy signature of the
-  maintenance setting without that setting being on, which suggests something else
-  can make capture fail in the same way.
-- Whether the recovery-voltage threshold bounds how long an interruption lasts.
-  One recovered unattended in 6.5 hours against a prior range of 21 hours to 9.3
-  days. One observation is not a result, and a competing reading is that the
-  threshold may hold the station off rather than bring it back.
-- How the velocity measurement performs across the surface conditions the pilot
-  sites present. Not characterised at Sukabumi; it should be measured rather than
-  assumed.
-- Absolute discharge accuracy at Sukabumi, unresolved pending the survey and not
-  resolvable without it.
+We expect your work to change some of what is written here.
 
-We would welcome your reading of these, and we expect your work to change some of
-what is written above. That is the point of handing it over rather than handing it
-down.
+## Index of recommendations
 
-## What we can offer from here
+The full text of each is in `docs/RECOMMENDATIONS.md`. Measurements and
+procedures are in the companion appendix.
 
-We are not proposing to build your stations. What we can offer is the record: this
-document, the appendix behind it, the operator and assembly documentation in
-English and Bahasa Indonesia, the software, and the built station at Wisma PMI to
-take apart. Beyond that, whatever is useful — reviewing a design, answering a
-question about something that surprised us, looking at data that does not behave.
+<!-- INDEX:BEGIN -->
 
-Sukabumi will keep running, and we will keep reporting what it does, including the
-parts that go wrong. If that is useful to your design work, it is yours.
+**What is worth keeping**
 
-The pilot did what a pilot should do. It found the problems while they were still
-cheap, and it introduced three organisations to one another. The next station in
-this story should be one you designed.
+| | Recommendation |
+|---|---|
+| **R30** | Keep the five constraints |
+| **R31** | Keep spare switched outputs, and design for community alerting |
+| **R32** | Keep the camera factory-sealed |
+| **R33** | Keep the recovery kit with the station |
+| **R34** | Keep aligning with existing practice |
+| **R35** | Keep the software stack open |
+
+**Keep a station you can break**
+
+| | Recommendation |
+|---|---|
+| **R36** | Put a test station on a bench, online, and keep it there |
+
+**Choose the site before anything else**
+
+| | Recommendation |
+|---|---|
+| **R16** | Treat site selection as a measurement decision, not a logistics one |
+| **R17** | Confirm site permission in writing before any hardware is built for that site |
+| **R18** | Engage local academic and basin partners in site selection |
+
+**Improve measurement accuracy**
+
+| | Recommendation |
+|---|---|
+| **R1** | Fit an independent water-level reference |
+| **R2** | Plan the survey as skilled work from the start, and budget for it |
+| **R19** | If a survey method fails once at a site, change the method |
+| **R20** | Carry an independent check of a different kind, and use it before leaving site |
+
+**Improve monitoring**
+
+| | Recommendation |
+|---|---|
+| **R4** | Build a monitoring regime for a fleet, not a station |
+| **R5** | Have the station send diagnostics; do not require a login |
+| **R6** | Record voltage and current together |
+| **R21** | Remove the rain gauge from the camera station |
+| **R7** | Compare what was recorded against what arrived, automatically |
+
+**Give one process control of the sleep and wake cycle**
+
+| | Recommendation |
+|---|---|
+| **R10** | One process should control both shutdown and startup |
+| **R12** | A processing failure must not prevent shutdown |
+
+**Improve the server and the processing chain**
+
+| | Recommendation |
+|---|---|
+| **R13** | Manage disk space before it stops the station working |
+| **R14** | A failed water level should not discard the whole measurement |
+| **R15** | Monitor the server as well as the station |
+| **R22** | Plan video storage before the fleet grows |
+| **R23** | Configuration edits must go through one interface |
+| **R24** | Do not move bulk media through the API |
+
+**Choose parts for operating cost, not just purchase price**
+
+| | Recommendation |
+|---|---|
+| **R9** | These stations were built with low unit cost as the primary goal, and some of those choices raise operating cost at volume |
+| **R25** | Three specific parts cost more than they saved |
+| **R26** | Check the control interface before buying anything under software control |
+
+**Choose the architecture to suit the site**
+
+| | Recommendation |
+|---|---|
+| **R11** | Mains power should be the default. Use solar only where mains is not an option |
+| **R8** | Consider putting the computer indoors, and decide deliberately where the processing happens |
+| **R27** | A camera-only field node is the most deployable version of this system |
+
+**Support local construction and maintenance**
+
+| | Recommendation |
+|---|---|
+| **R3** | Specify interfaces, not part numbers |
+| **R28** | Order locally-sourced parts weeks in advance, not on arrival |
+
+**Divide responsibilities**
+
+| | Recommendation |
+|---|---|
+| **R29** | Write the division of responsibility into the agreement |
+
+<!-- INDEX:END -->
 
 ## Supporting documentation
 
-Measurements, interface specifications and procedures are in the companion
-appendix: the camera firmware limitations and capture path (A1); firmware
-replacement risks (A2); survey scope of work, acceptance checks and contract terms
-(A3); the availability record and maintenance-mode statistics (A4); the
-water-level dataset (A5); data delivery measurements (A6); and the power,
-scheduling and always-on comparisons (A7).
+Appendix sections: camera firmware limitations and the capture path (A1);
+firmware replacement risks (A2); survey scope of work and acceptance checks (A3);
+the availability record (A4); the water-level dataset (A5); data delivery
+measurements (A6); and the power, scheduling and always-on comparisons (A7).
 
-Operator and assembly documentation, in English and Bahasa Indonesia, is available
-on request.
+Operator and assembly documentation, in English and Bahasa Indonesia, is
+available on request.

@@ -145,6 +145,11 @@ ALL_DOCS=(
     MODEM_VERIFICATION_SUKABUMI.md
 )
 
+# ─── Documents that skip the table of contents ───────────────────
+# A short report does not need one; it costs a page and the section headings
+# are visible in a single scroll.
+NO_TOC=" REPLICATION_RECOMMENDATIONS.md "
+
 # ─── Per-document audience ───────────────────────────────────────
 declare -A DOC_AUDIENCE=(
     [REPLICATION_RECOMMENDATIONS.md]="IPB and BHLK leadership"
@@ -301,6 +306,7 @@ LATEXEOF
 render_html() {
     local source_md="$1" pdf_file="$2" title="$3" version="$4"
     local audience="$5" subtitle="$6" toc_title="$7" build_date="$8"
+    local md_name="$9"
 
     local body_md html_file
     body_md=$(mktemp /tmp/orc-body-XXXXXX.md)
@@ -319,12 +325,17 @@ render_html() {
         awk 'NR==1 && /^# / { next } { print }' "$source_md"
     } > "$body_md"
 
+    local toc_args=(--toc --toc-depth=2)
+    if [[ "$NO_TOC" == *" $md_name "* ]]; then
+        toc_args=()
+    fi
+
     "$PANDOC" "$body_md" \
         --from markdown \
         --to html5 \
         --standalone \
         --resource-path="$DOCS_DIR" \
-        --toc --toc-depth=2 \
+        "${toc_args[@]}" \
         --css pdf_print.css \
         --metadata title="$title" \
         --metadata subtitle="$subtitle" \
@@ -420,7 +431,7 @@ convert_one() {
     if [ "$ENGINE" = "html" ]; then
         local html_subtitle="${subtitle//---/—}"
         render_html "$source_md" "$pdf_file" "$title" "$version" \
-            "$audience" "$html_subtitle" "$toc_title" "$build_date"
+            "$audience" "$html_subtitle" "$toc_title" "$build_date" "$md_file"
         local rc=$?
         [ -n "$translated_tmp" ] && rm -f "$translated_tmp"
         if [ $rc -ne 0 ]; then
