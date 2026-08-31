@@ -461,6 +461,119 @@ summary (-0.7 p).
       of that. Verified: no slide overflows the footer band, and every picture
       carries alt text.
 
+**Rewritten for leadership (Tom, 2026-08-31). Two criticisms: still fixated on
+the outages, and simultaneously too technical and too vague.** The audience is
+humanitarian and academic leadership, so the report and deck were rebuilt against
+`STYLE_Humanitarian_Executive.md` and `STYLE_Academic_University_Business.md` from
+`github.com/tom-jordan23/writing`.
+
+- **Outages.** §4 collapsed from four subsections to three findings in a page,
+  and the availability figure moved to appendix A4 as Figure A2. The interruption
+  count survives as one sentence; the duration table, the maintenance-mode
+  statistics and the timeline live in the appendix.
+- **Too technical.** ISAPI, RTSP, bitrate, tmpfs, signal-to-noise and the RTC
+  connector are all appendix material now. The body carries the consequence and
+  the number. Chart labels changed with it: "signal-to-noise ratio" became
+  "confidence in the detected water line", "quality gate" became "acceptance
+  threshold".
+- **Too vague.** The report now opens on what a low-cost station makes possible —
+  network density against the Rp 58,000,000 e-catalogue alternative — and names
+  what each change buys, in a table with costs.
+- **Register.** Mission framing first, local capacity and repair over dependency,
+  resource realism, consultative rather than directive, and a *Questions for
+  consideration* section instead of a bare open-questions list.
+
+Report is **12 pages, ~2,750 words of prose** (was 21 pages, ~5,500). Deck is
+**19 slides** (was 31). Figures renumbered: 1 system, 2 water level, 3
+arrangements; A1 capture path, A2 availability.
+
+**Jakarta station: it is at Wisma PMI, not back here (Tom, 2026-08-31).** Two
+drafts said the Jakarta unit was "flown to Indonesia and flown back without
+producing data". That was invented — nothing in the repo says it returned.
+`SITES.md` says only that Jakarta was not deployed and that permission for the
+intended site fell through during the trip. The unit is complete and held at
+**Wisma PMI in Jakarta, waiting for a site.** Corrected in the report and the
+deck. The siting lesson is unchanged and slightly stronger: a finished station has
+been sitting unused since April because permission was assumed.
+
+**Sukabumi runs the IPB total-station survey. Not a salvage. (Tom, 2026-08-31.)**
+Three drafts of the report, and `README.md`, said the station runs on "a
+calibration salvaged from a failed survey". Wrong. The deployed camera config is
+**`Fit 6`, applied 2026-06-11, built from IPB data alone** — GCPs from the IPB
+spreadsheet, cross-sections from the IPB transects, calibration frame from the May
+survey video — fitting at **0.037 m RMSE** against a 5 cm target, `z_0 = h_ref =
+615.0 m`. Source: `survey_data/ipb_survey_1/handoff_station/README.md`, which
+states "IPB data only, zero April salvage". The April RTK auto-fit (4.61 cm on a
+6-GCP subset, `z_0 = 617.065`) is obsolete and **must not be mixed in** — the IPB
+low-water surface is ~2 m lower. Corrected in the report, appendix A3.1, the deck
+and `README.md`. R2 now credits IPB for the fix, which is right on the facts and
+right for the audience.
+
+**Cause: I carried an inherited sentence forward across three rewrites without
+re-checking it**, and `survey_data/ipb_survey_1/` was sitting in the repo the
+whole time. Same failure as the invented "flown home" claim and the
+signal-to-noise claim the figure falsified. **Verify every factual claim against
+the repo before it ships, including the ones that were already there.**
+
+**Stop benchmarking a volunteer pilot as a production instrument (Tom,
+2026-08-31).** The framing note above was already on record and I violated it: the
+body led with "51% never arrived" and scored the station on availability. That is
+an unfair benchmark for what this was and disingenuous to the volunteers who kept
+it running. The body now describes **three design gaps in words** — the station
+cannot report its own condition, nothing reconciles sent against received, and
+daylight defeats the optical water level — with the measurements moved to appendix
+A4, which opens by stating they are failure modes of this design and explicitly
+not a performance benchmark. Do not restore availability statistics to the body.
+
+**Also corrected: the "mains is cheaper, USD 1,030 vs 1,340" claim is withdrawn.**
+It was unsourced. `BOM_Sukabumi.md` totals **$1,340.19 for electronics and
+enclosure only** — Sukabumi already had its 200 W panel and 50 Ah battery, so no
+array is in that figure. `BOM_Jakarta.md` shows ~$1,333 project total / $1,076.88
+ordered. The defensible statement, now in both documents: a new solar site must
+add an array and a mains site need not.
+
+**The message is handover, not replication (Tom, 2026-08-31).** The report was
+framed as "here is our design and what to change before you copy it". It is now:
+the pilot was a good experience, it taught us all something and it brought PMI,
+IPB and BHLK together — **and the path forward is for IPB and BHLK to start on
+their own approach.** Retitled *OpenRiverCam in Indonesia: What the Pilot Taught
+Us, and the Path Forward*. The eleven recommendations are now "eleven things we
+would do differently", offered as input to their design rather than corrections to
+ours, and explicitly not expected to be adopted as a set. New closing section,
+*What we can offer from here*: the record, the documentation in both languages,
+the software, the Wisma PMI unit to take apart, continued reporting from Sukabumi
+— and not building their stations for them. Keep this framing; do not revert to
+replication language.
+
+**Jakarta station: a study and test unit, not an operational station (Tom,
+2026-08-31).** It should go to whichever of IPB or BHLK will use it as a **lab /
+study device** — open it, trace it, power it up, take it apart while they build
+their own. **Installing it locally as a test unit is fine**, including against
+real water; what we do not want is it put into service as an operational station
+with expectations of availability and data consistency. It was built to the design
+this report recommends changing, so it carries the known problems: acceptable in
+something you are learning from, a poor foundation for a record anyone depends on.
+It also answers the request recorded at the meeting, access to the design in order
+to study it, with hardware instead of only documents.
+
+Status: complete and software-ready, held at **Wisma PMI in Jakarta**, **not
+powered on since the April visit**. Transfer to IPB was the plan; whether IPB or
+BHLK holds it is now put to them as a question rather than answered. An earlier
+draft of this report pitched it as a fast first pilot unit — that framing is
+withdrawn and should not come back.
+
+**Privacy and protection are not ours to write (Tom, 2026-08-31).** An earlier
+draft flagged a missing Do No Harm section and recorded it as a gap for us to
+close. That was wrong, and the note is withdrawn. The Indonesian government is the
+authority on the legal requirements for protecting Indonesian citizens' privacy;
+BHLK sits inside that government. Writing them guidance on it would be a lecture,
+and it is the same overreach D5 rules out for hydrology — their domain, their
+call. Removed from the report and deck: the line telling them site permission
+should be "a conversation with the people who live there". What remains is our own
+side of it — the camera's light fires 48 times a day at the present site, which
+bears on siting and cycle length, and we will not build to a site again before
+being told the permission is in place. Do not reintroduce a protection section.
+
 **Correction forced by the figures (2026-08-31).** Plotting the optical
 signal-to-noise data falsified a claim that was in both the report and the
 appendix: "passing captures cluster at 3–5, failing ones at 1.3–1.8, with almost

@@ -147,7 +147,7 @@ ALL_DOCS=(
 
 # ─── Per-document audience ───────────────────────────────────────
 declare -A DOC_AUDIENCE=(
-    [REPLICATION_RECOMMENDATIONS.md]="IPB and BHLK"
+    [REPLICATION_RECOMMENDATIONS.md]="IPB and BHLK leadership"
     [REPLICATION_RECOMMENDATIONS_APPENDIX.md]="IPB and BHLK — technical staff"
     [OPERATOR_GUIDE.md]="PMI field staff"
     [FIELD_SURVEY_GUIDE.md]="PMI field survey teams"

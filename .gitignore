@@ -91,3 +91,6 @@ spring_2026_ID/liveorc_server/certs-le/
 # below/above, and spring_2026_ID/.env still slipped through — this repo is
 # public and these files carry live credentials, so match the class, not paths.
 .env
+
+# LibreOffice lock files, created while a document is open
+.~lock.*#

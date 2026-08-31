@@ -243,7 +243,7 @@ def fig1():
 
 
 # ─────────────────────────────────────────────────────────────────
-# Figure 2 — The availability record (§4.1)
+# Figure A2 — The availability record (appendix §A4)
 # ─────────────────────────────────────────────────────────────────
 
 # Appendix §A4. Onset day counted from 2026-04-16; duration in hours;
@@ -267,7 +267,7 @@ INTERRUPTIONS = [
 SPAN_DAYS = 134.0
 
 
-def fig2():
+def figA2():
     H = 322
     s = svg_open(
         H, "The availability record, 16 April to 28 August 2026",
@@ -280,7 +280,7 @@ def fig2():
         "latch: a missed wake either recovers within a day or persists until "
         "something external restarts the station.")
 
-    s += txt(0, 14, "Figure 2  The availability record, 16 April to 28 August 2026",
+    s += txt(0, 14, "Figure A2  The availability record, 16 April to 28 August 2026",
              10, INK, weight="bold")
     s += txt(0, 28, "13 interruptions across 133.5 days observed. "
              "The gap in the lower panel is the finding.", 8, SECOND)
@@ -383,11 +383,11 @@ def fig2():
              "clears within a day or runs until something external restarts the "
              "station.", 7.2, SECOND)
 
-    return write("fig2_availability.svg", s)
+    return write("figA2_availability.svg", s)
 
 
 # ─────────────────────────────────────────────────────────────────
-# Figure 3 — Optical water-level detection (§4.3)
+# Figure 2 — Reading the water level from video (§"four months")
 # ─────────────────────────────────────────────────────────────────
 
 GATE = 2.0
@@ -405,11 +405,11 @@ def load_optical():
     return by_hour, values
 
 
-def fig3():
+def fig2():
     by_hour, values = load_optical()
     H = 344
     s = svg_open(
-        H, "Optical water-level detection at Sukabumi, 8 to 14 July 2026",
+        H, "Reading the water level from video at Sukabumi, 8 to 14 July 2026",
         "Two panels, from 200 sampled captures. The upper panel counts captures "
         "by hour of day, split into those that produced a water level and those "
         "rejected at the quality gate. Every rejection falls between 06:00 and "
@@ -421,16 +421,16 @@ def fig3():
         "median of 4.01, though 36 of the 100 fall between 2.0 and 3.0, close to "
         "the gate.")
 
-    s += txt(0, 14, "Figure 3  Optical water-level detection, 8 to 14 July 2026",
+    s += txt(0, 14, "Figure 2  Reading the water level from video, 8 to 14 July 2026",
              10, INK, weight="bold")
-    s += txt(0, 28, "200 sampled captures. Each rejection costs the whole "
-             "discharge measurement, not only the water level.", 8, SECOND)
+    s += txt(0, 28, "200 captures. A rejection costs the whole discharge "
+             "measurement, not only the water level.", 8, SECOND)
 
     ly = 42
     s += rect(0, ly - 7, 9, 9, fill=S1, rx=1.5)
-    s += txt(13, ly, "Water level produced  (100)", 7.5, INK)
+    s += txt(13, ly, "Water level accepted  (100)", 7.5, INK)
     s += rect(180, ly - 7, 9, 9, fill="url(#hatch)", stroke=S2, sw=0.9, rx=1.5)
-    s += txt(193, ly, "Rejected at the quality gate  (100)", 7.5, INK)
+    s += txt(193, ly, "Rejected — not confident enough  (100)", 7.5, INK)
 
     # ── Panel A: counts by hour ─────────────────────────────────
     s += panel_label(0, 64, "A", "By hour of day (local time, WIB)")
@@ -475,7 +475,7 @@ def fig3():
              "between 06:00 and 19:00.", 7.2, SECOND)
 
     # ── Panel B: the signal-to-noise distribution ───────────────
-    s += panel_label(0, 196, "B", "Signal-to-noise ratio of all 200 captures")
+    s += panel_label(0, 196, "B", "How confident the reading was, for all 200 captures")
     bx0, bx1 = 22, W - 8
     by0, bhh = 210, 82
     lo_v, hi_v = 1.0, 5.75
@@ -509,32 +509,33 @@ def fig3():
 
     for v in (1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5):
         s += txt(vx(v), by0 + bhh + 11, "%.1f" % v, 6.5, MUTED, "middle")
-    s += txt(bx1, by0 + bhh + 22, "signal-to-noise ratio", 6.8, MUTED, "end")
+    s += txt(bx1, by0 + bhh + 22, "confidence in the detected water line", 6.8,
+             MUTED, "end")
 
     s += line(vx(GATE), by0, vx(GATE), by0 + bhh, INK, 1.1)
-    s += txt(vx(GATE) + 5, by0 + 11, "quality gate 2.0", 7, INK, "start",
+    s += txt(vx(GATE) + 5, by0 + 11, "acceptance threshold", 7, INK, "start",
              weight="bold")
     s += txt(vx(GATE) + 5, by0 + 21, "below it, no water level is reported",
              6.8, SECOND, "start")
 
     s += txt(bx0, by0 + bhh + 34,
-             "Rejected captures are not marginal: median 1.63, and only 23 of "
-             "the 100 reach 1.8. Accepted captures", 7.2, SECOND)
+             "Rejected captures are not near misses: half sit at 1.63 or below, "
+             "and only 23 of the 100 reach 1.8.", 7.2, SECOND)
     s += txt(bx0, by0 + bhh + 44,
-             "spread above the gate with a median of 4.01, though 36 of them "
-             "sit between 2.0 and 3.0.", 7.2, SECOND)
+             "Accepted captures spread well above the threshold, though 36 of "
+             "them sit between 2.0 and 3.0.", 7.2, SECOND)
 
-    return write("fig3_optical.svg", s)
+    return write("fig2_optical.svg", s)
 
 
 # ─────────────────────────────────────────────────────────────────
-# Figure 4 — Two configurations (schematic, §5 R8)
+# Figure 3 — Two arrangements (schematic, R8)
 # ─────────────────────────────────────────────────────────────────
 
-def fig4():
+def fig3():
     H = 308
     s = svg_open(
-        H, "Two configurations of the same design",
+        H, "Two arrangements of the same design",
         "Side-by-side comparison. On the left, the configuration as built: "
         "camera, computer, modem and power system all sit in an enclosure at the "
         "riverbank, so all of it is exposed to heat, humidity and dust and "
@@ -545,10 +546,10 @@ def fig4():
         "controlled. The right-hand configuration is designed but has not been "
         "field tested.")
 
-    s += txt(0, 14, "Figure 4  Two configurations of the same design", 10, INK,
+    s += txt(0, 14, "Figure 3  Two arrangements of the same design", 10, INK,
              weight="bold")
-    s += txt(0, 28, "Recommendation R8. The right-hand configuration is "
-             "designed but not yet field tested.", 8, SECOND)
+    s += txt(0, 28, "Recommendation R8. The right-hand arrangement is designed "
+             "but not yet field tested.", 8, SECOND)
 
     colw = 222
     x2 = W - colw
@@ -612,7 +613,7 @@ def fig4():
              "Site permission asked for: an enclosure, a battery, a modem and a "
              "pole  —  against a camera and a network path.", 7.2, INK)
 
-    return write("fig4_configurations.svg", s)
+    return write("fig3_configurations.svg", s)
 
 
 # ─────────────────────────────────────────────────────────────────
@@ -700,7 +701,7 @@ def figA1():
 
 
 def main():
-    for fn in (fig1, fig2, fig3, fig4, figA1):
+    for fn in (fig1, fig2, fig3, figA1, figA2):
         print("wrote", fn().name)
     for png in rasterise():
         print("wrote", png.parent.name + "/" + png.name)

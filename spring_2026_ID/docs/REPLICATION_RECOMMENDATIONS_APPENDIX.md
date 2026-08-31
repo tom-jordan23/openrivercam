@@ -251,20 +251,32 @@ methods, produced check-point spreads of approximately **99 cm horizontal and
 exceeding the applicable RTK gate by roughly 30 times. Same-marker drift between
 day one and day two reached 89 cm.
 
-A salvage calibration recovered a six-point subset at **4.61 cm RMSE**, which is
-what the station currently runs on. It is a recovery from a failed survey, not a
-survey delivered to the specification above, and it carries no stated uncertainty
-band.
+**IPB's total-station survey replaced the RTK approach and is what the station
+runs on.** The deployed camera configuration (`Fit 6`, applied 2026-06-11) is
+built from IPB data alone — GCP coordinates from the IPB spreadsheet,
+cross-sections from the IPB transects, calibration frame from the May survey
+video — and fits at **0.037 m RMSE** against the 5 cm target, with
+`z_0 = h_ref = 615.0 m`. An interim auto-fit calibration recovered from the failed
+RTK data (4.61 cm RMSE on a six-point subset, `z_0 = 617.065`) was used before
+that and is now obsolete. **The two must not be mixed**: the IPB low-water surface
+is about 2 m lower. See `survey_data/ipb_survey_1/handoff_station/`.
 
-Candidate causes of the noise include poor base-station coordinate quality, sky
-obstruction and RF interference at the urban canal site — which is one of the
-three reasons an open site is recommended (report §8).
+Candidate causes of the RTK noise include poor base-station coordinate quality,
+sky obstruction and RF interference at the urban canal site — one of the three
+reasons an open site is recommended.
 
 ---
 
 ## A4. Availability record
 
-*Supports report §4.1 and §4.2.*
+*Supports the report's field section.*
+
+**Read this as a record of failure modes in this design, not as a performance
+assessment of the deployment.** Sukabumi is a volunteer-supported pilot that was
+never built to production standards of availability or record continuity. The
+numbers below are here so that an engineer building a different design knows which
+failure modes are real and worth designing against. They are not a benchmark, and
+they should not be used as one.
 
 Reconstructed from `sensor_readings` on the server: the station writes rows on
 every wake, so their absence bounds when it was not running. Regenerate with
@@ -295,6 +307,12 @@ A further interruption began 2026-08-28 and was open at the date of writing.
 
 **Duration distribution:** 9 under 24 h; 1 at 24–48 h; **0 between 2 and 5 days**;
 3 at 5 days and over.
+
+![Panel A places each interruption across the observation window, drawn to its
+true length and marked by whether it coincides with maintenance mode. Panel B puts
+the same 13 on a logarithmic duration scale. The empty band between 2 and 5 days
+is the latch signature: an interruption either clears within a day or runs until
+something external restarts the station.](figures/figA2_availability.svg)
 
 **Two caveats on the method.** Rows accumulate locally and backfill on reconnect,
 so a gap that later fills was an upload failure, not downtime; the 13 above stayed
@@ -361,8 +379,8 @@ while admitting water levels the detector had no confidence in. **Do not lower i
 The converse deserves equal weight and cuts the other way: **36 of the 100 passing
 captures fall between 2.0 and 3.0**, and 26 fall below 2.5. A substantial share of
 accepted water levels sit close to the threshold, which is an argument for the
-independent reference in R1 rather than for adjusting the gate. Report §4.3
-Figure 3 plots both distributions.
+independent reference in R1 rather than for adjusting the gate. Figure 2 of the
+main report plots both distributions.
 
 **The failures find the right waterline.** Detected `h` is identical across both
 sets (median 614.794 m against a 614.3–618.5 m search band), and only 15 of 100
@@ -490,7 +508,7 @@ failure mode this deployment has been chasing.
 Every signal leaves as a screw terminal, which is what lets a non-specialist
 rewire the station with a screwdriver — and what makes the scheduling board a
 swap rather than a rebuild. This is the assembly R8 would move indoors and R10
-would simplify.</figcaption>
+would simplify; Figure 3 of the main report compares the two arrangements.</figcaption>
 </figure>
 
 ### A7.3 Duty-cycled against always-on

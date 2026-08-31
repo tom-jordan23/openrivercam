@@ -1,7 +1,11 @@
 # Outline — Recommendations for Replication of the OpenRiverCam Station Design
 
-**Status:** Outline agreed; D1-D5 resolved 2026-08-31. Full draft at `REPLICATION_RECOMMENDATIONS.md`.
+**Status:** Outline agreed; D1-D6 resolved 2026-08-31. Full draft at `REPLICATION_RECOMMENDATIONS.md`.
 **Scope rule (D5):** technology only. No hydrology conclusions.
+**Audience rule (D6):** humanitarian and academic leadership. This outline
+describes the superseded structure — the report was rebuilt in September against
+the style guides, and §§1-12 below no longer match it. Kept for the decision
+record; do not write to this structure.
 **Not for circulation** in outline form.
 **Prepared for:** IPB and BHLK (Balai Hidrologi dan Lingkungan Keairan), following
 the PMI / IPB / BHLK meeting at Sukabumi, 21 August 2026.
@@ -21,6 +25,7 @@ numbers, wiring detail or code in the body; those are referenced in the appendix
 | **D2** | How far to go on permission and licensing in §1. | **Reduce to one sentence** stating that permission and licensing are being handled separately. No detail in the body. |
 | **D3** | Is PMI NHQ an audience for this document? | **No — IPB and BHLK only.** The conditional paragraphs flagged in §2 and §9 are dropped. §9 still describes PMI's role, as context rather than as an ask. What PMI is being asked to commit to is a separate conversation. |
 | **D4** | Confidence level on unresolved findings. | **Keep §10 as drafted.** All five open items stated as open. |
+| **D6** | What register, and how long? | **Humanitarian and academic leadership**, per `STYLE_Humanitarian_Executive.md` and `STYLE_Academic_University_Business.md` (github.com/tom-jordan23/writing). Two criticisms drove it: fixated on the outages, and simultaneously too technical and too vague. The body was rebuilt to ~2,750 words of prose across 12 pages; the outage record moved to appendix A4, mechanism detail moved to the appendix, and the recommendations became a table of what each change buys and costs. A *Questions for consideration* section replaces the bare open-questions list. Protection analysis remains a known gap — existing material was reframed to acknowledge the residents, but no new analysis was written. |
 | **D5** | Does the report draw hydrology conclusions? | **No — technology only.** How the output is applied, and what accuracy any application demands, is for IPB, BHLK and their federal partners. Removed: the low-flow / drought area-error argument (§2, exec finding 1, Figure F2), the model-validation argument (§2, §6), the rating-curve positioning (§6), and our comparison of the 30-minute cycle against the 15-minute minimum (§6, R11, A7.3). §2 and §6 are kept, restated as requirements the technology has to meet. Externally-set requirements are still cited, as recorded from BHLK rather than proposed by us. |
 
 ## Assumptions
