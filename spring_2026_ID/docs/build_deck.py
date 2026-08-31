@@ -173,19 +173,20 @@ DECK = [
     }),
 
     ("bullets", {
-        "title": "Three design gaps we would not repeat",
+        "title": "Three design gaps, and what we would build instead",
         "bullets": [
-            (0, "The station cannot report its own condition."),
-            (1, "When it stopped, it stopped quietly. Nothing let an interruption "
-                "announce itself. A fault the system never reports cannot be "
-                "found by watching for it."),
+            (0, "The station cannot report its own condition. When it stopped, it "
+                "stopped quietly."),
+            (1, "Instead: report state on every waking, and make any mode that "
+                "suppresses data expire on its own and raise an alert. R4, R5."),
             (0, "Nothing reconciles what was recorded against what arrived."),
-            (1, "The station knows what it captured, the server knows what it "
-                "received, and no part of the design compares them."),
+            (1, "Instead: compare the station's record against the server's on a "
+                "schedule. Small piece of software; should have been in version "
+                "one. R7."),
             (0, "Water level is read from the image, and daylight defeats it."),
-            (1, "Every rejection fell between 06:00 and 19:00. A daytime "
-                "rejection costs the whole discharge measurement, not only the "
-                "level."),
+            (1, "Instead: an independent water-level reference, so the "
+                "measurement does not rest on one optical method succeeding. "
+                "R1."),
         ],
     }),
 

@@ -107,9 +107,9 @@ would ask you to hold them even where they are inconvenient.
 ## What four months in the field taught us
 
 Three design gaps matter more than the rest. Each is something the station should
-have been able to do and could not. The measurements behind them are in the
-appendix, recorded there as known failure modes of this design rather than as a
-performance record.
+have been able to do and could not, and for each we say what we would build
+instead. The measurements behind them are in the appendix, recorded there as known
+failure modes of this design rather than as a performance record.
 
 **The station cannot report its own condition.** When it stopped, it stopped
 quietly. Nothing in the design let an interruption announce itself, so periods
@@ -120,18 +120,33 @@ is wrong. There is a related gap: a maintenance setting that suppresses recordin
 and holds the processor awake has no time limit and raises no alarm, so it can
 stay on without anyone being told.
 
+*What we would build instead:* the station reports its own state on every waking,
+and any mode that suppresses data or raises energy use expires on its own and
+raises an alert while it is set. Health reporting belongs in the requirements
+alongside the measurement, not added afterwards when something has already gone
+quiet. That is R4 and R5.
+
 **Nothing reconciles what was recorded against what arrived.** The station knows
 what it captured and the server knows what it received, and no part of the design
 compares the two. Video and sensor readings also travel by separate paths and fail
 separately, so neither confirms the other. Data can go missing without producing a
 symptom at either end, which is the kind of loss that is found late or not at all.
 
+*What we would build instead:* a scheduled comparison of the station's own record
+against the server's, raising a difference as an alert. It is a small piece of
+software and it should have been in the first version. That is R7.
+
 **Water level is read from the image, and daylight defeats it.** Sukabumi has no
 water-level sensor and derives the level from the video. In a sample of 200
 captures every rejection fell between 06:00 and 19:00, and none at night. Because
 the water level is worked out first, a daytime rejection costs the whole discharge
-measurement and not only the level. This is the gap with the clearest fix, and it
-is R1.
+measurement and not only the level.
+
+*What we would build instead:* an independent water-level reference — a sensor, or
+a staff gauge inside the camera's view — so the measurement does not depend on a
+single optical method succeeding. Deriving the level from the image is a good
+capability to have and a poor one to rely on alone. That is R1, and it is the
+change with the clearest benefit.
 
 ![Captures counted by hour of day, and the confidence score of all 200 captures
 against the threshold at which a water level is accepted. Rejections peak in
