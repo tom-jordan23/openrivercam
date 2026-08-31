@@ -1,6 +1,6 @@
 # TODO — Indonesia Spring 2026 Deployment (post-trip)
 
-**Last updated:** 2026-08-28
+**Last updated:** 2026-08-31
 
 The pre-trip task list (departure schedule day-by-day, in-country
 deferred items, etc.) was archived to `archive/` after the April 2026
@@ -300,6 +300,74 @@ risk the runbook already warns about — never `compose up` or
       `liveorc_server/reprocess/REPROCESS_RUNBOOK.md`; compare outputs
       against the currently published figures.
 - [ ] Announce the run and its effect on published data to PMI/IPB.
+
+---
+
+### TODO-118: Recommendation report for IPB and BHLK on replicating the station design
+
+| Field | Value |
+|-------|-------|
+| **Status** | IN PROGRESS — outline drafted, awaiting Tom's review |
+| **Opened** | 2026-08-31 |
+| **Trigger** | PMI / IPB / BHLK meeting at Sukabumi, 2026-08-21 |
+
+**What BHLK asked for.** At the 21 August meeting BHLK offered to duplicate
+**one to three ORC devices** as a pilot, subject to permission from Tom, Hessel
+and Dan to study the current design. BHLK also offered server capacity for ORC
+data storage, and recommended relocating the current site to a flat area free of
+obstruction from buildings. BHLK has separately been asked by BNPB's early
+warning division to assess drought and link it to preventive measures, and sees
+ORC as a validation tool for a modelling framework to be developed later. The
+agreed split is BHLK and IPB on data processing, PMI as the user of the derived
+information.
+
+**Deliverable.** A recommendation report, **10 pages or fewer**, for a
+scientific but non-specialist audience. Visuals and a slide deck follow as
+separate deliverables — five candidate figures are already scoped in the outline.
+
+**State.** The outline is at
+`spring_2026_ID/docs/REPLICATION_RECOMMENDATIONS_OUTLINE.md`: eleven sections
+plus appendix, page budget totalling 10.0, every claim carrying the repository
+path it comes from. It sits in `docs/` so `docs/build_pdf.sh` will produce the
+English and Bahasa Indonesia PDFs of the finished report without extra setup.
+
+**Two findings drive the recommendations and are worth knowing independently of
+the report.**
+
+1. **The drought use case inverts the accuracy argument.** Low flow is the harder
+   measurement case, not the easier one — at 20–40% of bankfull a 10 cm vertical
+   error can produce a 30% area error. So the survey quality gate matters *more*
+   for BHLK's stated purpose than for flood work, and the meeting position that
+   differences "can be corrected through hydrological calculations" holds only
+   for a stable bias, not for random geometric error and not where ORC is meant
+   to stay independent as a validation reference.
+2. **Optical water-level detection fails through daylight at Sukabumi** and each
+   failure loses the whole discharge measurement, not just the level
+   (`findings/optical_wl_daytime_glint.md`). Any duplicated unit should carry an
+   independent water-level reference — a sensor, or a staff gauge in the camera
+   view referenced to the *papan duga air* zero. This is R1 in the outline and
+   the highest-value single change to the design.
+
+**Four decisions are open for Tom (D1–D4 at the top of the outline):**
+
+- [ ] **D1** — does §6 stay? It disagrees, on technical grounds, with the
+      meeting position on correcting measurement differences.
+- [ ] **D2** — how far to go on permission and licensing in §1.
+- [ ] **D3** — is PMI NHQ an audience? If so §2 and §9 each need a paragraph on
+      what PMI is committing to.
+- [ ] **D4** — do the unresolved findings (two unexplained outages, the 13 V
+      recovery behaviour) belong in a document going to a government partner?
+
+**Next steps:**
+- [ ] Tom reviews and comments on the outline.
+- [ ] Write the full draft against the agreed outline and page budget.
+- [ ] Produce F1–F5.
+- [ ] Derive the slide deck; §2, §4, §5 and §9 are the sections that carry over.
+
+**Register note.** Tom stopped the first outline draft over its writing style —
+no aphorisms, no punchy closing clauses, no editorial asides. Plain professional
+register throughout; the numbers carry the argument. This applies to the report,
+the figures' captions and the deck.
 
 ---
 
