@@ -532,6 +532,16 @@ array is in that figure. `BOM_Jakarta.md` shows ~$1,333 project total / $1,076.8
 ordered. The defensible statement, now in both documents: a new solar site must
 add an array and a mains site need not.
 
+**`docs/RECOMMENDATIONS.md` is the source for the recommendations (Tom,
+2026-08-31).** The eleven were written into the report and the deck first and
+edited in place, which made them awkward to adjust. They now live as a plain
+bulleted list that Tom edits directly; the report and the deck are regenerated
+from it. **Do not make content changes to the recommendations in
+`REPLICATION_RECOMMENDATIONS.md` or `build_deck.py` — change the list and
+propagate.** If the numbering changes, carry it through both documents and the
+appendix cross-references (A3 supports R2, A4 supports R4/R5/R7, A5 supports R1,
+A7.2 supports R10, A7.3 supports R11).
+
 **The message is handover, not replication (Tom, 2026-08-31).** The report was
 framed as "here is our design and what to change before you copy it". It is now:
 the pilot was a good experience, it taught us all something and it brought PMI,
