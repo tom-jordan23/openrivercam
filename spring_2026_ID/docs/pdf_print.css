@@ -221,3 +221,21 @@ figure.photo-right {
     margin: 0 0 4mm 5mm;
 }
 figure.photo-right figcaption { font-size: 8pt; }
+
+/* ── Partner logos ─────────────────────────────────────────────── */
+/* Movement convention: all parties equal. Normalised by height so a wide
+   lockup and a compact badge read as equals, and spaced by the layout rather
+   than by whatever padding each file happens to carry. */
+
+.partner-logos {
+    text-align: center;
+    margin: 0 0 12mm 0;
+    line-height: 0;
+}
+.partner-logos img {
+    display: inline-block;
+    height: 11mm;
+    width: auto;
+    margin: 0 5mm;
+    vertical-align: middle;
+}

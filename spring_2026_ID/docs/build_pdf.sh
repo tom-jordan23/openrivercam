@@ -339,6 +339,24 @@ render_html() {
         return $rc
     fi
 
+    # Partner logos on the title page. Injected after generation because the
+    # title block comes from pandoc's own template, which takes metadata rather
+    # than markup. All parties at one height, per the Movement convention — see
+    # logos/README.md. Skipped when the artwork is not present.
+    if [ -f "$DOCS_DIR/logos/pmi.png" ]; then
+        local logo_row=""
+        logo_row+='<div class="partner-logos">'
+        logo_row+='<img src="logos/pmi.png" alt="Palang Merah Indonesia">'
+        logo_row+='<img src="logos/ipb.png" alt="Institut Pertanian Bogor">'
+        logo_row+='<img src="logos/bhlk.png" alt="Balai Hidrologi dan Lingkungan Keairan">'
+        logo_row+='<img src="logos/amcross.png" alt="American Red Cross">'
+        logo_row+='</div>'
+        # sed needs the replacement on one line and its delimiters clear of the
+        # markup, hence the pipe.
+        sed -i "s|<header id=\"title-block-header\">|<header id=\"title-block-header\">${logo_row}|" \
+            "$html_file"
+    fi
+
     # -u sets the base URL so pdf_print.css and images resolve from docs/.
     "$WEASYPRINT" -u "$DOCS_DIR/" "$html_file" "$pdf_file" 2>/dev/null
     rc=$?
