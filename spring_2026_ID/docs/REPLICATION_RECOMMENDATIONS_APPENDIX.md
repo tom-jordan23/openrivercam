@@ -515,7 +515,8 @@ would simplify; Figure 3 of the main report compares the two arrangements.</figc
 
 | | Solar, duty-cycled | Mains, always-on |
 |---|---|---|
-| Materials cost | USD 1,340 | **USD 1,030** |
+| Materials cost | USD 1,340, excluding the solar array | ~USD 1,333 (`BOM_Jakarta.md` project total) |
+| Solar array | Panel, controller and battery — already on site at Sukabumi, so **not in the figure above**; a new solar site must add one | **None needed** |
 | Achievable time step | 30 min | Down to continuous |
 | Camera boot paid per measurement | 30–60 s | **None after installation** |
 | White-light flash | 48 per day | **Once, at installation** |
@@ -524,12 +525,22 @@ would simplify; Figure 3 of the main report compares the two arrangements.</figc
 | Remote diagnostic window | Tens of seconds per cycle | Continuous |
 | Siting constraint | Anywhere with sun | **Within reach of reliable mains** |
 
-The always-on configuration is cheaper in materials and removes five distinct
-failure modes. Its cost is siting: it must be within reach of reliable mains
-power, which constrains where the station can go and may conflict with the
-preferred measurement section. Where mains is present but unreliable, add
-a UPS sized to the observed outage duration and treat the station as always-on
-with brief interruptions rather than as duty-cycled.
+**On cost, be careful with the comparison.** The two builds come to roughly the
+same materials total, and an earlier draft of this appendix claimed the mains
+configuration was cheaper at USD 1,030. That figure was not sourced from either
+bill of materials and is withdrawn. What the BOMs support: `BOM_Sukabumi.md`
+totals USD 1,340.19 for electronics and enclosure, and Sukabumi already had its
+200 W panel and 50 Ah battery on site, so no array is included; `BOM_Jakarta.md`
+shows a project total of about USD 1,333 with USD 1,076.88 actually ordered for a
+one-camera configuration. The real difference is that a **new** solar site has to
+buy an array and a mains site does not.
+
+The always-on configuration removes five distinct failure modes. Its cost is
+siting: it must be within reach of reliable mains power, which constrains where
+the station can go and may conflict with the preferred measurement section. Where
+mains is present but unreliable, add a UPS sized to the observed outage duration
+and treat the station as always-on with brief interruptions rather than as
+duty-cycled.
 
 ---
 

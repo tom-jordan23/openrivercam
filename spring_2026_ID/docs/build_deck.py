@@ -249,66 +249,32 @@ DECK = [
                 "sun-angle effect produces.",
     }),
 
+    ("groups", {
+        "title": "What we recommend",
+        "note": "Full text in the working list; the report carries an index of "
+                "all of them.",
+    }),
+
     ("bullets", {
-        "title": "Eleven things we would do differently",
+        "title": "The changes with the greatest effect",
         "bullets": [
-            (0, "Offered as input to your design, not as corrections to ours. "
-                "We would not expect them adopted as a set."),
-            (0, "Let the station account for itself — R4, R5, R6, R7."),
-            (1, "Nothing here is difficult or costly. The setting behind nine of "
-                "the thirteen interruptions was readable remotely the whole time, "
-                "and no software asked."),
-            (0, "Make the measurement trustworthy — R1, R2."),
-            (1, "An independent water-level reference, and survey planned as "
-                "professional work from the start. We learned that the hard way; "
-                "IPB's total-station survey is what the station runs on today."),
-            (0, "Make the units buildable and maintainable in Indonesia — R3, R8, "
-                "R9, R10, R11."),
-            (1, "You will buy under Indonesian procurement rules, so substitution "
-                "is the expected case rather than a risk to be managed."),
-        ],
-    }),
-
-    ("table", {
-        "title": "R1–R6",
-        "columns": ["#", "Change", "What it buys", "Cost"],
-        "rows": [
-            ["R1", "Fit an independent water-level reference",
-             "Measurement through the day", "A sensor, or a staff gauge in view"],
-            ["R2", "Commission a professional survey first",
-             "The one input processing cannot recover", "Rp 5–15 million per site"],
-            ["R3", "Specify interfaces, not part numbers",
-             "Local procurement without referring back to us", "Documentation only"],
-            ["R4", "Health reporting and mode alarms as requirements",
-             "The station reports its own condition", "Negligible"],
-            ["R5", "Station sends diagnostics; no login required",
-             "Support inside a short waking period", "Small"],
-            ["R6", "Record voltage and current together",
-             "Separates a failing battery from a heavy load", "A sensing module"],
-        ],
-    }),
-
-    ("table", {
-        "title": "R7–R11",
-        "columns": ["#", "Change", "What it buys", "Cost"],
-        "rows": [
-            ["R7", "Compare recorded against received, automatically",
-             "Loss is noticed, not discovered later", "Negligible"],
-            ["R8", "Put the computer indoors",
-             "Removes it from heat, humidity, dust and travel",
-             "Designed, not yet field tested"],
-            ["R9", "Budget per station; check the interface before buying",
-             "A network that stays affordable", "Screening effort"],
-            ["R10", "Use the computer's own clock where the site allows",
-             "One less board to fail", "Saves about USD 50 per station"],
-            ["R11", "Build on mains and leave it running, where continuous "
-             "reporting is wanted", "Removes most of the gaps above",
-             "No solar array to buy; constrains siting"],
+            (0, "Build the test station first, so a fault can be reproduced and a "
+                "fix tried before it goes to a river. R36"),
+            (0, "Build monitoring for a fleet, not for one station. This is the "
+                "highest-value work on the list. R4–R7"),
+            (0, "Fit an independent water-level reference, and plan the survey as "
+                "skilled work from the start. R1, R2, R19, R20"),
+            (0, "Give one process control of the whole sleep and wake cycle, and "
+                "make shutdown happen on a timer. R10, R12"),
+            (0, "Make mains power the default; use solar only where mains is not "
+                "available. R11"),
+            (0, "Choose the site before anything else, and confirm permission in "
+                "writing before building for it. R16–R18"),
         ],
     }),
 
     ("figure", {
-        "title": "R8 — the least proven change, and possibly the most useful",
+        "title": "Camera at the river, computer indoors (R8)",
         "image": "fig3_configurations.png",
         "alt": "Side-by-side comparison. On the left, the arrangement as built: "
                "camera, computer, modem and power system all in an enclosure at "
@@ -730,7 +696,9 @@ def add_table_slide(prs, title, columns, rows, notes=None):
     clear_empty_placeholders(slide)
 
     note_height = Inches(0.8) if notes else 0
-    row_h = min(Inches(0.34), (avail - note_height) / (len(rows) + 1))
+    # Integer EMU throughout: python-pptx rejects floats, and the division below
+    # produces one as soon as the row count does not divide evenly.
+    row_h = int(min(Inches(0.34), (avail - note_height) / (len(rows) + 1)))
     height = row_h * (len(rows) + 1)
 
     shape = slide.shapes.add_table(len(rows) + 1, len(columns), left, top, width, height)
@@ -767,6 +735,33 @@ def add_table_slide(prs, title, columns, rows, notes=None):
                                        width, note_height)
         write(box.text_frame, [(n, 10, MUTED, 0) for n in notes])
     return slide
+
+
+def recommendation_groups():
+    """Group names and their recommendation numbers, read from the source list.
+
+    The deck used to restate the recommendations, which meant editing them in two
+    places and letting them drift. RECOMMENDATIONS.md is the source; this reads
+    it. A bullet's bold statement can wrap across lines, so only the opening
+    marker is matched.
+    """
+    import re
+    src = HERE / "RECOMMENDATIONS.md"
+    skip = {"Acknowledgement — for the report, not a recommendation",
+            "Notes for you"}
+    groups, current = [], None
+    for line in src.read_text(encoding="utf-8").split("\n"):
+        h = re.match(r"^## (.+)$", line)
+        if h:
+            name = h.group(1).strip()
+            current = None if name in skip else name
+            if current:
+                groups.append((current, []))
+            continue
+        m = re.match(r"^- \*\*(R\d+)", line)
+        if m and groups and current:
+            groups[-1][1].append(m.group(1))
+    return [(name, nums) for name, nums in groups if nums]
 
 
 def logo_files():
@@ -989,6 +984,17 @@ def add_bullets_photo_slide(prs, title, bullets, photo, caption, alt):
     return slide
 
 
+def add_groups_slide(prs, title, note=None):
+    """One row per group of recommendations, with the numbers it contains."""
+    groups = recommendation_groups()
+    rows = [[name, ", ".join(nums)] for name, nums in groups]
+    total = sum(len(nums) for _, nums in groups)
+    note = (note or "") + (" %d recommendations in %d groups."
+                           % (total, len(groups)))
+    return add_table_slide(prs, title, ["Group", "Recommendations"], rows,
+                           notes=[note.strip()])
+
+
 def add_footers(prs, skip_first=True):
     """Place the footer line and slide number where the template puts them.
 
@@ -1044,6 +1050,8 @@ def build(template=None, out_path="pdf/REPLICATION_RECOMMENDATIONS_BRIEFING.pptx
         elif kind == "table":
             add_table_slide(prs, payload["title"], payload["columns"],
                             payload["rows"], payload.get("notes"))
+        elif kind == "groups":
+            add_groups_slide(prs, payload["title"], payload.get("note"))
         elif kind == "figure":
             add_figure_slide(prs, payload["title"], payload["image"],
                              payload["alt"], payload.get("note"))
