@@ -4,7 +4,28 @@ Movement convention: **all parties get equal billing.** PMI, IPB, BHLK and the
 American Red Cross appear at the same size, in the same row, with the same spacing
 on every deliverable.
 
-## What is needed here
+## Provenance
+
+Prepared by `prepare_logos.py`, which trims each mark to its artwork and gives it
+a transparent background. **No mark is redrawn, recoloured or reshaped.**
+
+| File | Source |
+|---|---|
+| `pmi.png` | Supplied by tjordan |
+| `ipb.png` | Supplied by tjordan |
+| `bhlk.png` | Supplied by tjordan — a circular mark on a black square, cropped to the circle |
+| `amcross.png` | `ppt/media/image1.png` from the Red Cross Classic template |
+
+**Open: BHLK.** The other three are horizontal lockups carrying the organisation's
+name. BHLK's is a circular badge with initials only, so at a common height it
+reads smaller and barer than its neighbours — the opposite of what equal billing
+is for. A search of the official sources (`sda.pu.go.id/balai/bhlk`, `bhlk-pu.id`,
+the PUSAIR pages) found no version with the agency name in it. Two ways forward:
+ask BHLK for their official lockup, or set the agency name beside the badge to
+match the other three. The second composes a lockup from someone else's mark and
+should be BHLK's decision, not ours.
+
+## If a file needs replacing
 
 Drop the four files in, named exactly as below. `build_deck.py` and the report
 build pick them up automatically; when a file is missing, that organisation is
