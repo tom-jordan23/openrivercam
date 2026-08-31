@@ -35,8 +35,16 @@ except ImportError:
 
 DOC_TITLE = "OpenRiverCam in Indonesia"
 SUBTITLE = "What the pilot taught us, and the path forward\nResponse to the PMI / IPB / BHLK meeting, Sukabumi, 21 August 2026"
-PARTNERS = "Palang Merah Indonesia  ·  Institut Pertanian Bogor  ·  Balai Hidrologi dan Lingkungan Keairan"
-FOOTER = "ORC Indonesia Deployment — PMI / IPB / BHLK"
+# Movement convention: all parties equal. Same order, same weight, everywhere.
+PARTNERS = ("Palang Merah Indonesia  ·  Institut Pertanian Bogor  ·  "
+            "Balai Hidrologi dan Lingkungan Keairan  ·  American Red Cross")
+LOGOS = [
+    ("pmi.png", "Palang Merah Indonesia"),
+    ("ipb.png", "Institut Pertanian Bogor"),
+    ("bhlk.png", "Balai Hidrologi dan Lingkungan Keairan"),
+    ("amcross.png", "American Red Cross"),
+]
+FOOTER = "ORC Indonesia — PMI · IPB · BHLK · American Red Cross"
 STATUS = "Draft for internal review — not yet circulated"
 
 INK = RGBColor(0x1A, 0x1A, 0x1A)
@@ -541,7 +549,15 @@ def content_box(slide, prs):
 
 
 def add_title_slide(prs):
-    layout = find_layout(prs, "title slide", "title slide 1", "title", fallback=0)
+    # Deliberately not the template's "Title Slide" layout: that centres the
+    # American Red Cross logo alone above the title, which is the arrangement
+    # equal billing rules out. Title Only carries no logo, so the four-logo row
+    # below is the only mark on the slide.
+    if logo_files():
+        layout = find_layout(prs, "title only", fallback=12)
+    else:
+        layout = find_layout(prs, "title slide", "title slide 1", "title",
+                             fallback=0)
     slide = prs.slides.add_slide(layout)
 
     lines = [
@@ -550,6 +566,9 @@ def add_title_slide(prs):
         (PARTNERS, 10, MUTED, 0),
         ("2026-08-31  ·  " + STATUS, 9, MUTED, 0),
     ]
+
+    has_logos = place_logo_row(slide, prs, Inches(0.6), Inches(0.55),
+                               prs.slide_width - Inches(1.2), Inches(0.72))
 
     title = style_title(slide, DOC_TITLE, size=20)
     bodies = body_placeholders(slide)
@@ -660,6 +679,56 @@ def add_table_slide(prs, title, columns, rows, notes=None):
                                        width, note_height)
         write(box.text_frame, [(n, 10, MUTED, 0) for n in notes])
     return slide
+
+
+def logo_files():
+    """The partner logos that are actually present, in fixed order.
+
+    Missing artwork is not an error: the row lays out equally for whoever is
+    there, and the organisations are carried by name regardless. See
+    logos/README.md for the specification.
+    """
+    found = []
+    for name, org in LOGOS:
+        path = HERE / "logos" / name
+        if path.is_file():
+            found.append((path, org))
+    return found
+
+
+def place_logo_row(slide, prs, left, top, width, height):
+    """Lay logos out normalised to a common height and evenly spaced.
+
+    Equal billing is a layout property, not a courtesy: same height, same gaps,
+    no primary position. Scaling by height rather than by area is what keeps a
+    wide lockup and a square mark reading as equals.
+    """
+    from PIL import Image
+    logos = logo_files()
+    if not logos:
+        return False
+
+    widths = []
+    for path, _ in logos:
+        with Image.open(path) as im:
+            iw, ih = im.size
+        widths.append(int(iw * (height / ih)))
+
+    gap = Inches(0.32)
+    total = sum(widths) + gap * (len(logos) - 1)
+    if total > width:                       # shrink to fit, keeping equal height
+        scale = width / total
+        height = int(height * scale)
+        widths = [int(w * scale) for w in widths]
+        gap = int(gap * scale)
+        total = sum(widths) + gap * (len(logos) - 1)
+
+    x = left + (width - total) // 2
+    for (path, org), w in zip(logos, widths):
+        pic = slide.shapes.add_picture(str(path), x, top, width=w, height=height)
+        set_alt_text(pic, org + " logo")
+        x += w + gap
+    return True
 
 
 def set_alt_text(shape, text):
@@ -812,6 +881,17 @@ def add_footers(prs, skip_first=True):
             continue
 
         footer_rect, number_rect = layout_chrome(slide)
+
+        # NOTE: content slides still carry the American Red Cross logo alone,
+        # from the template's slide master at (0.34, 4.89). A partner row cannot
+        # simply be added beside it — it would land on top of it, and the space
+        # between it and the footer text placeholder is too narrow for three more
+        # marks at equal height. Giving every slide equal billing means taking
+        # the bottom band over entirely: cover the master mark, drop the footer
+        # text, and lay all four logos across the band with the slide number kept
+        # at the right. That overrides the template's own branding, so it is left
+        # as a decision rather than assumed. The title slide already gives all
+        # four equal billing; the footer text names all four on every slide.
 
         if footer_rect is not None:
             box = slide.shapes.add_textbox(*footer_rect)

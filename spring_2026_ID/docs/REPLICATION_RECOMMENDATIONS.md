@@ -2,9 +2,11 @@
 
 **Version:** 2026-08-31 (draft for internal review — not yet circulated)
 
-**Prepared for:** Institut Pertanian Bogor (IPB) and Balai Hidrologi dan
-Lingkungan Keairan (BHLK), following the PMI / IPB / BHLK meeting at Sukabumi,
-21 August 2026.
+**Partners:** Palang Merah Indonesia · Institut Pertanian Bogor · Balai Hidrologi
+dan Lingkungan Keairan · American Red Cross
+
+**Prepared for:** IPB and BHLK, following the PMI / IPB / BHLK meeting at
+Sukabumi, 21 August 2026.
 
 **Reading time:** about twelve minutes.
 

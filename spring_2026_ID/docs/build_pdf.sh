@@ -258,7 +258,7 @@ LATEXEOF
 
     echo "\\fancyhead[L]{\\small ${safe_title}}"
     echo "\\fancyhead[R]{\\small v${version} \\textbar{} Built ${build_date}}"
-    echo "\\fancyfoot[L]{\\small\\textit{ORC Indonesia Deployment --- PMI / American Red Cross}}"
+    echo "\\fancyfoot[L]{\\small\\textit{ORC Indonesia --- PMI \\textperiodcentered{} IPB \\textperiodcentered{} BHLK \\textperiodcentered{} American Red Cross}}"
     echo "\\fancyfoot[R]{\\small Page \\thepage\\ of \\pageref{LastPage}}"
 
     cat <<'LATEXEOF'
@@ -272,7 +272,7 @@ LATEXEOF
 
     echo "  \\fancyhead[L]{\\small ${safe_title}}"
     echo "  \\fancyhead[R]{\\small v${version} \\textbar{} Built ${build_date}}"
-    echo "  \\fancyfoot[L]{\\small\\textit{ORC Indonesia Deployment --- PMI / American Red Cross}}"
+    echo "  \\fancyfoot[L]{\\small\\textit{ORC Indonesia --- PMI \\textperiodcentered{} IPB \\textperiodcentered{} BHLK \\textperiodcentered{} American Red Cross}}"
     echo "  \\fancyfoot[R]{\\small Page \\thepage\\ of \\pageref{LastPage}}"
 
     cat <<'LATEXEOF'
@@ -328,7 +328,7 @@ render_html() {
         --css pdf_print.css \
         --metadata title="$title" \
         --metadata subtitle="$subtitle" \
-        --metadata author="American Red Cross / Palang Merah Indonesia" \
+        --metadata author="PMI · IPB · BHLK · American Red Cross" \
         --metadata date="Version ${version} | Audience: ${audience} | Built ${build_date}" \
         --metadata toc-title="$toc_title" \
         -o "$html_file"
@@ -436,7 +436,7 @@ convert_one() {
         -V documentclass=article \
         -V title="$safe_title" \
         -V subtitle="$subtitle" \
-        -V author="American Red Cross / Palang Merah Indonesia" \
+        -V author="PMI · IPB · BHLK · American Red Cross" \
         -V date="Version ${version} | Audience: ${safe_audience} | Built ${build_date}" \
         -o "$pdf_file" 2>/dev/null
 
