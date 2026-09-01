@@ -90,8 +90,19 @@ def log(msg):
     print(f"[{now()}] {msg}", flush=True)
 
 
+# How recent a LastSeen has to be to count as "it is awake now".
+LIVE_WINDOW_S = 900
+
+
 def last_seen():
-    """Tailscale's LastSeen for the station, as a raw string, or None."""
+    """(raw_value, age_seconds) for the station's Tailscale LastSeen, or None.
+
+    The age matters as much as the value. On 2026-09-01 the control plane
+    revised LastSeen from 17:00:00.1Z to 17:01:07.1Z — 67 seconds forward, on a
+    timestamp already four days old. Nothing had woken; Tailscale had refined
+    its record of the *old* sighting. A trigger that fires on the value merely
+    CHANGING burns its pounce window on that, which is what happened.
+    """
     try:
         p = subprocess.run(["tailscale", "status", "--json"],
                            capture_output=True, text=True, timeout=25)
@@ -100,7 +111,15 @@ def last_seen():
         for peer in (d.get("Peer") or {}).values():
             name = (peer.get("HostName", "") + peer.get("DNSName", "")).lower()
             if "sukabumi" in name:
-                return f"{peer.get('LastSeen')}|{peer.get('Online')}"
+                raw = f"{peer.get('LastSeen')}|{peer.get('Online')}"
+                age = None
+                try:
+                    t = datetime.fromisoformat(
+                        str(peer.get("LastSeen")).replace("Z", "+00:00"))
+                    age = (datetime.now(timezone.utc) - t).total_seconds()
+                except (ValueError, TypeError):
+                    pass
+                return raw, age
     except Exception:
         return None
     return None
@@ -160,8 +179,10 @@ def pounce(reason):
 
 def main():
     log(f"pounce armed — idle poll {IDLE_POLL_S}s, pounce poll {POUNCE_POLL_S}s")
-    prev = last_seen()
-    log(f"baseline LastSeen: {prev}")
+    _b = last_seen()
+    prev = _b[0] if _b else None
+    log(f"baseline LastSeen: {prev}"
+        + ("" if not _b or _b[1] is None else f" ({_b[1]/3600:.1f} h old)"))
     # Keep a periodic line in the shared log. Without it a quiet log is
     # ambiguous between "watching, still down" and "watcher died", which is the
     # exact confusion this project has already had twice.
@@ -175,13 +196,23 @@ def main():
             pounce("tcp/22 already open")
             prev = last_seen()
             continue
-        cur = last_seen()
+        seen = last_seen()
+        cur = seen[0] if seen else None
+        age = seen[1] if seen else None
         if cur and prev and cur != prev:
-            log(f"LastSeen advanced: {prev} -> {cur}")
-            pounce("tailscale LastSeen advanced")
-            prev = last_seen()
-        elif cur and not prev:
-            prev = cur
+            # Changed — but only a RECENT LastSeen means it is awake now. A
+            # revision to a days-old timestamp is the control plane tidying its
+            # own record, not a wake, and must not consume the pounce window.
+            if age is not None and age <= LIVE_WINDOW_S:
+                log(f"LastSeen advanced and is fresh ({age:.0f}s): {prev} -> {cur}")
+                pounce("tailscale LastSeen advanced")
+                seen = last_seen()
+                cur = seen[0] if seen else cur
+            else:
+                agestr = "unknown age" if age is None else f"{age/3600:.1f} h old"
+                log(f"LastSeen changed but is {agestr} — stale-record revision, "
+                    f"not a wake: {prev} -> {cur}")
+        prev = cur or prev
         time.sleep(IDLE_POLL_S)
 
 
