@@ -1,56 +1,38 @@
-# station-watch.service — keep the Sukabumi recovery watch alive across sessions.
+# station-watch.service — RETIRED 2026-09-01. DO NOT ENABLE.
 #
-# WHY THIS FILE EXISTS
-#   station_watch.py has referenced "the systemd user unit" since it was
-#   written, and the unit did not exist. So every arming of the watcher was a
-#   process in somebody's terminal, and every one of them died with the
-#   session — which is exactly why the 2026-08-28 resume block had to list
-#   "re-arm the watcher" as a task. A recovery that lands while nobody is
-#   logged in is the whole case for the watcher, and was the case it could not
-#   cover.
+# THE POLICY THIS FILE VIOLATES
+#   Nothing may poll or touch the Sukabumi station while there is no active
+#   Claude session. Tom's decision, 2026-09-01: no monitoring and no station
+#   interaction unattended. The watcher probes tcp/22, queries Grafana, and on
+#   a wake opens an SSH session and pulls files. None of that may happen with
+#   nobody watching it happen.
 #
-# INSTALL
-#   mkdir -p ~/.config/systemd/user
-#   ln -sf "$PWD/station-watch.service" ~/.config/systemd/user/station-watch.service
-#   systemctl --user daemon-reload
-#   systemctl --user enable --now station-watch.service
+#   This unit was written for the opposite premise — that "a recovery that
+#   lands while nobody is logged in is the whole case for the watcher" — and it
+#   pursued that premise two ways, both now removed:
+#     * `WantedBy=default.target` started it at every login, session or not.
+#     * The INSTALL block told the reader to `sudo loginctl enable-linger`,
+#       which would have kept it running past logout entirely.
+#   It was `enable`d and running on 2026-09-01 and has been stopped and
+#   disabled. Linger was never enabled and must stay off.
 #
-#   Survives logout ONLY with lingering enabled, which needs root once:
-#       sudo loginctl enable-linger $USER
-#   Without it the unit stops at logout and this is no better than a terminal.
+# HOW THE WATCH RUNS NOW
+#   As a session-scoped process, so its lifetime is the session's:
 #
-# WATCH
-#   systemctl --user status station-watch
-#   journalctl --user -u station-watch -f
+#       cd .../liveorc_server/station-health
+#       python3 -u ./pounce.py 2>&1 | tee -a \
+#           ~/code/git/openrivercam/data/station-forensics/station-watch.log
 #
-# It changes nothing on the station: one TCP probe to port 22, one anonymous
-# read-only Grafana query, and on reconnect a read-only collector over SSH.
-
-[Unit]
-Description=Sukabumi station recovery watch (ISS-FIELD-008 / TODO-116)
-After=network-online.target
-
-[Service]
-Type=simple
-WorkingDirectory=%h/code/git/openrivercam/spring_2026_ID/liveorc_server/station-health
-# Was station_watch.py, which polls tcp/22 every 15 s and then runs the broad
-# collector. That was sized for a ~60 s wake and cannot win the seconds-long
-# ones this station now has: the 2026-08-29 00:00 WIB wake pushed two files and
-# was never seen with tcp/22 open. pounce.py triggers on Tailscale LastSeen
-# advancing (earlier in the boot than sshd), probes once a second, and grabs
-# wp5d.log first and alone. Only one process may race for the window, so this
-# unit runs pounce and station_watch.py is not run at all.
-ExecStart=%h/code/git/openrivercam/spring_2026_ID/liveorc_server/station-health/pounce.py
-# The station is down for days at a time; the poller is meant to outlast that.
-Restart=always
-RestartSec=30
-# Append to the same log the hand-run watcher has always written, rather than
-# the journal. The continuity of that file across every arming of the watcher
-# is the record of what the station did while nobody was watching; a unit that
-# started a fresh stream in the journal would break exactly the thing the
-# watcher exists to produce. journalctl still shows unit start/stop/restarts.
-StandardOutput=append:%h/code/git/openrivercam/data/station-forensics/station-watch.log
-StandardError=append:%h/code/git/openrivercam/data/station-forensics/station-watch.log
-
-[Install]
-WantedBy=default.target
+#   The tee keeps the one continuous log this watch has always written; that
+#   file's continuity across every arming is the record of what the station did,
+#   and a fresh stream per arming would break it. Only ONE pounce may race for a
+#   wake window, so check `pgrep -f pounce.py` before starting another.
+#
+#   The cost of this policy is real and accepted: wakes that land between
+#   sessions are missed. The station is a pilot, and an unobserved recovery is
+#   cheaper than an unobserved process holding SSH credentials against it.
+#
+# WHY THE FILE IS KEPT
+#   As the record of the decision. A deleted unit gets rewritten by whoever next
+#   notices the watcher dies with the terminal — which is how it got written the
+#   first time. If that reasoning ever wins again, it has to answer this header.
