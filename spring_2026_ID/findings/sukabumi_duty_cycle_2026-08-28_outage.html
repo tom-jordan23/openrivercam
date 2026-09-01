@@ -1,4 +1,4 @@
-<title>Awake and Unreachable</title>
+<title>Sukabumi Outage Analysis</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
@@ -70,8 +70,8 @@
   .kicker::after { content: ""; flex: 1; height: 1px; background: var(--rule-2); }
   h1 {
     font-family: "IBM Plex Sans", system-ui, sans-serif;
-    font-weight: 700; font-size: clamp(38px, 6.4vw, 58px);
-    line-height: 1.03; letter-spacing: -.028em;
+    font-weight: 700; font-size: clamp(27px, 4.2vw, 39px);
+    line-height: 1.14; letter-spacing: -.021em;
     text-wrap: balance; margin: 20px 0 0;
   }
   .standfirst {
@@ -229,8 +229,8 @@
 
 <header class="masthead">
   <div class="kicker">Field Report · ISS-FIELD-011</div>
-  <h1>Awake and Unreachable</h1>
-  <p class="standfirst">Sukabumi went silent for 4.8 days. It was running the whole time, on schedule, at a normal duty cycle. The prepaid SIM had run out of money — and almost everything we concluded before reading the station's own log was wrong.</p>
+  <h1>Sukabumi station outage, 28 August – 1 September 2026</h1>
+  <p class="standfirst">The station was unreachable for 4.8 days. It was running throughout, on schedule and at a normal duty cycle; the cause was an unfunded prepaid SIM. This report sets out what the station's own power log measures, and which earlier conclusions it revises.</p>
   <div class="meta">
     <span><b>Site</b> Sukabumi (pilot)</span>
     <span><b>Silent</b> 28 Aug 06:30 WIB → 1 Sep 18:00 UTC</span>
@@ -250,7 +250,7 @@
   </div>
   <div class="fig">
     <div class="n alt">5.15<span style="font-size:19px;color:var(--muted)"> min</span></div>
-    <div class="l">Longest single wake in the<br>outage. Claimed: 25</div>
+    <div class="l">Longest single wake in the outage;<br>earlier analysis stated 25</div>
   </div>
 </div>
 
@@ -264,8 +264,8 @@
 
 <section>
   <div class="eyebrow">The correction</div>
-  <h2>The 9× energy drain never happened</h2>
-  <p>Our first read of the returned data concluded the station had been awake roughly 15 hours a day instead of 1.6, running nearly every cycle to the Witty Pi's 25-minute backstop at about nine times its energy budget. That reading came from wake-minutes <em>inferred</em> from the spacing of sensor rows.</p>
+  <h2>Duty cycle during the outage was normal</h2>
+  <p>The first analysis of the returned data concluded the station had been awake roughly 15 hours a day instead of 1.6, running nearly every cycle to the Witty Pi's 25-minute backstop at about nine times its energy budget. That reading came from wake-minutes <em>inferred</em> from the spacing of sensor rows.</p>
   <p>The Witty Pi keeps its own log of when it powered the Pi. We pulled the whole file — 5,714 boots back to 7 April — and it measures the duty cycle directly. Each cycle records <code>Startup reason</code> after the clock is set, and <code>Exit now.</code> at shutdown. The difference is the awake time.</p>
 
   <figure>
@@ -302,16 +302,16 @@
     </table>
   </div>
 
-  <h3>What the numbers rule out</h3>
+  <h3>What the measurements rule out</h3>
   <p>Across the whole deployment — 5,244 measured cycles since April — the median wake is 1.95 minutes and only <strong>eight cycles have ever exceeded 20 minutes</strong>. Two of those eight fall in this table, on 25 and 27 August. Both are <em>before</em> the outage began.</p>
-  <p>During the outage itself the longest single wake was 5.15 minutes, and on the final three days nothing exceeded 2.95 minutes. The station never went near the 25-minute backstop. There is no drain signature in this window at all.</p>
+  <p>During the outage itself the longest single wake was 5.15 minutes, and on the final three days nothing exceeded 2.95 minutes. The station did not approach the 25-minute backstop, and there is no drain signature in this window.</p>
   <p>The choice of baseline is what produced the original error. Against the quiet week of 10–13 August (94–101 min/day) the outage looks like a mild 1.25× rise; against the week immediately before it (mean 139 min/day) it is <strong>0.87×</strong> — slightly less awake than normal. Daily awake time drifts between roughly 95 and 215 minutes as a matter of course, and the outage days land in the middle of that band.</p>
 </section>
 
 <section>
   <div class="eyebrow">Claim ledger</div>
-  <h2>Where each conclusion now stands</h2>
-  <p>Every claim from this incident, marked by how we know it. The distinction that matters is measured against inferred — this investigation went wrong twice by treating the second as the first.</p>
+  <h2>Status of each conclusion</h2>
+  <p>Each claim is marked by how it is known. Measured claims are taken from the station's own power log; claims previously inferred from server-side row spacing have been re-examined against it.</p>
 
   <div class="ledger">
     <div class="claim">

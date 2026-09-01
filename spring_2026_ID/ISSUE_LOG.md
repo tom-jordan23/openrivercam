@@ -862,7 +862,7 @@ a week of zero rain and high insolation.
 
 ---
 
-### ISS-FIELD-011: The station was never down — it was awake, unreachable, and burning 9x its energy budget
+### ISS-FIELD-011: Sukabumi was unreachable for 4.8 days while running normally; cause was an unfunded prepaid SIM
 
 | Field | Value |
 |-------|-------|
