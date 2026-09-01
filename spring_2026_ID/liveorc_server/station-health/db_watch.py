@@ -27,6 +27,17 @@ Q = ("SELECT to_char(max(ts) AT TIME ZONE 'Asia/Jakarta','MM-DD HH24:MI:SS') las
 
 def now(): return datetime.now(timezone.utc).strftime("%H:%M:%SZ")
 
+# ISS-FIELD-011 changed what this should watch for. While the station was
+# unreachable, "data advanced" was the signal. Now that it is cycling again,
+# max(ts) advances every 30 minutes and reporting each one is ~48 events a day
+# of noise — the first version of this watch was killed for exactly that.
+#
+# The useful signal is the inverse: data STOPPING. A 4.8-day uplink outage began
+# as one missed upload, and nothing anywhere noticed for five days. So alert on
+# staleness crossing a threshold, and once more when it clears.
+STALE_MIN = 95.0     # three missed cycles on a 30-minute duty cycle
+stale = False
+
 last = None
 while True:
     try:
@@ -36,11 +47,29 @@ while True:
         print(f"[{now()}] QUERY FAILED: {e}", flush=True); time.sleep(120); continue
     except Exception as e:
         print(f"[{now()}] QUERY ERROR: {type(e).__name__} {e}", flush=True); time.sleep(120); continue
+    age = None
+    try:
+        a = sg.query("SELECT EXTRACT(epoch FROM (now()-max(ts)))/60 m FROM sensor_readings "
+                     "WHERE station='sukabumi'", G, CA)[1][0]["m"]
+        age = float(a)
+    except Exception:
+        pass
+
     if last is None:
-        print(f"[{now()}] baseline: newest row {cur[0]} WIB, {cur[1]} rows total", flush=True)
-    elif cur != last:
-        d = cur[1] - last[1]
-        print(f"[{now()}] *** NEW SENSOR DATA *** newest row now {cur[0]} WIB "
-              f"(was {last[0]}), +{d} rows — THE STATION IS AWAKE OR JUST WAS", flush=True)
+        print(f"[{now()}] baseline: newest row {cur[0]} WIB, {cur[1]} rows, "
+              f"age {age:.0f} min" if age is not None else
+              f"[{now()}] baseline: newest row {cur[0]} WIB, {cur[1]} rows", flush=True)
+        stale = age is not None and age > STALE_MIN
+    elif age is not None:
+        if age > STALE_MIN and not stale:
+            print(f"[{now()}] *** SENSOR UPLOAD STALLED *** no new row for "
+                  f"{age:.0f} min (newest {cur[0]} WIB). This is how the 4.8-day "
+                  f"ISS-FIELD-011 outage began.", flush=True)
+            stale = True
+        elif age <= STALE_MIN and stale:
+            d = cur[1] - last[1]
+            print(f"[{now()}] *** UPLOADS RESUMED *** newest row {cur[0]} WIB, "
+                  f"+{d} rows since the stall began", flush=True)
+            stale = False
     last = cur
     time.sleep(60)

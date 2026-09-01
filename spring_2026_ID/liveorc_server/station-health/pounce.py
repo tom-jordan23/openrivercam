@@ -35,6 +35,8 @@ READ-ONLY. It runs `tail` and `cat` over SSH and writes files locally. It does
 not deploy, configure, or restart anything on the station.
 """
 
+import base64
+import gzip
 import os
 import subprocess
 import sys
@@ -81,6 +83,14 @@ PRIMARY_CMD = (
     "echo '--- throttled ---'; vcgencmd get_throttled 2>/dev/null || true"
 )
 
+# The whole power-on history, compressed. ISS-FIELD-011: `tail -n 400` was
+# sized for a seconds-long window and covered only the last 20 hours of a
+# 4.8-day outage, so the record of what the station did through the rest of it
+# was never collected. This runs only AFTER the primary grab has landed, so a
+# short window still yields the tail. gzip+base64 costs roughly a tenth of the
+# LTE data of a plain cat, which matters on a prepaid SIM.
+FULL_LOG_CMD = "gzip -c /var/log/wp5d.log | base64 -w0"
+
 
 def now():
     return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%SZ")
@@ -125,8 +135,13 @@ def last_seen():
     return None
 
 
-def ssh_grab(cmd, label):
-    """One short SSH round trip into a timestamped file. Returns bytes written."""
+def ssh_grab(cmd, label, b64gz=False, timeout_s=45):
+    """One short SSH round trip into a timestamped file. Returns bytes written.
+
+    b64gz: the command emits base64(gzip(...)) on a single line; it is decoded
+    here and the plain text written. A partial transfer decodes to nothing, so
+    this form is only ever used for a secondary grab.
+    """
     OUT.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     dest = OUT / f"{HOST}-{label}-{stamp}.txt"
@@ -141,9 +156,19 @@ def ssh_grab(cmd, label):
         f"{USER}@{HOST}", cmd,
     ]
     try:
-        with open(dest, "wb") as fh:
-            subprocess.run(argv, stdout=fh, stderr=subprocess.STDOUT,
-                           timeout=45, env=env)
+        if b64gz:
+            p = subprocess.run(argv, capture_output=True, timeout=timeout_s,
+                               env=env)
+            try:
+                dest.write_bytes(gzip.decompress(base64.b64decode(p.stdout)))
+            except Exception as e:
+                log(f"{label}: transfer did not decode ({type(e).__name__})")
+                dest.unlink(missing_ok=True)
+                return 0
+        else:
+            with open(dest, "wb") as fh:
+                subprocess.run(argv, stdout=fh, stderr=subprocess.STDOUT,
+                               timeout=timeout_s, env=env)
     except subprocess.TimeoutExpired:
         pass
     size = dest.stat().st_size if dest.exists() else 0
@@ -163,6 +188,10 @@ def pounce(reason):
             log("tcp/22 OPEN — grabbing wp5d.log first")
             if not got_primary and ssh_grab(PRIMARY_CMD, "wp5dlog"):
                 got_primary = True
+                # The full history next: it is worth more than the collector
+                # and costs a couple of seconds, but never more than the tail.
+                ssh_grab(FULL_LOG_CMD, "wp5dlog-full", b64gz=True,
+                         timeout_s=120)
                 # Only now spend the rest of the window on the broad collector.
                 collector = HERE.parents[1] / "pi/tools/orc_wp5_state.sh"
                 if collector.is_file():
