@@ -2149,6 +2149,142 @@ returns to this state. Sync is the constraint that makes retention possible.
 
 ---
 
+**THE DAYTIME VIDEOS WERE CAPTURED. THE UPLOAD FAILED. (2026-09-01.)**
+
+Measured from ORC-OS's own database on the station, `/home/pi/.ORC-OS/orc-os.db`,
+read during the 19:31 UTC wake:
+
+```
+sync_status   FAILED 2978 | SYNCED 2541 | LOCAL 127
+status        DONE 3121 | ERROR 2399 | NEW 125 | TASK 1
+```
+
+| day (WIB dates, UTC timestamps) | SYNCED | FAILED |
+|---|---|---|
+| 08-21 | 44 | 3 |
+| 08-22 | 41 | 7 |
+| **08-23** | **8** | **40** |
+| 08-24 | 6 | 42 |
+| 08-25 | 7 | 39 |
+| 08-26 | 6 | 42 |
+| 08-27 | 6 | 41 |
+| 08-28 | 0 | 48 |
+| 08-29 | 0 | 48 |
+| 08-30 | 0 | 48 |
+| 08-31 | 0 | 48 |
+| 09-01 | 2 | 37 (+1 LOCAL) |
+
+**The station created 48 video rows a day, every day**, including 08-28 → 08-31
+when it was recorded as dead. Nothing about capture changed on 08-23. Sync did.
+
+**This retracts the central conclusion of the video section above** — "the
+missing daytime videos were never captured, which distinguishes it from the 2744
+historic never-synced videos". It is the *same* failure, and the historic
+backlog simply grew: 2744 on 08-27, **2978 FAILED + 127 LOCAL = 3105** now.
+
+`/home/pi/.ORC-OS/uploads/videos` is **29 GB**. At the ~9 MB per clip measured
+in tonight's capture log that is ~3,200 files against 3,105 unsynced records, so
+the backlog is very likely still on disk rather than orphaned. Confirming file
+existence directly is pending a wake window.
+
+**Independent corroboration: the Witty Pi log splits on the same boundary.**
+Wake durations, measured from `wp5d.log` (which knows nothing about videos):
+
+| WIB day | median wake, 01–05h | median wake, rest of day |
+|---|---|---|
+| 08-21 | — | 2.03 min |
+| 08-22 | 2.08 | 2.05 |
+| **08-23** | **2.07** | **2.56** |
+| 08-24 | 2.27 | 2.77 |
+| 08-25 | 2.32 | 2.78 |
+| 08-27 | 2.32 | 2.73 |
+
+Before 08-23 both are ~2.0 min. From 08-23 the hours that sync stay at baseline
+while the rest of the day stretches by ~0.7 min. That is an upload that hangs
+and then gives up, and **a hard cutoff cannot produce it** — no connectivity
+fails immediately. The link was present and too slow.
+
+**This also refutes the power-path explanation for the video window.** That
+argument held the controller's load output could not carry the PoE injector and
+camera in daylight. But the camera was powering up and delivering gate-passed
+video all day throughout — 48 rows a day, and tonight's cycle logs `Quality gate
+PASSED`, 1920x1080, 5.0 s, 8.9 MB, `Delivered`. (Row creation implies a
+gate-passed delivery, since `orc-capture` only delivers after the gate; the
+per-day file/status breakdown is pending.)
+
+Two further corrections to that argument:
+
+- **Its progression evidence is gone.** It read "large load fails 08-23, small
+  load fails 08-28" as one worsening fault. The 08-28 stage was the uplink, not
+  power — ISS-FIELD-011 measures 48 boots/day unbroken through 08-31.
+- **Supply voltage is higher in daylight, not lower.** V-IN by WIB hour: 12.7 V
+  across 01:00–05:00, 12.9–13.1 V from 07:00–17:00. The camera failed when the
+  supply was strongest, so sag is not the discriminator.
+
+**Source resistance is now measured, and it is ohms.** TODO-117's paired V/I
+shipped; all 691 samples carry both values across 0.567–1.337 A. Four wakes have
+enough current spread to fit V = V0 − I·R: **0.468, 0.482, 0.593, 0.686 Ω**,
+median 0.537. `wittypi.conf` framed this exact test as ohms (fuse holder,
+terminal, crimp) versus milliohms (worn pack). It is ohms. At the Pi's 0.85 A
+that is a 0.46 V drop; at ~2.5 A for camera plus injector, 1.34 V. Real, and
+worth fixing — but on the evidence above it is not what stopped the video.
+Caveat: 4 usable wakes, r² 0.52–0.89.
+
+**THE QUOTA MODEL (Tom, 2026-09-01): a 01:00 reset, not midnight.**
+
+The station wakes at **every** slot including 00:00, 00:30 and 03:00 — verified
+against `wp5d.log` — so the gaps below are sync failures, not missed wakes.
+Server-received slots, 00:00–06:30 WIB (`#` = arrived):
+
+```
+             0000 0030 0100 0130 0200 0230 0300 0330 0400 0430 0500 0530
+2026-08-24    .    .    .    #    #    #    .    .    #    #    #    .
+2026-08-25    .    .    .    #    #    #    .    #    #    #    .    .
+2026-08-26    .    .    .    #    #    #    .    #    #    #    #    .
+2026-08-27    .    .    #    #    #    .    #    #    #    .    .    .
+2026-08-28    .    .    .    #    #    #    .    #    #    #    .    .
+```
+
+| observation | under a 01:00 reset with a small daily allowance |
+|---|---|
+| nothing succeeds 00:00–00:30, five nights running | previous day's allowance spent |
+| first success 01:00–01:45 every night | the reset |
+| 6, 6, 7, 6, 6 successes per night | a fixed allowance, ~55–60 MB at ~9 MB each |
+| last success drifts 04:01–05:03 | exhaustion — a *moving* end, not a fixed window close |
+| nothing from 05:00 to 01:00 | throttled |
+| long wakes all day, short ones in-band | throttled uploads hang; unthrottled ones complete |
+| sensor CSVs never stop | kilobytes pass a throttle |
+
+The drifting end is what favours this over a fixed bonus window, which would
+close at the same clock time nightly. An earlier objection here — that the
+successes are not a contiguous prefix, so exhaustion is excluded — **was wrong**:
+a transient failed transfer mid-band is compatible, because exhaustion only has
+to end the band, not explain every hole in it.
+
+**Two things the model does not cover.**
+
+- **The 03:00 hole recurs on 4 of 5 nights at the same slot.** A random failed
+  transfer should not prefer one slot that consistently. Unexplained; n=5.
+- **A daily reset cannot explain the 08-23 onset.** A reset that was always
+  there produces the same pattern every day, yet 08-21 and 08-22 synced 44 and
+  41 videos — six or seven times any nightly allowance. Something separate
+  changed that day: the main allowance exhausting, or the plan dropping into a
+  throttled tier.
+
+**The check that settles it is on the account, not the station:** the package's
+reset hour, and what happened to the data balance on or around 08-23.
+
+**Next: inventory the backlog and decide what to do with it.** Deferred to a
+dedicated session. The question is not only how much is recoverable but whether
+`FAILED` is terminal in ORC-OS — only 2 videos have synced since connectivity
+returned, against ~4,500 sensor rows that flushed immediately, so nothing
+suggests the backlog re-drives itself. If it does not, the disk manager will
+eventually consume it, as it already did for the 2,190 records that lost their
+files.
+
+---
+
+
 ### ISS-FIELD-004: Mirroring media through the REST API took the LiveORC host down
 
 | Field | Value |

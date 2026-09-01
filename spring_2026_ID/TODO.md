@@ -1,6 +1,6 @@
 # TODO — Indonesia Spring 2026 Deployment (post-trip)
 
-**Last updated:** 2026-08-31
+**Last updated:** 2026-09-01
 
 The pre-trip task list (departure schedule day-by-day, in-country
 deferred items, etc.) was archived to `archive/` after the April 2026
@@ -182,6 +182,50 @@ purely PMI's, not a technical readiness one.
       the LiveORC web UI, Grafana (TODO-102), and the Sheet (TODO-111).
 
 ---
+
+### TODO-119: Inventory the un-synced video backlog and decide what to do with it
+
+| Field | Value |
+|-------|-------|
+| **Status** | OPEN |
+| **Site** | Sukabumi |
+| **Opened** | 2026-09-01 |
+
+**3,105 videos on the station have never reached LiveORC** (2978 FAILED, 127
+LOCAL), and `/home/pi/.ORC-OS/uploads/videos` holds 29 GB. See ISS-FIELD-009,
+section "THE DAYTIME VIDEOS WERE CAPTURED".
+
+**Why this is now urgent rather than historical.** Only **2** videos have synced
+since connectivity returned on 09-01, against ~4,500 sensor rows that flushed
+within two minutes. Nothing so far suggests ORC-OS re-drives a `FAILED` sync.
+If it does not, the disk manager will consume the backlog exactly as it already
+consumed the 2,190 records that lost their files — the material at risk is
+un-synced, i.e. the only copy.
+
+**Questions to answer, in order:**
+
+- [ ] **Is `FAILED` terminal in ORC-OS?** Read the sync path in the ORC-OS
+      source on the station. If there is a retry, what triggers it and why has
+      it not fired? If there is none, that is the finding.
+- [ ] **Do the files still exist?** `SELECT count(*) FROM video WHERE
+      sync_status<>'SYNCED' AND file IS NOT NULL`, then stat a sample. 29 GB
+      against ~3,200 expected files says probably yes; confirm rather than
+      infer.
+- [ ] **What is the date and time-of-day distribution of the backlog?** It
+      determines whether it is worth anything scientifically or is mostly
+      redundant half-hourly clips.
+- [ ] **What would uploading it cost?** 29 GB over a prepaid LTE plan that has
+      already run dry once. This may be the deciding constraint, and pulling it
+      over the tailnet or on physical media may be the only sane options.
+- [ ] **Decide: re-sync, extract selectively, or delete.** Sukabumi is a pilot;
+      per Tom the video is not feeding anything, so deletion is legitimate. The
+      finding matters more than the bytes.
+
+**Do not start a bulk upload without answering the cost question.** The station
+is on a metered prepaid SIM whose exhaustion caused ISS-FIELD-011.
+
+---
+
 
 ## P1 — Important, but not blocking the active workstreams
 
@@ -1369,7 +1413,68 @@ guarded the mount, so the one condition that mattered went unchecked.
   volume, so if the cause was the full disk they are likely recoverable — feed
   into TODO-113.
 
-### RESUME HERE — state at 2026-08-28 22:05 WIB
+### RESUME HERE — state at 2026-09-01 19:45 UTC
+
+Session of 2026-09-01. Tree is clean, everything below is committed and pushed.
+**Next session's task: TODO-119 — plan how to inventory the un-synced video
+backlog and what to do about it.**
+
+**The station is healthy and on cadence.** Back since 09-01 18:00 UTC after 4.8
+days unreachable. 48 boots/day, wakes ~2 min, newest sensor row 09-02 01:00 WIB.
+Captures are passing the quality gate (code 1, 1 attempt).
+
+**Two conclusions from earlier sessions were overturned today. Both mattered.**
+
+- **ISS-FIELD-011: the 9x energy drain never happened.** The full `wp5d.log`
+  (5,714 boots back to 04-07) measures 48 scheduled boots/day unbroken through
+  the "outage", with awake time 2.0 → 2.7 min/cycle. Against the preceding week
+  it is **0.87x** — slightly *less* awake than normal. Only 8 cycles in the
+  whole deployment ever exceeded 20 minutes, and none during the outage. The
+  station was never down; the uplink was. Cause: the Telkomsel prepaid account
+  ran out of money.
+- **ISS-FIELD-009: the daytime videos were captured.** ORC-OS created 48 video
+  rows a day throughout, including the days we recorded as dead. What failed on
+  08-23 was **sync**, not capture. The "never captured" conclusion is retracted,
+  and with it the power-path explanation for the video window — the camera was
+  delivering gate-passed video all day.
+
+**The working model for the video window** (Tom's, and it fits): the SIM is
+throttled, with a daily allowance resetting at **01:00** local. Nothing succeeds
+at 00:00/00:30 on five consecutive nights while the station is demonstrably
+awake; successes start 01:00–01:45, run 6–7 a night at ~9 MB each, and stop at a
+drifting 04:01–05:03 as the allowance exhausts. Unexplained: a 03:00 hole on 4
+of 5 nights, and what changed on 08-23 to start it. **The check is on the
+account — the reset hour and the balance around 08-23 — not on the station.**
+
+**Monitoring policy changed — read before re-arming anything.** Nothing may poll
+or touch the station without an active session (Tom, 09-01). `station-watch.service`
+is retired, disabled and rewritten as a do-not-enable record; linger stays off.
+Watches run session-scoped via the Monitor tool, teeing to the same
+`data/station-forensics/station-watch.log`. **Sweep for orphans and other live
+`claude` processes before arming** — a session running since 08-28 re-enabled the
+unit 82 s after it was disabled and killed the replacement watcher.
+
+**Restarting the watches:**
+
+```
+cd spring_2026_ID/liveorc_server/station-health
+pgrep -f pounce.py            # must be empty
+python3 -u ./pounce.py 2>&1 | tee -a ../../../data/station-forensics/station-watch.log
+python3 -u ./db_watch.py      # stall alarm, fires at 95 min
+```
+
+**New tools this session:** `wp5d_duty_cycle.py` (duty cycle from any copy of
+wp5d.log; its docstring carries two parsing traps that produce clean-looking
+false tables), `findings/sukabumi_duty_cycle_2026-08-28_outage.{md,html,pdf}`
+plus the 127-day dataset, and `findings/build_report_pdf.py`.
+
+**Still open and unfixed: nothing watches the SIM balance.** It is the root
+cause of ISS-FIELD-011, it has no instrumentation, and it will recur.
+
+---
+
+
+### Superseded resume block — 2026-08-28 22:05 WIB (kept for the record; several claims below were later refuted — see ISS-FIELD-011)
 
 Session of 2026-08-28, **ended deliberately to restart under tmux** — nothing
 was interrupted, the tree is clean and both commits are in. **First action on
