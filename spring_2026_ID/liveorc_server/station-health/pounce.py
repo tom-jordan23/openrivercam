@@ -91,7 +91,7 @@ def log(msg):
 
 
 # How recent a LastSeen has to be to count as "it is awake now".
-LIVE_WINDOW_S = 900
+LIVE_WINDOW_S = 120
 
 
 def last_seen():
@@ -194,7 +194,8 @@ def main():
         # Cheap check first: if the port is somehow already open, go now.
         if sw.port_open(HOST, 22, timeout_s=2):
             pounce("tcp/22 already open")
-            prev = last_seen()
+            _s = last_seen()
+            prev = _s[0] if _s else prev   # store the VALUE, never the tuple
             continue
         seen = last_seen()
         cur = seen[0] if seen else None
@@ -203,15 +204,19 @@ def main():
             # Changed — but only a RECENT LastSeen means it is awake now. A
             # revision to a days-old timestamp is the control plane tidying its
             # own record, not a wake, and must not consume the pounce window.
-            if age is not None and age <= LIVE_WINDOW_S:
+            # Online=True is the control plane's own verdict and is worth more
+            # than the timestamp; require both. A 235 s old LastSeen on an
+            # Online=False peer is a station that has already gone back to sleep.
+            online = cur.endswith("|True")
+            if online and age is not None and age <= LIVE_WINDOW_S:
                 log(f"LastSeen advanced and is fresh ({age:.0f}s): {prev} -> {cur}")
                 pounce("tailscale LastSeen advanced")
                 seen = last_seen()
                 cur = seen[0] if seen else cur
             else:
-                agestr = "unknown age" if age is None else f"{age/3600:.1f} h old"
-                log(f"LastSeen changed but is {agestr} — stale-record revision, "
-                    f"not a wake: {prev} -> {cur}")
+                agestr = "unknown age" if age is None else f"{age:.0f}s old"
+                log(f"LastSeen changed ({agestr}, online={online}) — not a live "
+                    f"wake: {prev} -> {cur}")
         prev = cur or prev
         time.sleep(IDLE_POLL_S)
 

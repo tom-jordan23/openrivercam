@@ -862,6 +862,80 @@ a week of zero rain and high insolation.
 
 ---
 
+### ISS-FIELD-011: The station was never down — it was awake, unreachable, and burning 9x its energy budget
+
+| Field | Value |
+|-------|-------|
+| **Date opened** | 2026-09-01 |
+| **Site** | Sukabumi |
+| **Risk** | Every conclusion drawn from row-absence during 2026-08-28 → 09-01 was wrong |
+| **Impact** | **High** — reverses ISS-FIELD-010's diagnosis and the site-visit case |
+| **Status** | OPEN |
+
+**The station came back at 2026-09-01 18:00 UTC (09-02 01:00 WIB) after 4.8 days
+of silence, and flushed its entire backlog.** ~4,500 buffered rows landed in two
+minutes. They show it had been running the whole time.
+
+| | wake-minutes/day | rows/day |
+|---|---|---|
+| healthy, 10–14 Aug | ~53 | 240 |
+| the "outage", 28 Aug – 1 Sep | **135–140** | **895–940** |
+
+It was awake roughly **15 hours a day instead of 1.6** — running nearly every
+cycle to the Witty Pi's 25-minute backstop. What failed at 08-28 06:30 WIB was
+the **uplink**, not the station.
+
+**This invalidates the analysis built on row-absence.** The night-onset pattern,
+the dawn windows, the three-missed-dawns argument and the site-visit case were
+all reasoning about a station that was sitting there running. A visit would have
+found it working. `station_gaps.py`'s premise — absence of rows records
+downtime — failed completely here, and ISS-FIELD-010 already carried the warning
+after the 06:00/06:30 rows appeared mid-outage; that signal was right and was
+under-weighted.
+
+**The power record we never had.** 679 V-IN samples across the outage, against
+11 for the whole project before it:
+
+| day | n | V-IN min .. max |
+|---|---|---|
+| 08-28 | 127 | 12.558 .. 13.231 |
+| 08-29 | 140 | 12.341 .. 13.320 |
+| 08-30 | 135 | 12.261 .. 13.177 |
+| 08-31 | 137 | 12.149 .. 13.714 |
+| 09-01 | 139 | 12.593 .. 13.098 |
+
+Two results follow immediately, both on measurement rather than inference:
+
+- **The pack is not the fault.** Five days at ~9x the normal duty cycle and
+  V-IN never fell below 12.149 V. A battery that survives that is not the
+  limiting component, and the deep-discharge theory does not apply to this
+  event.
+- **13.0 V is reached routinely** — 13.23, 13.32, 13.71 V. The recovery-voltage
+  latch theory is dead on evidence, not argument. Every V-IN sample the project
+  held before today came from a 3-hour pre-dawn window, which is why the pack
+  looked incapable of reaching 13 V.
+
+**What actually needs explaining now** is why the uplink was down for 4.8 days
+while the LTE modem and the station ran, and why ORC-OS never completed its task
+throughout — the latter being what pinned the Pi to the 25-minute backstop and
+produced the 9x drain. A capture that cannot upload is a task that never
+finishes, which is the same shape as the maintenance-mode chain in
+ISS-FIELD-010, triggered by loss of connectivity rather than by a flag.
+
+**Collected in the window (2026-09-01 18:00–18:04 UTC).** Three `wp5d.log`
+grabs; the deploy of TODO-117, the Witty Pi boot context and the orc-capture
+verdict, all verified working on the station; and confirmation that `pi` can
+read both `/var/log/wp5d.log` and the journal. The station's own capture in that
+window passed its quality gate at 15,955 kbps and delivered, and disk free space
+was 11.27 GB.
+
+**wp5d.log covers only the last 20 hours** of the outage — `tail -n 400` was
+sized for a seconds-long window, not a 4.8-day one. Within that span: 40
+startups, 100% on-cadence, no gap over 45 minutes, all "Scheduled Startup". Get
+the full log on the next window.
+
+---
+
 ### ISS-FIELD-010: The station can be alive and uploading while completely unreachable — and "no sensor rows" is not the same as "down"
 
 | Field | Value |
