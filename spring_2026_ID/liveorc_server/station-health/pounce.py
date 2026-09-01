@@ -91,6 +91,20 @@ PRIMARY_CMD = (
 # LTE data of a plain cat, which matters on a prepaid SIM.
 FULL_LOG_CMD = "gzip -c /var/log/wp5d.log | base64 -w0"
 
+# ...but at most this often. pounce re-pounces for as long as tcp/22 stays
+# open, so an unguarded full grab costs ~3 MB every ~40 s of an open window.
+# On 2026-09-01 that burned 6 MB in two minutes on the prepaid SIM whose
+# running dry caused ISS-FIELD-011 in the first place. The file is append-only
+# and ~48 boots/day, so a day-old copy is missing at most a day of boots.
+FULL_LOG_MIN_INTERVAL_H = 24
+
+
+def have_recent_full_log():
+    """True if a full-log grab landed inside FULL_LOG_MIN_INTERVAL_H."""
+    cutoff = time.time() - FULL_LOG_MIN_INTERVAL_H * 3600
+    return any(f.stat().st_mtime > cutoff
+               for f in OUT.glob(f"{HOST}-wp5dlog-full-*.txt"))
+
 
 def now():
     return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%SZ")
@@ -190,8 +204,12 @@ def pounce(reason):
                 got_primary = True
                 # The full history next: it is worth more than the collector
                 # and costs a couple of seconds, but never more than the tail.
-                ssh_grab(FULL_LOG_CMD, "wp5dlog-full", b64gz=True,
-                         timeout_s=120)
+                if have_recent_full_log():
+                    log("full wp5d.log already collected today — skipping "
+                        "(saves ~3 MB of prepaid LTE per pounce)")
+                else:
+                    ssh_grab(FULL_LOG_CMD, "wp5dlog-full", b64gz=True,
+                             timeout_s=120)
                 # Only now spend the rest of the window on the broad collector.
                 collector = HERE.parents[1] / "pi/tools/orc_wp5_state.sh"
                 if collector.is_file():
