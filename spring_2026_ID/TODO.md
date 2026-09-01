@@ -294,6 +294,13 @@ is read-only and station/server versions move together.
 **Do not start a bulk upload without answering the cost question.** The station
 is on a metered prepaid SIM whose exhaustion caused ISS-FIELD-011.
 
+**Split into two tracks (Tom, 2026-09-01).** Track 1: what is interrupting the
+connections — permanent, breaks future uploads too, does not wait on Track 2.
+Track 2: how to recover the 10.69 GB — one-time, has a deadline, and has a
+legitimate do-nothing option. Full definition with ordered next steps in the
+**RESUME HERE** block. Plain-language write-up of the evidence:
+`findings/sukabumi_video_sync_failure_2026-09-01.md`.
+
 **Station scripts, all read-only and all run:**
 `station-health/todo119_sync_source_grab.py` (119c, the traceback and the
 endpoint), `todo119_redrive_viability.py` (119d, `retry_timeout` and the frame
@@ -1490,7 +1497,106 @@ guarded the mount, so the one condition that mattered went unchecked.
   volume, so if the cause was the full disk they are likely recoverable — feed
   into TODO-113.
 
-### RESUME HERE — state at 2026-09-01 21:10 UTC
+### RESUME HERE — state at 2026-09-01 22:24 UTC
+
+Session of 2026-09-01, third sitting. **Ended cleanly at the user's request.**
+Tree committed and pushed; nothing left running against the station.
+
+**Nothing is waiting on the station.** The sensor stall watch (`db_watch.py`)
+ran as a session monitor and ends with the session. No cron, no systemd, no
+background process. Confirm with `pgrep -f 'todo119|pounce.py|db_watch'` before
+assuming otherwise.
+
+**Station was healthy throughout:** 30-minute cadence, sensor rows current,
+three wakes caught without difficulty (grabs landed in 4–6 seconds each).
+
+#### What this sitting settled
+
+The script armed and killed last sitting finally ran, and two more followed it.
+Full plain-language write-up: **`findings/sukabumi_video_sync_failure_2026-09-01.md`**
+— read that first, it is written to be read cold.
+
+1. **The five-second timeout is real and is not the fault.** It is
+   `callback_url.py:115` `get_set_refresh_tokens`, hardcoded, failing inside the
+   TLS handshake before any request is sent.
+2. **48% of failures are not timeouts.** Per failed sync 08-23→08-28: 85
+   `read timeout=5`, 75 `ConnectionReset`, 19 `read timeout=150`, 18
+   `RemoteDisconnected`, 4 `SSLError`, **0 ConnectTimeout**. 19 failures had
+   already waited the full 150 s.
+3. **`retry_timeout = 0.0`, which is falsy**, so the timeout resolves to 150.
+   The upload path always had 150 s.
+4. **The re-drive is reachable**: `POST /api/video/sync/` on port 80, returns
+   401 unauthenticated, no database edit needed.
+5. **The station clock is UTC.** Station log timestamps need **+7** for WIB.
+   This corrected one of my own readings this sitting and may reach back into
+   earlier WIB claims — **not audited**.
+
+#### Two research tracks, per Tom, 22:20 UTC
+
+**These are asymmetric. Track 1 is permanent — the same fault breaks future
+uploads regardless of what happens to the backlog. Track 2 is a one-time
+cleanup with a deadline and a legitimate do-nothing option. Track 1 should not
+wait on Track 2.**
+
+**Track 1 — what is interrupting the connections.** Three explanations fit the
+evidence and none is excluded: carrier action on the traffic; a path-MTU
+blackhole (under-weighted initially, fits the handshake stalls, does *not*
+explain the 75 resets); or something server-side. Order of work, cheapest first:
+
+- [ ] **Is the fault still active?** `SYNCED` was 2,546 at 22:00 UTC. If it
+      climbs over a few wakes, new captures are syncing and this is forensic
+      rather than live. **One number per wake, zero cost.** Do this first.
+- [ ] **Server-side, zero metered bytes.** nginx access/error logs on the AWS
+      host for 08-23→08-27 — do the station's requests arrive, and are they
+      refused? Plus `fail2ban` status and security-group rules. A self-inflicted
+      block would be invisible from the station. Session Manager, hand-typed.
+- [ ] **~20 KB of station probes**, which discriminate directly rather than by
+      inference: interface MTU vs. real path MTU (`ping -M do` binary search);
+      one timed `openssl s_client` handshake to :443; the same to :8443 for the
+      port comparison.
+
+**Track 2 — recovering the 10.69 GB / 1,190 clips.** **The first question is not
+technical: what are the clips for?** The record says the video feeds nothing and
+Sukabumi is a pilot where the finding matters more than the bytes. **Tom has not
+yet answered this, and it determines most of the track.**
+
+| Option | Cost | When it makes sense |
+|---|---|---|
+| Selective extraction — one clip/day or around known events | ~50–200 MB | The clips answer a specific question |
+| Full re-drive via `POST /api/video/sync/` | 10.69 GB metered | The whole set has value **and** Track 1 is fixed |
+| Physical media on a site visit | Zero link cost | A visit is already scheduled |
+| Delete / accept the loss | Zero | Nothing downstream wants them |
+
+- [ ] **Verify the deadline before trusting it.** ~16 days to 2026-09-17 assumes
+      `disk_management.min_free_space = 5.0` means **GB**. The 08-28 purge firing
+      at exactly 5.00 GiB free is suggestive, not proof. If it is a percentage
+      the date moves substantially. One-line check.
+- [ ] **Do not fire the re-drive without a decision.** It changes station state
+      and spends metered bytes on the SIM whose exhaustion caused ISS-FIELD-011.
+
+#### Open questions carried forward
+
+- Which earlier WIB claims came from station logs without the +7 correction.
+- Whether the sensor table has an arrival-time column — it would settle the
+  443-vs-8443 comparison from server data alone, at no station cost.
+- Whether new captures are currently syncing (the Track 1 first item).
+
+#### Artefacts from this sitting
+
+`data/station-forensics/` is gitignored — on disk only, not in the repo.
+
+| File | Contents |
+|---|---|
+| `orc-sukabumi-backlog119c-20260901T213042Z.txt` | the ReadTimeout traceback naming `get_set_refresh_tokens`; the re-drive endpoint list |
+| `orc-sukabumi-redrive119d-20260901T220037Z.txt` | `retry_timeout=0.0`, innermost-frame tally, listening ports, sync tally |
+| `orc-sukabumi-timeoutsplit119e-20260901T220152Z.txt` | timeout values split 255/57, per-sync error breakdown, `timedatectl` |
+
+Scripts kept in `liveorc_server/station-health/`: `todo119_sync_source_grab.py`,
+`todo119_redrive_viability.py`, `todo119_timeout_split.py`. All read-only.
+
+---
+
+### Superseded resume block — state at 2026-09-01 21:10 UTC
 
 Session of 2026-09-01, second sitting. **Ended deliberately to restart under
 tmux; nothing was interrupted mid-write and the tree is committed.** Next
