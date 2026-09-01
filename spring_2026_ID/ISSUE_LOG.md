@@ -2274,6 +2274,47 @@ to end the band, not explain every hole in it.
 **The check that settles it is on the account, not the station:** the package's
 reset hour, and what happened to the data balance on or around 08-23.
 
+**THE SYNC ERROR IS A CONNECT TIMEOUT AT TOKEN REFRESH, NOT A SLOW UPLOAD
+(2026-09-01 20:00 UTC).**
+
+From the station journal:
+
+```
+ORC-OS - video - ERROR - Error syncing video to remote site:
+HTTPSConnectionPool(host='openrivercam.endlessprojects.info', port=443):
+Max retries exceeded with url: /api/token/refresh/
+(Caused by ConnectTimeoutError(... 'connect timeout=5'))
+```
+
+Three things follow. The sync dies at **token refresh**, before any video bytes
+move — so file size is not the immediate cause. The connect timeout is **5
+seconds**, which is tight for a marginal LTE link. And video sync uses **port
+443** while the sensor CSVs that never stopped go to **port 8443**.
+
+This sharpens the quota model rather than contradicting it: on a throttled or
+congested link a TCP connect can exceed 5 s, killing the sync at the handshake.
+It also accounts for the +0.7 min daytime wakes — "max retries exceeded" means
+urllib3 retried, and a few 5 s timeouts is about the 42 s of extra wake measured.
+**If that holds, the fix is a timeout constant, not bandwidth.**
+
+**Caveat, and it is the reason this is not yet a conclusion:** these lines are
+from 09-01 13:32–14:32 UTC, inside the blackout, when everything failed. They do
+not establish that the same error produced the 08-23 → 08-27 pattern. Pulling
+sync errors from that date range specifically is the first task in TODO-119.
+
+**Backlog, measured:** 3,101 unsynced rows carry a file path, but only **2,615
+`.mp4` files exist** in the 29 GB tree — roughly 486 records have already lost
+their files, so at most 2,615 clips are recoverable. (A per-file existence check
+in the same grab returned MISSING for every sample and is **wrong**: the `file`
+column is relative to `~/.ORC-OS/uploads/` and the test ran from `$HOME`.)
+
+**No configured sync window exists in ORC-OS settings**, so the mundane
+explanation is ruled out — tentatively, as the dump carries no column names.
+
+**The station's own data confirms the 01:00 boundary** independently of the
+server. Since 08-23, by WIB hour, hour 00 fails 19 of 20 while hours 02 and 04
+fail only 9 of 20.
+
 **Next: inventory the backlog and decide what to do with it.** Deferred to a
 dedicated session. The question is not only how much is recoverable but whether
 `FAILED` is terminal in ORC-OS — only 2 videos have synced since connectivity

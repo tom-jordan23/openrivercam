@@ -204,6 +204,15 @@ un-synced, i.e. the only copy.
 
 **Questions to answer, in order:**
 
+- [ ] **Pull sync errors from 08-23 → 08-27 specifically.** The only error text
+      captured so far is from inside the blackout. `journalctl --since
+      '2026-08-23' --until '2026-08-28' | grep 'Error syncing video'`. If those
+      are also `ConnectTimeoutError ... connect timeout=5` at
+      `/api/token/refresh/`, the fix is a timeout constant, not bandwidth — the
+      cheapest outcome available here.
+- [ ] **Why port 443 for video sync and 8443 for sensor upload?** Sensors kept
+      working throughout. If 443 is filtered or deprioritised on this APN, that
+      is a different fault from a quota.
 - [ ] **Is `FAILED` terminal in ORC-OS?** Read the sync path in the ORC-OS
       source on the station. If there is a retry, what triggers it and why has
       it not fired? If there is none, that is the finding.
