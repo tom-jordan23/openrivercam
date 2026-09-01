@@ -192,46 +192,72 @@ purely PMI's, not a technical readiness one.
 | **Opened** | 2026-09-01 |
 
 **3,105 videos on the station have never reached LiveORC** (2978 FAILED, 127
-LOCAL), and `/home/pi/.ORC-OS/uploads/videos` holds 29 GB. See ISS-FIELD-009,
-section "THE DAYTIME VIDEOS WERE CAPTURED".
+LOCAL). Of those, **1,190 still have their file — 10.69 GB.** The other 1,911
+have already lost theirs to the disk manager. See ISS-FIELD-009.
 
-**Why this is now urgent rather than historical.** Only **2** videos have synced
-since connectivity returned on 09-01, against ~4,500 sensor rows that flushed
-within two minutes. Nothing so far suggests ORC-OS re-drives a `FAILED` sync.
-If it does not, the disk manager will consume the backlog exactly as it already
-consumed the 2,190 records that lost their files — the material at risk is
-un-synced, i.e. the only copy.
+**Measured 2026-09-01, and it moved most of the numbers.** The 29 GB figure was
+the whole `uploads/videos` tree, over half of which belongs to clips that
+already synced. Mean clip 9.2 MB. Oldest surviving unsynced file 2026-07-03;
+oldest unsynced *row* 2026-04-08, so pre-July is gone.
 
-**Questions to answer, in order:**
+**The clock:** root is at 12 G free, growing ~440 MB/day, against
+`disk_management.min_free_space = 5.0`. Roughly **16 days — about 2026-09-17 —
+before deletion resumes.** Confirm the units are GB and not percent; the 08-28
+purge firing at exactly 5.00 GiB free says GB but does not prove it.
 
-- [ ] **Pull sync errors from 08-23 → 08-27 specifically.** The only error text
-      captured so far is from inside the blackout. `journalctl --since
-      '2026-08-23' --until '2026-08-28' | grep 'Error syncing video'`. If those
-      are also `ConnectTimeoutError ... connect timeout=5` at
-      `/api/token/refresh/`, the fix is a timeout constant, not bandwidth — the
-      cheapest outcome available here.
-- [ ] **Why port 443 for video sync and 8443 for sensor upload?** Sensors kept
-      working throughout. If 443 is filtered or deprioritised on this APN, that
-      is a different fault from a quota.
-- [ ] **Is `FAILED` terminal in ORC-OS?** Read the sync path in the ORC-OS
-      source on the station. If there is a retry, what triggers it and why has
-      it not fired? If there is none, that is the finding.
-- [ ] **Do the files still exist?** `SELECT count(*) FROM video WHERE
-      sync_status<>'SYNCED' AND file IS NOT NULL`, then stat a sample. 29 GB
-      against ~3,200 expected files says probably yes; confirm rather than
-      infer.
-- [ ] **What is the date and time-of-day distribution of the backlog?** It
-      determines whether it is worth anything scientifically or is mostly
-      redundant half-hourly clips.
-- [ ] **What would uploading it cost?** 29 GB over a prepaid LTE plan that has
-      already run dry once. This may be the deciding constraint, and pulling it
-      over the tailnet or on physical media may be the only sane options.
+**Answered this session:**
+
+- [x] **Sync errors 08-23 → 08-27.** Not `ConnectTimeoutError` — dominated by
+      `ReadTimeout (read timeout=5)`, with `RemoteDisconnected`,
+      `ConnectionReset` and one `SSLError`. Bytes were moving; the failures are
+      mid-transfer. A 5 s read timeout against a 9.2 MB clip, where the
+      successful syncs take 5.2–5.5 s, makes "timeout constant" and "bandwidth"
+      the same fault rather than competing ones.
+- [x] **443 vs 8443 is not an APN question.** 8443 is our own sensor-upload
+      container; same host, same address. The asymmetry is client config —
+      5 s vs 10 s, urllib3 defaults vs `--retry 5`, and `--ipv4` vs nothing.
+- [x] **NAT64/IPv6 tested and killed.** The station resolves this host to IPv4
+      only; default, `--ipv4` and :8443-without-the-flag all time identically.
+- [x] **`FAILED` is NOT terminal.** `queue.py:264-266` syncs LOCAL, UPDATED and
+      FAILED over a start/stop range at `timeout=150`. But nothing calls it
+      automatically: `schedulers.py:35` asks only for `SyncStatus.QUEUE`, which
+      is why every boot logs "0 videos left to synchronize".
+- [x] **Files and distribution.** 1,190 extant, 10.69 GB, flat across all 24 WIB
+      hours (111–147 each) because the backlog is dominated by two whole-day
+      blackouts — including **2026-07-29 → 08-10, 48/48 unsynced for ~13 days,
+      previously unrecorded.** The 08-23 onset is a recurrence, not a first.
+
+**Still open, and it decides the options:**
+
+- [ ] **Which 5-second timeout actually fired?** orc_api has several and they
+      disagree: `base.py:23` default `timeout=5`; `video.py:476` wrapper
+      default 150; `callback_url.py:115,149,252` hardcoded `timeout=5`. If the
+      5 was the hardcoded one on token refresh, the upload path already has
+      150 s and the remedy is a one-line change. If the 5 reached
+      `/api/video/`, it is something else. The bare "Read timed out" carries no
+      URL — **the traceback is the only thing that names the call.**
+- [ ] **Is the re-drive reachable as an HTTP endpoint?** `routers/video.py:548`
+      repeats the same timeout computation, which suggests
+      `sync_videos_start_stop` is exposed on the station's own API. If it is,
+      the backlog re-drives without a database edit and at 150 s rather than 5.
+- [ ] **What would uploading 10.69 GB cost?** At the measured 1.74 MB/s that is
+      ~1.75 h of pure transfer, so this is a data-plan question, not a
+      feasibility one. **The tailnet is not an escape route** — Tailscale runs
+      over the same Telkomsel SIM, so a tailnet pull spends identical metered
+      bytes. Only physical media on a site visit avoids the link.
+- [ ] **Check the receiving end.** LiveORC site 4 already holds 2,630 clips
+      (~26 GB, verified 08-25). Another 10.69 GB roughly doubles it; confirm
+      the media volume has room before starting anything.
 - [ ] **Decide: re-sync, extract selectively, or delete.** Sukabumi is a pilot;
       per Tom the video is not feeding anything, so deletion is legitimate. The
       finding matters more than the bytes.
 
 **Do not start a bulk upload without answering the cost question.** The station
 is on a metered prepaid SIM whose exhaustion caused ISS-FIELD-011.
+
+**The next station action is already written:**
+`station-health/todo119_sync_source_grab.py` — armed on 09-01 but killed unrun
+when the session ended. It answers both open source questions in one wake.
 
 ---
 
@@ -1422,7 +1448,65 @@ guarded the mount, so the one condition that mattered went unchecked.
   volume, so if the cause was the full disk they are likely recoverable — feed
   into TODO-113.
 
-### RESUME HERE — state at 2026-09-01 19:45 UTC
+### RESUME HERE — state at 2026-09-01 21:10 UTC
+
+Session of 2026-09-01, second sitting. **Ended deliberately to restart under
+tmux; nothing was interrupted mid-write and the tree is committed.** Next
+session opens by reviewing the material collected below.
+
+**Nothing is left running against the station.** `todo119_sync_source_grab.py`
+was armed for the 21:30 UTC wake and **killed before it fired** — nothing may
+sit waiting on the station without an active session. `pgrep -f
+'todo119|pounce.py|db_watch'` was clean at 21:08 UTC. Re-arm it as the first
+station action next session; the two grabs that did run landed in 6 and 9
+seconds, so one wake is ample for it.
+
+**Three grabs to review, in `data/station-forensics/` (gitignored — on disk
+only, not in the repo):**
+
+| File | Contents |
+|---|---|
+| `orc-sukabumi-backlog119-20260901T203051Z.txt` | backlog inventory, 08-23→08-27 error classification, disk manager settings |
+| `orc-sukabumi-backlog119b-20260901T210042Z.txt` | `schedulers.py` / `queue.py` / `crud/video.py` source, timeout greps, NAT64 probe |
+| `orc-sukabumi-videostate{,2,3}-*.txt` | the previous sitting's grabs, for context |
+
+**What changed, in order of how much it matters:**
+
+1. **`FAILED` is not terminal.** `queue.py:264-266` re-drives LOCAL, UPDATED and
+   FAILED over a start/stop range at `timeout=150`. Nothing calls it
+   automatically — `schedulers.py:35` asks only for `SyncStatus.QUEUE`, which is
+   why every boot logs "0 videos left to synchronize" beside 3,101 FAILED rows.
+   **The retry path exists and is 30x more patient than the one that failed.**
+2. **The backlog is 1,190 files / 10.69 GB, not ~2,615 / 29 GB.** 1,911 unsynced
+   rows have already lost their files. The old figure subtracted whole-tree file
+   count from unsynced row count and assumed every mp4 was unsynced; over half
+   belong to clips that synced.
+3. **The 08-23→08-27 errors are `ReadTimeout`, not `ConnectTimeout`.** Bytes
+   were moving. 5 s read timeout, 9.2 MB clips, successful syncs taking
+   5.2–5.5 s — timeout and bandwidth are one fault here, and the 01:00–05:00 WIB
+   band follows without needing a quota.
+4. **An earlier blackout, 2026-07-29 → 08-10, was never recorded** — 48/48
+   unsynced for ~13 days. 08-23 is a recurrence.
+5. **~16 days until the disk manager resumes deleting** (12 G free, ~440 MB/day,
+   `min_free_space = 5.0`). Confirm those units are GB.
+6. **NAT64 was proposed, tested and killed** for ~10 KB. The station resolves
+   this host to IPv4 only. Recorded because it was my hypothesis and it was
+   wrong, not because it went anywhere.
+
+**Two questions left, both answered by the armed grab:** which of orc_api's
+several 5-second timeouts actually fired (the traceback is the only thing that
+names the call), and whether `sync_videos_start_stop` is exposed as an HTTP
+endpoint on the station's own API. Together they decide whether re-syncing is a
+one-line change plus patience, or something harder.
+
+**Unchanged and still true:** nothing watches the SIM balance; the monitoring
+policy below still governs; Sukabumi is a pilot and deleting the backlog is a
+legitimate outcome.
+
+---
+
+
+### Superseded resume block — state at 2026-09-01 19:45 UTC
 
 Session of 2026-09-01. Tree is clean, everything below is committed and pushed.
 **Next session's task: TODO-119 — plan how to inventory the un-synced video

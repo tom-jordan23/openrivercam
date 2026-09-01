@@ -2323,6 +2323,112 @@ suggests the backlog re-drives itself. If it does not, the disk manager will
 eventually consume it, as it already did for the 2,190 records that lost their
 files.
 
+**THE 08-23 → 08-27 ERRORS ARE NOT THE CONNECT TIMEOUT (2026-09-01 20:30 UTC).**
+
+The previous entry's caveat was the right one. Pulling `Error syncing video`
+from the window itself, classified by cause:
+
+| Cause | 08-23 | 08-24 | 08-25 | 08-26 | 08-27 |
+|---|---|---|---|---|---|
+| `ReadTimeout` (`read timeout=5`) | 22 | 22 | 24 | 15 | 21 |
+| other, non-HTTP | 13 | 15 | 14 | 24 | 15 |
+| `RemoteDisconnected` | 4 | 5 | 2 | 3 | 4 |
+| `NewConnectionError` | 1 | 5 | 5 | 2 | — |
+| `SSLError` (`UNEXPECTED_EOF_WHILE_READING`) | 1 | — | — | — | 1 |
+
+**Not one `ConnectTimeoutError` in five days.** The connection was established
+and bytes were moving; the failures land mid-transfer, and they hit `/api/video/`
+as well as `/api/token/refresh/`. One is `Expecting value: line 2 column 1
+(char 1)` — a JSON decode failure, i.e. the server answered with something that
+was not JSON. **The claim that the sync "dies at token refresh, before any video
+bytes move" is retracted for this window**; it described the blackout only.
+
+What replaces it is narrower. The read timeout is **5 seconds** and the mean
+clip is **9.2 MB**. The three syncs that succeeded on 09-01 took **5.18 s,
+5.48 s and 5.44 s** wall clock from "Syncing video N" to "successful". The
+transfers sit on the timeout. On that reading "a timeout constant" and
+"bandwidth" are not competing explanations but the same one, and the
+01:00–05:00 WIB band needs no quota to explain it: those are the hours the link
+finishes a 9.2 MB POST inside 5 s. Measured at 04:00 WIB on 09-02, the link
+completes a full TLS handshake in 0.52 s and a request in 0.82 s.
+
+**`FAILED` IS NOT TERMINAL, BUT NOTHING AUTOMATIC EVER RETRIES IT.**
+
+Both halves matter, and the first was assumed the other way round.
+`orc_api/utils/queue.py:264-266` — inside `sync_videos_start_stop()` — builds
+the sync list from `LOCAL`, then `UPDATED`, then `FAILED`, over a start/stop
+range, and syncs it with `timeout=150`. A re-drive of the backlog is therefore a
+supported operation in ORC-OS 0.6.0, not a database edit.
+
+The boot-time scheduler does not call it. `schedulers.py:35`:
+
+```python
+videos_for_syncing = crud.video.get_list(db=session, sync_status=SyncStatus.QUEUE)
+logger.info(f"There are {len(videos_for_syncing)} videos left to synchronize.")
+```
+
+`QUEUE` is the "was mid-flight when the process died" set. That is a
+crash-recovery resubmit, and it is why the station logs **"There are 0 videos
+left to synchronize"** on every boot with 3,101 `FAILED` rows in the table. The
+log line is accurate about what it asked; it was never asking about the backlog.
+
+**THE BACKLOG IS A THIRD OF WHAT WAS RECORDED.**
+
+| | previous entry | measured 09-01 20:30 UTC |
+|---|---|---|
+| unsynced rows with a file path | 3,101 | 3,101 |
+| files that still exist | ~2,615 | **1,190** |
+| bytes to move | "29 GB" | **10.69 GB** |
+
+The 29 GB is the whole `uploads/videos` tree; 1,426 of its 2,616 mp4s belong to
+rows that already synced. **1,911 unsynced rows have lost their files** — not
+roughly 486. The oldest surviving unsynced file is 2026-07-03 against an oldest
+unsynced *row* of 2026-04-08, so everything that failed before July is gone. The
+earlier count was reached by subtracting the whole-tree file count from the
+unsynced row count, which silently assumed every extant mp4 belonged to an
+unsynced row.
+
+**AN EARLIER VIDEO-SYNC BLACKOUT, 2026-07-29 → 08-10, HAS NEVER BEEN RECORDED.**
+48 of 48 clips unsynced every day for roughly thirteen days, then clean again
+08-11 to 08-22, then the current window from 08-23. **The 08-23 onset is a
+recurrence, not a first occurrence**, which weakens any explanation resting on
+something that changed once on that date.
+
+The backlog's distribution across the clock is flat — 111 to 147 clips in each
+of the 24 WIB hours. That is not evidence against the 01:00–05:00 band: the
+backlog is dominated by the two whole-day blackouts, in which every slot failed.
+It does mean the backlog itself is not a daytime-only artefact.
+
+**THE NAT64 HYPOTHESIS WAS TESTED AND IS WRONG.** `orc-sensors-upload` forces
+`--ipv4` because Telkomsel runs NAT64 and large responses fragment into a black
+hole; ORC-OS forces nothing, which would have explained the sensor/video
+asymmetry. It does not apply. On the station, `getent ahosts` and Python's
+`getaddrinfo` both return only `34.203.227.187`; curl with default selection,
+with `--ipv4`, and against :8443 without the flag all take the same IPv4 path
+with identical timings. `wwan0` does carry a global IPv6, but the carrier is not
+synthesising AAAA for this host. Cost of the test: about 10 KB.
+
+**WHY 443 AND 8443 IS NOT AN APN QUESTION.** Port 8443 is our own
+`orc-sensor-upload` container, separate from LiveORC's nginx on 443, same host
+and same address. The asymmetry is in the clients: video sync gets a 5 s
+timeout, urllib3's default retries and no address-family preference; the CSV
+uploader gets `--connect-timeout 10`, `--retry 5 --retry-connrefused
+--retry-all-errors` and `--ipv4`. A link marginal enough to kill the first will
+still pass the second. On 09-01 the 8443 PUTs failed too (`curl exit 7`), so
+8443 gets no special treatment from the carrier.
+
+**HOW LONG THE REMAINING 10.69 GB SURVIVES.** ORC-OS's `disk_management` table
+reads `min_free_space = 5.0`, `critical_space = 2.0`, `frequency = 300.0`. Root
+is at 12 G free and grows about 440 MB/day, giving roughly **16 days** —
+about 2026-09-17 — before deletion resumes. The thresholds are read as GB rather
+than percent because the 08-28 purge fired with the disk at exactly 5.00 GiB
+free; that is corroboration, not proof, and the units are worth confirming
+before the date is relied on.
+
+**Open, and it decides the options:** which of orc_api's several 5-second
+timeouts actually fired, and whether the re-drive is reachable as an HTTP
+endpoint. See TODO-119 and `station-health/todo119_sync_source_grab.py`.
+
 ---
 
 
