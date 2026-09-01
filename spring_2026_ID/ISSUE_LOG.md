@@ -915,12 +915,27 @@ Two results follow immediately, both on measurement rather than inference:
   held before today came from a 3-hour pre-dawn window, which is why the pack
   looked incapable of reaching 13 V.
 
-**What actually needs explaining now** is why the uplink was down for 4.8 days
-while the LTE modem and the station ran, and why ORC-OS never completed its task
-throughout — the latter being what pinned the Pi to the 25-minute backstop and
-produced the 9x drain. A capture that cannot upload is a task that never
-finishes, which is the same shape as the maintenance-mode chain in
-ISS-FIELD-010, triggered by loss of connectivity rather than by a flag.
+**The uplink cause, reported by Tom 2026-09-01: the Telkomsel prepaid account
+had run out of money.** No balance, no data, and the modem stays registered and
+healthy throughout — which is exactly the signature seen. It also closes the
+second half of the question on its own: an unfunded SIM makes every upload fail,
+a capture that cannot upload is a task that never finishes, the Pi runs to the
+25-minute backstop on every cycle, and the 9x drain follows. One unpaid bill
+produced the entire event.
+
+Two things this exposes, both worse than the outage:
+
+- **Nothing watches the balance.** A prepaid SIM that silently expires is a
+  single point of failure for the whole station, and it is not instrumented,
+  not alerted, and not on anyone's calendar. It will do this again.
+- **Nothing noticed for 4.8 days.** The outage began as one missed upload.
+  `db_watch.py` now alerts when sensor rows stop for 95 minutes and again when
+  they resume, which would have caught this on day one.
+
+Still unexplained: nothing in the software treats "no connectivity" as a
+terminating condition. ORC-OS should fail a capture it cannot upload rather than
+hanging the cycle to the backstop; that shape is shared with the
+maintenance-mode chain in ISS-FIELD-010 and is the real fix.
 
 **Collected in the window (2026-09-01 18:00–18:04 UTC).** Three `wp5d.log`
 grabs; the deploy of TODO-117, the Witty Pi boot context and the orc-capture
@@ -931,8 +946,9 @@ was 11.27 GB.
 
 **wp5d.log covers only the last 20 hours** of the outage — `tail -n 400` was
 sized for a seconds-long window, not a 4.8-day one. Within that span: 40
-startups, 100% on-cadence, no gap over 45 minutes, all "Scheduled Startup". Get
-the full log on the next window.
+startups, 100% on-cadence, no gap over 45 minutes, all "Scheduled Startup".
+`pounce.py` now grabs the whole file (gzipped, as a second grab once the tail is
+already safe) so the next window collects the rest.
 
 ---
 
