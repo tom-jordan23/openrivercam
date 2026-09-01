@@ -1,0 +1,529 @@
+<title>Awake and Unreachable</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+<style>
+  :root {
+    color-scheme: light;
+    --ground:   #f4f5f7;
+    --surface:  #ffffff;
+    --sunken:   #eceef1;
+    --ink:      #161a20;
+    --ink-2:    #3b434f;
+    --muted:    #5c646f;
+    --rule:     #dde0e5;
+    --rule-2:   #c9ced6;
+    --measured: #2a78d6;
+    --corrected:#eb6834;
+    --shadow:   0 1px 2px rgba(22,26,32,.06), 0 6px 20px -12px rgba(22,26,32,.18);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --ground:   #101317;
+      --surface:  #181c22;
+      --sunken:   #1e232a;
+      --ink:      #e7eaee;
+      --ink-2:    #c2c9d2;
+      --muted:    #98a1ac;
+      --rule:     #272c34;
+      --rule-2:   #39404a;
+      --measured: #3987e5;
+      --corrected:#d95926;
+      --shadow:   0 1px 2px rgba(0,0,0,.4), 0 6px 20px -12px rgba(0,0,0,.6);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --ground:   #101317;
+    --surface:  #181c22;
+    --sunken:   #1e232a;
+    --ink:      #e7eaee;
+    --ink-2:    #c2c9d2;
+    --muted:    #98a1ac;
+    --rule:     #272c34;
+    --rule-2:   #39404a;
+    --measured: #3987e5;
+    --corrected:#d95926;
+    --shadow:   0 1px 2px rgba(0,0,0,.4), 0 6px 20px -12px rgba(0,0,0,.6);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: "Source Serif 4", Georgia, "Times New Roman", serif;
+    font-size: 17px;
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 0 28px 96px; }
+
+  /* ---- masthead ---- */
+  header.masthead { padding: 72px 0 0; }
+  .kicker {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 11.5px; font-weight: 500; letter-spacing: .16em;
+    text-transform: uppercase; color: var(--corrected);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .kicker::after { content: ""; flex: 1; height: 1px; background: var(--rule-2); }
+  h1 {
+    font-family: "IBM Plex Sans", system-ui, sans-serif;
+    font-weight: 700; font-size: clamp(38px, 6.4vw, 58px);
+    line-height: 1.03; letter-spacing: -.028em;
+    text-wrap: balance; margin: 20px 0 0;
+  }
+  .standfirst {
+    font-size: 20px; line-height: 1.5; color: var(--ink-2);
+    max-width: 60ch; margin: 20px 0 0;
+  }
+  .meta {
+    margin-top: 30px; padding-top: 18px; border-top: 1px solid var(--rule);
+    display: flex; flex-wrap: wrap; gap: 10px 34px;
+    font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 12px;
+    color: var(--muted);
+  }
+  .meta b { color: var(--ink-2); font-weight: 500; }
+
+  /* ---- headline figures ---- */
+  .figures {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px;
+    background: var(--rule); border: 1px solid var(--rule);
+    border-radius: 10px; overflow: hidden; margin: 40px 0 0; box-shadow: var(--shadow);
+  }
+  .fig { background: var(--surface); padding: 22px 20px 20px; }
+  .fig .n {
+    font-family: "IBM Plex Sans", system-ui, sans-serif;
+    font-size: 34px; font-weight: 600; letter-spacing: -.03em; line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  .fig .n.alt { color: var(--corrected); }
+  .fig .l {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 11px; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--muted); margin-top: 10px; line-height: 1.45;
+  }
+
+  /* ---- sections ---- */
+  section { margin-top: 58px; }
+  .eyebrow {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 11.5px; font-weight: 500; letter-spacing: .16em;
+    text-transform: uppercase; color: var(--muted);
+    display: flex; align-items: center; gap: 12px; margin-bottom: 14px;
+  }
+  .eyebrow::after { content: ""; flex: 1; height: 1px; background: var(--rule); }
+  h2 {
+    font-family: "IBM Plex Sans", system-ui, sans-serif;
+    font-size: 27px; font-weight: 600; letter-spacing: -.02em;
+    line-height: 1.2; text-wrap: balance; margin: 0 0 16px;
+  }
+  h3 {
+    font-family: "IBM Plex Sans", system-ui, sans-serif;
+    font-size: 17px; font-weight: 600; letter-spacing: -.008em;
+    margin: 30px 0 8px;
+  }
+  p { margin: 0 0 15px; max-width: 66ch; }
+  section > p:last-child { margin-bottom: 0; }
+  strong { font-weight: 600; }
+  code, .mono {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: .86em; background: var(--sunken);
+    padding: .1em .38em; border-radius: 4px; color: var(--ink-2);
+  }
+
+  /* ---- chart ---- */
+  figure { margin: 26px 0 0; }
+  .panel {
+    background: var(--surface); border: 1px solid var(--rule);
+    border-radius: 10px; padding: 22px 22px 16px; box-shadow: var(--shadow);
+  }
+  .chart-head { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 12px; margin-bottom: 6px; }
+  .chart-title { font-family: "IBM Plex Sans", system-ui, sans-serif; font-size: 15px; font-weight: 600; }
+  .legend { display: flex; gap: 16px; font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 11.5px; color: var(--muted); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .swatch { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+  .chart-scroll { overflow-x: auto; }
+  svg { display: block; width: 100%; min-width: 560px; height: auto; }
+  .bar { transition: opacity .12s ease; cursor: default; }
+  .bar:hover { opacity: .78; }
+  figcaption {
+    font-size: 13.5px; color: var(--muted); line-height: 1.5;
+    margin-top: 14px; max-width: 68ch;
+  }
+
+  /* ---- tables ---- */
+  .table-scroll { overflow-x: auto; margin-top: 22px; }
+  table { border-collapse: collapse; width: 100%; min-width: 460px; font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 13px; }
+  caption {
+    text-align: left; font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 11px; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--muted); padding-bottom: 10px;
+  }
+  th, td { padding: 8px 12px; text-align: right; font-variant-numeric: tabular-nums; border-bottom: 1px solid var(--rule); }
+  th:first-child, td:first-child { text-align: left; }
+  thead th { font-weight: 500; color: var(--muted); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; border-bottom: 1px solid var(--rule-2); }
+  tbody tr.out td { background: color-mix(in srgb, var(--corrected) 7%, transparent); }
+  tbody tr:last-child td { border-bottom: none; }
+  td.hi { color: var(--corrected); font-weight: 500; }
+
+  /* ---- claim ledger ---- */
+  .ledger { margin-top: 22px; display: flex; flex-direction: column; gap: 1px; background: var(--rule); border: 1px solid var(--rule); border-radius: 10px; overflow: hidden; }
+  .claim { background: var(--surface); padding: 16px 20px; display: grid; grid-template-columns: 116px 1fr; gap: 4px 18px; align-items: start; }
+  .chip {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 10.5px; font-weight: 500; letter-spacing: .1em; text-transform: uppercase;
+    display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+    padding-top: 4px;
+  }
+  .dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+  .chip.measured { color: var(--measured); } .chip.measured .dot { background: var(--measured); }
+  .chip.withdrawn { color: var(--corrected); } .chip.withdrawn .dot { background: var(--corrected); }
+  .chip.reported { color: var(--ink-2); } .chip.reported .dot { background: var(--ink-2); }
+  .chip.open { color: var(--muted); } .chip.open .dot { border: 1.5px solid var(--muted); }
+  .claim .body { font-size: 15.5px; line-height: 1.5; }
+  .claim .body em { color: var(--muted); font-style: normal; display: block; font-size: 13.5px; margin-top: 4px; font-family: "IBM Plex Mono", ui-monospace, monospace; }
+
+  /* ---- standing items ---- */
+  ul.items { list-style: none; padding: 0; margin: 20px 0 0; display: flex; flex-direction: column; gap: 14px; }
+  ul.items li { display: grid; grid-template-columns: 26px 1fr; gap: 14px; align-items: start; max-width: 68ch; }
+  ul.items .idx { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 12px; color: var(--muted); padding-top: 4px; font-variant-numeric: tabular-nums; }
+  ul.plain { padding-left: 20px; max-width: 66ch; }
+  ul.plain li { margin-bottom: 9px; }
+
+  .callout {
+    margin-top: 24px; padding: 18px 22px; border-radius: 10px;
+    background: var(--surface); border: 1px solid var(--rule);
+    border-left: 3px solid var(--corrected); box-shadow: var(--shadow);
+  }
+  .callout p { margin: 0; font-size: 16px; }
+  .callout .lab {
+    font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 11px;
+    letter-spacing: .1em; text-transform: uppercase; color: var(--corrected);
+    display: block; margin-bottom: 7px;
+  }
+
+  footer {
+    margin-top: 64px; padding-top: 20px; border-top: 1px solid var(--rule);
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 11.5px; color: var(--muted); line-height: 1.7;
+  }
+
+  #tip {
+    position: fixed; pointer-events: none; opacity: 0; transition: opacity .1s;
+    background: var(--ink); color: var(--ground); padding: 7px 10px; border-radius: 6px;
+    font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 11.5px;
+    line-height: 1.5; z-index: 20; white-space: nowrap;
+  }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+  @media (max-width: 620px) {
+    .figures { grid-template-columns: 1fr; }
+    .claim { grid-template-columns: 1fr; gap: 8px; }
+    .wrap { padding: 0 20px 72px; }
+  }
+</style>
+
+<div class="wrap">
+
+<header class="masthead">
+  <div class="kicker">Field Report · ISS-FIELD-011</div>
+  <h1>Awake and Unreachable</h1>
+  <p class="standfirst">Sukabumi went silent for 4.8 days. It was running the whole time, on schedule, at a normal duty cycle. The prepaid SIM had run out of money — and almost everything we concluded before reading the station's own log was wrong.</p>
+  <div class="meta">
+    <span><b>Site</b> Sukabumi (pilot)</span>
+    <span><b>Silent</b> 28 Aug 06:30 WIB → 1 Sep 18:00 UTC</span>
+    <span><b>Evidence</b> /var/log/wp5d.log · 3.0 MB · 5,714 boots</span>
+    <span><b>Issued</b> 1 Sep 2026</span>
+  </div>
+</header>
+
+<div class="figures">
+  <div class="fig">
+    <div class="n">0.87×</div>
+    <div class="l">Duty cycle during the outage,<br>against the week before it</div>
+  </div>
+  <div class="fig">
+    <div class="n">48<span style="font-size:19px;color:var(--muted)">/day</span></div>
+    <div class="l">Scheduled boots, unbroken<br>before and through</div>
+  </div>
+  <div class="fig">
+    <div class="n alt">5.15<span style="font-size:19px;color:var(--muted)"> min</span></div>
+    <div class="l">Longest single wake in the<br>outage. Claimed: 25</div>
+  </div>
+</div>
+
+<section>
+  <div class="eyebrow">What happened</div>
+  <h2>The uplink failed, not the station</h2>
+  <p>On 28 August at 06:30 WIB, Sukabumi stopped reaching the server. Nothing arrived for 4.8 days. At 18:00 UTC on 1 September it returned and flushed roughly 4,500 buffered rows in two minutes — the sensor readings it had been taking, and storing, throughout.</p>
+  <p>The cause was the <strong>Telkomsel prepaid account running out of money</strong>. No balance, no data. The modem stays registered and healthy the whole time, which is precisely the signature we saw and could not explain: a station visible to the Tailscale control plane, occasionally answering on port 22, and never delivering anything.</p>
+  <p>One unpaid bill produced the entire event. Nothing about the hardware failed.</p>
+</section>
+
+<section>
+  <div class="eyebrow">The correction</div>
+  <h2>The 9× energy drain never happened</h2>
+  <p>Our first read of the returned data concluded the station had been awake roughly 15 hours a day instead of 1.6, running nearly every cycle to the Witty Pi's 25-minute backstop at about nine times its energy budget. That reading came from wake-minutes <em>inferred</em> from the spacing of sensor rows.</p>
+  <p>The Witty Pi keeps its own log of when it powered the Pi. We pulled the whole file — 5,714 boots back to 7 April — and it measures the duty cycle directly. Each cycle records <code>Startup reason</code> after the clock is set, and <code>Exit now.</code> at shutdown. The difference is the awake time.</p>
+
+  <figure>
+    <div class="panel">
+      <div class="chart-head">
+        <div class="chart-title">Awake minutes per day, 21–31 August</div>
+        <div class="legend">
+          <span><i class="swatch" style="background:var(--measured)"></i>Before the outage</span>
+          <span><i class="swatch" style="background:var(--corrected)"></i>During the outage</span>
+        </div>
+      </div>
+      <div class="chart-scroll"><svg id="chart" viewBox="0 0 720 290" role="img" aria-label="Column chart of awake minutes per day from 21 to 31 August. Values range from 98.7 to 213.4 minutes. The four outage days, 28 to 31 August, are 129.4, 120.6, 116.6 and 117.6 minutes — within the range of the preceding week."></svg></div>
+      <figcaption>The four outage days sit inside the ordinary range of the week before them, and below its mean. For scale, the withdrawn claim of ~15 hours a day would place every outage bar at roughly 900 minutes — about four times the height of this chart's tallest bar.</figcaption>
+    </div>
+  </figure>
+
+  <div class="table-scroll">
+    <table>
+      <caption>Measured from /var/log/wp5d.log · outage days shaded</caption>
+      <thead><tr><th>Day</th><th>Cycles</th><th>Median wake</th><th>Longest wake</th><th>Awake/day</th></tr></thead>
+      <tbody>
+        <tr><td>08-21</td><td>47</td><td>2.03 min</td><td>4.23 min</td><td>98.7 min</td></tr>
+        <tr><td>08-22</td><td>48</td><td>2.05 min</td><td>4.37 min</td><td>103.2 min</td></tr>
+        <tr><td>08-23</td><td>48</td><td>2.74 min</td><td>5.22 min</td><td>131.2 min</td></tr>
+        <tr><td>08-24</td><td>48</td><td>2.73 min</td><td>5.18 min</td><td>130.1 min</td></tr>
+        <tr><td>08-25</td><td>45</td><td>2.92 min</td><td class="hi">23.98 min</td><td>213.4 min</td></tr>
+        <tr><td>08-26</td><td>48</td><td>2.23 min</td><td>5.18 min</td><td>123.6 min</td></tr>
+        <tr><td>08-27</td><td>47</td><td>2.73 min</td><td class="hi">24.27 min</td><td>171.8 min</td></tr>
+        <tr class="out"><td>08-28</td><td>48</td><td>2.80 min</td><td>5.15 min</td><td>129.4 min</td></tr>
+        <tr class="out"><td>08-29</td><td>48</td><td>2.73 min</td><td>2.95 min</td><td>120.6 min</td></tr>
+        <tr class="out"><td>08-30</td><td>48</td><td>2.39 min</td><td>2.95 min</td><td>116.6 min</td></tr>
+        <tr class="out"><td>08-31</td><td>48</td><td>2.42 min</td><td>2.92 min</td><td>117.6 min</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>What the numbers rule out</h3>
+  <p>Across the whole deployment — 5,244 measured cycles since April — the median wake is 1.95 minutes and only <strong>eight cycles have ever exceeded 20 minutes</strong>. Two of those eight fall in this table, on 25 and 27 August. Both are <em>before</em> the outage began.</p>
+  <p>During the outage itself the longest single wake was 5.15 minutes, and on the final three days nothing exceeded 2.95 minutes. The station never went near the 25-minute backstop. There is no drain signature in this window at all.</p>
+  <p>The choice of baseline is what produced the original error. Against the quiet week of 10–13 August (94–101 min/day) the outage looks like a mild 1.25× rise; against the week immediately before it (mean 139 min/day) it is <strong>0.87×</strong> — slightly less awake than normal. Daily awake time drifts between roughly 95 and 215 minutes as a matter of course, and the outage days land in the middle of that band.</p>
+</section>
+
+<section>
+  <div class="eyebrow">Claim ledger</div>
+  <h2>Where each conclusion now stands</h2>
+  <p>Every claim from this incident, marked by how we know it. The distinction that matters is measured against inferred — this investigation went wrong twice by treating the second as the first.</p>
+
+  <div class="ledger">
+    <div class="claim">
+      <span class="chip reported"><i class="dot"></i>Reported</span>
+      <div class="body">The uplink failed because the Telkomsel prepaid account ran out of money.<em>Source: Tom, 1 Sep. Consistent with every observed symptom; not independently verified from the station.</em></div>
+    </div>
+    <div class="claim">
+      <span class="chip measured"><i class="dot"></i>Measured</span>
+      <div class="body">The station ran 48 scheduled boots a day, unbroken, before and through the outage.<em>wp5d.log · 5,714 boots · 5,645 "Scheduled Startup"</em></div>
+    </div>
+    <div class="claim">
+      <span class="chip measured"><i class="dot"></i>Measured</span>
+      <div class="body">Duty cycle during the outage was normal — 117–129 min/day against a preceding-week mean of 139.<em>wp5d.log · 5,244 timed cycles</em></div>
+    </div>
+    <div class="claim">
+      <span class="chip measured"><i class="dot"></i>Measured</span>
+      <div class="body">V-IN never fell below 12.149 V across the outage, and reached 13.71 V.<em>679 samples in the flushed backlog, against 11 for the whole project before it</em></div>
+    </div>
+    <div class="claim">
+      <span class="chip withdrawn"><i class="dot"></i>Withdrawn</span>
+      <div class="body">"Awake roughly 15 hours a day instead of 1.6, at about 9× its energy budget."<em>Inferred from sensor-row spacing. The Witty Pi log measures ~2 h/day.</em></div>
+    </div>
+    <div class="claim">
+      <span class="chip withdrawn"><i class="dot"></i>Withdrawn</span>
+      <div class="body">"ORC-OS never completed its task, pinning the Pi to the 25-minute backstop."<em>The task completed every cycle in under three minutes. There was no hang, and the parallel drawn to the maintenance-mode chain does not apply.</em></div>
+    </div>
+    <div class="claim">
+      <span class="chip withdrawn"><i class="dot"></i>Withdrawn</span>
+      <div class="body">The night-onset pattern, the dawn windows, the three-missed-dawns argument, and the case for a site visit.<em>All reasoned from absence of rows on a station that was working. A visit would have found nothing wrong.</em></div>
+    </div>
+    <div class="claim">
+      <span class="chip withdrawn"><i class="dot"></i>Withdrawn</span>
+      <div class="body">The recovery-voltage latch theory.<em>13.0 V is reached routinely. Every V-IN sample the project held before this flush came from a 3-hour pre-dawn window, which is why the pack looked incapable of it.</em></div>
+    </div>
+    <div class="claim">
+      <span class="chip open"><i class="dot"></i>Weakened</span>
+      <div class="body">"The pack is not the fault."<em>Still true for this event — V-IN held. But it rested on surviving 9× duty, and the real figure was 0.87×. The pack was never tested under load here.</em></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow">What changed</div>
+  <h2>Tooling and operating policy</h2>
+
+  <h3>Detection</h3>
+  <p>Nothing noticed for 4.8 days. The outage began as a single missed upload and no alarm existed for that. <code>db_watch.py</code> now alerts when the newest sensor row passes 95 minutes old — three missed cycles — and again when uploads resume, reporting how many rows arrived in the flush. That closes an alerting gap open since July, at least for the station's own uplink.</p>
+
+  <h3>Collection</h3>
+  <p>The recovery watcher grabbed only <code>tail -n 400</code> of wp5d.log, sized for a seconds-long wake window; it covered the last 20 hours of a 4.8-day outage. It now takes the whole file as a second grab, gzipped over the wire, only after the tail is safely down. That is the artifact this report is built on.</p>
+  <p>That change had a defect on first use: it re-grabbed 3 MB on every pounce, and the watcher re-pounces for as long as port 22 stays open. Three identical copies in 90 seconds — 9 MB of prepaid LTE for 3 MB of information, on the SIM whose running dry caused the outage. A 24-hour guard is now in place and the duplicates deleted.</p>
+
+  <h3>Unattended operation — stopped</h3>
+  <p>The watchers are not passive: one opens an SSH session to the station and pulls files. They now run only for the lifetime of an active session. The systemd unit that started them at every login has been stopped, disabled and retired, with its reasoning rewritten in place so it is not simply re-created; <code>enable-linger</code> was never on and stays off.</p>
+  <div class="callout">
+    <span class="lab">Found while applying this</span>
+    <p>A session left running since 28 August had been watching the station unattended for four days. It re-enabled the retired unit 82 seconds after it was disabled, killed the replacement watcher, and respawned watchers from a scratchpad belonging to a session that had already ended. Its output went nowhere anyone could see — which is why the watchers looked dead when this work began.</p>
+  </div>
+  <p style="margin-top:15px">The cost of the policy is real and accepted: wakes that land between sessions are missed.</p>
+</section>
+
+<section>
+  <div class="eyebrow">Where we stand</div>
+  <h2>Open items, in order of risk</h2>
+  <ul class="items">
+    <li><span class="idx">01</span><div><strong>Nothing watches the SIM balance.</strong> This is the actual root cause and it has no fix. A prepaid account that silently empties is a single point of failure for the whole station — not instrumented, not alerted, not on anyone's calendar. It will do this again.</div></li>
+    <li><span class="idx">02</span><div><strong>No connectivity-loss handling in software.</strong> Not the cause of the drain we thought we saw, but still absent: nothing treats loss of uplink as a terminating condition rather than something to retry against.</div></li>
+    <li><span class="idx">03</span><div><strong>The station's power behaviour is now measurable but unmeasured.</strong> The flush delivered 679 V-IN samples against 11 for the whole project before it, and only because a backlog forced them through. Routine V/I telemetry is deployed but the record is still thin.</div></li>
+    <li><span class="idx">04</span><div><strong><code>station_gaps.py</code> rests on a false premise.</strong> Absence of rows does not record downtime — that failed completely here. Any analysis built on it needs re-checking against the Witty Pi log.</div></li>
+  </ul>
+
+  <h3>Current state</h3>
+  <ul class="plain">
+    <li>Station is on its normal 30-minute cadence. Newest row 09-02 01:00:27 WIB.</li>
+    <li>Both watches armed, session-scoped: the wake-window grabber and the upload-stall alarm.</li>
+    <li>Full wp5d.log archived — 5,714 boots, 7 April to 1 September.</li>
+    <li>Uncommitted: the duty-cycle correction in the issue log, and the 24-hour grab guard.</li>
+  </ul>
+</section>
+
+<footer>
+  Sukabumi is a pilot. Data loss there is not an emergency; the findings are what matter.<br>
+  All figures measured from the station's own Witty Pi log unless marked otherwise. Awake time is taken to daemon exit rather than to the power rail dropping, so every figure is a slight underestimate — equally on both sides of the comparison the conclusion rests on.
+</footer>
+
+</div>
+
+<div id="tip" role="status"></div>
+
+<script>
+(function () {
+  var data = [
+    { d: "08-21", v: 98.7,  c: 47, out: false },
+    { d: "08-22", v: 103.2, c: 48, out: false },
+    { d: "08-23", v: 131.2, c: 48, out: false },
+    { d: "08-24", v: 130.1, c: 48, out: false },
+    { d: "08-25", v: 213.4, c: 45, out: false },
+    { d: "08-26", v: 123.6, c: 48, out: false },
+    { d: "08-27", v: 171.8, c: 47, out: false },
+    { d: "08-28", v: 129.4, c: 48, out: true  },
+    { d: "08-29", v: 120.6, c: 48, out: true  },
+    { d: "08-30", v: 116.6, c: 48, out: true  },
+    { d: "08-31", v: 117.6, c: 48, out: true  }
+  ];
+
+  var NS = "http://www.w3.org/2000/svg";
+  var svg = document.getElementById("chart");
+  var L = 46, R = 706, T = 22, B = 246;      // plot frame
+  var MAX = 220;
+  var band = (R - L) / data.length;
+  var bw = Math.min(44, band - 10);
+  var y = function (v) { return B - (v / MAX) * (B - T); };
+
+  function el(n, a) {
+    var e = document.createElementNS(NS, n);
+    for (var k in a) e.setAttribute(k, a[k]);
+    return e;
+  }
+
+  // gridlines + y labels, recessive
+  [0, 55, 110, 165, 220].forEach(function (g) {
+    svg.appendChild(el("line", {
+      x1: L, x2: R, y1: y(g), y2: y(g),
+      stroke: "var(--rule)", "stroke-width": g === 0 ? 1.5 : 1
+    }));
+    var t = el("text", {
+      x: L - 10, y: y(g) + 4, "text-anchor": "end",
+      fill: "var(--muted)", "font-size": 11,
+      "font-family": "IBM Plex Mono, monospace"
+    });
+    t.textContent = g;
+    svg.appendChild(t);
+  });
+
+  var yl = el("text", {
+    x: L - 10, y: T - 8, "text-anchor": "end", fill: "var(--muted)",
+    "font-size": 10, "font-family": "IBM Plex Mono, monospace",
+    "letter-spacing": ".08em"
+  });
+  yl.textContent = "MIN";
+  svg.appendChild(yl);
+
+  var tip = document.getElementById("tip");
+
+  data.forEach(function (row, i) {
+    var x = L + i * band + (band - bw) / 2;
+    var h = B - y(row.v);
+    var fill = row.out ? "var(--corrected)" : "var(--measured)";
+
+    var bar = el("rect", {
+      x: x, y: y(row.v), width: bw, height: h,
+      rx: 4, fill: fill, class: "bar"
+    });
+    // square off the baseline end so the bar sits on the axis
+    var foot = el("rect", { x: x, y: B - 5, width: bw, height: 5, fill: fill, class: "bar" });
+    svg.appendChild(bar);
+    svg.appendChild(foot);
+
+    var lab = el("text", {
+      x: x + bw / 2, y: B + 18, "text-anchor": "middle",
+      fill: row.out ? "var(--ink)" : "var(--muted)",
+      "font-size": 11, "font-family": "IBM Plex Mono, monospace",
+      "font-weight": row.out ? 500 : 400
+    });
+    lab.textContent = row.d;
+    svg.appendChild(lab);
+
+    // direct-label only the peak and the first outage day
+    if (row.d === "08-25" || row.d === "08-28") {
+      var v = el("text", {
+        x: x + bw / 2, y: y(row.v) - 8, "text-anchor": "middle",
+        fill: "var(--ink)", "font-size": 11.5,
+        "font-family": "IBM Plex Mono, monospace", "font-weight": 500
+      });
+      v.textContent = row.v;
+      svg.appendChild(v);
+    }
+
+    [bar, foot].forEach(function (target) {
+      target.addEventListener("mouseenter", function (e) {
+        tip.textContent = row.d + " · " + row.v + " min over " + row.c + " cycles"
+                        + (row.out ? " · outage" : "");
+        tip.style.opacity = 1;
+        move(e);
+      });
+      target.addEventListener("mousemove", move);
+      target.addEventListener("mouseleave", function () { tip.style.opacity = 0; });
+    });
+  });
+
+  function move(e) {
+    var pad = 14;
+    var w = tip.offsetWidth, h = tip.offsetHeight;
+    var x = e.clientX + pad, yy = e.clientY - h - pad;
+    if (x + w > window.innerWidth - 8) x = e.clientX - w - pad;
+    if (yy < 8) yy = e.clientY + pad;
+    tip.style.left = x + "px";
+    tip.style.top = yy + "px";
+  }
+
+  // outage bracket
+  var bx = L + 7 * band + 3;
+  svg.appendChild(el("line", {
+    x1: bx, x2: R - 4, y1: B + 30, y2: B + 30,
+    stroke: "var(--corrected)", "stroke-width": 1.5
+  }));
+  var bt = el("text", {
+    x: (bx + R - 4) / 2, y: B + 44, "text-anchor": "middle",
+    fill: "var(--corrected)", "font-size": 10.5,
+    "font-family": "IBM Plex Mono, monospace", "letter-spacing": ".1em"
+  });
+  bt.textContent = "UPLINK DOWN";
+  svg.appendChild(bt);
+})();
+</script>

@@ -944,6 +944,67 @@ read both `/var/log/wp5d.log` and the journal. The station's own capture in that
 window passed its quality gate at 15,955 kbps and delivered, and disk free space
 was 11.27 GB.
 
+**CORRECTION 2026-09-01, from the full wp5d.log: the 9x drain never happened.**
+The whole log was collected on the 18:30 UTC wake — 3.0 MB, 5,714 boots,
+2026-04-07 to 2026-09-01. It is the Witty Pi's own record of when it powered the
+Pi, so it settles the duty cycle by measurement rather than by inference from
+row counts.
+
+Each cycle logs `Startup reason` (after the RTC write, so the clock is real) and
+`Exit now.` at shutdown. The difference is the awake time:
+
+| day | cycles | median awake | awake min/day |
+|---|---|---|---|
+| 08-10 | 48 | 1.97 min | 94 |
+| 08-11 | 48 | 2.05 min | 101 |
+| 08-12 | 48 | 2.07 min | 100 |
+| 08-13 | 48 | 2.05 min | 97 |
+| **08-28** | 48 | **2.80 min** | **129** |
+| **08-29** | 48 | **2.73 min** | **121** |
+| **08-30** | 48 | **2.39 min** | **117** |
+| **08-31** | 48 | **2.42 min** | **118** |
+
+**The station ran 48 scheduled boots a day, unbroken, before and through the
+outage**, and the duty cycle was not elevated at all. Outage mean 121.1 min/day
+against a preceding-week mean (08-21 → 08-27) of 138.9 — **0.87x**. It was awake
+slightly *less* than in the week before it went quiet. Against the quieter
+08-10 → 08-13 window above it reads as 1.25x; daily awake time drifts between
+roughly 95 and 215 minutes as a matter of course, and the outage days land in
+the middle of that band. The baseline chosen is what produced the original
+error, and neither baseline is near 9x.
+
+The maxima rule out the backstop claim outright. Across the whole deployment —
+5,244 measured cycles over 127 days — the median wake is 1.95 min and **only
+eight cycles have ever exceeded 20 minutes**. Two of those eight fall on 08-25
+and 08-27, both *before* the outage. During the outage the longest single wake
+was 5.15 min, and the last three days never passed 2.95 min.
+
+Three things follow:
+
+- **"Awake roughly 15 hours a day instead of 1.6" is withdrawn.** The measured
+  figures are ~2.0 h/day during the outage against ~1.6 h/day healthy. The
+  earlier numbers came from wake-minutes inferred from sensor rows, and the
+  healthy baseline of ~53 min/day was low by about half, which is what inflated
+  the ratio.
+- **ORC-OS was not hanging.** The task completed in ~2.7 minutes every cycle, so
+  "a capture that cannot upload is a task that never finishes" is not what
+  happened here, and the parallel drawn to the ISS-FIELD-010 maintenance chain
+  does not apply. That open question is closed: there was nothing to explain.
+- **The pack's exoneration is weaker than stated.** "Five days at ~9x duty and
+  V-IN never fell below 12.149 V" was five days at ~1.25x duty. V-IN did stay
+  above 12.149 V, so the pack is still not implicated in this event, but it was
+  not tested under extraordinary load and nothing here proves it would survive
+  one.
+
+Caveat on the method: awake time is measured to the daemon's exit, not to the
+power rail actually dropping, so every figure is a slight underestimate — but
+equally so on both sides of the comparison, which is what the ratio rests on.
+
+Full write-up, the 127-day dataset and the reproducible measurement script:
+`findings/sukabumi_duty_cycle_2026-08-28_outage.md`,
+`findings/sukabumi_duty_cycle_daily.csv`,
+`liveorc_server/station-health/wp5d_duty_cycle.py`.
+
 **wp5d.log covers only the last 20 hours** of the outage — `tail -n 400` was
 sized for a seconds-long window, not a 4.8-day one. Within that span: 40
 startups, 100% on-cadence, no gap over 45 minutes, all "Scheduled Startup".
