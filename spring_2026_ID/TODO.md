@@ -227,19 +227,58 @@ purge firing at exactly 5.00 GiB free says GB but does not prove it.
       blackouts — including **2026-07-29 → 08-10, 48/48 unsynced for ~13 days,
       previously unrecorded.** The 08-23 onset is a recurrence, not a first.
 
+**Answered 2026-09-01 21:30–22:02 UTC (grabs 119c, 119d, 119e):**
+
+- [x] **Which 5-second timeout fired: the hardcoded token-refresh one — but it
+      is not the whole fault.** The traceback's innermost orc_api frame is
+      `callback_url.py:115` in `get_set_refresh_tokens`, i.e.
+      `requests.post(url, data=data, timeout=5)` against `/api/token/refresh/`.
+      Above it the urllib3 frames end in `do_handshake`: it stalled in the TLS
+      handshake, before any HTTP request was sent. **No video bytes moved on
+      that attempt.**
+- [x] **`retry_timeout = 0.0`, which is falsy, so the upload already had 150 s.**
+      `min(retry_timeout, 150) if retry_timeout else 150` resolves to 150 in
+      both the live capture path and `routers/video.py:548`. The 150 is a
+      ceiling, not a floor, but nothing was clamping it down.
+- [x] **The window does not reduce to token refresh — and roughly half of it is
+      not a timeout at all.** Per failed sync (the one ERROR summary line each),
+      08-23→08-28: **85 `read timeout=5`, 19 `read timeout=150`, 75
+      `ConnectionReset`, 18 `RemoteDisconnected`, 4 `SSLError`** — 201 failures,
+      of which **97 (48%) are resets or disconnects that no timeout value
+      fixes**. Innermost-frame tally agrees: 139 at `get_set_refresh_tokens`
+      (the hardcoded 5) against 78 at `callback_url.py:172`, the real data POST
+      carrying 150. **Zero ConnectTimeouts in five days.**
+- [x] **The re-drive is reachable.** `routers/video.py:530`,
+      `POST /api/video/sync/`, taking start/stop/site/sync_file/sync_image →
+      `queue.sync_videos_start_stop`. Served on port 80;
+      `GET /api/video/count/` returns **401**, so it is live and needs auth. No
+      database edit required.
+- [x] **The station's timezone is UTC**, `timedatectl` confirmed, NTP active.
+      `token_expiration` 2026-09-01 23:02:08 against a naive
+      `datetime.now()` of 22:01:57 — valid, about an hour of headroom, so
+      refresh is skipped while a token is fresh.
+
+**What that does to the remedy.** Raising the hardcoded 5 to 150 is still a
+one-line change, but it is **not sufficient and may not help**: 19 syncs already
+failed having waited the full 150 s, and 97 of 201 failures were the connection
+being torn down rather than timing out. The shape — resets and mid-handshake
+stalls, no connect timeouts — is a policed or throttled link, not a client
+tuned too impatiently. `get_set_refresh_tokens` is also upstream `orc_api` code
+in site-packages, so changing it collides with the standing rule that upstream
+is read-only and station/server versions move together.
+
 **Still open, and it decides the options:**
 
-- [ ] **Which 5-second timeout actually fired?** orc_api has several and they
-      disagree: `base.py:23` default `timeout=5`; `video.py:476` wrapper
-      default 150; `callback_url.py:115,149,252` hardcoded `timeout=5`. If the
-      5 was the hardcoded one on token refresh, the upload path already has
-      150 s and the remedy is a one-line change. If the 5 reached
-      `/api/video/`, it is something else. The bare "Read timed out" carries no
-      URL — **the traceback is the only thing that names the call.**
-- [ ] **Is the re-drive reachable as an HTTP endpoint?** `routers/video.py:548`
-      repeats the same timeout computation, which suggests
-      `sync_videos_start_stop` is exposed on the station's own API. If it is,
-      the backlog re-drives without a database edit and at 150 s rather than 5.
+- [ ] **Read station log timestamps as UTC.** The station runs UTC, so
+      `journalctl` and ORC-OS log times are UTC and need **+7 to reach WIB**.
+      The recorded 01:00–05:00 WIB video window converts to 18:00–22:00 UTC, and
+      the 08-24 04:02:58 failure sampled in 119c is 11:02 WIB — an ordinary
+      daytime failure, consistent with the recorded window. **Confirm which
+      timestamps each earlier WIB claim was derived from**; anything read
+      straight off the station without +7 is displaced by seven hours.
+- [ ] **Does the re-drive survive the link, not just the code path?** It is
+      reachable and runs at 150 s, but 19 failures already had 150 s and 97 were
+      resets. A small-range test would measure that; it spends metered bytes.
 - [ ] **What would uploading 10.69 GB cost?** At the measured 1.74 MB/s that is
       ~1.75 h of pure transfer, so this is a data-plan question, not a
       feasibility one. **The tailnet is not an escape route** — Tailscale runs
@@ -255,9 +294,12 @@ purge firing at exactly 5.00 GiB free says GB but does not prove it.
 **Do not start a bulk upload without answering the cost question.** The station
 is on a metered prepaid SIM whose exhaustion caused ISS-FIELD-011.
 
-**The next station action is already written:**
-`station-health/todo119_sync_source_grab.py` — armed on 09-01 but killed unrun
-when the session ended. It answers both open source questions in one wake.
+**Station scripts, all read-only and all run:**
+`station-health/todo119_sync_source_grab.py` (119c, the traceback and the
+endpoint), `todo119_redrive_viability.py` (119d, `retry_timeout` and the frame
+tally), `todo119_timeout_split.py` (119e, timeout values and the clock).
+Artefacts in `data/station-forensics/`. Sync tally at 22:00 UTC unchanged:
+FAILED 2978, SYNCED 2546, LOCAL 126.
 
 ---
 

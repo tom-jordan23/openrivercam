@@ -2488,3 +2488,90 @@ with no impact on the running service.
 - S3 multipart part timestamps are a good external progress signal for a
   job whose logs are silent: if the newest part stops advancing, the
   producer has died.
+
+---
+
+### ISS-FIELD-012: The video sync failures are a policed link, not an impatient client
+
+| Field | Value |
+|-------|-------|
+| **Date opened** | 2026-09-01 |
+| **Site** | Sukabumi → LiveORC server |
+| **Risk** | Data delivery |
+| **Impact** | Medium (pilot; the finding matters more than the bytes) |
+| **Status** | OPEN |
+
+**Problem:**
+3,104 videos on the station have never reached LiveORC (2,978 FAILED, 126
+LOCAL). Successive sessions attributed this to a five-second timeout and
+looked for the one call that carried it. Three read-only grabs across the
+2026-09-01 21:30 and 22:00 UTC wakes found the timeout, and then found that
+the timeout is not the fault.
+
+**Which five fired:**
+`callback_url.py:115` in `get_set_refresh_tokens` —
+`requests.post(url, data=data, timeout=5)` against `/api/token/refresh/`,
+hardcoded and not governed by the caller's timeout. The urllib3 frames above
+it end in `do_handshake`, so it stalled inside the TLS handshake before any
+HTTP request was sent. No video bytes moved on that attempt.
+
+**Why that is not the whole fault.**
+Per failed sync across 08-23→08-28, counted from the one ERROR summary line
+each writes:
+
+| Failure | Count |
+|---|---|
+| `read timeout=5` | 85 |
+| `ConnectionReset` | 75 |
+| `read timeout=150` | 19 |
+| `RemoteDisconnected` | 18 |
+| `SSLError` | 4 |
+| `ConnectTimeout` | **0** |
+
+201 failures. **97 of them (48%) are resets or disconnects, which no timeout
+value fixes**, and **19 had already waited the full 150 s**. The innermost-frame
+tally agrees: 139 at `get_set_refresh_tokens` against 78 at
+`callback_url.py:172`, the real data POST carrying 150. Zero connect timeouts in
+five days — the TCP connection is always established, then torn down or stalled
+mid-handshake. That is the signature of a policed or throttled link, not of a
+client tuned too impatiently.
+
+**`retry_timeout = 0.0`, and 0.0 is falsy.**
+`min(retry_timeout, 150) if retry_timeout else 150` therefore resolves to **150**
+in both the live capture path and `routers/video.py:548`. The upload path already
+had 150 s. Nothing was clamping it to 5.
+
+**The re-drive exists and is reachable.**
+`routers/video.py:530` exposes `POST /api/video/sync/` taking
+start/stop/site/sync_file/sync_image, calling `queue.sync_videos_start_stop` at
+the same 150 s. It is served on port 80 — `GET /api/video/count/` returns 401 —
+so it needs auth but no database edit. `schedulers.py:35` asks only for
+`SyncStatus.QUEUE`, which is why every boot reports "0 videos left to
+synchronize" beside 2,978 FAILED rows.
+
+**Corrections this makes to earlier entries:**
+- Commit `580512a` recorded that "bytes were moving; the failures land
+  mid-transfer" and retracted the token-refresh explanation. The retraction was
+  wrong for the refresh half: 139 failures do die at token refresh, before any
+  request is sent. The mid-transfer reading was right for the other half.
+- Earlier in this session I described the 08-24 04:02:58 sample as sitting at
+  the edge of the nightly success band. It does not. **The station runs UTC**
+  (`timedatectl`, NTP active), so that is 11:02 WIB — an ordinary daytime
+  failure, consistent with the recorded 01:00–05:00 WIB window rather than a
+  transition case.
+- The traceback in grab 119c is grep-fragmented: `grep -A 40` matched both the
+  ERROR line and the `ReadTimeoutError` line, so the frames between
+  `do_handshake()` and the raised exception are not in hand. The innermost
+  captured frame is still `do_handshake`.
+
+**Open, and it decides what to do:**
+- The station runs UTC. Station log timestamps need **+7 to reach WIB**. Confirm
+  which timestamps each earlier WIB claim was derived from; anything read
+  straight off the station without +7 is displaced by seven hours.
+- Whether the re-drive survives the link, not merely the code path. It is
+  reachable and runs at 150 s, but 19 failures already had 150 s and 97 were
+  resets. Only a small-range test measures that, and it spends metered
+  Telkomsel bytes on a SIM whose exhaustion caused ISS-FIELD-011.
+
+**Not done:** no re-drive has been fired and nothing on the station has been
+changed. All three grabs were read-only.
