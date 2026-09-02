@@ -99,8 +99,8 @@ resolver on `[::1]:53` reporting `server misbehaving`, and `tailscaled` logged
 out — while `mmcli` reports LTE attached at 100% signal. The modem's "connected"
 does not mean the station has working connectivity.
 
-**A separate, intermittent camera fault.** At the 21:30 wake, capture failed
-outright:
+**A separate, intermittent camera fault**, quantified below as 2 failed cycles
+in 63. At the 21:30 wake, capture failed outright:
 
 ```
 Error opening input file rtsp://admin:***@192.168.50.139:554/Streaming/Channels/101.
@@ -113,8 +113,27 @@ This is intermittent, not constant: the 21:01 wake logged
 from the upload outage; it is on the station's own LAN and cannot be a WAN
 symptom.
 
-**Battery** `vin_v` 12.61–12.71 V at 21:00–21:31 UTC (04:00–04:30 WIB), the
-overnight low point. Noted, not diagnosed.
+**Battery: excluded** (`powercapture119s`, 22:00 UTC). The station's local CSVs
+carry the whole curve, so this is measured rather than inferred. Today against
+yesterday, hour by hour UTC:
+
+| | 13:00 | 16:00 | 18:00 | 20:00 | 22:00 | overnight min | daily max |
+|---|---|---|---|---|---|---|---|
+| 09-02 (outage) | 12.688 | 12.702 | 12.668 | 12.657 | 12.656 | **12.559** | 13.160 |
+| 09-01 (normal) | 12.726 | 12.769 | 12.702 | 12.781 | 12.713 | **12.592** | 13.098 |
+
+The two nights are within ~0.1 V, and **yesterday reached the same overnight
+minimum with no outage**. Today charged slightly higher at peak, so solar was
+also fine. Voltage does not discriminate an outage night from a normal one, and
+the power hypothesis — including the idea that a sagging rail explained the
+camera's `Connection refused` — is dead.
+
+**Capture: healthy.** 122 `delivered` against 2 failed cycles today (19:31 and
+21:31 UTC, each logged twice); 36/36 delivered yesterday with no failures. The
+camera fault is real but minor and **is not the outage**: 122 clips were
+captured and delivered today, and none since 13:32 has synced.
+
+**This is therefore an upload outage specifically** — not power, not capture.
 
 ### Correction to my own diagnostic
 

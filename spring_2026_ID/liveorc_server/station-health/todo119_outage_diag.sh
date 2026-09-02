@@ -41,16 +41,33 @@ echo "=== C. THE DISCRIMINATOR: do DB rows point at files that no longer exist =
 echo "  --- row counts by sync_status ---"
 sqlite3 -column "$DB" "select ifnull(sync_status,'NULL') as status, count(*) from video group by 1 order by 2 desc;" 2>&1 | sed 's/^/    /'
 echo "  --- the 12 most recent rows, and whether their file is on disk ---"
-sqlite3 "$DB" "select ifnull(sync_status,'NULL')||'|'||ifnull(file,'(nofile)')
-               from video order by id desc limit 12;" 2>&1 | while IFS='|' read -r st f; do
-  if [ "$f" = "(nofile)" ]; then
-    echo "    $st  (no file column)"
-  elif [ -e "$f" ]; then
-    echo "    $st  EXISTS  $(stat -c %s "$f" 2>/dev/null) B  $f"
-  else
-    echo "    $st  MISSING          $f"
-  fi
+# The `file` column is RELATIVE to ORC-OS's upload directory, which is
+# ~/.ORC-OS/uploads unless ORC_UPLOAD_DIRECTORY overrides it
+# (orc_api/__init__.py:35-36). An earlier version of this script tested the
+# relative path against the SSH working directory and reported every row as
+# MISSING - a false negative that briefly looked like a major finding. Resolve
+# the root first, and say which one was used.
+ROOT=""
+for cand in "${ORC_UPLOAD_DIRECTORY:-}" /home/pi/.ORC-OS/uploads /home/pi/.ORC-OS; do
+  [ -n "$cand" ] && [ -d "$cand/videos" ] && { ROOT=$cand; break; }
 done
+if [ -z "$ROOT" ]; then
+  echo "    CANNOT RESOLVE the upload root — existence check skipped rather than"
+  echo "    reported wrongly. Candidates tried: \$ORC_UPLOAD_DIRECTORY,"
+  echo "    /home/pi/.ORC-OS/uploads, /home/pi/.ORC-OS"
+else
+  echo "    upload root: $ROOT"
+  sqlite3 "$DB" "select ifnull(sync_status,'NULL')||'|'||ifnull(file,'(nofile)')
+                 from video order by id desc limit 12;" 2>&1 | while IFS='|' read -r st f; do
+    if [ "$f" = "(nofile)" ]; then
+      echo "    $st  (no file column)"
+    elif [ -e "$ROOT/$f" ]; then
+      echo "    $st  EXISTS  $(stat -c %s "$ROOT/$f" 2>/dev/null) B  $f"
+    else
+      echo "    $st  MISSING          $f"
+    fi
+  done
+fi
 echo "  (MISSING on a non-SYNCED row is the mechanism. MISSING on SYNCED rows"
 echo "   only matters if the sync pass stats them, which section A would show.)"
 
