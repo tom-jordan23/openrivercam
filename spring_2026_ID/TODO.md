@@ -183,47 +183,6 @@ purely PMI's, not a technical readiness one.
 
 ---
 
-### TODO-119 phase 01 — PARKED 2026-09-02, waiting on the transect switch
-
-The 407 errored site-4 videos are **not** unprocessed video waiting for the
-right settings. They are video that already failed processing, and the smoke run
-failed 5 of 5 exactly as the existing evidence predicts.
-
-**The day/night assumption was backwards, and the repo already said so.** Errored
-clips are **95.3% daytime** (388 of 407); finished clips are 57.1% night. This is
-the inversion `findings/optical_wl_daytime_glint.md` was written to record.
-
-**Reprocessing under VideoConfig 3 re-runs the computation that failed.** Every
-one of the 100 error videos measured in July dies on the same S/N gate —
-`s2n_thres: 2.0` in `recipe_3`, which is VideoConfig 3's recipe. Lowering the
-gate is not available either: the distribution is bimodal (passes 3–5, failures
-1.3–1.8, nothing between 1.98 and 2.00) and the finding concluded that lowering
-it would admit unreliable estimates rather than recover good ones. The failures
-already find the right waterline at 614.794 m; they cannot confirm it.
-
-**Why this is parked rather than closed.** Optical WL is detected against the WL
-cross-section, so **a different transect changes the geometry the detection runs
-on**. What S/N these clips reach under a new cross-section is genuinely unknown
-and not predictable from measurements taken under the current one. Tom is
-switching transects and reprocessing everything, so the 407 get swept up in that
-anyway — and testing them now would answer a question about a configuration
-about to be replaced.
-
-**Resume by probing the bulk case, not the oldest ids.** `smoke` takes the five
-lowest ids, which are all May; 377 of the 407 are July–August. After the switch:
-
-```
-VC=<new-video-config-id> ./ssm_recover_407.sh probe 2421,2423,2424,2425,2427,2432,2433,2468
-```
-
-Eight July daytime clips. Pass → the full run is worth doing and the id list
-still stands. Fail the same way → these clips need a different water-level
-approach, and that is the finding rather than the recovery.
-
-Procedure and reasoning: `liveorc_server/reprocess/RECOVER_ERRORED_407.md`.
-
----
-
 ### TODO-119: Inventory the un-synced video backlog and decide what to do with it
 
 | Field | Value |
@@ -441,6 +400,11 @@ password. But `sync_videos_start_stop` is an ordinary coroutine at
 `sync_file`, `sync_image`, `timeout`. Driving it in-process through the venv
 interpreter skips the HTTP layer entirely and still modifies nothing upstream.
 
+**Phase 01 moved to TODO-113.** Recovering the 407 errored videos is decided by
+the transect, not by anything in this item, so it now lives with the
+cross-section swap and reprocess. See TODO-113, "The 407 errored videos ride
+along with this run".
+
 **Gates still standing before any bulk upload fires:**
 
 - [x] ~~**The SIM.**~~ **Closed by moving prepaid → postpaid (Tom,
@@ -579,12 +543,56 @@ PMI/IPB as it happens: what setting changed, which date range was
 reprocessed, and that the prior figures are superseded. Silent
 retroactive edits to a shared dataset are the failure mode.
 
-**Blocked on TODO-112 in practice.** `prod_reprocess.sh` execs inside
-`liveorc_webapp` to read local media, and that media currently exists
-only in the container's ephemeral writable layer. Until the EBS
-migration lands, any reprocess work on the server carries the same
-risk the runbook already warns about — never `compose up` or
-`--force-recreate` on that host.
+**~~Blocked on TODO-112 in practice.~~ Unblocked — TODO-112 shipped.**
+This said the media existed only in the container's ephemeral writable
+layer, so any reprocess run carried the risk of a `--force-recreate`
+destroying it. That is no longer true. Verified on the host 2026-09-02:
+`/dev/nvme1n1  147G  31G used  109G avail  /var/lib/liveorc-media`.
+The runbook's standing warning still applies — never `compose up` or
+`--force-recreate` casually on that host — but it is no longer a
+dependency holding this item.
+
+**The 407 errored videos ride along with this run.**
+
+TODO-119 phase 01 tried to recover them on their own and was parked here
+instead, because the thing that decides their fate is the transect. Detail
+below; procedure in `liveorc_server/reprocess/RECOVER_ERRORED_407.md`.
+
+*Night is the reliable case; daylight is where this fails.* Errored clips are
+**95.3% daytime** (388 of 407), finished clips 57.1% night — the inversion
+`findings/optical_wl_daytime_glint.md` was written to record. Do not carry the
+opposite assumption into this work; it has now misled two documents.
+
+*Why a plain reprocess cannot help them.* All 100 error videos measured in July
+die on the same gate — `s2n_thres: 2.0` in `recipe_3`, which is VideoConfig 3's
+recipe. Re-running them under VideoConfig 3 repeats the computation that already
+failed, and a `smoke` run on 2026-09-02 duly failed 5 of 5. Lowering the gate is
+not available: the distribution is bimodal (passes 3–5, failures 1.3–1.8,
+nothing between 1.98 and 2.00) and the finding concluded that lowering it would
+admit unreliable estimates rather than recover good ones. The failures already
+locate the correct waterline at 614.794 m — they cannot confirm it.
+
+*Why the transect is the deciding variable.* Optical WL is detected against the
+WL cross-section (`water_level_options: bank near, length 3.0, padding 0.5,
+min_z 614.3, max_z 618.5`). **Changing the transect changes the geometry that
+detection runs on**, so the S/N these clips reach under a new cross-section is
+genuinely unknown and cannot be predicted from measurements taken under the
+current one. That is the whole reason they wait for this item rather than being
+written off.
+
+*Test them early in the run, on the bulk case.* `smoke` samples the five lowest
+ids, which are all May; 377 of the 407 are July–August. Use eight July daytime
+clips instead:
+
+```
+VC=<new-video-config-id> ./ssm_recover_407.sh probe 2421,2423,2424,2425,2427,2432,2433,2468
+```
+
+Pass → include the 407 in the full run; `reprocess/sukabumi_error_video_ids.txt`
+still holds the ids, though it is a floor taken from the 2026-08-25 mirror and
+production now holds more. Fail the same way → the finding is that these clips
+need a different water-level approach, and that is worth more than the recovery
+would have been.
 
 **Steps:**
 - [ ] Settle the cross-section question against the 2026-04-22
@@ -596,6 +604,9 @@ risk the runbook already warns about — never `compose up` or
 - [ ] Run the reprocess per
       `liveorc_server/reprocess/REPROCESS_RUNBOOK.md`; compare outputs
       against the currently published figures.
+- [ ] **Probe the 407 errored clips under the new transect before the full
+      run** (command above). It is a two-minute dry run and it decides
+      whether 377 daytime clips are recoverable at all.
 - [ ] Announce the run and its effect on published data to PMI/IPB.
 
 ---

@@ -82,11 +82,12 @@ videos: RECOVER them (decided)"*, validated on staging 2026-06-29, 3/3 recovered
 with no OneToOne violations. What is new here is scale — 405 against those 3 —
 which is why `dryrun` comes before `commit`.
 
-## ON HOLD — do not run the commit (2026-09-02)
+## ON HOLD — this work now belongs to TODO-113 (2026-09-02)
 
 **The `smoke` run failed 5 of 5, and that is the predicted result, not a fault.**
-Phase 01 waits for the transect switch. Reasoning below; run `probe` after the
-switch, not before.
+Recovering these videos is decided by the transect, so it was folded into
+**TODO-113**, the cross-section swap and reprocess, rather than run on its own.
+Reasoning below; run `probe` after the switch, not before. Do not run `commit`.
 
 ### Night is the reliable case. Daylight is where this fails.
 
