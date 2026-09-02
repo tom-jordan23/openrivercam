@@ -367,6 +367,39 @@ Deleting the 1,403 verified-redundant clips frees 12.61 GB, taking root from
 1,165 mirror files (April–June) have no local copy at all, having been deleted
 locally while their synced copies sat beside them.
 
+**PHASE 02 DONE 2026-09-02 14:02 UTC — 12.61 GB reclaimed.** Ran in two passes
+on consecutive wakes, both carrying the 1,403-entry list to the station so it
+could re-measure every candidate against its own disk. The list was treated as a
+claim to be tested, not an instruction to obey, and each removal was gated on a
+fresh `stat` matching the expected size to the byte.
+
+| | Dry run (119i) | Commit (119j) |
+|---|---|---|
+| Verified exact | 1,403 | — |
+| Deleted | 0 | **1,403** |
+| Skipped / mismatched / missing | 0 | **0** |
+| Root free | 11 G | **24 G** (81% → 58%) |
+
+The backlog is untouched: FAILED still 2,981, and 1,249 mp4s remain — the 1,191
+to upload, the 54 held back, and the current day's captures. The DB was not
+written to; rows now pointing at absent files are the same state the disk
+manager has produced 1,911 times already.
+
+**The purge deadline moves from roughly 2026-09-17 to mid-October.** At ~440
+MB/day against 24 G free, there is now on the order of 40 days of headroom
+rather than 16 — and it grows as the backlog uploads and becomes reclaimable in
+turn. The `min_free_space` units question is no longer urgent, though still
+unanswered.
+
+**Phase 03 blocked on authentication, and the direct call is the way round it.**
+Both `:80` and uvicorn's own `:5000` return 401 with
+`"Token missing or not a valid token format"`, and we do not hold the local
+password. But `sync_videos_start_stop` is an ordinary coroutine at
+`orc_api/utils/queue.py:250`, and `routers/video.py` shows exactly what it wants:
+`session`, `executor`, `upload_directory`, `start`, `stop`, `logger`, `site`,
+`sync_file`, `sync_image`, `timeout`. Driving it in-process through the venv
+interpreter skips the HTTP layer entirely and still modifies nothing upstream.
+
 **Gates still standing before any bulk upload fires:**
 
 - [x] ~~**The SIM.**~~ **Closed by moving prepaid → postpaid (Tom,
