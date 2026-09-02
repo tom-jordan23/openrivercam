@@ -284,12 +284,107 @@ is read-only and station/server versions move together.
       feasibility one. **The tailnet is not an escape route** — Tailscale runs
       over the same Telkomsel SIM, so a tailnet pull spends identical metered
       bytes. Only physical media on a site visit avoids the link.
-- [ ] **Check the receiving end.** LiveORC site 4 already holds 2,630 clips
-      (~26 GB, verified 08-25). Another 10.69 GB roughly doubles it; confirm
-      the media volume has room before starting anything.
-- [ ] **Decide: re-sync, extract selectively, or delete.** Sukabumi is a pilot;
-      per Tom the video is not feeding anything, so deletion is legitimate. The
-      finding matters more than the bytes.
+- [x] **Check the receiving end — it has room.** The media volume is a
+      **150 GiB gp3 EBS**, holding ~31 GB at the 2026-08 migration and growing
+      ~10 GB/month (`MEDIA_VOLUME_RUNBOOK.md`). Another 10.69 GB takes it to
+      roughly 42 GB of 150 GiB. The destination is not a constraint and can be
+      dropped from the risk list.
+- [x] **DECIDED 2026-09-02 (Tom): upload them.** The un-synced clips are video
+      that was never processed, and the record is worth completing. **Newest
+      first**, backfilling the historic tail as we are able. This retires the
+      selective-extraction and delete options and makes the full re-drive the
+      plan.
+
+**What the decision changes, and the one thing it collides with.**
+
+The ordering and the deletion clock pull in opposite directions. The disk
+manager frees space from the **oldest** end — that is how 1,911 rows already
+lost their files, and why the oldest surviving file is 2026-07-03 against an
+oldest un-synced row of 2026-04-08. So the historic tail is the part that is on
+a clock, and newest-first ordering spends that clock on the part that is not at
+risk. Both halves of "newest first, then backfill" cannot hold if the purge
+resumes partway through.
+
+**`min_free_space` stays where it is (Tom, 2026-09-02).** Lowering the
+threshold is off the table, so the clock cannot be stopped that way.
+
+**But it can be stopped by freeing space instead, and the space is already
+there.** The purge fires on free space, not on age, and the disk is carrying a
+large redundant copy:
+
+| On the station's video tree | Count | Approx. size |
+|---|---|---|
+| mp4 files in the whole tree | 2,616 | ~24–29 GB |
+| un-synced, still extant — the backlog we want | 1,190 | 10.69 GB (measured) |
+| **already SYNCED, still held locally** | **1,426** | **~13–18 GB** |
+
+Those 1,426 clips are already on the server — site 4 holds 2,630 clips with
+their mp4s, verified 2026-08-25. Deleting the local copies loses nothing and
+frees somewhere between 13 and 18 GB — the two estimates disagree because one is
+file-count times the 9.2 MB mean and the other is the tree total minus the
+measured backlog, and the tree total was never pinned precisely. Even the low
+end takes root from 12 G free to ~25 G. Against 440 MB/day of growth that moves
+the purge from ~16 days out to ~45 or better, and every clip the
+re-drive lands afterwards enlarges the pool further. The disk manager will not
+do this for us — it evidently deletes oldest-first without regard to sync state,
+which is how 1,911 un-synced rows lost their files while synced copies stayed.
+
+- [ ] **Verify before deleting anything.** `remote_id` being non-null is the
+      station's own claim, and the aggregate server count corroborates it only
+      in aggregate. Check per-file against the server before removing local
+      copies — see [[verify-the-target-exists-before-reverting]] and the 26 GB
+      loss in `MEDIA_VOLUME_RUNBOOK.md`. This is a proposal, not a step to run
+      unattended.
+
+**VERIFIED 2026-09-02 (grab 119g + the TODO-114 mirror).** Every extant local
+mp4 joined byte-for-byte against `data/liveorc-mirror/4/media`. Per-clip verdicts
+in `findings/sukabumi_backlog_workplan.csv`; the join is
+`station-health/todo119_reclaim_join.py`.
+
+| Verdict | Files | GB | Meaning |
+|---|---|---|---|
+| **RECLAIM** | **1,403** | **12.61** | SYNCED and byte-identical in the mirror. Two other copies exist. Safe to delete locally. |
+| **UPLOAD** | 1,131 | 10.16 | The real backlog — not on the server in any form. |
+| **ALREADY-ON-SERVER** | 62 | 0.56 | Marked FAILED, but byte-identical on the server. |
+| **HOLD-unverified** | 54 | 0.48 | SYNCED after the 2026-08-25 mirror, so no independent copy. Do not delete. |
+
+**Zero size mismatches, anywhere.** Not one of the 1,465 clips present on both
+sides differs by a byte. The link fails all-or-nothing; it does not truncate.
+That retires the truncated-upload worry that motivated comparing sizes.
+
+**`FAILED` is not merely non-terminal — for 62 clips it is wrong.** Those
+uploads completed and the server holds the exact bytes; only the acknowledgement
+failed to survive. That fits the error profile precisely (97 of 201 failures
+were `ConnectionReset` or `RemoteDisconnected`, i.e. a torn-down connection
+rather than a timeout). Two consequences: the true backlog is **1,131 clips /
+10.16 GB**, not 1,190 / 10.69; and a blind re-drive of everything marked FAILED
+would re-send ~0.56 GB and may create duplicates — **check whether
+`sync_videos_start_stop` is idempotent before driving a wide range.**
+
+**The reclaim answers the disk clock without touching `min_free_space`.**
+Deleting the 1,403 verified-redundant clips frees 12.61 GB, taking root from
+11 G free to ~23.6 G. It also confirms the purge is oldest-first and sync-blind:
+1,165 mirror files (April–June) have no local copy at all, having been deleted
+locally while their synced copies sat beside them.
+
+**Gates still standing before any bulk upload fires:**
+
+- [x] ~~**The SIM.**~~ **Closed by moving prepaid → postpaid (Tom,
+      2026-09-02).** Data volume can no longer take the station off the air the
+      way it did in ISS-FIELD-011, which removes the hardest gate on the
+      re-drive. Two things this does not do: it does not make 10.69 GB free —
+      postpaid still bills, and may carry overage rates — and it does not help
+      until the switch has actually landed. **Confirm the account is on
+      postpaid before firing the bulk upload, not merely that the change was
+      requested.**
+- [ ] **Is the link currently able to carry it?** 201 failures in five days,
+      97 of them resets that no timeout fixes. Postpaid removes the cost of
+      failure but not the failure. A re-drive over a still-broken link simply
+      does not deliver. Track 1's first item now gates Track 2 as well, and is
+      the reason to do Track 1 first rather than merge the tracks.
+- [ ] **Measure before committing.** Drive one day's window (~48 clips,
+      ~440 MB) newest-first and read the success rate and throughput off it
+      before spending the remaining ~10 GB.
 
 **Do not start a bulk upload without answering the cost question.** The station
 is on a metered prepaid SIM whose exhaustion caused ISS-FIELD-011.
@@ -1155,7 +1250,7 @@ premises were wrong:
 | ~1165 video records | **3176** across sites 2/3/4 — 2630 at site 4, 546 at site 2, 0 at site 3 |
 | media fetched from the serializer's `file` URL | those URLs **404 with and without a JWT** — media is in MinIO behind Django's storage API, never on the nginx filesystem |
 | all assets reachable over REST | **no `/keyframe/` action exists** — 1.4 GB of keyframes are unreachable by REST at any effort |
-| site 2 holds media | site 2 has **no video files at all** (`file` null for all 546); all 29 GB is site 4 |
+| site 2 holds media | site 2 has **no video files at all** (`file` null for all 546); all 29 GB is site 4. **Cause known (Tom, 2026-09-02): site 2 is the test site — the prior device that failed in 2025 — and its video was deliberately cleaned up off the server. The null `file` fields are that cleanup, not a fault, and not evidence of any database/media divergence.** |
 
 Bytes are served by the DRF actions `/playback/`, `/image/` and `/thumbnail/`.
 The dead `file` URLs remain useful as **identifiers**: their paths give the
@@ -1989,7 +2084,7 @@ untouched by this and still stands.
 
 | Field | Value |
 |-------|-------|
-| **Status** | IN PROGRESS — found and driver reworked 2026-08-28; **not yet deployed**, the station has been down since 05:30 WIB that morning |
+| **Status** | IN PROGRESS — driver reworked 2026-08-28, **deployed and emitting since 2026-09-02 00:00 UTC**; the fit is the remaining work |
 | **Site** | Sukabumi (and any station running `orc-sensors`) |
 
 The `wittypi` sensor was added to settle whether the overnight failures come
@@ -2047,9 +2142,31 @@ the `vin` recorded at each, so every row carries at least two paired points.
       those have broken before on the `V-IN` hyphen), asserts the emitted keys
       match `CSV_HEADER` in both directions, and asserts the specific defect —
       a Vin spread reported against a zero load spread — cannot recur.
-- [ ] **Deploy.** Blocked only on the station being reachable. Run
-      `orc_deploy_wittypi_sensor.sh`; the watcher will say when tcp/22 opens.
-- [ ] Widen the lever arm if the first day's rows are still cramped. ~10 s of
+- [x] **Deploy.** Landed. The reworked driver has been emitting since
+      **2026-09-02 00:00:37 UTC** — verified from the server, not the station:
+      `iout_min_a`, `iout_max_a`, `vin_at_imin_v`, `vin_at_imax_v`, `samples_n`
+      and `samples_paired_n` are all arriving in `sensor_readings`, and since
+      `sensor-ingest` derives metric names from the CSV header with no
+      whitelist, new metric names in the database mean the new header on the
+      station. 57 wakes so far, `samples_paired_n = 6` of 6 on every one.
+- [ ] **Widen the lever arm — the first day says it is still too short.**
+      Every one of the 57 wakes carries a usable current span (mean 0.222 A,
+      max 0.584 A), so the pairing fix works and the old defect cannot recur.
+      But the resistance is not yet readable out of it:
+
+      | Fit, 2026-09-02 rows | Slope | R² |
+      |---|---|---|
+      | Across wakes, `vin_v` vs `iout_a` | −0.348 Ω | 0.147 |
+      | Pooled paired points, 2/wake, n=114 | −0.229 Ω | 0.051 |
+      | Per-wake two-point ratios | median 0.12–0.26 Ω | scatter −5.2 to +4.7 Ω |
+
+      Magnitudes sit in **ohms**, which would mean a bad connection, but R² that
+      low does not support calling it and the per-wake scatter goes negative,
+      which is physically meaningless and means noise dominates the two-point
+      estimate. The across-wake fit has its own confound: open-circuit voltage
+      moves with charge state over a day, so V-against-I across wakes mixes
+      source resistance with SoC. Neither instrument is yet sharp enough.
+      Widen the span before fitting again — the original wording follows. ~10 s of
       wall time may or may not straddle the camera/PoE switch-on, which is the
       largest load step available. If `iout_max_a - iout_min_a` stays small,
       raise `SAMPLES` further or move the tick — do not raise it blind, the
