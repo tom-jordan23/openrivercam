@@ -40,6 +40,9 @@ N=$(awk -F, '{print NF}' <<<"$IDS")
 
 case "$STAGE" in
 check)
+  note "where this is running"
+  echo "  checkout : $(cd ../../.. && pwd)"
+  echo "  reprocess: $(pwd)"
   note "target list"
   echo "  ids file : $IDS_FILE"
   echo "  ids found: $N   (expected $EXPECT from the 2026-08-25 mirror)"

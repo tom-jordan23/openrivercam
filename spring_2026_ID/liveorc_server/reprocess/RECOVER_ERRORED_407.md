@@ -33,12 +33,13 @@ not have to.
 ## 2. Update the checkout
 
 ```bash
-cd ~/openrivercam && git pull
+cd ~/code/git/openrivercam && git pull
 cd spring_2026_ID/liveorc_server/reprocess
 ```
 
-If the checkout is not at `~/openrivercam`, the next stage fails on a missing id
-file and tells you so.
+That is the checkout path on this host — the same as on the workstation. The
+`check` stage prints the directory it resolved, so a wrong path shows up
+immediately rather than three commands later.
 
 ## 3. Run the stages
 

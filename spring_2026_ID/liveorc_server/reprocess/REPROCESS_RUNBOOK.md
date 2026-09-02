@@ -153,7 +153,7 @@ with the xarray pin isolated in a `--system-site-packages` venv so the webapp's 
 packages are untouched. It auto-uses `sudo docker` if needed and prompts before any
 `--commit`. Run on the EC2 from the repo checkout:
 ```bash
-cd ~/openrivercam/spring_2026_ID/liveorc_server/reprocess
+cd ~/code/git/openrivercam/spring_2026_ID/liveorc_server/reprocess
 ./prod_reprocess.sh --limit 5                        # smoke dry-run (5 videos)
 ./prod_reprocess.sh --recover                        # full dry-run (all site 4)
 ./prod_analytics.sh                                  # report on the newest log
