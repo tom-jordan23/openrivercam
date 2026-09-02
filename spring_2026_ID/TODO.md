@@ -216,8 +216,15 @@ purge firing at exactly 5.00 GiB free says GB but does not prove it.
 - [x] **443 vs 8443 is not an APN question.** 8443 is our own sensor-upload
       container; same host, same address. The asymmetry is client config —
       5 s vs 10 s, urllib3 defaults vs `--retry 5`, and `--ipv4` vs nothing.
-- [x] **NAT64/IPv6 tested and killed.** The station resolves this host to IPv4
-      only; default, `--ipv4` and :8443-without-the-flag all time identically.
+- [x] ~~**NAT64/IPv6 tested and killed.**~~ **RETRACTED 2026-09-02 — the station
+      is on NAT64.** `ip route get` returns `64:ff9b::22cb:e3bb dev wwan0` from
+      an IPv6 source; `64:ff9b::/96` is the well-known NAT64 prefix and the low
+      32 bits decode to 34.203.227.187, the server's IPv4. So the default path
+      is DNS64 + a stateful translator. The earlier test forced `--ipv4` and
+      found it no better, which is true and says nothing about which path is
+      used by default. **A translator dropping state mid-flow is now the leading
+      candidate for the 93 resets and disconnects no timeout fixes.** See
+      `findings/sukabumi_link_path_probes_2026-09-02.md`.
 - [x] **`FAILED` is NOT terminal.** `queue.py:264-266` syncs LOCAL, UPDATED and
       FAILED over a start/stop range at `timeout=150`. But nothing calls it
       automatically: `schedulers.py:35` asks only for `SyncStatus.QUEUE`, which
@@ -258,10 +265,18 @@ purge firing at exactly 5.00 GiB free says GB but does not prove it.
       `datetime.now()` of 22:01:57 — valid, about an hour of headroom, so
       refresh is skipped while a token is fresh.
 
-**What that does to the remedy.** Raising the hardcoded 5 to 150 is still a
-one-line change, but it is **not sufficient and may not help**: 19 syncs already
-failed having waited the full 150 s, and 97 of 201 failures were the connection
-being torn down rather than timing out. The shape — resets and mid-handshake
+**What that does to the remedy. Partly corrected 2026-09-02 — measurement beats
+the inference below.** Handshakes to the server now take **7.17–15.35 s**,
+measured six times across two ports. The hardcoded timeout is **5**. So the
+handshake alone exceeds it, and raising that number *would* address the 139 of
+217 failures whose innermost frame is `get_set_refresh_tokens` — roughly 64%.
+The original text said it "may not help"; on this evidence it helps with most of
+them.
+
+What stands from the original caution: it is **still not sufficient**. 19 syncs
+failed having waited the full 150 s, and 93 failures were the connection being
+torn down rather than timing out. Those need the NAT64 question answered, not a
+larger number. The shape — resets and mid-handshake
 stalls, no connect timeouts — is a policed or throttled link, not a client
 tuned too impatiently. `get_set_refresh_tokens` is also upstream `orc_api` code
 in site-packages, so changing it collides with the standing rule that upstream
