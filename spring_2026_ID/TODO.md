@@ -1,6 +1,6 @@
 # TODO — Indonesia Spring 2026 Deployment (post-trip)
 
-**Last updated:** 2026-09-01
+**Last updated:** 2026-09-02
 
 The pre-trip task list (departure schedule day-by-day, in-country
 deferred items, etc.) was archived to `archive/` after the April 2026
@@ -1692,7 +1692,135 @@ guarded the mount, so the one condition that mattered went unchecked.
   volume, so if the cause was the full disk they are likely recoverable — feed
   into TODO-113.
 
-### RESUME HERE — state at 2026-09-01 22:24 UTC
+### RESUME HERE — state at 2026-09-02 17:45 UTC
+
+Session of 2026-09-02. **Ended cleanly at Tom's request, to resume fresh for the
+Track 1 data gathering (items B and C below).**
+
+**Nothing is running.** No watcher, no armed grab, no Docker harness, no
+background process against the station. Confirm with
+`pgrep -af 'wake_runner|todo119|pounce|db_watch|station_watch'` before assuming
+otherwise. Everything this session ran under the Monitor tool, visible in
+`/tasks` — `nohup` was used early on and should not be again; it is invisible to
+Tom and is exactly the shape his monitoring policy exists to prevent.
+
+**Station is healthy.** 30-minute cadence, sensor rows current, 24 G free on
+root after the reclaim, LTE attached at 100% signal.
+
+---
+
+#### The one thing actually changed on the station this session
+
+**12.61 GB reclaimed — 1,403 already-synced clips deleted, zero skips.** Root
+went 11 G → 24 G free, and the purge deadline moved from ~2026-09-17 to
+mid-October. Every clip was verified byte-identical against the TODO-114 mirror
+before deletion, and each removal was gated on a fresh `stat` matching to the
+byte. The backlog itself was untouched.
+
+**Everything else this session was read-only.** No upload has been attempted, no
+row has been flipped, and no reprocess has been run.
+
+#### What got settled, in order of how much it matters
+
+1. **The server side is cleared.** Four candidates eliminated for zero metered
+   bytes: `client_max_body_size` is 512M (the 1 MB default never applied — this
+   was the leading hypothesis and it was wrong), fail2ban is not installed, host
+   iptables has only Docker's chains, and every video POST in the covered window
+   returned 201. Decisive cross-reference: nginx logged **37 × 201** over two
+   days and the station recorded **exactly 37 SYNCED** — successes match one for
+   one, while ~23 of ~25 failures produced no log line at all. Transport
+   failure, not server refusal.
+   `findings/sukabumi_sync_server_side_cleared.md`.
+
+2. **A 7-second handshake against a 5-second hardcoded timeout.** Measured
+   7.17–15.35 s, six times. `callback_url.py:115` passes `timeout=5`, so the
+   handshake alone exceeds it — which is what the 09-01 traceback showed, dying
+   in `do_handshake`. 139 of 217 innermost frames sit there, so this accounts
+   for **~64% of failures**. Corrects the TODO-119 claim that raising the 5
+   "may not help".
+
+3. **The station is on NAT64 — the record said otherwise, and was wrong.**
+   `ip route get` returns `64:ff9b::22cb:e3bb` over wwan0 from an IPv6 source;
+   the low 32 bits decode to the server's IPv4. **A stateful translator dropping
+   state mid-flow is now the leading candidate for the 93 resets and disconnects
+   no timeout fixes.**
+   `findings/sukabumi_link_path_probes_2026-09-02.md`.
+
+4. **:443 and :8443 are identically slow**, so per-flow carrier treatment is
+   eliminated. `sensor-upload` survives the same link because it is configured
+   to — 10 s timeouts, `--retry 5` — not because its traffic is treated better.
+
+5. **The backlog remedy is proven in a harness** running ORC-OS 0.6.0, the
+   station's actual version. Flipping `FAILED` → `QUEUE` is picked up at t+60,
+   **newest-first end to end**, serial at one clip per link-time, batch size is
+   exactly what you flip, and interrupted batches **self-heal** — rows stay
+   `QUEUE` and the next boot finishes them with no re-flip. One clip is
+   duplicated per interrupted batch, reproducing the mechanism behind the 62
+   half-landed clips. `findings/orc_os_backlog_sync_starvation.md` §7.
+
+6. **The shutdown race costs about twice what the link does.** ORC-OS shuts down
+   ~15 s after the capture video finishes while the backlog sync task waits 60 s,
+   so it is killed before looking on **45%** of boots (823 starts, 454
+   completions). The link discards 13% of attempts; the race discards 45% of
+   opportunities.
+
+7. **Phase 01 of the recovery is parked, not closed.** The 407 errored
+   server-side videos fail on the optical water-level S/N gate, which is
+   `recipe_3`'s — the same recipe VideoConfig 3 uses — so reprocessing them
+   under the current config re-runs what already failed, and a smoke run duly
+   failed 5 of 5. Their fate is decided by the transect, so the work moved to
+   **TODO-113**. Errored clips are **95.3% daytime**, not night; the opposite
+   assumption has now misled two documents.
+
+#### Next session: the data gathering, items B and C
+
+**Do these before any upload. Neither needs a decision, both are measurement.**
+
+- [ ] **B — is NAT64 actually the cause?** Force IPv4 for a handful of syncs and
+      compare the reset rate against the NAT64 path. If resets vanish, that is
+      the answer and the remedy is resolver or route preference — station
+      config, no upstream change. **If NAT64 is the cause, fixing the timeout
+      alone leaves a third of the failures in place**, which is why this comes
+      first.
+- [ ] **C — re-measure throughput.** The record's 5.2–5.5 s for a 9.2 MB clip
+      (1.74 MB/s) cannot be reconciled with a 7 s handshake. That figure
+      underpins every estimate made so far, including the five-day upload
+      projection. One timed real upload settles it.
+
+**Then, and only with Tom's approval, item A — the 5-second timeout.** Two
+options with very different maintenance profiles: patch `callback_url.py:115`
+on the station (one line, targets 64% of failures, but edits upstream
+site-packages and a version update silently reverts it), or keep the token
+fresh so the refresh never runs mid-sync (no upstream change, but new station
+automation). Not chosen.
+
+#### Standing cautions
+
+- **No action without Tom's approval.** Plan-level approval is not step-level
+  approval for anything irreversible — that was the lesson of the 12.61 GB
+  deletion this session.
+- **The SIM is probably still prepaid.** Confirm postpaid has actually landed
+  before any bulk upload, not merely that it was requested.
+- **Do not lower `min_free_space`** — ruled out; the reclaim was the alternative.
+- **Check call sites before asserting behaviour.** Doing so retracted one of
+  three findings this session; not doing so produced the day/night inversion.
+
+#### Artefacts
+
+`data/station-forensics/` is gitignored — on disk at the repo root, not in the
+repo. This session added `redriveplan119f`, `deletesafety119g`,
+`redrivediscovery119h`, `p02dryrun119i`, `p02commit119j`, `uploadprep119l`,
+`verifyclaims119m`, `pathprobes119n`.
+
+Committed tooling: `station-health/todo119_wake_runner.py` (runs one prepared
+script inside a wake), `todo119_reclaim_join.py`, `todo119_path_probes.sh`,
+`orcos-harness/` (the ORC-OS 0.6.0 rig with its README),
+`liveorc-host/diagnose-sync-failures{,2}.sh`,
+`reprocess/ssm_recover_407.sh` + `RECOVER_ERRORED_407.md`.
+
+---
+
+### Superseded resume block — state at 2026-09-01 22:24 UTC
 
 Session of 2026-09-01, third sitting. **Ended cleanly at the user's request.**
 Tree committed and pushed; nothing left running against the station.
