@@ -1,7 +1,8 @@
 # Finding: why a duty-cycled ORC-OS station never drains its sync backlog
 
-**Status:** Source-verified on ORC-OS **0.6.0**; the timing consequence is
-**inferred, not yet observed** — see §6.
+**Status:** Source-verified on ORC-OS **0.6.0**, and the timing consequence is
+now **measured** — see §6. Supersedes the 2026-09-02 first draft, which leaned
+toward "the backlog task never runs"; it runs 55% of the time.
 **Software:** ORC-OS 0.6.0 (`orc_api == 0.6.0`, read from the installed package
 on Sukabumi 2026-09-02). Confirmed identical to upstream tag `v0.6.0`.
 **Site:** Sukabumi — 2,982 `FAILED` video rows, 1,193 of which still hold their
@@ -21,8 +22,12 @@ file, none ever retried.
 On a station that sleeps between wakes, the task that would re-sync failed
 videos is scheduled to begin **60 seconds after boot**, while the capture path
 issues `sudo shutdown -h now` roughly **15 seconds after the current video
-finishes processing**. If capture and processing complete in under ~45 seconds,
-the machine is gone before the backlog task starts.
+finishes processing**. Measured over 823 boots at Sukabumi, **the task is killed
+before it can look 45% of the time**; the other 55% it looks at a queue nothing
+ever fills.
+
+Two stacked causes, then, not one. Neither alone accounts for a backlog that has
+never been retried.
 
 Separately, the environment variable that would let an operator lengthen that
 15-second window **cannot be set to any value without raising `TypeError`**.
@@ -121,21 +126,64 @@ failure, but the guard sits below the line that raises.
 
 **Fix upstream:** `int(os.getenv("ORC_TIMEOUT_BEFORE_SHUTDOWN", 15))`.
 
-## 6. What is verified, and what is not
+## 6. Measured on the station, 2026-09-02
 
-| | |
-|---|---|
-| **Verified** — source read on the station and against upstream `v0.6.0`, matching | the 60 s delay; the 15 s + `shutdown -h now`; that only `process_video` carries `shutdown_after_task`; the single-worker executor; the `TypeError`, reproduced directly |
-| **Not verified** | that `settings.shutdown_after_task` is actually `True` on Sukabumi — the settings row has not been read. Tom states ORC-OS performs the shutdown, and `orc-capture.conf` describes itself as *"belt-and-braces backup to wp5's hardware timer and ORC-OS's `shutdown_after_task`"*, which is consistent but not the same as reading it |
-| **Not verified** | that `delayed_sync_videos` never completes in practice. The 15:00 UTC grab on 2026-09-02 ran ~30 s into the boot, before the 60 s could elapse, so the absence of its log line proves nothing |
-| **Not verified** | how long capture and processing actually take, which is what decides whether ~45 s of headroom exists |
+The two log lines in `delayed_sync_videos` bracket the race precisely. The first
+is written before the sleep, the second only after it returns, so counting them
+across every boot the journal holds settles it without needing to catch a wake
+at the right instant:
 
-The way to settle the last three is a local ORC-OS 0.6.0 harness — built and
-ready at the time of writing — or a grab taken late in a wake rather than early.
+| Log line | Count | |
+|---|---|---|
+| `Starting sync of videos with a 60-second delay.` | **823** | the task started |
+| `There are N videos left to synchronize.` | **454** | it survived the sleep — **55%** |
+| *(difference)* | **369** | killed before it could look — **45%** |
+| `Shutdown triggered by daemon` | **818** | ORC-OS ends 99% of cycles |
+
+**The settings row, read for the first time:**
+
+```
+active  enable_daemon  shutdown_after_task  reboot_after  sync_file  sync_image  video_config_id
+1       1              1                    3600.0        1          1           3
+```
+
+`shutdown_after_task` is on, and at 818 of 823 boots ORC-OS — not `orc-capture`
+and not the Witty Pi hardware timer — is what ends the cycle. That matches the
+design intent recorded in `pi/sukabumi/etc/orc-capture.conf`, which describes
+its own `CYCLE_MODE` as a belt-and-braces backup rather than the normal path.
+
+**Wake duration**, from `journalctl --list-boots`:
+
+```
+boot -4:  13:30:21 -> 13:32:23  = 2m02s
+boot -3:  14:00:15 -> 14:02:30  = 2m15s
+```
+
+So a wake runs ~122-135 s and the sync task fires at t+60 — inside the window,
+which is why it survives more often than not rather than never. The 45% that
+die are the wakes where capture and processing finished early enough that the
+15-second shutdown timer expired first.
+
+**What this changes.** The backlog is not structurally unreachable. Roughly one
+wake in two, the task lives long enough to act on whatever is in
+`SyncStatus.QUEUE` — it simply always finds it empty. Any remedy that fills that
+queue should expect to lose about half its attempts to the shutdown, and to
+have only the remainder of the wake after t+60 to work in.
+
+**Still not measured:** how long the sync itself gets before the shutdown lands
+on a wake where the task does survive, and therefore how many clips can realistically
+complete per wake. That needs either the local ORC-OS 0.6.0 harness or a grab taken
+after t+60 in a wake.
 
 ## 7. Why it matters beyond Sukabumi
 
 Any ORC-OS station on a wake/sleep duty cycle with `shutdown_after_task` enabled
 has the same structure. The symptom is quiet: the retry path exists, the logs
 say nothing alarming, and the failed videos simply accumulate. At Sukabumi that
-went unnoticed until the backlog reached 2,982 rows.
+went unnoticed until the backlog reached 2,983 rows.
+
+The quietest part is that the one log line an operator would look for —
+`There are N videos left to synchronize.` — prints **0** on every wake where it
+prints at all, while thousands of failed rows sit in the database. It is
+truthfully reporting the queue, which is empty, and saying nothing about the
+backlog, which is not.
