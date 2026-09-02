@@ -183,6 +183,47 @@ purely PMI's, not a technical readiness one.
 
 ---
 
+### TODO-119 phase 01 — PARKED 2026-09-02, waiting on the transect switch
+
+The 407 errored site-4 videos are **not** unprocessed video waiting for the
+right settings. They are video that already failed processing, and the smoke run
+failed 5 of 5 exactly as the existing evidence predicts.
+
+**The day/night assumption was backwards, and the repo already said so.** Errored
+clips are **95.3% daytime** (388 of 407); finished clips are 57.1% night. This is
+the inversion `findings/optical_wl_daytime_glint.md` was written to record.
+
+**Reprocessing under VideoConfig 3 re-runs the computation that failed.** Every
+one of the 100 error videos measured in July dies on the same S/N gate —
+`s2n_thres: 2.0` in `recipe_3`, which is VideoConfig 3's recipe. Lowering the
+gate is not available either: the distribution is bimodal (passes 3–5, failures
+1.3–1.8, nothing between 1.98 and 2.00) and the finding concluded that lowering
+it would admit unreliable estimates rather than recover good ones. The failures
+already find the right waterline at 614.794 m; they cannot confirm it.
+
+**Why this is parked rather than closed.** Optical WL is detected against the WL
+cross-section, so **a different transect changes the geometry the detection runs
+on**. What S/N these clips reach under a new cross-section is genuinely unknown
+and not predictable from measurements taken under the current one. Tom is
+switching transects and reprocessing everything, so the 407 get swept up in that
+anyway — and testing them now would answer a question about a configuration
+about to be replaced.
+
+**Resume by probing the bulk case, not the oldest ids.** `smoke` takes the five
+lowest ids, which are all May; 377 of the 407 are July–August. After the switch:
+
+```
+VC=<new-video-config-id> ./ssm_recover_407.sh probe 2421,2423,2424,2425,2427,2432,2433,2468
+```
+
+Eight July daytime clips. Pass → the full run is worth doing and the id list
+still stands. Fail the same way → these clips need a different water-level
+approach, and that is the finding rather than the recovery.
+
+Procedure and reasoning: `liveorc_server/reprocess/RECOVER_ERRORED_407.md`.
+
+---
+
 ### TODO-119: Inventory the un-synced video backlog and decide what to do with it
 
 | Field | Value |

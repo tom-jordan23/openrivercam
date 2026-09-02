@@ -15,7 +15,12 @@
 #
 # STAGES
 #   check    prerequisites only. Changes nothing, writes nothing.
-#   smoke    dry-run over 5 videos. Proves the env and the --ids path.
+#   smoke    dry-run over the first 5 ids. Proves the env and the --ids path.
+#   probe    dry-run over ids YOU name. Use it to test a specific class of
+#            video - a daytime sample, a month, a handful under a new
+#            transect - instead of whatever the id list happens to start with.
+#            Set VC=<id> to run against a different VideoConfig; that is how
+#            this gets reused once the transect changes.
 #   dryrun   dry-run over all 407, then the impact report.
 #   backup   pg_dump + api_timeseries baseline. Required before commit.
 #   commit   the real write. Refuses unless a backup exists from today.
@@ -62,8 +67,21 @@ check)
   ;;
 
 smoke)
-  note "dry-run over 5 of the $N — proves the environment and the --ids path"
+  note "dry-run over the first 5 of the $N — proves the environment and the --ids path"
+  echo "  NOTE: these are the LOWEST ids, i.e. the oldest clips, not a"
+  echo "  representative sample. Use 'probe' to choose the class deliberately."
   ./prod_reprocess.sh --ids "$IDS" --limit 5 --recover
+  ;;
+
+probe)
+  PIDS=${2:-}
+  [ -n "$PIDS" ] || die "usage: ./ssm_recover_407.sh probe <comma,separated,ids>  [VC=<video-config-id>]"
+  VCARG=()
+  [ -n "${VC:-}" ] && VCARG=(--video-config-id "$VC")
+  note "dry-run over the ids you named — writes nothing"
+  echo "  ids : $PIDS"
+  echo "  cfg : ${VC:-3 (default)}"
+  ./prod_reprocess.sh --ids "$PIDS" --recover "${VCARG[@]}"
   ;;
 
 dryrun)
@@ -103,6 +121,7 @@ commit)
 *)
   sed -n '2,30p' "$0"
   echo
-  echo "usage: ./ssm_recover_407.sh {check|smoke|dryrun|backup|commit}"
+  echo "usage: ./ssm_recover_407.sh {check|smoke|probe <ids>|dryrun|backup|commit}"
+  echo "       VC=<id> ./ssm_recover_407.sh probe <ids>   # against another VideoConfig"
   exit 2 ;;
 esac
