@@ -95,7 +95,45 @@ This is a third, independent five-second timeout, and it is not the one at
 `:115`. Raising or passing a timeout here is a separate change from anything to
 do with tokens.
 
-### 3. Two uploads were refused and the reason was destroyed
+### 3. Two uploads reached the server and LiveORC returned 500
+
+**Answered from the host, 2026-09-03.** The station's requests arrived. LiveORC
+threw an unhandled server error on both:
+
+```
+[03/Sep/2026:07:31:58 +0000] "POST /api/video/ HTTP/1.0" 500 145 "-" "python-requests/2.32.3"
+[03/Sep/2026:10:31:56 +0000] "POST /api/video/ HTTP/1.0" 500 145 "-" "python-requests/2.32.3"
+```
+
+Excluded by the same run: `client_max_body_size` is **512M**, not nginx's 1 MB
+default; `proxy_read_timeout` is 300000s; there is no fail2ban and no rate
+limiting. This is not a refusal, a size cap or a proxy timeout. It is our own
+application erroring, and it has nothing to do with the link, the SIM or any
+timeout.
+
+**The rate, over 14 days of `POST /api/video/`: 68 × 201 and 4 × 500 — 5.6%.**
+
+```
+02/Sep/2026:07:31:52    03/Sep/2026:07:31:58
+02/Sep/2026:09:31:52    03/Sep/2026:10:31:56
+```
+
+Two per day on both days. Flat, so it is a property of the upload rather than
+an incident with a start and an end. **At that rate the 1,190-clip re-drive
+meets it about 66 times**, having spent the metered bytes each time to do so.
+
+All four land at `:31` past the hour. The station wakes at `:01` and `:31`, so
+roughly half of uploads occur at `:31` anyway and four out of four is about a
+1-in-16 coincidence. Suggestive, not significant at n=4. Worth re-checking once
+there are more.
+
+Not yet known: **what the exception is.** `docker logs liveorc_webapp` carries
+only the access line — no traceback, no exception class. With `DEBUG=False` and
+no `LOGGING` config Django routes `django.request` errors to `mail_admins`
+rather than the console, and gunicorn's stderr is not arriving either.
+`liveorc-host/find-500-traceback.sh` looks for where it went.
+
+### 3b. How the reason was destroyed on the station side
 
 `schemas/base.py:47`:
 
@@ -108,10 +146,15 @@ instance — `r.json()` raises `JSONDecodeError`, which replaces the `ValueError
 and takes the status code with it. The log records only
 `Expecting value: line 2 column 1 (char 1)`.
 
-The server refused those two uploads. From the station there is no way to tell
-a 502 from a 504 from a 413. **The AWS nginx access and error logs at
-2026-09-03 07:31:58 and 10:31:56 UTC are the only surviving record**, and
-reading them costs no metered station bytes.
+From the station there was no way to tell a 500 from a 502 from a 413 — the
+status code never reached the log. It took a server-side read to recover it,
+which cost no metered station bytes.
+
+**This is the more consequential half of the finding.** A 5.6% server-side
+error rate was invisible from the station for as long as anyone has been
+looking at these failures, because ORC-OS reports it as a JSON parse error.
+Every previous tally counted these as transport failures or did not count them
+at all.
 
 This class appears in no historical tally, because nothing has previously
 looked for it under that error text.
