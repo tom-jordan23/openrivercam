@@ -87,3 +87,59 @@ journalctl --since '2026-09-03 01:30:00' --no-pager 2>/dev/null \
   | tail -16 | sed 's/^/  /'
 
 echo "=== END ==="
+
+# ---------------------------------------------------------------------------
+# ADDED AFTER SAMPLE 1 (2026-09-03 16:30 UTC). Sections A-F above are unchanged
+# so the counter samples stay comparable across wakes.
+#
+# Sample 1 made the aggregate tally in E ambiguous. It counted every
+# callback_url frame in the window, not the innermost frame per failure, and
+# the numbers only resolve once you know what each line is:
+#   line  91 = the __getattr__ retry wrapper, present in EVERY traceback (12)
+#   line 171 = `self.get_set_refresh_tokens()`, the refresh CALL SITE inside post() (5)
+#   line 115 = `requests.post(..., timeout=5)` inside the refresh itself (5)
+#   line 172 = the data POST, which the token remedy does not touch (2)
+# So 171 and 115 are the same five failures seen at two depths, not ten.
+#
+# What sample 1 could NOT answer: WHICH failures those were. The token was
+# valid from 09:31:55 to 14:31:55 (created_at + 5 h), yet failures landed at
+# 10:31 and 12:01, inside that valid window. Either the refresh is triggered
+# from a path other than post()'s guard, or the frame belongs to a different
+# failure than the timestamps suggest. An aggregate cannot tell them apart.
+# Section G pairs each failure with its own innermost frame.
+# ---------------------------------------------------------------------------
+
+echo
+echo "=== G. PER-FAILURE: timestamp, innermost callback_url frame, error ==="
+printf '%s' "$L" | awk '
+  /ERROR - Error syncing video to remote site/ {
+    if (ts != "") print ts "  frame=" (frame == "" ? "none" : frame) "  " err
+    ts = $1 " " $2
+    err = $0
+    sub(/.*Error syncing video to remote site: /, "", err)
+    err = substr(err, 1, 90)
+    frame = ""
+    n = 0
+    next
+  }
+  ts != "" {
+    n++
+    if (n > 80) next
+    if (match($0, /callback_url\.py", line [0-9]+/)) {
+      f = substr($0, RSTART, RLENGTH)
+      sub(/callback_url\.py", /, "", f)
+      if (f !~ /line 91$/) frame = f
+    }
+  }
+  END { if (ts != "") print ts "  frame=" (frame == "" ? "none" : frame) "  " err }
+' | sed 's/^/  /'
+echo "  (frame=line 115 -> died in the token refresh: token freshness reaches it."
+echo "   frame=line 172 -> died in the data POST: it does not.)"
+
+echo
+echo "=== H. when did the token actually refresh — journal evidence ==="
+printf '%s' "$L" | grep -iE "token|refresh" | grep -viE "sensors\]" \
+  | tail -20 | cut -c1-180 | sed 's/^/  /'
+echo "  (the callback_url row only remembers the LAST successful refresh, so"
+echo "   the journal is the only place the cadence survives.)"
+echo "=== END G/H ==="
