@@ -422,14 +422,19 @@ along with this run".
 
 **Gates still standing before any bulk upload fires:**
 
-- [x] ~~**The SIM.**~~ **Closed by moving prepaid → postpaid (Tom,
-      2026-09-02).** Data volume can no longer take the station off the air the
-      way it did in ISS-FIELD-011, which removes the hardest gate on the
-      re-drive. Two things this does not do: it does not make 10.69 GB free —
-      postpaid still bills, and may carry overage rates — and it does not help
-      until the switch has actually landed. **Confirm the account is on
-      postpaid before firing the bulk upload, not merely that the change was
-      requested.**
+- [ ] **The SIM — NOT CLOSED. Re-opened 2026-09-03.** This was marked closed on
+      2026-09-02 on the strength of Tom deciding to move the account prepaid →
+      postpaid. That was a decision to make the change, not evidence it landed,
+      and ticking the box turned the one into the other. **Tom confirmed on
+      2026-09-03 that he has still had no confirmation of the change.** So as
+      far as anything here knows, the station is on the same metered prepaid
+      SIM whose exhaustion caused ISS-FIELD-011, and this remains **the hardest
+      gate on the re-drive** rather than a removed one.
+      Note also what postpaid would and would not do, if it lands: it does not
+      make 10.69 GB free — it still bills, possibly at overage rates — it only
+      stops data volume taking the station off the air.
+      **Closing this needs confirmation from the carrier, not a second
+      decision.**
 - [ ] **Is the link currently able to carry it?** 201 failures in five days,
       97 of them resets that no timeout fixes. Postpaid removes the cost of
       failure but not the failure. A re-drive over a still-broken link simply
@@ -1908,8 +1913,10 @@ automation). Not chosen.
 - **No action without Tom's approval.** Plan-level approval is not step-level
   approval for anything irreversible — that was the lesson of the 12.61 GB
   deletion this session.
-- **The SIM is probably still prepaid.** Confirm postpaid has actually landed
-  before any bulk upload, not merely that it was requested.
+- **The SIM is still prepaid as far as anything here knows (confirmed open by
+  Tom, 2026-09-03).** The postpaid change was decided on 09-02 and has not been
+  confirmed by the carrier. Do not treat it as done; the gate at the top of this
+  item was wrongly ticked for a day on exactly that confusion.
 - **Do not lower `min_free_space`** — ruled out; the reclaim was the alternative.
 - **Check call sites before asserting behaviour.** Doing so retracted one of
   three findings this session; not doing so produced the day/night inversion.
@@ -1995,10 +2002,11 @@ forward since 09-01 as unanswered; Tom had given the answer before, but it was
 never written into the record, which is why it kept resurfacing. It is written
 down now.
 
-**This is not approval to fire the re-drive.** The standing caution holds: a
-green dry run is not approval, and the gates below still stand — postpaid
-confirmed as landed, and one day's window (~48 clips, ~440 MB) measured
-newest-first before the remaining ~10 GB. The path itself is proven: the local
+**This is not approval to fire the re-drive, and the SIM gate is open.** A green
+dry run is not approval. The gates: **postpaid confirmed as landed by the
+carrier — still unconfirmed as of 2026-09-03**, and one day's window (~48 clips,
+~440 MB) measured newest-first before the remaining ~10 GB. Uploading 10.69 GB
+over a prepaid SIM is the exact failure that caused ISS-FIELD-011. The path itself is proven: the local
 API re-drive was green end to end on 2026-09-03 (`apidryrun119y`), so no
 ORC-OS database write is needed.
 
