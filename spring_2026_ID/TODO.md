@@ -1719,7 +1719,32 @@ armed script carrying the API password was shredded; `/dev/shm` is clean.
    09-02 21:32 and 09-03 16:00 UTC while `FAILED` went 2995 → **3012**. Uploads
    are working again, partially.
 
-#### Next session: the upload failures happening now
+#### The upload failures, measured — SUPERSEDED BY 2026-09-03 17:30
+
+**The ~46% below describes the outage, not the present.** Four counter reads at
+16:00, 16:30, 17:00 and 17:30 UTC put `FAILED` flat at **3012** while `SYNCED`
+went 2596 → 2599. Every capture from 12:31 to 17:30 synced: eleven consecutive,
+six hours. Post-outage the rate was 8 in 29 to 12:01, and nothing since.
+
+The nine post-outage failures are **three faults, not one** — full write-up in
+`findings/sukabumi_upload_failures_anatomy_2026-09-03.md`:
+
+| count | mechanism | reached by token freshness? |
+|---|---|---|
+| 5 | token refresh, `callback_url.py:115`, hardcoded `timeout=5` | **yes** |
+| 2 | time-series sub-sync at `base.py`'s default `timeout=5` | no |
+| 2 | server refusal; status code destroyed at `base.py:47` | no |
+
+All five refresh failures sit in 01:31–03:32, immediately after the outage
+cleared. **That makes them a recovery tail, not a steady-state fault** — about
+four or five clips after each outage and nothing in between. The record's "64%
+of failures at `:115`" was measured over 08-23→08-28, itself an outage window,
+so it may be the same artefact; untested either way.
+
+The time-series sub-sync is a **third, independent** five-second timeout:
+`time_series.sync_remote` calls `super().sync_remote` without a timeout, so the
+150 s computed at `video.py:387` never reaches it. It runs *before* the video
+upload, so a timeout there costs the clip having transferred almost nothing.
 
 Roughly 37 clips were captured in that ~18.5 h window; **20 synced, 17 failed**.
 That is the live question. Treat the ~46% failure rate as one window's
@@ -1727,12 +1752,14 @@ observation, not an established rate — it wants more than one sample before it
 means anything.
 
 Two threads feed into it, both already characterised:
-- **Item A, the 5-second timeout** at `callback_url.py:115`, which accounts for
-  ~64% of historical failures. **Route chosen: token freshness, not the
-  site-packages patch (Tom, 2026-09-03).** That is a decision on *which*
-  remedy, not approval to execute anything on the station — the design still
-  has to come back for step-level approval, and it is gated on the measurement
-  below.
+- **Item A, the 5-second timeout** at `callback_url.py:115`. **Route chosen:
+  token freshness, not the site-packages patch (Tom, 2026-09-03).** That is a
+  decision on *which* remedy, not approval to execute anything on the station —
+  the design still has to come back for step-level approval. **Measured
+  2026-09-03: it reaches 5 of 9 post-outage failures, all of them the recovery
+  tail.** Still worth doing; not sufficient alone. The other two mechanisms
+  also live in upstream site-packages, so the silent-revert argument that
+  killed the `:115` patch applies to them equally.
 - **The shutdown race**, which discards 45% of sync *opportunities* — ORC-OS
   shuts down ~15 s after capture while the backlog task waits 60 s.
 
