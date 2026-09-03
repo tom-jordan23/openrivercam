@@ -124,7 +124,7 @@ printf '%s' "$L" | awk '
   }
   ts != "" {
     n++
-    if (n > 80) next
+    if (n > 400) next
     if (match($0, /callback_url\.py", line [0-9]+/)) {
       f = substr($0, RSTART, RLENGTH)
       sub(/callback_url\.py", /, "", f)
@@ -143,3 +143,57 @@ printf '%s' "$L" | grep -iE "token|refresh" | grep -viE "sensors\]" \
 echo "  (the callback_url row only remembers the LAST successful refresh, so"
 echo "   the journal is the only place the cadence survives.)"
 echo "=== END G/H ==="
+
+# ---------------------------------------------------------------------------
+# ADDED AFTER SAMPLE 2 (2026-09-03 17:00 UTC).
+#
+# Section G reported frame=none for 8 of 9 failures, which contradicts section
+# E finding 5 frames at line 115 in the same window. Two candidate reasons, and
+# they have opposite consequences for the remedy:
+#
+#   (a) MY BUG. G capped the search at 80 lines after the error line. A requests
+#       ReadTimeout logs a CHAINED traceback - the urllib3 section first, then
+#       "During handling of the above exception, another exception occurred",
+#       then the section carrying the callback_url frames. If the chain is
+#       longer than 80 lines the frames are simply out of reach, and frame=none
+#       means nothing at all. The cap is now 400.
+#   (b) REAL. The frames E counted belong to other subsystems entirely - the
+#       sensors upload and the health check both run every wake and both go
+#       through callback_url - in which case E was never measuring video sync
+#       and the video failures genuinely have no refresh frame.
+#
+# Section I settles it by printing one complete traceback verbatim instead of
+# counting anything. Until it lands, neither "5 of 9 died in the refresh" nor
+# "0 of 9 did" is established.
+#
+# base.py:47 is confirmed independently and needs no further measurement:
+#   raise ValueError(f"... detail: {r.json()['detail']}")
+# On a non-2xx whose body is not JSON, r.json() raises JSONDecodeError, which
+# REPLACES the ValueError and discards the status code. That is exactly the
+# "Expecting value: line 2 column 1 (char 1)" seen at 07:31 and 10:31 - the
+# server refused the upload and ORC-OS destroyed the evidence of how.
+# ---------------------------------------------------------------------------
+
+echo
+echo "=== I. ONE COMPLETE TRACEBACK, verbatim — the most recent ReadTimeout ==="
+LAST_TS=$(printf '%s' "$L" | grep 'ERROR - Error syncing video to remote site' \
+          | grep 'Read timed out' | tail -1 | awk '{print $1" "$2}')
+echo "  failure at: ${LAST_TS:-<none found>}"
+if [ -n "${LAST_TS:-}" ]; then
+  printf '%s' "$L" | awk -v want="$LAST_TS" '
+    index($0, want) && /ERROR - Error syncing video to remote site/ { on=1 }
+    on { n++; print; if (n > 120) exit }
+  ' | cut -c1-200 | sed 's/^/    /'
+  echo "  --- block length and which modules appear in it ---"
+  printf '%s' "$L" | awk -v want="$LAST_TS" '
+    index($0, want) && /ERROR - Error syncing video to remote site/ { on=1 }
+    on { n++; if (match($0, /File "[^"]+"/)) print substr($0, RSTART+6, RLENGTH-7); if (n > 400) exit }
+  ' | sed 's#.*/##' | sort | uniq -c | sort -rn | head -12 | sed 's/^/    /'
+fi
+
+echo
+echo "=== J. the non-JSON refusals: what did the server actually return ==="
+echo "  base.py:47 discards the status code, so the only surviving trace is"
+echo "  whatever the server logged. Timestamps to check on the AWS host:"
+printf '%s' "$L" | grep 'Expecting value' | awk '{print "    "$1" "$2}'
+echo "=== END I/J ==="
