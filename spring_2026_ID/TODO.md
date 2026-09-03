@@ -1796,6 +1796,21 @@ automation). Not chosen.
 
 #### Standing cautions
 
+- **Writing to the station's ORC-OS database is HIGH RISK and requires Tom's
+  explicit approval for that specific operation (Tom, 2026-09-03).**
+  `/home/pi/.ORC-OS/orc-os.db` is the station's only record of what has and has
+  not reached the server; a bad write can corrupt sync state for thousands of
+  rows, and the station is reachable ~2 minutes in every 30, so a mistake cannot
+  be undone quickly. **Use the local API instead** — `POST /api/video/sync/`
+  (`routers/video.py:530`) runs the app's own re-drive at `timeout=150` and
+  writes nothing directly. **If the API route is blocked, stop and say so; do
+  not fall back to SQL.** That drift already happened once: after the API auth
+  path was blocked on 2026-09-03, a 5-clip `update video set
+  sync_status='QUEUE'` script was written and armed as though it were the next
+  step, silently reverting a decision Tom had already made on exactly this
+  ground. It was stopped before any wake caught it and nothing ran. Read-only
+  station work — journal grabs, sqlite `SELECT`s, log reads — is routine and is
+  not covered by this.
 - **No action without Tom's approval.** Plan-level approval is not step-level
   approval for anything irreversible — that was the lesson of the 12.61 GB
   deletion this session.
