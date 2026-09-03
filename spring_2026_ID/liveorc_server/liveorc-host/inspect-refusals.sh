@@ -24,6 +24,22 @@
 # Sections 5 and 6 check the config and the app log for each of those, because
 # the access log alone gives the code but not the cause.
 #
+# SUPERSEDED IN PART, 2026-09-03. Sections 5 and 7 are sound and their answers
+# are recorded below. SECTION 3 IS BROKEN AND ITS "NOTHING" IS NOT A FINDING:
+# it reads /var/log/nginx/access.log inside the container, but liveorc_webapp
+# logs to Docker's json driver, so it found one blank line and reported that
+# the requests never arrived - the exact opposite of the truth. Use
+# inspect-500s.sh, which reads `docker logs`.
+#
+# WHAT IT ESTABLISHED ANYWAY, via section 6, which did use docker logs:
+#   [03/Sep/2026:07:31:58 +0000] "POST /api/video/ HTTP/1.0" 500 145
+#   [03/Sep/2026:10:31:56 +0000] "POST /api/video/ HTTP/1.0" 500 145
+# Both uploads ARRIVED and LiveORC threw an unhandled 500. Excluded by
+# section 5: client_max_body_size is 512M, not the 1 MB default;
+# proxy_read_timeout is 300000s. Excluded by section 7: no fail2ban, no rate
+# limiting. The 145-byte body is Django's DEBUG=False error page - not JSON,
+# hence the JSONDecodeError at ORC-OS base.py:47.
+#
 # READ-ONLY. Reads logs and prints config values. Starts nothing, restarts
 # nothing, writes nothing. Safe on production at any time.
 #
