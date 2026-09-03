@@ -2006,7 +2006,26 @@ down now.
 dry run is not approval. The gates: **postpaid confirmed as landed by the
 carrier — still unconfirmed as of 2026-09-03**, and one day's window (~48 clips,
 ~440 MB) measured newest-first before the remaining ~10 GB. Uploading 10.69 GB
-over a prepaid SIM is the exact failure that caused ISS-FIELD-011. The path itself is proven: the local
+over a prepaid SIM is the exact failure that caused ISS-FIELD-011.
+
+**A THIRD GATE, added 2026-09-03: scope the re-drive against the server, not
+against the station's `FAILED` set.** `FAILED` does not mean the server lacks
+the clip. LiveORC 500s on ~5.6% of uploads *after* committing the row and the
+file, so the server holds the video while the station records a failure —
+**62 such rows on site 4**. Full mechanism in
+`findings/liveorc_video_500_timeseries_collision_2026-09-03.md`.
+
+Two consequences:
+- Re-driving those 62 would overwrite the files (`get_video_path` is
+  deterministic, `OverwriteFileSystemStorage` replaces same-named files) and
+  create **duplicate rows**, since nothing constrains `timestamp`.
+- **They do not need re-uploading.** The bytes are already there. What they
+  need is the time-series association repaired server-side, at no metered cost.
+
+The rest of the backlog does look genuinely absent: site 4 holds 2,715 rows
+from 2026-04-21, and the missing days (07-30→08-09, 08-15→08-19, 08-28→08-31,
+plus 08-23→08-27 at 6–9/day against a 45–48 norm) sum to roughly the 1,190
+figure. The station's per-day `FAILED` counts will make that exact. The path itself is proven: the local
 API re-drive was green end to end on 2026-09-03 (`apidryrun119y`), so no
 ORC-OS database write is needed.
 
