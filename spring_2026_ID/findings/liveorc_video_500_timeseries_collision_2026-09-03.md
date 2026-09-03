@@ -114,11 +114,51 @@ the file would be overwritten — but nothing constrains `timestamp`, so a
 they need is the time-series association repaired, which is a server-side
 operation costing no metered station data.
 
-**Track 2 still looks sound for the rest.** Site 4 holds 2,715 rows spanning
-2026-04-21 to 2026-09-03. Days entirely absent — 07-30→08-09, 08-15→08-19,
-08-28→08-31 — plus 08-23→08-27 collapsed to 6–9/day against a 45–48 norm, sum
-to roughly the record's 1,190 clips. Pairing against the station's per-day
-FAILED counts will make that exact.
+**Track 2, now that the per-day join is done.** The pairing is committed at
+`station-health/joins/station_vs_server_by_day_2026-09-03.txt` (station
+`failedbyday119aa`, 19:00:43Z; server `site4-inventory.sh`).
+
+- Station: 5,740 video rows, **3,013 FAILED**, 2,601 SYNCED, 126 LOCAL.
+- Server, site 4: 2,715 rows over 80 days; the station has rows on 126 days.
+- **Summed per-day gap: 3,025 against 3,013 FAILED — agreement to 0.4%.**
+
+So at day granularity the FAILED backlog really is absent from the server, and
+the concern that it might already be held does not survive contact with the
+numbers. The 62 present-but-errored rows sit inside that 0.4%; separating them
+exactly needs a timestamp-level join, not a day-level one.
+
+**Correction to an earlier claim in this document.** I wrote that the absent
+days "sum to roughly the record's 1,190 clips". They do not — they sum to
+**3,025**. The 1,190 figure is not the number missing from the server; it is
+the number of FAILED clips whose **files still exist on the station's disk**
+and can therefore be re-driven. The remaining ~1,825 are FAILED rows whose
+files the disk manager has already purged. They are gone, and no re-drive
+recovers them. The two numbers were never the same quantity and I conflated
+them.
+
+Contiguous spans the server has nothing for, where the station did capture:
+
+| span | clips |
+|---|---|
+| 2026-04-22 → 05-11 | 938 |
+| 2026-07-30 → 08-09 | 527 |
+| 2026-05-17 → 05-21 | 240 |
+| 2026-08-28 → 08-31 | 192 |
+| 2026-06-21 → 06-22 | 96 |
+| 2026-07-23 | 48 |
+| 2026-04-08 → 04-20 | 15 |
+| **total** | **2,056** |
+
+The rest of the 3,025 is scattered partial-day loss, heaviest on 08-23→08-27
+(39–42/day missing against a 48/day capture rate).
+
+**An open question this raised, not previously in the record.** Five spans have
+no station rows at all — the station captured nothing:
+2026-04-09→04-13, 04-15→04-19, 05-12, **06-25→07-01 (7 days)**, and
+**08-15→08-19 (5 days)**. These are capture outages, not sync failures, and
+they are a different class from everything TODO-119 has been chasing. The
+06-25→07-01 and 08-15→08-19 spans are not explained by anything in the record I
+have read.
 
 ## Corrections made along the way
 
