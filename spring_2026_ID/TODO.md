@@ -1697,7 +1697,82 @@ guarded the mount, so the one condition that mattered went unchecked.
   volume, so if the cause was the full disk they are likely recoverable — feed
   into TODO-113.
 
-### RESUME HERE — state at 2026-09-03 16:05 UTC
+### RESUME HERE — state at 2026-09-03 19:15 UTC
+
+Session of 2026-09-03, second sitting. Ended at Tom's request after the
+findings were written up.
+
+**Nothing is running.** No watcher, no armed grab, no background process.
+Confirm with `pgrep -af 'wake_runner|todo119|pounce|db_watch|station_watch'`.
+Everything ran under the Monitor tool, session-scoped. Nothing was written to
+the station or to the server at any point this sitting — every host and station
+script was read-only.
+
+#### Read these first
+
+- `findings/sukabumi_upload_failures_anatomy_2026-09-03.md` — the canonical
+  write-up. Written to be read cold.
+- `findings/liveorc_video_500_timeseries_collision_2026-09-03.md` — the LiveORC
+  defect, in detail.
+- `station-health/joins/station_vs_server_by_day_2026-09-03.txt` — the raw
+  station-vs-server per-day table.
+
+#### What this sitting settled
+
+1. **The live failure rate is zero.** Four counter reads 16:00→17:30 UTC held
+   `FAILED` flat at 3012 while `SYNCED` went 2596→2599; eleven consecutive
+   captures synced. The ~46% in the superseded block was the outage tail.
+2. **The nine post-outage failures are three faults**, not one: 5 token
+   refresh, 2 time-series sub-sync at a 5 s default, 2 LiveORC 500s.
+3. **A third five-second timeout, previously unrecorded.**
+   `time_series.sync_remote` calls `super().sync_remote` without a timeout, so
+   `base.py`'s default of 5 applies and the 150 s computed at `video.py:387`
+   never reaches it. It runs *before* the video upload, so a timeout there
+   costs the clip having transferred almost nothing.
+4. **LiveORC 500s on ~5.6% of uploads, and it is a real defect** — a
+   `OneToOneField` collision on `time_series`, with `allowed_dt` set to exactly
+   the 30-minute wake interval. **62 rows on site 4.** Upstream's fix, not
+   ours.
+5. **`FAILED` on the station does not mean absent from the server.** Those 62
+   are on the server with their files. They need a server-side association
+   repair, not a re-upload.
+6. **The backlog is otherwise genuinely absent.** Per-day join: 3,025 missing
+   against 3,013 FAILED, 0.4%.
+7. **Only ~1,190 of the 3,013 are recoverable** — the rest have had their files
+   purged from the station.
+8. **Twelve days exist with no captures at all**, including 06-25→07-01 and
+   08-15→08-19. Unexplained, and a different class of fault.
+
+#### What Tom owes
+
+- **Nothing urgent.** No decision blocks progress on Track 1.
+- **The SIM.** Postpaid confirmation from the carrier — still outstanding, and
+  it is the binding gate on any bulk upload.
+- **Whether to report the LiveORC defect upstream**, and who does it.
+
+#### Next session, in priority order
+
+- [ ] **Report the 500 upstream.** `get_closest_to_dt` not excluding
+      already-attached time series is upstream's own TODO. Send it with the two
+      secondary defects: frame extraction running inline in `save()`, and
+      ORC-OS `base.py:47` discarding the status code.
+- [ ] **Repair the 62 server-side.** They hold their video files. This costs no
+      metered station data and is independent of everything else.
+- [ ] **Timestamp-level join before any re-drive**, to exclude clips the server
+      already holds. The day-level join is 0.4% coarse, which is close enough
+      to say the backlog is absent but not close enough to scope an upload.
+- [ ] **Item A is on hold (Tom, 2026-09-03).** Token freshness reaches 5 of 9,
+      all recovery tail. Nothing designed or part-done.
+- [ ] **The 23 no-capture days** — separate thread, not an upload problem.
+
+#### Standing cautions
+
+Unchanged. Station DB writes still need Tom's explicit per-operation approval;
+a green dry run is still not approval for a re-drive; the SIM gate is open.
+
+---
+
+### Superseded resume block — state at 2026-09-03 16:05 UTC
 
 Session of 2026-09-03. Ended cleanly at Tom's request, to come back fresh and
 look at **the upload failures happening right now**.
