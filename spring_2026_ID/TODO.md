@@ -1728,8 +1728,11 @@ means anything.
 
 Two threads feed into it, both already characterised:
 - **Item A, the 5-second timeout** at `callback_url.py:115`, which accounts for
-  ~64% of historical failures. Two options with different maintenance profiles,
-  neither chosen — see below. **Needs Tom's approval.**
+  ~64% of historical failures. **Route chosen: token freshness, not the
+  site-packages patch (Tom, 2026-09-03).** That is a decision on *which*
+  remedy, not approval to execute anything on the station — the design still
+  has to come back for step-level approval, and it is gated on the measurement
+  below.
 - **The shutdown race**, which discards 45% of sync *opportunities* — ORC-OS
   shuts down ~15 s after capture while the backlog task waits 60 s.
 
