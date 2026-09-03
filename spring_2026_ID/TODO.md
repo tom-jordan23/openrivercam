@@ -1752,14 +1752,13 @@ observation, not an established rate — it wants more than one sample before it
 means anything.
 
 Two threads feed into it, both already characterised:
-- **Item A, the 5-second timeout** at `callback_url.py:115`. **Route chosen:
-  token freshness, not the site-packages patch (Tom, 2026-09-03).** That is a
-  decision on *which* remedy, not approval to execute anything on the station —
-  the design still has to come back for step-level approval. **Measured
-  2026-09-03: it reaches 5 of 9 post-outage failures, all of them the recovery
-  tail.** Still worth doing; not sufficient alone. The other two mechanisms
-  also live in upstream site-packages, so the silent-revert argument that
-  killed the `:115` patch applies to them equally.
+- **Item A — ON HOLD (Tom, 2026-09-03), after the measurement came back.**
+  Route chosen was token freshness over the site-packages patch, and that
+  choice stands if it is picked up again. What put it on hold: measured, it
+  reaches **5 of 9** post-outage failures and all five are the recovery tail
+  after an outage — roughly four or five clips per outage, nothing in between.
+  The steady-state rate at the time of the decision was zero. Nothing is
+  designed, armed or part-done; there is no half-finished state to unwind.
 - **The shutdown race**, which discards 45% of sync *opportunities* — ORC-OS
   shuts down ~15 s after capture while the backlog task waits 60 s.
 
@@ -1988,10 +1987,22 @@ explain the 75 resets); or something server-side. Order of work, cheapest first:
       one timed `openssl s_client` handshake to :443; the same to :8443 for the
       port comparison.
 
-**Track 2 — recovering the 10.69 GB / 1,190 clips.** **The first question is not
-technical: what are the clips for?** The record says the video feeds nothing and
-Sukabumi is a pilot where the finding matters more than the bytes. **Tom has not
-yet answered this, and it determines most of the track.**
+**Track 2 — recovering the 10.69 GB / 1,190 clips.** **ANSWERED (Tom,
+2026-09-03): the clips are video captures that never reached LiveORC, and they
+need to be uploaded.** That selects the full re-drive from the option table
+below and retires "delete / accept the loss". The question had been carried
+forward since 09-01 as unanswered; Tom had given the answer before, but it was
+never written into the record, which is why it kept resurfacing. It is written
+down now.
+
+**This is not approval to fire the re-drive.** The standing caution holds: a
+green dry run is not approval, and the gates below still stand — postpaid
+confirmed as landed, and one day's window (~48 clips, ~440 MB) measured
+newest-first before the remaining ~10 GB. The path itself is proven: the local
+API re-drive was green end to end on 2026-09-03 (`apidryrun119y`), so no
+ORC-OS database write is needed.
+
+The original framing, kept because it records what was considered:
 
 | Option | Cost | When it makes sense |
 |---|---|---|
