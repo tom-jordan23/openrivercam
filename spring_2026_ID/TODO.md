@@ -1692,7 +1692,60 @@ guarded the mount, so the one condition that mattered went unchecked.
   volume, so if the cause was the full disk they are likely recoverable — feed
   into TODO-113.
 
-### RESUME HERE — state at 2026-09-02 17:45 UTC
+### RESUME HERE — state at 2026-09-03 16:05 UTC
+
+Session of 2026-09-03. Ended cleanly at Tom's request, to come back fresh and
+look at **the upload failures happening right now**.
+
+**Nothing is running.** No watcher, no armed grab, no background process.
+Confirm with `pgrep -af 'wake_runner|todo119|pounce|db_watch|station_watch'`.
+Everything ran under the Monitor tool, session-scoped. The tmpfs copy of the
+armed script carrying the API password was shredded; `/dev/shm` is clean.
+
+#### What this session settled
+
+1. **The local API re-drive is reachable.** `apidryrun119y` was green end to
+   end: canary pre-flight 0, `POST /api/auth/login/` → 200, `GET
+   /api/video/count/` (cookie) → 200. So the backlog can be driven **without
+   touching the ORC-OS database**, which is the whole point of the path Tom
+   chose. Nothing was synced; no write of any kind was made.
+2. **Auth is cookie-only, and Bearer returns 401.** Confirmed on the station's
+   own 0.6.0. The password is `sukabumi_bringup/.env`, *not* `BASE_PASSWD` in
+   `~/.orc_deploy_*` (that is the camera). Full detail in the script header of
+   `station-health/todo119_api_login_dryrun.sh`.
+3. **Items B and C are closed** — see the corrected block below. Do not re-run
+   them; B costs metered bytes and is no longer measurable as posed.
+4. **The 09-02 outage has cleared.** `SYNCED` advanced 2576 → **2596** between
+   09-02 21:32 and 09-03 16:00 UTC while `FAILED` went 2995 → **3012**. Uploads
+   are working again, partially.
+
+#### Next session: the upload failures happening now
+
+Roughly 37 clips were captured in that ~18.5 h window; **20 synced, 17 failed**.
+That is the live question. Treat the ~46% failure rate as one window's
+observation, not an established rate — it wants more than one sample before it
+means anything.
+
+Two threads feed into it, both already characterised:
+- **Item A, the 5-second timeout** at `callback_url.py:115`, which accounts for
+  ~64% of historical failures. Two options with different maintenance profiles,
+  neither chosen — see below. **Needs Tom's approval.**
+- **The shutdown race**, which discards 45% of sync *opportunities* — ORC-OS
+  shuts down ~15 s after capture while the backlog task waits 60 s.
+
+Useful and cheap: `LOCAL`/`UPDATED` in the last 24 h came back **empty**, so a
+time-windowed sync would pick up only `FAILED` rows. The window is predictable
+and nothing gets swept in sideways.
+
+#### Standing cautions
+
+Unchanged, and they still apply — see the block below, in particular that
+**station DB writes need Tom's explicit per-operation approval** and that a
+successful dry run is **not** approval for an actual re-drive.
+
+---
+
+### Superseded resume block — state at 2026-09-02 17:45 UTC
 
 Session of 2026-09-02. **Ended cleanly at Tom's request, to resume fresh for the
 Track 1 data gathering (items B and C below).**
@@ -1772,22 +1825,34 @@ row has been flipped, and no reprocess has been run.
    **TODO-113**. Errored clips are **95.3% daytime**, not night; the opposite
    assumption has now misled two documents.
 
-#### Next session: the data gathering, items B and C
+#### Items B and C — BOTH CLOSED, 2026-09-02/03
 
-**Do these before any upload. Neither needs a decision, both are measurement.**
+**This block listed B and C as the next session's work. Both were answered
+within hours of it being written, and it was not updated. Do not re-run them —
+B in particular costs metered Telkomsel bytes to re-answer a settled question.**
 
-- [ ] **B — is NAT64 actually the cause?** Force IPv4 for a handful of syncs and
-      compare the reset rate against the NAT64 path. If resets vanish, that is
-      the answer and the remedy is resolver or route preference — station
-      config, no upstream change. **If NAT64 is the cause, fixing the timeout
-      alone leaves a third of the failures in place**, which is why this comes
-      first.
-- [ ] **C — re-measure throughput.** The record's 5.2–5.5 s for a 9.2 MB clip
-      (1.74 MB/s) cannot be reconciled with a 7 s handshake. That figure
-      underpins every estimate made so far, including the five-day upload
-      projection. One timed real upload settles it.
+- [x] **B — NAT64 is NOT the cause. Closed 2026-09-02** (`c4615eb`,
+      `findings/sukabumi_upload_outage_2026-09-02.md` §6). `wwan0` carries a
+      native CGNAT IPv4 (`10.127.175.136/28`) alongside a global IPv6, there is
+      no CLAT interface, and the route to the server goes natively via `wwan0`.
+      DNS64 is real but every connection that reported a peer used IPv4. The two
+      arms also **inverted between wakes** — forced IPv4 failed 3/3 in wake 1 and
+      was the only full-body push in wake 2. Failures hit both address families
+      and swap arms, so a stateful translator dropping state mid-flow is retired
+      as the leading candidate for the resets.
+      **B is also no longer measurable as posed:** it was built to discriminate a
+      reset rate, and the resets belonged to the 09-02 outage, which has since
+      cleared. Both arms would succeed today and discriminate nothing.
+- [x] **C — throughput measured. Closed 2026-09-03** (`clipthroughput119u`).
+      One 9.2 MB mean-size clip, **3.95 s end to end at 2.33 MB/s**, HTTP 200,
+      confirmed server-side by `{"ok":true,...,"size":9200000}`. This supersedes
+      the record's 5.2–5.5 s / 1.74 MB/s, which entered in `580512a` as an
+      assertion and never had a derivation in any grab. Note this was measured
+      against `:8443`; ORC-OS's own video sync still fails separately on the
+      hardcoded `timeout=5` at `callback_url.py:115`, which is item A.
 
-**Then, and only with Tom's approval, item A — the 5-second timeout.** Two
+**With B and C closed, item A is next — and only with Tom's approval. The
+5-second timeout.** Two
 options with very different maintenance profiles: patch `callback_url.py:115`
 on the station (one line, targets 64% of failures, but edits upstream
 site-packages and a version update silently reverts it), or keep the token
