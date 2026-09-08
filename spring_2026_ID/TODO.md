@@ -6,6 +6,14 @@ The pre-trip task list (departure schedule day-by-day, in-country
 deferred items, etc.) was archived to `archive/` after the April 2026
 trip. This file tracks what's actually open *now*, post-trip.
 
+**Scope.** This file is the *operations* tracker (TODO-101…199): keeping the
+deployed station and the LiveORC server producing data. Work on handing this
+system to partner institutions, the public record, succession, and the
+next-generation hardware specification lives in
+[`../PROGRAM_TODO.md`](../PROGRAM_TODO.md) (TODO-201…299 handoff,
+TODO-301…399 next-gen) and uses its own G0–G2 priority ladder. The two files
+do not overlap.
+
 | Priority | Meaning |
 |----------|---------|
 | P0 | Active workstream — blocks station producing useful data |
@@ -158,13 +166,21 @@ interest, (b) have a clear permission/installation path, and
 (c) are not subject to the same urban RF / sky-view problems that
 appear to have hurt RTK at the Sukabumi canal site.
 
-**Data access — LiveORC logins for IPB.** Ready to provision on
-request: additional login links, account setup, and a walkthrough of
-where the data lives. **Gated on PMI, not on us.** Dan was explicit on
-the 2026-08-11 call that who gets access, and when, is PMI's decision —
-do not provision ahead of that approval. Dan separately confirmed this
-does *not* need to wait on the water-level adjustment, so the gate is
-purely PMI's, not a technical readiness one.
+**Data access — LiveORC logins for IPB. THE GATE IS NOW OPEN (2026-09-03).**
+PMI (Dewi Ariyani, NHQ) relayed IPB's request for API access on 2026-09-02,
+and Tom replied on 2026-09-03: *"I will proceed with providing API access to
+the team at IPB."* Provisioning is now live work — tracked as **TODO-209 in
+[`../PROGRAM_TODO.md`](../PROGRAM_TODO.md)**, since it is transition work
+rather than station operations. The account model is already proven
+(TODO-115, 14 PASS / 0 FAIL).
+
+BHLK access is a separate ask and is **still gated on PMI** — Tom offered it
+conditionally ("if you approve") and PMI has not answered.
+
+*Superseded context, kept for the record:* Dan was explicit on the 2026-08-11
+call that who gets access, and when, was PMI's decision, and that it did not
+need to wait on the water-level adjustment. That gate has now been passed for
+IPB.
 
 **Steps:**
 - [ ] Identify the right IPB contact(s) and make introductions

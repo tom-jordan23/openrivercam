@@ -9,8 +9,8 @@ R16–R28 are new, from your comments and from a scan of `LESSONS_LEARNED.md`,
 `ISSUE_LOG.md`, `build_notes/` and the BOMs. Say the word and I will renumber
 sequentially and carry it through the appendix cross-references.
 
-**Still to decide:** this is now 28 items, which is more than a leadership
-document can carry. My suggestion is that the report presents the groups and the
+**Still to decide:** this is now 37 items (R1–R37), which is more than a
+leadership document can carry. My suggestion is that the report presents the groups and the
 strongest two or three in each, with the full list as an appendix table. Tell me
 where to cut.
 

@@ -7,7 +7,7 @@ with Witty Pi 5 HAT+ power management.
 
 **Organizations:** American Red Cross / Palang Merah Indonesia (PMI)
 
-## Station Status (post-trip, May 2026)
+## Station Status (as of 2026-09-03)
 
 | Site | Power | Camera | Compute Stack | Status |
 |------|-------|--------|---------------|--------|
@@ -20,7 +20,7 @@ it was before travel.
 
 ## Key Architecture
 
-- **Video capture:** `orc-capture` pulls 5s RTSP video from PoE camera every 15 minutes
+- **Video capture:** `orc-capture` pulls 5s RTSP video from the PoE camera on the station wake cycle (currently 30 minutes; the assembly docs still name `prod_15.wpi` — see TODO-116)
 - **Processing:** ORC-OS processes video into velocity fields and discharge estimates on the Pi
 - **Upload:** Results sync to [LiveORC server](https://openrivercam.endlessprojects.info/) over LTE
 - **Power management:** Witty Pi 5 controls wake schedule, ORC-OS controls shutdown
@@ -77,15 +77,18 @@ it was before travel.
 
 ### Survey
 
-The RTK approach failed twice at Sukabumi. The active path is now:
+The RTK approach failed twice at Sukabumi. **The station now runs on the IPB
+total-station survey** — camera config `Fit 6`, applied 2026-06-11, 0.037 m RMSE,
+`z_0 = h_ref = 615.0 m`. See `survey_data/ipb_survey_1/handoff_station/` for the
+deployed configuration and its provenance warning.
 
 | Path | Description |
 |------|-------------|
-| [survey/Sukabumi_survey_salvage_methodology.md](../survey/Sukabumi_survey_salvage_methodology.md) | Salvage calibration pipeline used on the noisy survey data — auto-fit with subset search and `--demo-override` for the DEMO-UNCERTIFIED CameraConfig currently used at Sukabumi |
-| [survey/AUTO_FIT_USAGE.md](../survey/AUTO_FIT_USAGE.md) | Operator guide for the auto-fit tool |
 | [survey/outsourced_survey_brief.md](../survey/outsourced_survey_brief.md) | Vendor brief / SOW used to scope the IPB total station re-survey |
+| [survey/AUTO_FIT_USAGE.md](../survey/AUTO_FIT_USAGE.md) | Operator guide for the auto-fit tool |
+| [survey/Sukabumi_survey_salvage_methodology.md](../survey/Sukabumi_survey_salvage_methodology.md) | **Superseded.** The April auto-fit salvage pipeline (subset search + `--demo-override`) applied to the noisy RTK data. Retained as methodology; the DEMO-UNCERTIFIED CameraConfig it produced (4.61 cm on a 6-GCP subset, `z_0 = 617.065`) is **obsolete and must not be mixed with the IPB fit** — the IPB low-water surface is ~2 m lower. |
 
-The original RTK process docs (`SURVEY_PROCESS_v3_base.md`, `SURVEY_PROCESS_v3_ntrip.md`, `InaCORS_HOWTO.md`, `SURVEY_DATA_PROCESSING.md`) are retained as reference but carry a status banner — RTK is parked at Sukabumi pending the IPB total station survey.
+The original RTK process docs (`SURVEY_PROCESS_v3_base.md`, `SURVEY_PROCESS_v3_ntrip.md`, `InaCORS_HOWTO.md`, `SURVEY_DATA_PROCESSING.md`) are retained as reference but carry a status banner — RTK is parked at Sukabumi, superseded by the IPB total station survey.
 
 ### Planning and Reference
 
@@ -97,7 +100,7 @@ The original RTK process docs (`SURVEY_PROCESS_v3_base.md`, `SURVEY_PROCESS_v3_n
 | [LESSONS_LEARNED.md](LESSONS_LEARNED.md) | Trip retrospective and recommendations for next deployment |
 | [archive/](archive/) | Historic pre-trip planning docs (SCHEDULE.md, pre-trip TODO, departure checklists) |
 | [TRAVEL_AND_IMPORT.md](TRAVEL_AND_IMPORT.md) | Customs strategy, airline restrictions, packing (historical reference) |
-| [research/](research/) | 27 technical research documents |
+| [research/](research/) | 29 technical research documents |
 | [USB_DRIVE_CONTENTS.md](USB_DRIVE_CONTENTS.md) | USB stick and tackle box contents for PMI team |
 
 ## Generating PDFs
