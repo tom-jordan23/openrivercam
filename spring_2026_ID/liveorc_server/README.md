@@ -409,6 +409,83 @@ exposure is additive.
   at site 2. Those accounts *can* delete those records. Partners get fresh
   users, always.
 
+### Creating a partner or service account
+
+Two forms in `/admin/`, which is reachable in a browser at
+`https://openrivercam.endlessprojects.info/admin/` — no host access needed
+(confirmed 2026-09-08: it 302s to a login page). The field lists below are read
+from upstream `users/admin/` and `users/models/` at v0.3.0, **not** observed in
+the running admin — nobody had a superuser session when this was written. Expect
+the forms to match; if one does not, correct this section rather than working
+around it.
+
+**1. The user** — `/admin/users/user/add/`
+
+| Field | Value | Why |
+|---|---|---|
+| `email` | the account identity | `USERNAME_FIELD` is **email**, not username. This is what `POST /api/token/` takes. |
+| `name` | what it is for, e.g. "IPB dashboard (service account)" | Shows in `list_display`; the only place a future admin learns what the account is. |
+| `is_staff` | **unchecked** | Checked would grant `/admin/` access. |
+| `is_superuser` | **unchecked** | Checked would bypass every institute check in the API. |
+| `active` | leave checked | See the warning below — it does nothing for authentication. |
+| `password1`/`password2` | generated, ≥24 chars | Never typed by a person, so length costs nothing. |
+
+Creating a user has **no side effects**. The one signal in `users/signals.py`
+fires on `Institute` creation, not `User` creation, so no institute is created
+and no membership is implied. A user with no `Member` row can authenticate and
+see nothing.
+
+**2. The membership** — `/admin/users/member/add/`
+
+| Field | Value |
+|---|---|
+| `user` | the account just created |
+| `institute` | the one owning sites 2, 3 and 4 — **id 1**. Its name is not recorded here; confirm the id in the dropdown. |
+| `role` | **Member**, not Owner |
+
+`role` matters. `Owner` makes `is_institute_owner()` true, and `MemberForm`
+rejects a second owner for an institute anyway. `Member` is what
+`is_institute_member()` tests, and that is the whole of the read grant.
+
+This membership row **is** the access. Nothing else stands between read-only
+and nothing, which is why the verification matrix gets re-run against each new
+account rather than trusted from the form.
+
+**Then verify, before handing anything over:**
+
+```bash
+export LIVEORC_EMAIL='<the new account>'
+read -rs LIVEORC_PASSWORD && export LIVEORC_PASSWORD
+./verify-api-access.sh --institute 1 --site 4 --probe-writes
+```
+
+#### Revoking access is not where you would look for it
+
+Three findings, all from v0.3.0 source, that matter for any credential handed
+outside the project:
+
+- **You cannot disable an account.** `AbstractBaseUser` defines `is_active` as a
+  hardcoded class attribute `True`, and LiveORC's `User` does not override it
+  with a field. The `active` checkbox in the admin comes from a different base
+  class (`users/models/base.py`) and is not consulted by authentication.
+  Unchecking it locks nobody out.
+- **Changing the password does not invalidate live tokens.** JWTs are stateless.
+  An access token stays valid for its full 6 hours, and `REFRESH_TOKEN_LIFETIME`
+  is **3650 days** — a refresh token, once issued, is effectively a ten-year
+  credential. Rotation is on (`ROTATE_REFRESH_TOKENS`, `BLACKLIST_AFTER_ROTATION`),
+  so each refresh spends the previous token, but nothing expires them from our
+  side.
+- **Deleting the `Member` row is the actual revocation lever**, and it takes
+  effect on the next request even with a live token. `SiteViewSet.list()` falls
+  through to `queryset.none()` for a non-member, so `/api/site/?institute=1`
+  returns `[]`; nested site routes return 403 from `BaseModelViewSet.list()`;
+  and detail routes 403 in `has_object_permission`. Delete the `User` as well to
+  stop authentication itself — token auth resolves `user_id` against the table
+  and fails once the row is gone.
+
+So the offboarding procedure for a partner account is: **delete the membership,
+then delete the user.** Not "uncheck active", and not "change the password".
+
 ### Verification matrix — measured, not assumed
 
 Run against the mirror account (`user_id 18`, institute 1), 14 PASS / 0 FAIL:
@@ -457,6 +534,19 @@ read -rs LIVEORC_PASSWORD && export LIVEORC_PASSWORD
   Access tokens last **360 minutes**; `/api/token/refresh/` renews.
 - `/api/schema/` serves the full OpenAPI spec unauthenticated, so a partner can
   explore before they have credentials.
+- The **time series endpoint takes query parameters nobody documented**:
+  `startDateTime=` / `endDateTime=` bound `timestamp` inclusively (camelCase,
+  unlike the rest of the API), `fields=` trims the returned columns via
+  `drf_queryfields`, and `format=csv` swaps the renderer. There is **no
+  pagination configured anywhere** in LiveORC, so every list endpoint returns
+  its full result set in one response. Source-read at v0.3.0, not yet exercised
+  against the server.
+
+**The partner doc itself is written.** [`partner-api/`](partner-api/) is the
+self-contained bundle that gets sent out: `README.md` covers auth, the
+`?institute=` trap, the time series schema with units, the media warning and
+ISS-FIELD-004, and a symptom/cause table; `fetch_timeseries.py` is a
+stdlib-only worked client. It contains no credentials and is safe to send as-is.
 
 ### Where media actually lives
 

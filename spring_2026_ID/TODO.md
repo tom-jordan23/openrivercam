@@ -1249,9 +1249,12 @@ Revisit if the partner list grows beyond IPB.
       re-read upstream source to know what a partner account can do.
 
 *Partner provisioning — gated, do not run early*
-- [ ] Write the IPB-facing doc: base URL, token flow, the institute id,
-      the endpoint list, the `?institute=` gotcha, and a worked `curl`
-      example. Keep it in the repo; it contains no secrets.
+- [x] **IPB-facing doc written 2026-09-08** — `liveorc_server/partner-api/`,
+      with `fetch_timeseries.py` as a worked stdlib client alongside it. No
+      secrets; the whole directory is what gets sent. It also carries three
+      things this TODO did not know about: the time series field list with
+      units, the undocumented `startDateTime`/`endDateTime`/`fields`/
+      `format=csv` parameters, and that **nothing in LiveORC is paginated**.
 - [x] **Both gates are now clear.** PMI approval landed **2026-09-03**
       (Dan was explicit on the 2026-08-11 call that who gets access is
       PMI's decision; Dewi relayed IPB's request 2026-09-02 and Tom
@@ -1259,7 +1262,9 @@ Revisit if the partner list grows beyond IPB.
       so `POST /api/video/` writes to the EBS volume and cannot threaten
       the root disk. Provisioning is live work; it is owned by **TODO-209**
       in [`../PROGRAM_TODO.md`](../PROGRAM_TODO.md).
-- [ ] Provision per TODO-209. **Superseded 2026-09-08 —
+- [ ] Provision per TODO-209; the two `/admin/` forms are written up in
+      `liveorc_server/README.md` under "Creating a partner or service account".
+      **Superseded 2026-09-08 —
       IPB gets one shared service account, not per-person logins.** The
       consumer is a community dashboard, so the credential is read by
       software from a server config; the no-shared-logins rule above was
@@ -1270,6 +1275,16 @@ Revisit if the partner list grows beyond IPB.
       itself** before announcing access, not against the mirror.
       Membership is the only thing standing between read-only and
       nothing, and it is set by hand.
+
+**Revocation, found 2026-09-08.** This TODO establishes how to *grant* access
+and never asked how to take it back. The two obvious answers are both wrong:
+`is_active` is a hardcoded `True` class attribute on `AbstractBaseUser` that
+LiveORC never overrides, so the admin's `active` checkbox locks nobody out; and
+JWTs are stateless, so a password change invalidates nothing already issued —
+with `REFRESH_TOKEN_LIFETIME` at **3650 days**, an outstanding refresh token is
+a ten-year credential. Deleting the `Member` row is what actually works, and it
+bites on the next request even with a live token. Offboarding is delete the
+membership, then delete the user. Full reasoning in `liveorc_server/README.md`.
 
 ---
 

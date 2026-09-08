@@ -287,7 +287,7 @@ TODO-114 (independent mirror, done).
 
 | Field | Value |
 |-------|-------|
-| **Status** | OPEN — unblocked 2026-09-03 |
+| **Status** | OPEN — account shape settled, docs written 2026-09-08; the account itself is not yet created |
 | **Priority** | G0 · December |
 | **Opened** | 2026-09-03 |
 
@@ -313,7 +313,12 @@ dashboard a credential that can also sign in to the web UI as them. This is
 the same shape as the TODO-114 mirror account (`user_id 18`), which is already
 proven against production.
 
-- One account, `ipb-dashboard` or similar — named for its function, not a person.
+- One account, login **`ipb-dashboard@liveorc.local`** (decided 2026-09-08).
+  Named for its function, not a person. The domain is deliberately
+  non-routable: LiveORC has no mail configured and there is no password-reset
+  flow, so an address that looks deliverable would be a false promise. Set
+  `name` to "IPB dashboard (service account)" — `list_display` is the only
+  place a future admin learns what the account is for.
 - `is_staff=False`, `is_superuser=False`.
 - `Member` of institute **1**, which owns sites 2, 3 and 4. Membership is the
   whole of the grant; it is set by hand and nothing else stands between
@@ -335,23 +340,57 @@ deliberate act by IPB and us, not something that happens when a person leaves.
 If a second, differently-scoped IPB consumer ever appears, give it its own
 account rather than sharing this one.
 
+**And rotation is not where you would look for it — found 2026-09-08 while
+writing the procedure.** Three things in LiveORC v0.3.0 make the obvious
+offboarding moves useless. `is_active` is a hardcoded `True` class attribute on
+Django's `AbstractBaseUser` and LiveORC never overrides it with a field, so the
+`active` checkbox in the admin is a different field entirely and **cannot lock
+anyone out**. JWTs are stateless, so **changing the password invalidates
+nothing** already issued — and `REFRESH_TOKEN_LIFETIME` is **3650 days**, which
+makes any refresh token IPB holds a ten-year credential. What does work is
+deleting the `Member` row: `SiteViewSet.list()` falls through to
+`queryset.none()` for a non-member and the nested routes 403, so data access
+stops on the next request even with a live token. **Offboarding is: delete the
+membership, then delete the user.** Written up in `liveorc_server/README.md`
+under "Revoking access is not where you would look for it".
+
 **Steps:**
-- [ ] Create the single IPB service account in `/admin/` per the account shape
-      above, and record in the password manager what it is for and who at IPB
+- [ ] **Tom, in a browser at `/admin/`** — create the user, then the membership.
+      The exact two forms, every field value, and what each wrong value would
+      grant are written up in `liveorc_server/README.md` under "Creating a
+      partner or service account". No host access needed; `/admin/` is publicly
+      reachable and redirects to a login page. Creating a user has no side
+      effects — the one signal in `users/signals.py` fires on `Institute`
+      creation, not `User` creation.
+- [ ] Record in the password manager what the account is for and who at IPB
       holds it.
-- [ ] Write the partner-facing API guide: base URL, the mandatory
-      `?institute=1`, token lifetime (360 minutes) and refresh, and which
-      endpoints return what. TODO-115 records all of it.
+- [x] **Partner-facing API guide written 2026-09-08** —
+      `liveorc_server/partner-api/`, a self-contained bundle with no
+      credentials in it. `README.md` covers auth and the 6-hour token, the
+      `?institute=1` trap, the full time series schema with units, the UTC/WIB
+      note, the media warning with ISS-FIELD-004, what the account cannot do,
+      the service horizon from TODO-208, and a symptom/cause table.
+      `fetch_timeseries.py` is a stdlib-only worked client — token, refresh
+      semantics, date-bounded incremental pulls, CSV out. Its error paths are
+      tested against production; the authenticated paths are not, and cannot be
+      until the account exists.
 - [ ] Send credentials through a channel that is not this repository, and name
       the IPB owner responsible for where the credential is stored — a
       dashboard host, not a laptop.
 - [ ] Re-run TODO-115's verification matrix against **the IPB account itself**
       before announcing access — not against the mirror. Membership is set by
       hand and is the only thing standing between read-only and nothing.
+      `./verify-api-access.sh --institute 1 --site 4 --probe-writes`
+- [ ] While that credential is to hand, **check the four undocumented time
+      series parameters** the guide tells IPB to use — `startDateTime`,
+      `endDateTime`, `fields`, `format=csv`. They are read from v0.3.0 source
+      and have never been exercised against the running server. The guide flags
+      them as unverified; remove that flag once they are, or correct the guide.
 - [ ] Confirm IPB can reach what they actually need for the three collaboration
       areas, not merely that the token works.
 - [ ] **Tell IPB about TODO-208 before they build on this API.** A dashboard
-      built against a server that stops being paid for is a poor gift.
+      built against a server that stops being paid for is a poor gift. §9 of the
+      guide states the dates; that is the written record, not the conversation.
 
 **Related:** TODO-104, TODO-115 (`spring_2026_ID/TODO.md`), TODO-401.
 
