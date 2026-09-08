@@ -1,6 +1,6 @@
 # TODO — Indonesia Spring 2026 Deployment (post-trip)
 
-**Last updated:** 2026-09-02
+**Last updated:** 2026-09-08
 
 The pre-trip task list (departure schedule day-by-day, in-country
 deferred items, etc.) was archived to `archive/` after the April 2026
@@ -1183,8 +1183,8 @@ Revisit if the partner list grows beyond IPB.
   Putting IPB in `viewers` looks like read-only access and grants nothing.
 - **Never hand over the station credential.** The `creator` of every
   existing video is whichever account ORC-OS authenticated as at
-  `/callback_url`. That account *can* delete them. IPB gets fresh users,
-  always.
+  `/callback_url`. That account *can* delete them. IPB gets a fresh
+  account of its own, always.
 
 #### Onboarding gotchas to put in the partner doc
 
@@ -1252,16 +1252,24 @@ Revisit if the partner list grows beyond IPB.
 - [ ] Write the IPB-facing doc: base URL, token flow, the institute id,
       the endpoint list, the `?institute=` gotcha, and a worked `curl`
       example. Keep it in the repo; it contains no secrets.
-- [ ] **Wait for both gates.** PMI approval (TODO-104 — Dan was explicit
-      on the 2026-08-11 call that who gets access is PMI's decision) and
-      TODO-112 complete (so `POST /api/video/` cannot threaten the root
-      disk).
-- [ ] Once both clear: create one user per IPB person — never a shared
-      login — each `is_staff=False`, `is_superuser=False`, added as
-      `Member` of the institute. Send credentials out of band.
-- [ ] Re-run the verification matrix against **one real IPB account**
-      before announcing access. Membership is the only thing standing
-      between read-only and nothing, and it is set by hand.
+- [x] **Both gates are now clear.** PMI approval landed **2026-09-03**
+      (Dan was explicit on the 2026-08-11 call that who gets access is
+      PMI's decision; Dewi relayed IPB's request 2026-09-02 and Tom
+      replied the next day — TODO-104). TODO-112 completed **2026-08-27**,
+      so `POST /api/video/` writes to the EBS volume and cannot threaten
+      the root disk. Provisioning is live work; it is owned by **TODO-209**
+      in [`../PROGRAM_TODO.md`](../PROGRAM_TODO.md).
+- [ ] Provision per TODO-209. **Superseded 2026-09-08 —
+      IPB gets one shared service account, not per-person logins.** The
+      consumer is a community dashboard, so the credential is read by
+      software from a server config; the no-shared-logins rule above was
+      written for human logins. Same shape as the TODO-114 mirror
+      account. `is_staff=False`, `is_superuser=False`, `Member` of the
+      institute. Send credentials out of band.
+- [ ] Re-run the verification matrix against **the IPB service account
+      itself** before announcing access, not against the mirror.
+      Membership is the only thing standing between read-only and
+      nothing, and it is set by hand.
 
 ---
 

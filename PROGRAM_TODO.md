@@ -299,12 +299,55 @@ The technical work is already done. **TODO-115 proved the read-only account
 model against production on 2026-08-25, 14 PASS / 0 FAIL**, and it needs no
 change to LiveORC. What remains is provisioning and documentation.
 
+**Nothing is blocking this.** TODO-115 held provisioning behind two gates:
+PMI approval (cleared 2026-09-03) and TODO-112 (DONE 2026-08-27, media on the
+EBS volume). Both are clear, so the account creation below can be done now.
+
+**Account shape — a single IPB service account (decided 2026-09-08).**
+TODO-115's default was one login per person, never shared. That rule is for
+*people*; this consumer is a machine. IPB is building a community dashboard,
+so the credential lives in a server's configuration and is read by software,
+not typed by a human. A named person's login in that position is worse, not
+better: it ties a shared service to one individual's employment and gives the
+dashboard a credential that can also sign in to the web UI as them. This is
+the same shape as the TODO-114 mirror account (`user_id 18`), which is already
+proven against production.
+
+- One account, `ipb-dashboard` or similar — named for its function, not a person.
+- `is_staff=False`, `is_superuser=False`.
+- `Member` of institute **1**, which owns sites 2, 3 and 4. Membership is the
+  whole of the grant; it is set by hand and nothing else stands between
+  read-only and nothing.
+- Do **not** put it in the `viewers` group — that group carries Django model
+  permissions the REST viewsets never consult, so it grants nothing while
+  reading as though it grants read-only.
+- Never hand over the ORC-OS station credential: it is `creator` on the
+  existing videos and can delete them.
+
+**Two consequences of a shared credential, to record rather than to solve.**
+Attribution collapses — every API call from IPB is one principal, so if
+something anomalous appears in the logs it cannot be traced past "the
+dashboard". And the CREATE gap TODO-115 documents (any authenticated account
+can `POST /api/video/`; the decision on 2026-08-24 was to accept it) now sits
+behind a credential stored on a dashboard host rather than in one person's
+password manager. Neither changes the decision. Both mean rotation is a
+deliberate act by IPB and us, not something that happens when a person leaves.
+If a second, differently-scoped IPB consumer ever appears, give it its own
+account rather than sharing this one.
+
 **Steps:**
-- [ ] Create the IPB account(s) as institute members, read-only by construction.
+- [ ] Create the single IPB service account in `/admin/` per the account shape
+      above, and record in the password manager what it is for and who at IPB
+      holds it.
 - [ ] Write the partner-facing API guide: base URL, the mandatory
       `?institute=1`, token lifetime (360 minutes) and refresh, and which
       endpoints return what. TODO-115 records all of it.
-- [ ] Send credentials through a channel that is not this repository.
+- [ ] Send credentials through a channel that is not this repository, and name
+      the IPB owner responsible for where the credential is stored — a
+      dashboard host, not a laptop.
+- [ ] Re-run TODO-115's verification matrix against **the IPB account itself**
+      before announcing access — not against the mirror. Membership is set by
+      hand and is the only thing standing between read-only and nothing.
 - [ ] Confirm IPB can reach what they actually need for the three collaboration
       areas, not merely that the token works.
 - [ ] **Tell IPB about TODO-208 before they build on this API.** A dashboard
