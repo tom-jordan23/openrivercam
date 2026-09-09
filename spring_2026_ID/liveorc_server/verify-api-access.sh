@@ -134,11 +134,28 @@ code() {
     -H "Authorization: Bearer $ACCESS" "$@" "$BASE$url"
 }
 
-# response body, with the bearer token
+# response body, with the bearer token.
+#
+# The timeout is 120s, not 45. The video list at a busy site serialises
+# thousands of records and mirror/orc_inventory.py has always used 120 — a
+# shorter one here truncates a body that the status-code probe already reported
+# as 200, which is how a partial response gets counted as a real one.
+#
+# curl's exit status is written to a file, not a variable: body() is always
+# called as "$(body ...)", which runs it in a subshell, so anything it assigns
+# is discarded on return. A silently-truncated body is worse than a failed
+# request, so the status has to survive the subshell.
+BODY_RC_FILE="$(mktemp)"
+trap 'rm -f "$BODY_RC_FILE"' EXIT
 body() {
   local method="$1" url="$2"; shift 2
-  curl -sS -m 45 -X "$method" -H "Authorization: Bearer $ACCESS" "$@" "$BASE$url"
+  local rc=0
+  curl -sS -m 120 -X "$method" -H "Authorization: Bearer $ACCESS" "$@" "$BASE$url" || rc=$?
+  printf '%s' "$rc" > "$BODY_RC_FILE"
 }
+
+# read the status written by the most recent body() call
+body_rc() { cat "$BODY_RC_FILE" 2>/dev/null || echo 0; }
 
 echo
 echo "LiveORC API access verification"
@@ -212,10 +229,26 @@ echo "Reading site $SITE"
 record "GET /api/site/$SITE/video/" "200" "$(code GET "/api/site/$SITE/video/")"
 
 VIDEOS="$(body GET "/api/site/$SITE/video/")"
+VIDEOS_RC="$(body_rc)"
 FIRST_VIDEO="$(printf '%s' "$VIDEOS" | grep -oE '"id":[0-9]+' | head -1 | cut -d: -f2 || true)"
-VIDEO_COUNT="$(printf '%s' "$VIDEOS" | grep -coE '"id":[0-9]+' || true)"
+VIDEO_COUNT="$(printf '%s' "$VIDEOS" | grep -oE '"id":[0-9]+' | wc -l | tr -d ' ')"
 VIDEO_COUNT="${VIDEO_COUNT:-0}"
-echo "  ($VIDEO_COUNT video records visible)"
+VIDEO_BYTES="$(printf '%s' "$VIDEOS" | wc -c | tr -d ' ')"
+
+# A record count is only meaningful if the body is complete. curl exiting
+# non-zero, or a body that does not close as a JSON array, means the number
+# below is a fragment of the answer rather than the answer — and a truncated
+# list reads exactly like a small one.
+if [[ $VIDEOS_RC -ne 0 ]]; then
+  record_v FAIL "GET /api/site/$SITE/video/ (body)" "complete body" \
+    "curl exit $VIDEOS_RC after $VIDEO_BYTES bytes — count $VIDEO_COUNT is a fragment"
+elif [[ "$(printf '%s' "$VIDEOS" | tail -c 1)" != "]" ]]; then
+  record_v FAIL "GET /api/site/$SITE/video/ (body)" "JSON array" \
+    "body of $VIDEO_BYTES bytes does not end in ']' — truncated or not a list"
+else
+  record_v PASS "GET /api/site/$SITE/video/ (body)" "JSON array" \
+    "$VIDEO_COUNT records, $VIDEO_BYTES bytes"
+fi
 
 PROBE_VIDEO="${VIDEO_ID:-$FIRST_VIDEO}"
 if [[ -n "$PROBE_VIDEO" ]]; then
@@ -230,6 +263,53 @@ record "GET /api/site/$SITE/timeseries/" "200" "$(code GET "/api/site/$SITE/time
 record "GET /api/site/$SITE/cameraconfig/" "200" "$(code GET "/api/site/$SITE/cameraconfig/")"
 record "GET /api/site/$SITE/videoconfig/" "200" "$(code GET "/api/site/$SITE/videoconfig/")"
 record "GET /api/site/$SITE/crosssection/" "200" "$(code GET "/api/site/$SITE/crosssection/")"
+echo
+
+# --- 7. the time series query parameters the partner doc relies on ------------
+# partner-api/README.md tells IPB to use four parameters that were read from
+# v0.3.0 source and never exercised: startDateTime / endDateTime come from
+# TimeSeriesFilter in api/filters.py (camelCase, unlike anything else in the
+# API), fields comes from drf_queryfields on the serializer, and format=csv
+# from the CSVRenderer on TimeSeriesViewSet. If one of them is silently
+# ignored rather than honoured, a dashboard pulling "one month" quietly gets
+# the whole record instead. Checked by behaviour, not by status code — an
+# ignored parameter still returns 200.
+echo "Time series query parameters (partner doc depends on these)"
+TS_ALL="$(body GET "/api/site/$SITE/timeseries/")"
+TS_ALL_N="$(printf '%s' "$TS_ALL" | grep -oE '"id":[0-9]+' | wc -l | tr -d ' ')"
+echo "  ($TS_ALL_N time series rows unfiltered, $(printf '%s' "$TS_ALL" | wc -c | tr -d ' ') bytes)"
+
+# A window the record cannot possibly fill: if it comes back with everything,
+# the filter was ignored.
+TS_WIN="$(body GET "/api/site/$SITE/timeseries/?startDateTime=1970-01-01T00:00:00Z&endDateTime=1970-01-02T00:00:00Z")"
+TS_WIN_N="$(printf '%s' "$TS_WIN" | grep -oE '"id":[0-9]+' | wc -l | tr -d ' ')"
+if [[ "$TS_WIN_N" == "0" ]]; then
+  record_v PASS "?startDateTime/endDateTime (1970 window)" "0 rows" "0 rows"
+elif [[ "$TS_WIN_N" == "$TS_ALL_N" ]]; then
+  record_v FAIL "?startDateTime/endDateTime (1970 window)" "0 rows" \
+    "$TS_WIN_N rows — same as unfiltered, the parameters are being IGNORED"
+else
+  record_v FAIL "?startDateTime/endDateTime (1970 window)" "0 rows" "$TS_WIN_N rows"
+fi
+
+TS_FIELDS="$(body GET "/api/site/$SITE/timeseries/?fields=id,timestamp")"
+if printf '%s' "$TS_FIELDS" | grep -q '"q_50"'; then
+  record_v FAIL "?fields=id,timestamp" "only those fields" "q_50 still present — ignored"
+elif printf '%s' "$TS_FIELDS" | grep -q '"timestamp"'; then
+  record_v PASS "?fields=id,timestamp" "only those fields" "trimmed as documented"
+else
+  record_v FAIL "?fields=id,timestamp" "only those fields" \
+    "no timestamp field: $(printf '%s' "$TS_FIELDS" | head -c 80)"
+fi
+
+TS_CSV="$(body GET "/api/site/$SITE/timeseries/?format=csv")"
+TS_CSV_HEAD="$(printf '%s' "$TS_CSV" | head -1)"
+if [[ "$TS_CSV_HEAD" == *,* && "$TS_CSV_HEAD" != \[* && "$TS_CSV_HEAD" != \{* ]]; then
+  record_v PASS "?format=csv" "CSV header row" "$(printf '%s' "$TS_CSV_HEAD" | head -c 60)"
+else
+  record_v FAIL "?format=csv" "CSV header row" \
+    "still JSON: $(printf '%s' "$TS_CSV" | head -c 60)"
+fi
 echo
 
 # --- 11. the queryset.none() fall-through -------------------------------------
