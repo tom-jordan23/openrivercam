@@ -1,45 +1,48 @@
 #!/usr/bin/env python3
 """
-fetch_timeseries.py — pull discharge and water-level time series out of
+fetch_timeseries.py — retrieve discharge and water-level time series from
 LiveOpenRiverCam over the REST API.
 
-Written for IPB University's dashboard work. Standard library only: no pip
-install, runs on any Python 3.9+.
+Prepared for IPB University. Uses the Python standard library only, so no
+packages need to be installed. Requires Python 3.9 or later.
 
 WHAT IT DOES
     1. Exchanges an email + password for a JWT access token.
-    2. Lists the sites the account can see (this is where the ?institute=
-       parameter matters — see the README).
-    3. Pulls the time series for one site, optionally bounded by a date range.
+    2. Lists the sites the account can access (this is where the ?institute=
+       parameter is required; see the README).
+    3. Retrieves the time series for one site, optionally bounded by a date
+       range.
     4. Writes CSV to stdout or to a file.
 
-WHAT IT DELIBERATELY DOES NOT DO
-    It never downloads video or image bytes. Serving media through LiveORC is
-    expensive per byte and a bulk pull has taken the server down before. Time
-    series and metadata are cheap; media is not. See the README.
+WHAT IT DOES NOT DO
+    It does not download video or image files. Serving media through LiveORC
+    uses considerably more server resources than retrieving metadata, and a
+    bulk download has previously caused a service outage. Time series and
+    metadata are inexpensive to retrieve; media is not. See the README.
 
 USAGE
     export LIVEORC_EMAIL='ipb-dashboard@liveorc.local'
     read -rs LIVEORC_PASSWORD && export LIVEORC_PASSWORD
 
-    # everything at the Sukabumi site, as CSV on stdout
+    # all records for the Sukabumi site, as CSV on standard output
     ./fetch_timeseries.py --site 4
 
-    # one month, only the columns a dashboard usually wants, to a file
+    # one month, selected columns, written to a file
     ./fetch_timeseries.py --site 4 \
         --start 2026-08-01 --end 2026-09-01 \
         --fields timestamp,h,q_50,q_05,q_95 \
         --out sukabumi-august.csv
 
-    # what sites does this account see?
+    # list the sites this account can access
     ./fetch_timeseries.py --list-sites
 
-    # raw JSON instead of CSV, for a loader that wants to parse it
+    # JSON output, for a loader that parses it directly
     ./fetch_timeseries.py --site 4 --json
 
-INCREMENTAL PULLS
-    A dashboard should not re-download the whole record on every refresh. Keep
-    the timestamp of the newest row you hold and pass it as --start next time:
+INCREMENTAL RETRIEVAL
+    A dashboard should not re-download the entire record on every refresh.
+    Store the timestamp of the most recent row held, and supply it as --start
+    on the next request:
 
         ./fetch_timeseries.py --site 4 --start 2026-09-08T06:00:00Z
 
@@ -59,15 +62,15 @@ import urllib.request
 
 BASE = os.environ.get("LIVEORC_BASE", "https://openrivercam.endlessprojects.info")
 
-# The account is a member of exactly one institute. GET /api/site/ returns an
-# empty list without this parameter, which looks identical to "there is no
-# data". It is not optional.
+# The account is a member of exactly one institute. Without this parameter,
+# GET /api/site/ returns an empty list, which is indistinguishable from a
+# server holding no data. The parameter is required.
 INSTITUTE = int(os.environ.get("LIVEORC_INSTITUTE", "1"))
 
 TIMEOUT = 60
 
-# Columns worth plotting, in a sensible order. The API returns more than this;
-# pass --fields to choose your own, or --fields '' for everything.
+# Commonly used columns, in a readable order. The API returns more fields than
+# these; use --fields to select others, or --fields '' to return all of them.
 DEFAULT_FIELDS = "timestamp,h,q_50,q_05,q_25,q_75,q_95,q_raw,v_av,v_bulk,fraction_velocimetry"
 
 
@@ -133,8 +136,8 @@ def get_token():
 def refresh_token(refresh):
     """Renew an expired access token.
 
-    Refresh tokens rotate: the response carries a NEW refresh token and the one
-    you sent is blacklisted. Always store what comes back.
+    Refresh tokens rotate: the response contains a new refresh token, and the
+    one submitted is invalidated. Always store the token that is returned.
     """
     status, payload = request(
         "/api/token/refresh/", method="POST", body={"refresh": refresh}
@@ -154,9 +157,9 @@ def list_sites(token):
 def fetch_timeseries(token, site, start=None, end=None, fields=None):
     """GET /api/site/{site}/timeseries/.
 
-    The endpoint is not paginated — the whole matching set comes back in one
-    response — so bound it with --start/--end rather than pulling everything
-    on every dashboard refresh.
+    The endpoint is not paginated: the complete matching set is returned in a
+    single response. Bound the request with --start/--end rather than
+    retrieving all records on every dashboard refresh.
 
     The date filters are camelCase (startDateTime / endDateTime), unlike every
     other parameter in the API. Both are inclusive.
@@ -180,24 +183,25 @@ def fetch_timeseries(token, site, start=None, end=None, fields=None):
 
 
 def write_csv(rows, fields, handle):
-    # honour the requested column order; fall back to whatever the API sent
+    # use the requested column order; otherwise use the fields the API returned
     if fields:
         columns = [f for f in fields.split(",") if f]
     else:
         columns = list(rows[0].keys()) if rows else []
 
     if not columns:
-        # nothing came back and --fields was cleared, so there is no way to know
-        # what the columns should have been
+        # no rows were returned and --fields was cleared, so the column names
+        # cannot be determined
         print("no rows matched, and no --fields to derive a header from",
               file=sys.stderr)
         return
 
     writer = csv.DictWriter(handle, fieldnames=columns, extrasaction="ignore")
-    # header first, even with no rows: an incremental pull that finds nothing
-    # new should produce a header-only file, not an empty one. A zero-byte file
-    # makes csv.DictReader yield nothing and pandas raise EmptyDataError, so
-    # "no new data" would look like a broken download.
+    # Write the header even when there are no rows: an incremental request that
+    # returns nothing new should produce a header-only file rather than an
+    # empty one. A zero-byte file causes csv.DictReader to yield nothing and
+    # pandas to raise EmptyDataError, so an absence of new data would be
+    # reported as a failed download.
     writer.writeheader()
     for row in rows:
         writer.writerow(row)

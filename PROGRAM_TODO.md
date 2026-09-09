@@ -340,9 +340,8 @@ deliberate act by IPB and us, not something that happens when a person leaves.
 If a second, differently-scoped IPB consumer ever appears, give it its own
 account rather than sharing this one.
 
-**And rotation is not where you would look for it — found 2026-09-08 while
-writing the procedure.** Three things in LiveORC v0.3.0 make the obvious
-offboarding moves useless. `is_active` is a hardcoded `True` class attribute on
+**Revocation, established 2026-09-08 while writing the procedure.** Three
+properties of LiveORC v0.3.0 mean the obvious offboarding steps have no effect. `is_active` is a hardcoded `True` class attribute on
 Django's `AbstractBaseUser` and LiveORC never overrides it with a field, so the
 `active` checkbox in the admin is a different field entirely and **cannot lock
 anyone out**. JWTs are stateless, so **changing the password invalidates

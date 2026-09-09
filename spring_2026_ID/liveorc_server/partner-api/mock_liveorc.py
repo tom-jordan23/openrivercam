@@ -3,10 +3,10 @@
 response shapes verified against production on 2026-09-09.
 
 WHY THIS EXISTS
-    fetch_timeseries.py is sent to a partner, so its behaviour needs to be known
-    before it goes out — but every authenticated path needs a credential, and
-    exercising them against production puts load on a small instance for
-    something that is not a real question about the data.
+    fetch_timeseries.py is provided to a partner, so its behaviour must be
+    known before release. Every authenticated code path requires a credential,
+    however, and testing those paths against production places load on a small
+    instance for a question that does not concern the data itself.
 
     This serves the same shapes locally: [] for /api/site/ without ?institute,
     the timestamp/h/q_* row schema, startDateTime/endDateTime/fields filtering,
@@ -19,14 +19,15 @@ USAGE
     ./fetch_timeseries.py --list-sites
     ./fetch_timeseries.py --site 4 --start 2026-08-08 --fields timestamp,h,q_50
 
-    Rows span 2026-08-01 to 2026-08-10, so a --start outside that range returns
-    nothing — which is the header-only case worth checking.
+    Rows span 2026-08-01 to 2026-08-10. A --start outside that range returns no
+    rows, which exercises the header-only output case.
 
-    Stop it by port, not by name: `pkill -f mock_liveorc.py` matches its own
-    shell command line and kills the caller instead.
+    Stop the server by port rather than by name: `pkill -f mock_liveorc.py`
+    matches its own shell command line and terminates the calling shell.
 
-It is a test fixture, not something IPB needs. Harmless to send, but it is the
-file to drop if the bundle should carry only what they use.
+This is a test fixture rather than something IPB requires. It is safe to
+include, but it may be removed if the bundle should contain only the files in
+active use.
 """
 import json, datetime as dt
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -76,7 +77,7 @@ class H(BaseHTTPRequestHandler):
             return self._send(401, {"detail": "Authentication credentials were not provided."})
 
         if u.path == "/api/site/":
-            # the real gotcha: [] unless ?institute is supplied
+            # returns [] unless ?institute is supplied
             if q.get("institute") != ["1"]:
                 return self._send(200, [])
             return self._send(200, [{"id": 3, "name": "Jakarta"},

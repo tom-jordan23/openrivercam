@@ -1,16 +1,16 @@
 # LiveOpenRiverCam API access — guide for IPB University
 
-Everything needed to read Sukabumi discharge and water-level data
+This guide describes how to read Sukabumi discharge and water-level data
 programmatically. Written 2026-09-08 for LiveORC **v0.3.0**.
 
-This directory is self-contained and is what gets sent to IPB. It contains no
-credentials.
+This directory contains everything required, and no credentials. Credentials
+are supplied separately.
 
 | | |
 |---|---|
 | **Base URL** | `https://openrivercam.endlessprojects.info` |
 | **Institute id** | `1` |
-| **Site of interest** | `4` — Sukabumi City |
+| **Primary site** | `4` — Sukabumi City |
 | **Auth** | JWT bearer token, from email + password |
 | **Access** | Read-only across the whole institute |
 | **Sample script** | [`fetch_timeseries.py`](fetch_timeseries.py) |
@@ -19,22 +19,23 @@ credentials.
 
 ## 1. Credentials
 
-One service account is issued to IPB. It is a **machine credential**: it is
-meant to live in a dashboard server's configuration and be read by software,
-not typed by a person.
+One service account is issued to IPB. It is intended for use by software: the
+credential should be stored in a dashboard server's configuration and read by
+the application, rather than entered by a person.
 
-- The login is an **email address**, and it is the account's identity even
-  though no mail is delivered to it. There is no password-reset flow.
-- Store it wherever the dashboard's other secrets live. Not in a git
-  repository, not in a notebook, not in a shared document.
-- Name one person at IPB who is responsible for where it is stored, and tell
-  us who that is.
-- **If a second, differently-scoped consumer appears** — another dashboard,
-  another group, a student project — ask for a second account rather than
-  sharing this one. Issuing accounts is cheap; untangling one shared
-  credential later is not.
+- The login is an **email address**. It identifies the account, but no mail is
+  delivered to it, and there is no password-reset function.
+- Store the credential with the dashboard's other secrets. Please do not place
+  it in a source repository, a notebook file, or a shared document.
+- Please identify one person at IPB as responsible for where the credential is
+  stored, and let us know who that is.
+- **If another application later needs access** — a second dashboard, another
+  research group, or a student project — please request a separate account
+  rather than sharing this one. Additional accounts are straightforward for us
+  to issue, whereas separating the activity of two applications sharing one
+  credential is not possible afterwards.
 
-The credentials themselves arrive separately, not through this document.
+The credentials are supplied separately and are not included in this document.
 
 ## 2. Authentication
 
@@ -57,18 +58,18 @@ request.
   must refresh mid-run.
 - Renew with `POST /api/token/refresh/` and `{"refresh": "<refresh>"}`.
 - **Refresh tokens rotate.** The refresh response contains a *new* refresh
-  token and invalidates the one you sent. Always store what comes back — reusing
-  a spent refresh token fails.
-- Prefer refreshing over re-sending the password. The fewer places the password
-  is read from, the better.
+  token and invalidates the one submitted. Always store the token returned by
+  each refresh; a previously used refresh token will be rejected.
+- We recommend refreshing the token rather than re-sending the password, so
+  that the password is read from as few places as possible.
 
-## 3. The one gotcha that wastes an afternoon
+## 3. Required parameter on the site list
 
 `GET /api/site/` returns an **empty list** — not an error — unless you pass the
 institute id:
 
 ```bash
-# returns []  — looks like an empty server
+# returns [] — an empty list, not an error
 curl -H "Authorization: Bearer $TOKEN" .../api/site/
 
 # returns the sites
@@ -78,18 +79,19 @@ curl -H "Authorization: Bearer $TOKEN" '.../api/site/?institute=1'
 The institute id is **1**. The nested routes below (`/api/site/4/...`) do not
 need it; only the top-level site list does.
 
-## 4. What is there
+## 4. Available data
 
-The record grows as the station uploads, so treat these as a scale, not a
-constant — site 4 held 2630 video records on 2026-08-25 and 2981 two weeks later.
+These counts increase as the station uploads new data, so please treat them as
+approximate. Site 4 held 2630 video records on 2026-08-25 and 2981 on
+2026-09-09.
 
 | Site | Name | Time series rows | Videos | Notes |
 |---|---|---|---|---|
-| **4** | Sukabumi City | 2526 | 2981 | **The live station**, measured 2026-09-09. April 2026 onward. This is the data you want. |
-| 2 | Test site | 1204 | 546 | Measured 2026-08-25. A prior device that failed in 2025. Its video files were deliberately removed from the server, so video records exist with no media behind them. Time series are real. |
+| **4** | Sukabumi City | 2526 | 2981 | **The active station**, measured 2026-09-09. Data from April 2026 onward. This is the primary dataset for the collaboration. |
+| 2 | Test site | 1204 | 546 | Measured 2026-08-25. An earlier device that failed in 2025. Its video files were intentionally removed from the server, so video records exist without associated media files. The time series records remain valid. |
 | 3 | — | 0 | 0 | Empty. |
 
-## 5. Time series — the endpoint that matters
+## 5. Time series
 
 ```
 GET /api/site/4/timeseries/
@@ -110,15 +112,16 @@ Each row is one measurement:
 | `fraction_velocimetry` | Fraction of discharge resolved by velocimetry | – |
 | `misc` | Free-form JSON from the processing chain | – |
 | `video` | Id of the video this was derived from, if any | – |
-| `site`, `creator`, `id` | Record keeping | – |
+| `site`, `creator`, `id` | Record identifiers | – |
 
-Any of these may be `null`. Water level in particular is present on some rows
-and not others, so a dashboard should tolerate gaps rather than assume them.
+Any of these fields may be `null`. Water level is present on some rows and
+absent on others, so applications should handle missing values rather than
+assume every field is populated.
 
-**Timestamps are UTC.** Sukabumi local time is WIB, **UTC+7**. Convert on
-display; do not store the converted value.
+**Timestamps are UTC.** Sukabumi local time is WIB, **UTC+7**. We recommend
+converting to local time for display only, and storing the original UTC value.
 
-### Useful query parameters
+### Query parameters
 
 | Parameter | Effect |
 |---|---|
@@ -127,21 +130,24 @@ display; do not store the converted value.
 | `fields=timestamp,h,q_50` | Return only these columns |
 | `format=csv` | Return CSV instead of JSON |
 
-The two date filters are **camelCase**, unlike everything else in the API.
+Note that the two date filters use camelCase, unlike the other parameters in
+the API.
 
-All four are confirmed against the running server with this account on
-**2026-09-09**: the date bounds filter, `fields` trims, and `format=csv` switches
-the renderer. CSV columns come back in **alphabetical order**
-(`creator,fraction_velocimetry,h,id,misc,q_05,...`), not the order listed above,
-so select columns by name rather than by position.
+All four parameters were confirmed against the server with this account on
+**2026-09-09**. CSV columns are returned in **alphabetical order**
+(`creator,fraction_velocimetry,h,id,misc,q_05,...`) rather than the order listed
+above, so please select columns by name rather than by position.
 
-**The endpoint is not paginated.** The full matching set comes back in one
-response — 2526 rows was 1.0 MB on 2026-09-09. That is convenient now and will
-stop being convenient later,
-so bound your queries by date and pull incrementally: keep the newest timestamp
-you hold, pass it as `startDateTime` next time, and drop the duplicate first row.
+**The endpoint is not paginated.** The complete matching set is returned in a
+single response: 2526 rows was 1.0 MB on 2026-09-09. As the record grows, an
+unbounded request will become progressively slower and larger.
 
-### Worked example
+We therefore recommend bounding queries by date and retrieving data
+incrementally: store the most recent timestamp you have received, supply it as
+`startDateTime` on the next request, and discard the duplicated first row (the
+bounds are inclusive).
+
+### Example request
 
 ```bash
 TOKEN=$(curl -sS -X POST https://openrivercam.endlessprojects.info/api/token/ \
@@ -153,8 +159,8 @@ curl -sS -H "Authorization: Bearer $TOKEN" \
   'https://openrivercam.endlessprojects.info/api/site/4/timeseries/?startDateTime=2026-08-01&endDateTime=2026-09-01&fields=timestamp,h,q_50'
 ```
 
-Or use the sample script, which handles the token, the institute id, the date
-bounds and CSV output:
+Alternatively, use the sample script, which handles the token, the institute
+id, the date bounds and CSV output:
 
 ```bash
 export LIVEORC_EMAIL='<account>'
@@ -164,16 +170,18 @@ read -rs LIVEORC_PASSWORD && export LIVEORC_PASSWORD
 ./fetch_timeseries.py --site 4 --start 2026-08-01 --out sukabumi.csv
 ```
 
-It is standard-library Python 3.9+, so it needs no `pip install`. Read it as
-documentation as much as tooling — it is short, and every awkward part of the
-API is commented where it is handled.
+The script requires Python 3.9 or later and uses only the standard library, so
+no packages need to be installed. It also serves as documentation: it is short,
+and each behaviour described in this guide is commented at the point where the
+script handles it.
 
-A pull that finds no new rows writes a **header-only** CSV rather than an empty
-file, so an incremental loader sees zero rows instead of a parse error.
+A request that returns no new rows produces a CSV containing only the header
+row, rather than an empty file, so that an incremental loader reads zero rows
+instead of encountering a parse error.
 
-`mock_liveorc.py` alongside it serves the same response shapes on
-`127.0.0.1:8731`, which is how the script was exercised before release. It is
-useful for developing against without a credential or network:
+`mock_liveorc.py`, included in this directory, serves the same response shapes
+on `127.0.0.1:8731`. It was used to test the script before release, and allows
+development without a credential or network access:
 
 ```bash
 python3 mock_liveorc.py &
@@ -181,9 +189,9 @@ LIVEORC_BASE=http://127.0.0.1:8731 LIVEORC_EMAIL=any@example.local \
   LIVEORC_PASSWORD=any ./fetch_timeseries.py --site 4 --start 2026-08-08
 ```
 
-## 6. The rest of the surface
+## 6. Other endpoints
 
-| Endpoint | Gives you |
+| Endpoint | Contents |
 |---|---|
 | `/api/site/?institute=1` | Site list: id, name, coordinates |
 | `/api/site/4/timeseries/` | The measurements, as above |
@@ -195,80 +203,89 @@ LIVEORC_BASE=http://127.0.0.1:8731 LIVEORC_EMAIL=any@example.local \
 | `/api/version/` | Server version; needs no authentication |
 | `/api/schema/` | Full OpenAPI 3.0.3 spec; **needs no authentication** |
 
-The three configuration endpoints carry what makes the discharge numbers
-reproducible. If you want to check how a value was derived, they are where to
-look.
+The three configuration endpoints contain the calibration information required
+to reproduce the discharge values. Please refer to them if you need to verify
+how a value was derived.
 
-`/api/recipe/` and `/api/device/` return **empty lists** for this account. That
-is upstream behaviour, not a permission problem — both endpoints filter on
-institute and then discard the result. Recipe and device metadata are simply not
-available over the API. Ask us if you need something from them.
+`/api/recipe/` and `/api/device/` return **empty lists** for this account. This
+is the behaviour of LiveORC itself rather than a restriction on your permissions:
+both endpoints filter by institute and then discard the result. Recipe and
+device metadata are therefore not available over the API. Please contact us if
+you need information from them.
 
-## 7. Media, and why to leave it alone
+## 7. Media
 
-Video and image bytes are reachable, at these routes only:
+Video and image files are available only at the following routes:
 
 | Asset | Route |
 |---|---|
 | video | `/api/site/4/video/{id}/playback/` |
 | analysis image | `/api/site/4/video/{id}/image/` |
 | thumbnail | `/api/site/4/video/{id}/thumbnail/` |
-| keyframe | no route exists — unreachable over the API |
+| keyframe | No route exists; not available over the API |
 
-The `file`, `keyframe`, `image` and `thumbnail` URLs in a video record point at
-`/media/...` and **return 404** with or without a token. Media is behind
-Django's storage API and was never on the web server's filesystem. Treat those
-URLs as identifiers, not as links.
+The `file`, `keyframe`, `image` and `thumbnail` URLs contained in a video record
+point to `/media/...` and **return 404**, with or without a token. The media
+files are held behind Django's storage layer and are not served from the web
+server's filesystem. Please treat those URLs as identifiers rather than as
+links.
 
-> **Do not bulk-download media.** Serving files through LiveORC is expensive per
-> byte in a way that copying them is not, and the server is a small instance.
-> On 2026-08-25 an internal job pulling video through these routes exhausted the
-> host's CPU budget and took the whole service down for about 90 minutes after
-> 773 files. Metadata and time series are cheap and you can pull them freely;
-> media is not. Fetch individual clips when a person asks for one. If you need a
-> bulk copy, ask us and we will export it server-side instead.
+> **Please do not bulk-download media.** Serving files through LiveORC uses
+> considerably more server resources than transferring the same files by other
+> means, and the server is a small instance. On 2026-08-25 an internal job that
+> downloaded video through these routes exhausted the host's CPU allocation and
+> caused a full service outage of approximately 90 minutes, after 773 files.
+>
+> Metadata and time series are inexpensive to retrieve and may be queried
+> freely. Media files are not. Please request individual files as your users
+> need them. If you require a bulk copy, please contact us and we will produce
+> a server-side export instead.
 
-## 8. What this account cannot do
+## 8. Permissions of this account
 
-It is a member of institute 1, and it created none of the records. Under
-LiveORC's permission model that means:
+The account is a member of institute 1 and is not the creator of any record.
+Under LiveORC's permission model this means:
 
-- **Read** everything belonging to the institute — all three sites.
-- `PATCH` and `DELETE` return **403** on every record, always.
+- **Read access** to all data belonging to the institute, across all three sites.
+- `PATCH` and `DELETE` return **403** on every record.
 
-Two things to be aware of:
+Please note two further points:
 
-- It **can** create new records — this is a gap in LiveORC itself, not a
-  permission we granted, and it applies to any authenticated account. Notably
-  `POST /api/video/` uploads a file and can enqueue processing. Please do not
-  post to the API. It cannot damage existing data, but it adds clutter and load
-  to a production server. If your integration needs to write, tell us and we
-  will work out the right shape for it.
-- Access is bounded by **institute membership**, which is set by hand on our
-  side. A `403` on a site you expected to read means membership, not a bug —
-  tell us.
+- The account **is able to create** new records. This is a limitation of
+  LiveORC itself rather than a permission we have granted, and it applies to
+  any authenticated account. In particular, `POST /api/video/` uploads a file
+  and may queue it for processing. Please do not send POST requests to the API.
+  Doing so cannot damage existing data, but it creates unwanted records and
+  additional load on a production server. If your integration requires write
+  access, please tell us and we will agree a suitable approach.
+- Access is determined by **institute membership**, which we configure manually.
+  A `403` on a site you expected to be able to read indicates a membership
+  setting rather than a fault in your code. Please tell us if this occurs.
 
 ## 9. Service horizon
 
 The server is funded through the current grant, which ends **31 December 2026**.
-American Red Cross can carry the AWS host beyond that, and the working plan is
-**to roughly 31 March 2027**. Where it lives after that is an open decision.
+American Red Cross is able to fund the AWS host beyond that date, and the
+current plan is to continue **until approximately 31 March 2027**. Arrangements
+after that date have not yet been decided.
 
-This is worth knowing before you build on it. A dashboard tied to this
-hostname will need repointing when the server moves, so keep the base URL in
-configuration rather than in code, and talk to Tom before committing to
-anything with a longer horizon than the above.
+Please take this into account before building on the API. A dashboard tied to
+this hostname will need to be reconfigured when the server moves, so we
+recommend keeping the base URL in configuration rather than in source code.
+Please contact Tom before committing to any plan extending beyond the dates
+above.
 
-## 10. When something does not work
+## 10. Troubleshooting
 
 | Symptom | Likely cause |
 |---|---|
 | `GET /api/site/` returns `[]` | Missing `?institute=1` |
-| `401` on a request that worked earlier | Access token older than 6 hours; refresh it |
-| `401` from `/api/token/refresh/` | Refresh token already spent — they rotate; store the new one each time |
+| `401` on a request that previously succeeded | The access token is more than 6 hours old; refresh it |
+| `401` from `/api/token/refresh/` | The refresh token has already been used. Tokens rotate; store the new one returned by each refresh |
 | `403` on a nested site route | Not a member of that site's institute |
-| `403` on `PATCH`/`DELETE` | Expected. The account is read-only |
-| `404` on a `/media/...` URL | Expected. Use the `playback`/`image`/`thumbnail` routes |
+| `403` on `PATCH`/`DELETE` | Expected behaviour. The account is read-only |
+| `404` on a `/media/...` URL | Expected behaviour. Use the `playback`, `image` or `thumbnail` routes |
 | Empty `/api/recipe/` or `/api/device/` | Expected upstream behaviour |
 
-Anything else, send us the request and the full response and we will look.
+For any other issue, please send us the request and the full response, and we
+will investigate.

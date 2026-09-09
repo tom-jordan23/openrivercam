@@ -459,10 +459,10 @@ read -rs LIVEORC_PASSWORD && export LIVEORC_PASSWORD
 ./verify-api-access.sh --institute 1 --site 4 --probe-writes
 ```
 
-#### Revoking access is not where you would look for it
+#### Revoking access
 
-Three findings, all from v0.3.0 source, that matter for any credential handed
-outside the project:
+Three findings from v0.3.0 source, all of which affect any credential issued
+outside the project. The obvious methods do not work:
 
 - **You cannot disable an account.** `AbstractBaseUser` defines `is_active` as a
   hardcoded class attribute `True`, and LiveORC's `User` does not override it
