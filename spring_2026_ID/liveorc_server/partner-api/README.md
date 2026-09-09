@@ -264,9 +264,7 @@ Please note two further points:
 
 ## 9. Service horizon
 
-The server is funded through the current grant, which ends **31 December 2026**.
-American Red Cross is able to fund the AWS host beyond that date, and the
-current plan is to continue **until approximately 31 March 2027**. Arrangements
+The server is funded through the current grant, which ends **31 December 2026**. Arrangements
 after that date have not yet been decided.
 
 Please take this into account before building on the API. A dashboard tied to
