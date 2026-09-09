@@ -287,7 +287,7 @@ TODO-114 (independent mirror, done).
 
 | Field | Value |
 |-------|-------|
-| **Status** | OPEN — account shape settled, docs written 2026-09-08; the account itself is not yet created |
+| **Status** | OPEN — account created and verified 2026-09-09 (18 PASS / 0 FAIL); credentials not yet handed over |
 | **Priority** | G0 · December |
 | **Opened** | 2026-09-03 |
 
@@ -355,15 +355,14 @@ membership, then delete the user.** Written up in `liveorc_server/README.md`
 under "Revoking access is not where you would look for it".
 
 **Steps:**
-- [ ] **Tom, in a browser at `/admin/`** — create the user, then the membership.
-      The exact two forms, every field value, and what each wrong value would
-      grant are written up in `liveorc_server/README.md` under "Creating a
-      partner or service account". No host access needed; `/admin/` is publicly
-      reachable and redirects to a login page. Creating a user has no side
-      effects — the one signal in `users/signals.py` fires on `Institute`
-      creation, not `User` creation.
+- [x] **Account created 2026-09-09** — `ipb-dashboard@liveorc.local`,
+      **`user_id 19`**, `Member` of institute 1, not staff, not superuser. The
+      two `/admin/` forms are written up in `liveorc_server/README.md` under
+      "Creating a partner or service account".
 - [ ] Record in the password manager what the account is for and who at IPB
-      holds it.
+      holds it. **Note what does not revoke it** — see the rotation paragraph
+      above; the entry should say "delete the Member row", not "change the
+      password".
 - [x] **Partner-facing API guide written 2026-09-08** —
       `liveorc_server/partner-api/`, a self-contained bundle with no
       credentials in it. `README.md` covers auth and the 6-hour token, the
@@ -377,15 +376,24 @@ under "Revoking access is not where you would look for it".
 - [ ] Send credentials through a channel that is not this repository, and name
       the IPB owner responsible for where the credential is stored — a
       dashboard host, not a laptop.
-- [ ] Re-run TODO-115's verification matrix against **the IPB account itself**
-      before announcing access — not against the mirror. Membership is set by
-      hand and is the only thing standing between read-only and nothing.
-      `./verify-api-access.sh --institute 1 --site 4 --probe-writes`
-- [ ] While that credential is to hand, **check the four undocumented time
-      series parameters** the guide tells IPB to use — `startDateTime`,
-      `endDateTime`, `fields`, `format=csv`. They are read from v0.3.0 source
-      and have never been exercised against the running server. The guide flags
-      them as unverified; remove that flag once they are, or correct the guide.
+- [x] **Verification matrix re-run against the IPB account 2026-09-09 — 18
+      PASS / 0 FAIL.** Reads resolve across the institute, `PATCH` → 403,
+      `POST /api/video/` (invalid payload) → 400. Site 4 returns **2981 video
+      records (1578889 bytes)** and **2526 time series rows (1034272 bytes)**.
+      Full table in `liveorc_server/README.md`.
+
+      The first run of this reported "1 video record" at site 4 against a site
+      holding thousands. It was the probe, not the data — but the script could
+      not tell the two apart, because it printed a bare count with no body size
+      and discarded curl's exit status into a subshell. It now scores the body
+      as a row and reports bytes beside the count. **A record count without a
+      size beside it is not evidence**, and that is worth remembering the next
+      time a number here looks wrong.
+- [x] **The four undocumented time series parameters are confirmed against the
+      server, 2026-09-09** — `startDateTime`/`endDateTime` filter, `fields`
+      trims, `format=csv` switches renderer (columns come out alphabetically).
+      They are now checked on every run rather than trusted, since an ignored
+      query parameter still returns 200. The unverified flag is off the guide.
 - [ ] Confirm IPB can reach what they actually need for the three collaboration
       areas, not merely that the token works.
 - [ ] **Tell IPB about TODO-208 before they build on this API.** A dashboard

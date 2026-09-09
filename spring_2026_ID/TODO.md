@@ -1079,7 +1079,7 @@ without writing, silently skipping real data.
 
 | Field | Value |
 |-------|-------|
-| **Status** | **MODEL PROVEN 2026-08-25** (14 PASS / 0 FAIL) — partner provisioning still gated |
+| **Status** | **MODEL PROVEN 2026-08-25** (14 PASS / 0 FAIL); **re-proven against the IPB account 2026-09-09** (18 PASS / 0 FAIL) |
 | **Site** | LiveORC server (AWS) |
 
 **Verified against production 2026-08-25** with `verify-api-access.sh` and the
@@ -1271,10 +1271,10 @@ Revisit if the partner list grows beyond IPB.
       written for human logins. Same shape as the TODO-114 mirror
       account. `is_staff=False`, `is_superuser=False`, `Member` of the
       institute. Send credentials out of band.
-- [ ] Re-run the verification matrix against **the IPB service account
-      itself** before announcing access, not against the mirror.
-      Membership is the only thing standing between read-only and
-      nothing, and it is set by hand.
+- [x] **Re-run against the IPB service account 2026-09-09 — 18 PASS / 0
+      FAIL** (`user_id 19`). Membership resolves, writes are refused, and the
+      matrix now also covers the four time series query parameters the partner
+      doc depends on. Results in `liveorc_server/README.md`.
 
 **Revocation, found 2026-09-08.** This TODO establishes how to *grant* access
 and never asked how to take it back. The two obvious answers are both wrong:

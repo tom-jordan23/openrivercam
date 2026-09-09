@@ -80,12 +80,13 @@ need it; only the top-level site list does.
 
 ## 4. What is there
 
-Counts measured 2026-08-25; the record grows as the station uploads.
+The record grows as the station uploads, so treat these as a scale, not a
+constant — site 4 held 2630 video records on 2026-08-25 and 2981 two weeks later.
 
 | Site | Name | Time series rows | Videos | Notes |
 |---|---|---|---|---|
-| **4** | Sukabumi City | 2264 | 2630 | **The live station.** April–August 2026 onward. This is the data you want. |
-| 2 | Test site | 1204 | 546 | A prior device that failed in 2025. Its video files were deliberately removed from the server, so video records exist with no media behind them. Time series are real. |
+| **4** | Sukabumi City | 2526 | 2981 | **The live station**, measured 2026-09-09. April 2026 onward. This is the data you want. |
+| 2 | Test site | 1204 | 546 | Measured 2026-08-25. A prior device that failed in 2025. Its video files were deliberately removed from the server, so video records exist with no media behind them. Time series are real. |
 | 3 | — | 0 | 0 | Empty. |
 
 ## 5. Time series — the endpoint that matters
@@ -128,13 +129,15 @@ display; do not store the converted value.
 
 The two date filters are **camelCase**, unlike everything else in the API.
 
-> These four are read from the LiveORC v0.3.0 source and have not yet been
-> exercised against the running server with a partner account. They should work
-> as described; if one does not, tell us rather than working around it — the
-> field list and the date bounds above are confirmed correct regardless.
+All four are confirmed against the running server with this account on
+**2026-09-09**: the date bounds filter, `fields` trims, and `format=csv` switches
+the renderer. CSV columns come back in **alphabetical order**
+(`creator,fraction_velocimetry,h,id,misc,q_05,...`), not the order listed above,
+so select columns by name rather than by position.
 
 **The endpoint is not paginated.** The full matching set comes back in one
-response. That is convenient at 2264 rows and will stop being convenient later,
+response — 2526 rows was 1.0 MB on 2026-09-09. That is convenient now and will
+stop being convenient later,
 so bound your queries by date and pull incrementally: keep the newest timestamp
 you hold, pass it as `startDateTime` next time, and drop the duplicate first row.
 

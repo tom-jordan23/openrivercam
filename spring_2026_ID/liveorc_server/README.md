@@ -488,27 +488,48 @@ then delete the user.** Not "uncheck active", and not "change the password".
 
 ### Verification matrix — measured, not assumed
 
-Run against the mirror account (`user_id 18`, institute 1), 14 PASS / 0 FAIL:
+Latest run: the **IPB service account** (`ipb-dashboard@liveorc.local`,
+`user_id 19`, institute 1) on **2026-09-09**, 18 PASS / 0 FAIL. The mirror
+account (`user_id 18`) passed the same matrix at 14 rows on 2026-08-25, before
+the four query-parameter checks existed.
 
 | Request | Expected | Actual |
 |---|---|---|
-| `POST /api/token/` | 200 + access/refresh | 200 |
+| `POST /api/token/` | 200 + access/refresh | 200, 360 min lifetime |
 | `GET /api/site/` (no `?institute`) | `[]` | `[]` |
-| `GET /api/site/?institute=1` | the sites | 2, 3, 4 |
+| `GET /api/site/?institute=1` | the sites | 3, 4, 2 |
 | `GET /api/site/4/video/` | 200 | 200 |
+| `GET /api/site/4/video/` (body) | a complete JSON array | **2981 records, 1578889 bytes** |
 | `GET /api/site/4/video/{id}/` | 200 | 200 |
 | `GET .../video/{id}/playback/` | 200 | 200 |
 | `GET .../video/{id}/thumbnail/` | 200 | 200 |
-| `GET /api/site/4/timeseries/` | 200 | 200 |
+| `GET /api/site/4/timeseries/` | 200 | 200 (2526 rows, 1034272 bytes) |
 | `GET /api/site/4/cameraconfig/` | 200 | 200 |
 | `GET /api/site/4/videoconfig/` | 200 | 200 |
 | `GET /api/site/4/crosssection/` | 200 | 200 |
+| `?startDateTime=` / `?endDateTime=` | 0 rows for a 1970 window | 0 rows |
+| `?fields=id,timestamp` | only those fields | trimmed |
+| `?format=csv` | a CSV header row | `creator,fraction_velocimetry,h,id,misc,q_05,…` |
 | `GET /api/recipe/` | `[]` | `[]` |
 | `PATCH .../video/{id}/` (empty body) | **403** | **403** |
 | `POST /api/video/` (invalid payload) | **400** | **400** |
 
 That 400 is the important one: the permission layer let the request through to
 validation without creating anything, confirming the CREATE gap by observation.
+
+**Two things the row counts are for.** The video-list row reports bytes beside
+the count because a count alone cannot distinguish a short list from a truncated
+one — the first IPB run reported "1 video record" against a site holding
+thousands, and the bare number gave no way to tell whether that was the data or
+the probe. Take a record count seriously only when the body size is beside it
+and the array closed. And these counts move: site 4 held 2649 video records in
+the August mirror manifest and 2981 here, so a smaller number later is not by
+itself evidence of loss.
+
+**The four query parameters are confirmed against the server**, not just read
+from source: the date bounds really do filter, `fields` really does trim, and
+`format=csv` really does switch renderer. CSV columns come out in alphabetical
+order, not serializer order.
 
 `DELETE` is **not** in the run above, deliberately — see `verify-api-access.sh`.
 
