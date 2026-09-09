@@ -168,6 +168,19 @@ It is standard-library Python 3.9+, so it needs no `pip install`. Read it as
 documentation as much as tooling — it is short, and every awkward part of the
 API is commented where it is handled.
 
+A pull that finds no new rows writes a **header-only** CSV rather than an empty
+file, so an incremental loader sees zero rows instead of a parse error.
+
+`mock_liveorc.py` alongside it serves the same response shapes on
+`127.0.0.1:8731`, which is how the script was exercised before release. It is
+useful for developing against without a credential or network:
+
+```bash
+python3 mock_liveorc.py &
+LIVEORC_BASE=http://127.0.0.1:8731 LIVEORC_EMAIL=any@example.local \
+  LIVEORC_PASSWORD=any ./fetch_timeseries.py --site 4 --start 2026-08-08
+```
+
 ## 6. The rest of the surface
 
 | Endpoint | Gives you |

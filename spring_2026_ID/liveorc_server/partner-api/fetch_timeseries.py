@@ -44,6 +44,8 @@ INCREMENTAL PULLS
         ./fetch_timeseries.py --site 4 --start 2026-09-08T06:00:00Z
 
     The bound is inclusive on both ends, so drop or de-duplicate the first row.
+    A pull that finds nothing new writes a header-only CSV rather than an empty
+    file, so a loader reading it sees zero rows instead of a parse error.
 """
 
 import argparse
@@ -178,15 +180,29 @@ def fetch_timeseries(token, site, start=None, end=None, fields=None):
 
 
 def write_csv(rows, fields, handle):
-    if not rows:
-        print("no rows matched", file=sys.stderr)
-        return
     # honour the requested column order; fall back to whatever the API sent
-    columns = [f for f in fields.split(",") if f] if fields else list(rows[0].keys())
+    if fields:
+        columns = [f for f in fields.split(",") if f]
+    else:
+        columns = list(rows[0].keys()) if rows else []
+
+    if not columns:
+        # nothing came back and --fields was cleared, so there is no way to know
+        # what the columns should have been
+        print("no rows matched, and no --fields to derive a header from",
+              file=sys.stderr)
+        return
+
     writer = csv.DictWriter(handle, fieldnames=columns, extrasaction="ignore")
+    # header first, even with no rows: an incremental pull that finds nothing
+    # new should produce a header-only file, not an empty one. A zero-byte file
+    # makes csv.DictReader yield nothing and pandas raise EmptyDataError, so
+    # "no new data" would look like a broken download.
     writer.writeheader()
     for row in rows:
         writer.writerow(row)
+    if not rows:
+        print("no rows matched — wrote the header only", file=sys.stderr)
 
 
 def main():
