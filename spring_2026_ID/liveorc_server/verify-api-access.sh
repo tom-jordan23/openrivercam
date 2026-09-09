@@ -231,7 +231,7 @@ record "GET /api/site/$SITE/video/" "200" "$(code GET "/api/site/$SITE/video/")"
 VIDEOS="$(body GET "/api/site/$SITE/video/")"
 VIDEOS_RC="$(body_rc)"
 FIRST_VIDEO="$(printf '%s' "$VIDEOS" | grep -oE '"id":[0-9]+' | head -1 | cut -d: -f2 || true)"
-VIDEO_COUNT="$(printf '%s' "$VIDEOS" | grep -oE '"id":[0-9]+' | wc -l | tr -d ' ')"
+VIDEO_COUNT="$(printf '%s' "$VIDEOS" | grep -oE '"id":[0-9]+' | wc -l | tr -d ' ' || true)"
 VIDEO_COUNT="${VIDEO_COUNT:-0}"
 VIDEO_BYTES="$(printf '%s' "$VIDEOS" | wc -c | tr -d ' ')"
 
@@ -276,13 +276,20 @@ echo
 # ignored parameter still returns 200.
 echo "Time series query parameters (partner doc depends on these)"
 TS_ALL="$(body GET "/api/site/$SITE/timeseries/")"
-TS_ALL_N="$(printf '%s' "$TS_ALL" | grep -oE '"id":[0-9]+' | wc -l | tr -d ' ')"
+TS_ALL_N="$(printf '%s' "$TS_ALL" | grep -oE '"id":[0-9]+' | wc -l | tr -d ' ' || true)"
 echo "  ($TS_ALL_N time series rows unfiltered, $(printf '%s' "$TS_ALL" | wc -c | tr -d ' ') bytes)"
 
 # A window the record cannot possibly fill: if it comes back with everything,
 # the filter was ignored.
+#
+# Every count below ends in `|| true`. The script runs under `set -euo
+# pipefail`, and grep exits 1 when it matches nothing — which is the EXPECTED
+# result here, so an unguarded pipeline kills the script at precisely the
+# moment the check passes. `head -1` on a megabyte body is the same hazard from
+# the other direction: it closes the pipe, printf takes SIGPIPE, pipefail
+# propagates it.
 TS_WIN="$(body GET "/api/site/$SITE/timeseries/?startDateTime=1970-01-01T00:00:00Z&endDateTime=1970-01-02T00:00:00Z")"
-TS_WIN_N="$(printf '%s' "$TS_WIN" | grep -oE '"id":[0-9]+' | wc -l | tr -d ' ')"
+TS_WIN_N="$(printf '%s' "$TS_WIN" | grep -oE '"id":[0-9]+' | wc -l | tr -d ' ' || true)"
 if [[ "$TS_WIN_N" == "0" ]]; then
   record_v PASS "?startDateTime/endDateTime (1970 window)" "0 rows" "0 rows"
 elif [[ "$TS_WIN_N" == "$TS_ALL_N" ]]; then
@@ -303,7 +310,7 @@ else
 fi
 
 TS_CSV="$(body GET "/api/site/$SITE/timeseries/?format=csv")"
-TS_CSV_HEAD="$(printf '%s' "$TS_CSV" | head -1)"
+TS_CSV_HEAD="$(printf '%s' "$TS_CSV" | head -1 || true)"
 if [[ "$TS_CSV_HEAD" == *,* && "$TS_CSV_HEAD" != \[* && "$TS_CSV_HEAD" != \{* ]]; then
   record_v PASS "?format=csv" "CSV header row" "$(printf '%s' "$TS_CSV_HEAD" | head -c 60)"
 else
