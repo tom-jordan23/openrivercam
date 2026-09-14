@@ -983,6 +983,64 @@ over 133.5 days, 2026-04-16 to 2026-08-28.**
 trip retrospective (timeline, what worked, what didn't, photos) would
 be useful for funder reporting and as input for the next trip plan.
 
+### TODO-120: Add lighting and camera settings to LESSONS_LEARNED.md
+
+| Field | Value |
+|-------|-------|
+| **Status** | OPEN |
+| **Opened** | 2026-09-14, at Tom's request |
+
+`LESSONS_LEARNED.md` has ten lessons and none covers lighting, camera image
+settings, or optical water-level detection. The 2026-09-14 session found that
+these, not the transect, account for most of Sukabumi's daytime processing
+failures. Add a lesson in the file's existing format (What happened / Impact /
+Recommendation for next time).
+
+**What the lesson should cover:**
+
+- **Daytime failure rate.** Since 2026-09-03 the station recorded 359 videos
+  DONE and 195 ERROR in processing, about 35%. The July finding
+  (`findings/optical_wl_daytime_glint.md`) showed every water-level failure
+  falls in daylight; nights pass.
+- **The day camera profile was never deployed.** The day profile pushed every
+  morning since at least 2026-09-10 is the placeholder committed on 2026-03-08
+  (`66f0c90`, headed `STUB: Pull from live camera to populate`). The repo's
+  full `camera/common/image.xml` never reached the camera, because `pi/deploy.sh`
+  syncs the night profile but only warns if the day profile is missing.
+  Evidence: `data/station-forensics/orc-sukabumi-camsettings0914-20260914T133046Z.txt`.
+- **Camera tuning has worked before at this site.** Night captures failed the
+  water-level gate at S/N as low as 1.17 in May; the night image profile
+  (`camera/profiles/profile-night/README.md`) fixed it.
+- **The April camera tests measured streaming only.** Bitrate, resolution and
+  codec were scored on PIV pass rate. Image settings (exposure, WDR, highlight
+  compensation, noise reduction) and the waterline were never tested.
+- **The water-level colour method matters as much as the camera.** The
+  deployed recipe uses `grayscale` for both passes. In a local test with the
+  station's software on two days of mirrored clips, a recipe that tries `hue`
+  first and falls back to `grayscale` passed 43 of 43 clips on 2026-07-03 and
+  46 of 47 on 2026-08-11, against 33 and 34 for `grayscale` alone. `sat` and
+  `hue` give no signal on the monochrome IR night image, so the `grayscale`
+  fallback carries the night. Results and harness:
+  `findings/wl_method_test_2026-09-14/`.
+- **Passing the S/N gate does not make a water level right.** On 2026-08-11,
+  daytime `grayscale` accepted readings 1.14 m above that day's night level at
+  S/N 2.02 and 2.32, and `sat` accepted one 28 cm high at S/N 3.68. The gate
+  filters weak detections, not wrong ones. Two dry-season days and no
+  independent water-level reference, so this is a strong indication, not proof.
+- **The transect swap was not the main lever.** Swapping lifted failing daytime
+  S/N from about 1.6 to 2.2 and moved part of the discharge transect out of
+  frame.
+
+**Recommendation to draw out:** treat camera image settings and the
+water-level detection method as site configuration to be tested against the
+waterline in both day and night conditions before deployment, and have the
+deploy check verify every profile the station pushes, not just its presence.
+
+**Open before drafting:** the live daytime camera settings are still unread.
+The 09-14 read was taken in the night window; a read after 23:00 UTC is needed
+to know what the camera actually runs by day. The test harness and results
+from 09-14 are in a session scratchpad and need saving to the repo first.
+
 ### TODO-110: Spares inventory reconciliation
 
 | Field | Value |
