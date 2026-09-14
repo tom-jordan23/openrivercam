@@ -1,0 +1,98 @@
+[
+ {
+  "id": 2421,
+  "arr": "up_both",
+  "cls": "probe_errored",
+  "clip": "/media/videos/4/20260702/20260702T033928.mp4"
+ },
+ {
+  "id": 2423,
+  "arr": "up_both",
+  "cls": "probe_errored",
+  "clip": "/media/videos/4/20260703/20260703T024814.mp4"
+ },
+ {
+  "id": 2424,
+  "arr": "up_both",
+  "cls": "probe_errored",
+  "clip": "/media/videos/4/20260703/20260703T030824.mp4"
+ },
+ {
+  "id": 2425,
+  "arr": "up_both",
+  "cls": "probe_errored",
+  "clip": "/media/videos/4/20260703/20260703T031711.mp4"
+ },
+ {
+  "id": 2427,
+  "arr": "up_both",
+  "cls": "probe_errored",
+  "clip": "/media/videos/4/20260703/20260703T043127.mp4"
+ },
+ {
+  "id": 2432,
+  "arr": "up_both",
+  "cls": "probe_errored",
+  "clip": "/media/videos/4/20260703/20260703T070127.mp4"
+ },
+ {
+  "id": 2433,
+  "arr": "up_both",
+  "cls": "probe_errored",
+  "clip": "/media/videos/4/20260703/20260703T073128.mp4"
+ },
+ {
+  "id": 2468,
+  "arr": "up_both",
+  "cls": "probe_errored",
+  "clip": "/media/videos/4/20260704/20260704T010124.mp4"
+ },
+ {
+  "id": 2422,
+  "arr": "up_both",
+  "cls": "day_finished",
+  "clip": "/media/videos/4/20260702/20260702T034412.mp4"
+ },
+ {
+  "id": 2426,
+  "arr": "up_both",
+  "cls": "day_finished",
+  "clip": "/media/videos/4/20260703/20260703T040127.mp4"
+ },
+ {
+  "id": 2430,
+  "arr": "up_both",
+  "cls": "day_finished",
+  "clip": "/media/videos/4/20260703/20260703T060124.mp4"
+ },
+ {
+  "id": 2434,
+  "arr": "up_both",
+  "cls": "day_finished",
+  "clip": "/media/videos/4/20260703/20260703T080125.mp4"
+ },
+ {
+  "id": 2470,
+  "arr": "up_both",
+  "cls": "day_finished",
+  "clip": "/media/videos/4/20260704/20260704T020127.mp4"
+ },
+ {
+  "id": 2478,
+  "arr": "up_both",
+  "cls": "day_finished",
+  "clip": "/media/videos/4/20260704/20260704T060127.mp4"
+ },
+ {
+  "id": 2417,
+  "arr": "up_both",
+  "cls": "night_known",
+  "clip": "/media/videos/4/20260624/20260624T193326.mp4"
+ },
+ {
+  "id": 2418,
+  "arr": "up_both",
+  "cls": "night_known",
+  "clip": "/media/videos/4/20260624/20260624T203122.mp4"
+ }
+]
