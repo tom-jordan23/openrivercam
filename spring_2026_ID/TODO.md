@@ -1794,7 +1794,112 @@ guarded the mount, so the one condition that mattered went unchecked.
   volume, so if the cause was the full disk they are likely recoverable — feed
   into TODO-113.
 
-### RESUME HERE — state at 2026-09-03 19:15 UTC
+### RESUME HERE — state at 2026-09-14 14:16 UTC
+
+Session of 2026-09-14. Ended at Tom's request. Everything below is committed and
+pushed; HEAD was `f738e62` when this block was written.
+
+**Nothing is running.** No watcher, no armed grab, no harness container.
+Confirm with `pgrep -af 'wake_runner|pounce|db_watch|todo119|run_swap'` and
+`docker ps`. The two station grabs ran once each under the Monitor tool.
+**Nothing was written to the station, the camera or the server.** Camera access
+was ISAPI GET only. A second `claude` session (pid 1270347, started 2026-09-08)
+was open in this repo with no child processes; this session did not start it.
+
+#### Read these first
+
+- `findings/wl_method_test_2026-09-14/README.md` — the transect and
+  colour-method test, with results tables and caveats.
+- **TODO-120** — what the lighting and camera-settings lesson must cover.
+- `data/station-forensics/orc-sukabumi-checkin0914-20260914T130038Z.txt` and
+  `…camsettings0914-20260914T133046Z.txt` — the two station grabs.
+
+#### What this session settled
+
+1. **The station is healthy.** 48 captures a day every day since 09-03, LTE
+   connected, disk 70% (18 GB free), no sensor gap over 45 minutes since 09-03.
+   Sync since 09-03: SYNCED 2599 → 3086, FAILED 3012 → 3044, 0–7 failures a
+   day. The journal reaches back only to 09-08; of its 14 failures, 10 are
+   `Expecting value` (the server refusal whose status `base.py:47` discards, the
+   same signature as the LiveORC 500), 3 `read timeout=5`, 2 `SSLError`, 1 max
+   retries. Recoverable backlog: 1,255 clips, 12.11 GB.
+2. **Station processing fails on about 35% of clips** since 09-03 (359 DONE,
+   195 ERROR). All water-level failures fall in daylight.
+3. **The deployed transect roles are confirmed** from the 06-29 dump:
+   discharge = upstream (`ipb_discharge`, id 4, 13 points), water level =
+   downstream (`ipb_wl_optical`, id 5, 14 points). This matches
+   `apply_ipb_all_api.py`, not the handoff README.
+4. **The transect swap is not the main lever.** It lifts failing daytime S/N
+   from about 1.6 to 2.2 and moves part of the discharge transect out of frame
+   (coverage about 95% → 72%). TODO-113 still assumes the swap; it needs
+   updating.
+5. **The colour method is.** On the deployed transects, `hue` then `grayscale`
+   passed 43/43 clips on 07-03 and 46/47 on 08-11, against 33 and 34 for the
+   deployed `grayscale`, with the fewest outlying levels. `hue` margins are thin
+   (about a quarter below S/N 2.3).
+6. **Passing the S/N gate does not make a water level right.** Daytime
+   `grayscale` accepted readings 1.14 m high at S/N 2.02 and 2.32 on 08-11.
+7. **The day camera profile on the station is the 2026-03-08 placeholder**
+   (`66f0c90`, sha `c1ab4d8a…`). It is pushed every morning at about 23:01 UTC.
+   `deploy.sh` syncs only the night profile. The live night profile matches the
+   repo exactly; live streaming matches it except GovLength 13 (repo 50).
+8. **The lighting-metric hypothesis did not hold.** Clipped pixels and sun/shade
+   split in a fixed near-bank region did not correlate with daytime `grayscale`
+   S/N (n=19).
+9. **The harness reproduces the station's water level but not its discharge**
+   (clip 2417: h exact, q_50 0.274 against 0.192). Most likely a pyorc version
+   difference; the station's pyorc version was not checked.
+
+#### What Tom owes
+
+- **Whether to change the station recipe to `hue` then `grayscale`**, and
+  whether that waits until the day camera profile is settled so the two changes
+  can be judged separately. Both are station configuration changes and need his
+  approval.
+- Carried from 09-03, still open: postpaid confirmation for the SIM, and
+  whether to report the LiveORC 500 upstream.
+
+#### Next session, in priority order
+
+- [ ] **Read the live day camera settings.** Run
+      `station-health/camera_settings_read_2026-09-14.sh` through
+      `todo119_wake_runner.py` in a wake between 23:00 and 11:00 UTC
+      (06:00–18:00 WIB), under Monitor, with a session open. Diff the output
+      with `findings/wl_method_test_2026-09-14/diff_camera.py`. This answers
+      whether the placeholder PUT resets the image settings or leaves the night
+      profile's noise reduction and IR values in place.
+- [ ] **Decide the day camera profile** once the live values are known: deploy
+      the repo's `camera/common/image.xml`, or tune one variable at a time as
+      the night profile was. Make `deploy.sh` verify the day profile's content,
+      not only its presence. Every camera PUT needs Tom's approval.
+- [ ] **Test the colour method on more days before any recipe change.** The
+      harness costs no station data. Two dry-season days is not enough; add
+      overcast days and a range of months from the mirror.
+- [ ] **Consider a plausibility check on water level** (for example against
+      recent readings), since the S/N gate passes wrong levels. Check first
+      what pyorc and ORC-OS already offer.
+- [ ] **Update TODO-113** with finding 4.
+- [ ] **Correct `data/liveorc-mirror/README.md`**: it says the S3 backups
+      predate Fit 6, but the 06-29 dump contains VideoConfig 3.
+- [ ] **Read the station's pyorc version** at a wake (one line, read-only).
+- [ ] **Not investigated:** night clips alternate wake to wake between about 0%
+      and about 6% clipped pixels; DS18B20 "No DS18B20 device found" on five
+      wakes on 09-13 and 09-14.
+- [ ] Carried from 09-03: report the LiveORC 500 upstream; repair the 62
+      server-side rows; a timestamp-level join before any re-drive.
+
+#### Standing cautions
+
+Unchanged from the block below: station DB writes need Tom's explicit
+per-operation approval, and a green dry run is not approval for a re-drive.
+Added: any write to the camera (ISAPI PUT or POST) needs his approval too.
+Rerunning the harness needs the recipe, camera config and cross-sections
+regenerated from the 06-29 dump (commands in the findings README); they are not
+in the repo because they carry survey coordinates.
+
+---
+
+### Superseded resume block — state at 2026-09-03 19:15 UTC
 
 Session of 2026-09-03, second sitting. Ended at Tom's request after the
 findings were written up.
