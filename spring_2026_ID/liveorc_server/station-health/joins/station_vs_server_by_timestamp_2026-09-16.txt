@@ -1,0 +1,10 @@
+# TODO-119 timestamp-level join, station vs LiveORC site 4 — 2026-09-16
+# station: orc-sukabumi-tsjoin119ab-20260916T133126Z.txt   server: 3317 video rows (API, fetched now)
+# station un-synced rows: 3177  by sync_status: {'LOCAL': 126, 'FAILED': 3051}
+# station files extant: 1263   server timestamps held by >1 row: 0
+#
+# verdict|rows|GB (station bytes)
+LOST|1866|0.00
+UPLOAD|1171|11.29
+ON-SERVER|92|0.90
+ON-SERVER-local-gone|48|0.00

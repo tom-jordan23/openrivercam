@@ -459,6 +459,35 @@ along with this run".
 - [ ] **Measure before committing.** Drive one day's window (~48 clips,
       ~440 MB) newest-first and read the success rate and throughput off it
       before spending the remaining ~10 GB.
+- [x] **Timestamp-level join — DONE 2026-09-16.** Station grab `tsjoin119ab`
+      (13:31 UTC, read-only) against `GET /api/site/4/video/` with the mirror
+      account (3,317 server rows), exact to the second, and **ON-SERVER only
+      where the playback route's Content-Length equals the station's bytes**.
+      Script `liveorc_server/station-health/todo119_timestamp_join.py`; summary
+      `joins/station_vs_server_by_timestamp_2026-09-16.txt`; per-clip verdicts
+      `findings/sukabumi_backlog_tsjoin_2026-09-16.csv`.
+
+      | Verdict | Rows | GB | Meaning |
+      |---|---|---|---|
+      | **UPLOAD** | **1,171** | **11.29** | No server row within 60 s. All FAILED. |
+      | ON-SERVER | 92 | 0.90 | Same second, byte-identical on the server. Do not re-send. |
+      | ON-SERVER-local-gone | 48 | — | Server holds it; station file purged. May–June. |
+      | LOST | 1,866 | — | Neither side has the file. |
+
+      **No ambiguous cases:** no size mismatch, no server row without a file,
+      no near-miss within 60 s, no server timestamp held by two rows.
+      Cross-checked against the 09-02 workplan: all 62 ALREADY-ON-SERVER are
+      ON-SERVER again; 1,128 of its 1,131 UPLOAD are still UPLOAD, 2 turned out
+      to be on the server (09-02 compared against the 08-25 mirror, which could
+      not see them), and 1 (a LOCAL capture in progress at the 09-02 grab) has
+      since synced. The 43 new UPLOAD clips are 09-02 → 09-09.
+      **The upload set is 1,171 clips / 11.29 GB, 2026-07-04 → 09-09**
+      (213 July, 878 August, 80 September), scope it from the CSV, not from
+      FAILED — FAILED also covers the 92.
+      **Nothing new has joined the backlog since 09-09 14:31 UTC.** Every
+      FAILED clip since then (28 from 09-03 on, 4 of them on 09-16) is on the
+      server: they are the LiveORC 500 (server status 5 on 87 of the 92), not
+      the link. The server-side repair list is now 92, not 62.
 
 **Do not start a bulk upload without answering the cost question.** The station
 is on a metered prepaid SIM whose exhaustion caused ISS-FIELD-011.
