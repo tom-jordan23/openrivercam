@@ -1,6 +1,6 @@
 # TODO — Indonesia Spring 2026 Deployment (post-trip)
 
-**Last updated:** 2026-09-08
+**Last updated:** 2026-09-22
 
 The pre-trip task list (departure schedule day-by-day, in-country
 deferred items, etc.) was archived to `archive/` after the April 2026
@@ -1972,7 +1972,128 @@ guarded the mount, so the one condition that mattered went unchecked.
   volume, so if the cause was the full disk they are likely recoverable — feed
   into TODO-113.
 
-### RESUME HERE — state at 2026-09-14 14:16 UTC
+### RESUME HERE — state at 2026-09-22 12:04 UTC
+
+Session of 2026-09-22. Ended at Tom's request. Everything below is committed;
+HEAD was `73c0d3f` when this block was written.
+
+**Nothing is running.** No watcher, no armed grab, no harness container.
+Confirm with `pgrep -af 'wake_runner|pounce|db_watch|todo119|trickle'` and
+`docker ps`. Two station grabs ran, each once, under the Monitor tool, both
+read-only. **Nothing was written to the station, the camera or the server.**
+The trickle dry run made no login and no POST.
+
+#### The next step, in one line
+
+**Fire a real test run that actually brings clips over** — one day, measured.
+`todo119_trickle_drive.py --day 2026-07-23 --commit --i-have-approval-for 2026-07-23`,
+armed under Monitor. 48 clips, 461.9 MB metered. It needs Tom's approval at the
+time, and the SIM gate below is the reason it did not happen this session.
+
+#### Read these first
+
+- **TODO-119**, the "REVISED 2026-09-22" block (the disk clock) and
+  "The trickle is built and NOT fired" (the mechanism and its guards).
+- `LESSONS_LEARNED.md` §11 — expect failed uploads, design the resync path.
+- `data/station-forensics/orc-sukabumi-checkin0922-20260922T113039Z.txt` and
+  `…trickle20260723d-20260922T120041Z.txt` — the two grabs. Gitignored, so they
+  exist only on Tom's machine; everything load-bearing from them is in TODO.md.
+
+#### What this session settled
+
+1. **The station is healthy.** Zero outages in 12.5 days, 3,816 wakes at
+   cadence, all four sensor streams at 48/day including ds18b20, LTE connected
+   at 100% on Telkomsel, battery lows 11.6–12.1 V against highs ~13.0 with no
+   trend. `capture_result_code` is 1 on all 842 captures over six days —
+   capture is not implicated in anything.
+2. **The purge deadline is 2026-10-04 to 10-07, not mid-October.** 13 G free,
+   ~554 MB/day over 19.9 days. The fill is new captures, not the backlog, so
+   headroom does not grow until an upload runs. Full working in TODO-119.
+3. **The station will do the trickling itself.** `POST /api/video/sync/`
+   uploads nothing — it flips a window to QUEUE (`queue.py:192`), and
+   `startup_checks.py:94` re-submits every QUEUE row at every boot. One call in
+   an attended wake sets up work the station performs on its own duty cycle.
+   No deploy, no station-side timer, nothing of ours between sessions.
+4. **Queue depth is the only throttle**, and `start`/`stop` default to
+   unbounded upstream, so an empty body would queue all 3,210 un-synced rows.
+   Both scripts treat a missing bound as fatal.
+5. **968 of the 1,171 clips (9.33 GB) sit on 21 clean days** holding no
+   ON-SERVER clip, so a day walk over them duplicates nothing.
+6. **The dry run is green and cross-validates the join.** Window 2026-07-23
+   holds exactly 48 FAILED clips, ids 3989–4036 contiguous, all files present,
+   461.9 MB — matching the offline join to the decimal. QUEUE was 0.
+7. **The live sync timeout is 150 s** (`retry_timeout = 0.0`, and every recent
+   failure logs `read timeout=150`). Sizing must assume a stall exceeds a whole
+   wake: ~9% of syncs fail that way, so roughly one clip in eleven costs a wake.
+   Estimated drain ~4.5 clips/wake → 48 clips in ~11 wakes, the whole clean
+   range in ~4.5 days of station time against a ~13 day deadline.
+8. **Redis availability is unverified.** The first probe was wrong — unauth'd
+   `GET /api/health/` returns 401 because middleware exempts only the three
+   `/api/auth/` routes, and redis-cli is not on the station. Probe replaced
+   (socket, raw PING, process counts); the next dry run will report it.
+
+#### Still unexplained
+
+**Why the journal logged `read timeout=5` on 09-08 → 09-14.** `retry_timeout`
+read `0.0` at both the 09-14 and 09-22 grabs, so it is not what changed, and
+`0.0` is falsy — the upstream expression yields 150 in both cases. Either 0.6.0
+computes it differently from the 0.7.0 checkout, or those failures came from a
+different call site (`schemas/video.py:424` defaults to 120, `:544` to 150).
+Does not block anything; 150 is what is in force today.
+
+#### What Tom owes
+
+- **The SIM.** Still the hardest gate and unchanged since 09-03: no carrier
+  confirmation of prepaid → postpaid. The trickle does not dodge the cost
+  question, it spreads it — the same 9.33 GB metered. This is what stopped the
+  test run this session.
+- **Approval for the test run**, naming the day. `--commit` requires
+  `--i-have-approval-for 2026-07-23` to match, so a dry run is never one flag
+  from a commit.
+- **Consent to unattended upload.** Once rows are QUEUE the station uploads on
+  wakes nobody is watching. That is its own duty cycle rather than an agent of
+  ours, so it does not breach the no-unattended-monitoring rule — but it is a
+  different thing from trickling while someone is at the keyboard.
+- Carried, still open: whether to change the station recipe to `hue` then
+  `grayscale`, the day camera profile decision, and whether to report the
+  LiveORC 500 upstream.
+
+#### Next session, in priority order
+
+- [ ] **The test run.** One day, 2026-07-23, oldest-first because the purge
+      takes oldest-first. Arm under Monitor with a session open. Read off it:
+      how many clips actually landed, how many wakes it took, and the real
+      per-clip cost under the 150 s regime. **Then** size the sustained drain.
+      Do not queue the whole backlog to save re-arms until that number exists.
+- [ ] **Raise the guards for the sustained drain** once the rate is known. The
+      60-clip ceiling and 36 h window are sized for a first batch; ~150 clips
+      per re-arm is roughly one top-up a day. Raising them is a deliberate
+      decision about unattended exposure, not a default.
+- [ ] **Re-measure the disk** at any grab and re-derive the deadline. Two points
+      a week apart beat the stored rate.
+- [ ] **Re-confirm `min_free_space`.** The 09-22 grab failed on the `settings`
+      table's column names, so 5.0 GB is still the 09-02 reading. If the units
+      are percent the deadline moves ~4 days later, which does not rescue it.
+- [ ] Carried from 09-14: read the live day camera settings in a daytime wake
+      and decide the day profile; test the colour method on more days before any
+      recipe change; update TODO-113 with the transect finding; correct
+      `data/liveorc-mirror/README.md`; read the station's pyorc version — the
+      09-22 grab found no `pyorc` module in the system Python, so it needs a
+      different probe (venv or container).
+- [ ] **Not investigated:** night clips alternate wake to wake between ~0% and
+      ~6% clipped pixels.
+
+#### Standing cautions
+
+Unchanged. Station DB writes need Tom's explicit per-operation approval, and a
+green dry run is not approval for a commit — the trickle's `--commit` guard
+exists because that drift has happened before. Any write to the camera needs his
+approval too. The 92 ON-SERVER clips must never be re-sent; scope every window
+from the join CSV, not from `FAILED`.
+
+---
+
+### Superseded resume block — state at 2026-09-14 14:16 UTC
 
 Session of 2026-09-14. Ended at Tom's request. Everything below is committed and
 pushed; HEAD was `f738e62` when this block was written.
