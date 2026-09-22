@@ -549,7 +549,95 @@ move slower than they should.
 
 ---
 
-## 11. (Template for future entries)
+## 11. Uploads will fail. Plan the resync path before deployment, not after
+
+**What happened:** The Sukabumi station records 48 video clips a day and
+uploads each one to the LiveORC server over a cellular link. Capture has
+been reliable throughout — the station's own records show 48 clips created
+every day, including days it was believed to be dead. The upload is what
+fails, and it fails in two different ways that look identical from the
+station.
+
+The first is ordinary transport failure: timeouts, connection resets, a
+link that drops mid-transfer. On a good day none of the 48 clips fail; on
+a bad one, eight do. The second is subtler. The server accepts the file,
+commits the database row, and then the acknowledgement is lost. The bytes
+are safely on the server, but the station marks the clip failed. By
+2026-09-16 there were 92 such clips, confirmed byte-for-byte against the
+server.
+
+Neither failure was recovered automatically, because of a design detail
+worth stating plainly: ORC-OS retries only clips in its `QUEUE` state,
+and a failed upload goes to `FAILED`. Nothing moves a clip from `FAILED`
+back to `QUEUE`. So every failed upload was permanent by default, and the
+station reported "0 videos left to synchronize" while thousands of clips
+sat unsent. That message was accurate and deeply misleading at the same
+time.
+
+Meanwhile the station's disk manager deletes the oldest video when free
+space runs low, and it does not check whether a clip has been uploaded
+first. Un-synced clips were therefore on a deletion timer that nobody was
+watching.
+
+**Impact:** 1,866 clips were permanently lost — deleted locally before
+they were ever uploaded. A further 1,171 clips (11.29 GB, covering
+2026-07-04 to 09-09) still exist on the station and can still be
+recovered, but only until the disk fills again, which is currently
+projected for the first week of October 2026.
+
+Establishing those numbers was itself expensive. The station's own sync
+status could not be trusted — it reports what the station believes, not
+what the server holds — so the backlog had to be reconciled clip by clip
+against the server's records, matching timestamps to the second and
+comparing file sizes byte for byte. Several earlier estimates were wrong
+by large margins before that was done.
+
+The failures also went unnoticed for a long time. A separate 4.8-day
+outage ran for five days before anyone observed it, because nothing was
+watching for the *absence* of new data.
+
+**Recommendation for next time:**
+
+- **Budget for upload failure as a normal operating condition.** A few
+  percent of uploads will fail on a cellular link. This is not an
+  exception to be handled once; it is a steady-state rate the system must
+  absorb without losing data.
+- **Every failed upload must land in a state that something retries.** A
+  terminal failure state with no automatic path out of it converts a
+  transient network problem into permanent data loss. Either the retry
+  scheduler must include failed items with a backoff, or a supervisor
+  must periodically move them back into the retry queue. Verify this
+  works before deployment, by failing an upload deliberately and
+  confirming the clip is eventually sent.
+- **Never treat local sync status as the record of what the server has.**
+  Reconcile against the server itself, and compare file sizes rather than
+  just checking that a record exists — a database row is a claim about a
+  file, not the file. Run this reconciliation on a schedule, not only
+  when something looks wrong.
+- **Make retries safe to repeat.** Because the "upload succeeded but the
+  acknowledgement was lost" case exists, any retry mechanism will
+  sometimes re-send a file the server already has. The server should
+  reject or replace the duplicate — for example by constraining records
+  on site and timestamp, or by having the station send a content hash.
+  Without this, the only safe retry is one preceded by a full
+  reconciliation, which is slow and manual.
+- **Do not let a disk-space policy delete data that has never been
+  uploaded.** Delete uploaded files first, and treat deletion of
+  un-uploaded data as a last resort that raises an alarm. As built, the
+  cleanup ran oldest-first with no regard for upload state, which meant
+  the files most at risk were exactly the ones that had failed to send.
+- **Monitor for the absence of data, not just the presence of errors.**
+  The most severe outages produced no error anywhere — the station simply
+  stopped reporting. A check for "no new data in the last N cycles" runs
+  entirely on the server, needs no access to the station, and would have
+  caught every outage we experienced.
+- **Size local storage against a realistic worst-case outage**, not the
+  normal case. Storage that holds a few days of data is adequate until
+  the first multi-week problem, and then it decides how much is lost.
+
+---
+
+## 12. (Template for future entries)
 
 **What happened:**
 
@@ -559,4 +647,4 @@ move slower than they should.
 
 ---
 
-*Last updated: 2026-05-06*
+*Last updated: 2026-09-22*

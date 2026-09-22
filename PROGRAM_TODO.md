@@ -793,6 +793,18 @@ left in the past with nothing to re-arm it → multi-day outage.
 20–21 August agreement that **real-time monitoring means AC mains**, which is
 R11 confirmed by the people who would operate it.
 
+**Upload reliability is a v2 requirement, not an operations problem.** The
+second causal chain at Sukabumi is data loss on the uplink, and it is a design
+failure rather than a run of bad luck: a failed upload lands in a terminal state
+nothing retries, local sync status is not a record of what the server holds, the
+cleanup deletes oldest-first without checking whether a file was ever sent, and
+nothing watches for the absence of data. 1,866 clips were lost that way.
+`spring_2026_ID/LESSONS_LEARNED.md` §11 states the lesson and the specific
+requirements v2 should carry — retry with backoff out of the failed state,
+scheduled server-side reconciliation by byte size, idempotent re-send, cleanup
+that prefers already-uploaded files, and absence-of-data alerting. Recovery of
+the existing backlog is TODO-119 and is separate from this.
+
 **Steps:**
 - [ ] Decide whether v2 supersedes `rc-box/DESIGN_SPECS.md` or sits beside it.
       Either way that file needs a status banner — it is currently misleading.
