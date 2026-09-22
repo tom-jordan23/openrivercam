@@ -500,6 +500,77 @@ server-side misses by 11 clips over 09-18 → 09-21 (station 7/5/3/11 FAILED
 against 3/2/2/8 absent on the server), which is the familiar pattern: the row
 and the bytes commit, the acknowledgement does not.
 
+**The trickle is built and NOT fired (2026-09-22, Tom's instruction).**
+`station-health/todo119_trickle_drive.py` and `todo119_trickle_arm.sh`. Dry run
+is the default; firing needs Tom's approval for a named day.
+
+**The station does the uploading itself — there is nothing to deploy.** This was
+the thing worth discovering. `POST /api/video/sync/` does not upload anything:
+`queue.py:192` selects LOCAL/UPDATED/FAILED in the window, sets
+`sync_status = QUEUE`, commits, and hands the ids to Celery. Then
+`startup_checks.py:94` (`check_and_restore_queued_syncs`) runs at **every**
+ORC-OS boot, finds every QUEUE row, and re-submits it. So one API call during a
+wake we attend sets up work the station performs on its own duty cycle, ~48
+wakes a day, with nothing of ours running between sessions. That is the whole
+trickle: no station-side timer, no deploy, no agent.
+
+It also explains the long-standing symptom exactly: the boot scheduler asks only
+for QUEUE, the backlog is FAILED, so "0 videos left to synchronize" sits beside
+thousands of FAILED rows and nothing ever drains.
+
+**Queue depth is the only throttle, and there isn't one otherwise.**
+`check_and_restore_queued_syncs` re-submits *all* queued rows every boot. So the
+window size is the size of the commitment. Worse, `start` and `stop` are
+`Optional[datetime] = None` upstream, defaulting to "beginning of records" →
+"end of records": **an empty body would queue every un-synced row on the
+station** — 3,210 rows, 12.5 GB, including the 92 duplicates. Both scripts treat
+a missing bound as fatal rather than as "all", and the station side also refuses
+a window wider than 36 h or fuller than `ORC_MAX_CLIPS` (default 60).
+
+**968 of the 1,171 clips can go with no duplicate risk at all.** The window
+selects by time, so it re-sends the 92 clips the server already holds if they
+fall in range. But they cluster: **21 whole UTC days hold UPLOAD clips and no
+ON-SERVER clip of any kind** — 2026-07-23 → 09-01, **968 clips, 9.33 GB**, 83%
+of the backlog. A day-granularity walk over those is clean by construction and
+needs no per-clip filtering. The driver emits only those days unless
+`--allow-mixed` is passed. The other 203 clips sit 1–3 at a time on 31 mixed
+days and are not worth the duplicate risk until the clean days are done.
+
+Order is oldest-first by default, because the purge takes oldest-first from
+2026-07-03 — the oldest clean day is the one closest to being destroyed.
+`--newest-first` gives the "measure before committing" probe day instead.
+
+**Sizing is not settled, and the timeout question got worse rather than better.**
+At the 09-03 measurement (3.95 s/clip, ~21 s sync window) one wake carries ~5
+clips, so a 48-clip day drains in ~10 wakes and the clean range would take ~4
+days of station time. But `schemas/video.py:387` computes
+`timeout = min(callback_url.retry_timeout, 150) if callback_url.retry_timeout else 150`,
+and the 09-14 grab read `retry_timeout = 0.0` — which is falsy, so that
+expression already yielded 150 on 09-14, while the journal for the six days
+before it logged `read timeout=5`. The two do not reconcile. Either 0.6.0
+computes it differently from the 0.7.0 checkout, or the 5 s failures come from
+another call site (`schemas/video.py:424` defaults to 120, `:544` to 150).
+**Read `retry_timeout` and the live error classes off the station before
+choosing a batch size** — the trickle script reports both in section B. A 150 s
+timeout inside a ~120 s wake means one stalled clip can consume an entire wake.
+
+**What firing it still needs:**
+
+- [ ] **The SIM.** Unchanged and still the hardest gate. The trickle does not
+      dodge the cost question, it spreads it: the same 9.33 GB of metered data.
+      No carrier confirmation of prepaid → postpaid as of 2026-09-22.
+- [ ] **Tom's approval for a named day**, per the standing cautions. `--commit`
+      requires `--i-have-approval-for YYYY-MM-DD` matching the day being driven,
+      so a dry run is never one flag away from a commit.
+- [ ] **Consent to unattended upload.** Once rows are QUEUE the station uploads
+      on wakes nobody is watching. That is the station's own duty cycle rather
+      than an agent of ours reaching in, so it does not breach
+      "no unattended station monitoring" — but it is a different thing from
+      trickling while someone is at the keyboard, and it is Tom's call.
+- [ ] **Undo is not free.** Stopping a trickle mid-flight means putting QUEUE
+      rows back to FAILED, which is a direct DB write and needs its own
+      approval. Size the window so that stopping is not needed.
+
 **Phase 03 blocked on authentication, and the direct call is the way round it.**
 Both `:80` and uvicorn's own `:5000` return 401 with
 `"Token missing or not a valid token format"`, and we do not hold the local
