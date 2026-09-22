@@ -221,6 +221,11 @@ oldest unsynced *row* 2026-04-08, so pre-July is gone.
 before deletion resumes.** Confirm the units are GB and not percent; the 08-28
 purge firing at exactly 5.00 GiB free says GB but does not prove it.
 
+> **Superseded twice.** The 09-02 reclaim reset this clock, and the 09-22 grab
+> re-measured the rate. Current answer: **deletion resumes 2026-10-04 to 10-07**
+> at ~554 MB/day against 13 G free. See "REVISED 2026-09-22" under Phase 02
+> below. The figures in this paragraph are the 09-01 history.
+
 **Answered this session:**
 
 - [x] **Sync errors 08-23 → 08-27.** Not `ConnectTimeoutError` — dominated by
@@ -421,6 +426,79 @@ MB/day against 24 G free, there is now on the order of 40 days of headroom
 rather than 16 — and it grows as the backlog uploads and becomes reclaimable in
 turn. The `min_free_space` units question is no longer urgent, though still
 unanswered.
+
+**REVISED 2026-09-22 — the deadline is the first week of October, not
+mid-October.** Measured from the 09-22 check-in grab
+(`orc-sukabumi-checkin0922-20260922T113039Z.txt`), with `df` reporting whole GB
+so each point carries ±0.5 G:
+
+| When (UTC) | Root free | Use% |
+|---|---|---|
+| 2026-09-02 15:00 | 24 G | 58% |
+| 2026-09-14 13:00 | 18 G | 70% |
+| 2026-09-16 13:31 | 17 G | 72% |
+| 2026-09-22 11:30 | 13 G | 77% |
+
+That is **~554 MB/day** across the full 19.9-day span and ~676 MB/day across the
+last six — faster than the 440 MB/day this entry assumed. Against
+`min_free_space = 5.0` there are 8 G of headroom, so **deletion resumes about
+2026-10-04 to 10-07.** The spread is the measurement, not two competing models:
+±0.5 G on a 4 G delta is ±17%, which is most of the difference between the two
+rates. Do not read the faster recent figure as acceleration.
+
+The headroom does **not** grow on its own, because the fill is new captures, not
+the backlog: 48 clips/day at 9.2 MB is ~440 MB/day before processing outputs,
+while the backlog itself grew 0.3 G in the same six days (12.19 → 12.51 G
+extant, 1,263 → 1,296 files). The "it grows as the backlog uploads" clause above
+still holds, but only once an upload actually runs — and none has.
+
+`min_free_space = 5.0` is still the 2026-09-02 reading from `ISSUE_LOG.md`; the
+09-22 grab tried to re-confirm it and failed on the `settings` table's column
+names, so the units question remains exactly as unanswered as before. If the
+units are percent rather than GB, 5% of 58 G is 2.9 G and the deadline is about
+four days later — it does not rescue the schedule.
+
+**2026-09-22 check-in — counters, and a changed failure mode.** Baseline is the
+09-16 tsjoin grab.
+
+| | 2026-09-16 | 2026-09-22 |
+|---|---|---|
+| SYNCED | 3,176 | 3,427 |
+| FAILED | 3,051 | 3,084 |
+| LOCAL | 126 | 126 |
+| un-synced rows with a file | 1,263 | 1,296 |
+| those files, on disk | 12.19 G | 12.51 G |
+
+No backlog clip has drained: the +251 SYNCED are new captures, and the +33
+FAILED are new failures. Capture itself is not implicated — `capture_result_code`
+is 1 on all 842 captures in the server's sensor record over six days, and the
+station logged 48 rows a day throughout.
+
+**The 5-second read timeout has disappeared from the journal.** Sync errors
+since 09-17 are 18 × `read timeout=150` and 11 × `Expecting value`, against
+09-14's 10 × `Expecting value`, 3 × `read timeout=5`, 2 × `SSLError`, 1 × max
+retries. Not one failure at `timeout=5` remains.
+
+This is an observation, not a diagnosis, and it has no known cause — nothing was
+deployed to the station in that window from this repo. Two things follow. First,
+the remaining timeouts are genuine multi-minute stalls, not a 5 s constant
+clipping 5.2 s transfers, which retires the "timeout constant and bandwidth are
+the same fault" reading recorded under 09-01. Second, if the effective sync
+timeout really is 150 s now, that is the same value `sync_videos_start_stop`
+re-drives at, and **the trickle design below must not assume it still has the
+old 5 s budget per clip.** Read the station's live sync timeout before sizing a
+batch.
+
+Sync latency for clips that do land is unchanged and tight: ~35 s median, ~39 s
+p90 every day from 09-08 to 09-22, measured as `created_at − timestamp` over the
+server's own rows. Clips either land in ~35 s or fail outright; there is no
+congestion ramp and no widening tail. That is a discrete per-request failure,
+and it argues against the nightly-quota model for these particular misses.
+
+**The LiveORC 500 repair list has grown past 92.** Station FAILED exceeded
+server-side misses by 11 clips over 09-18 → 09-21 (station 7/5/3/11 FAILED
+against 3/2/2/8 absent on the server), which is the familiar pattern: the row
+and the bytes commit, the acknowledgement does not.
 
 **Phase 03 blocked on authentication, and the direct call is the way round it.**
 Both `:80` and uvicorn's own `:5000` return 401 with
