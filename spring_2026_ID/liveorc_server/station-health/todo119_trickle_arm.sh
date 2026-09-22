@@ -167,13 +167,35 @@ journalctl --since '-3 days' --no-pager -o short-iso 2>/dev/null \
   | sort | uniq -c | sort -rn | sed 's/^/    /'
 
 echo
-echo "=== C. is the queue runner even available (redis) ==="
-# POST /sync/ calls await redis_available() first and 503s if redis is down,
-# so check it here rather than discovering it inside the commit.
+echo "=== C. is the queue runner even available (redis + celery) ==="
+# POST /sync/ calls await redis_available() first and fails if redis is down, so
+# check before the commit rather than discovering it mid-wake.
+#
+# 2026-09-22: the first version probed GET /api/health/ unauthenticated and got
+# 401 — the middleware exempts only the three /api/auth/ endpoints, so every
+# other route needs the cookie. That told us the API is up and enforcing auth,
+# and nothing about redis. redis-cli is not installed on the station either.
+# So probe the socket and the processes directly, none of which needs auth.
 RC=$(curl -s -o /dev/null -w '%{http_code}' --max-time 8 "$API/api/health/" 2>/dev/null)
-echo "  GET /api/health/ -> HTTP ${RC:-000}"
-(command -v redis-cli >/dev/null 2>&1 && echo "  redis-cli ping -> $(redis-cli ping 2>&1 | head -1)") \
-  || echo "  redis-cli not present; relying on the API's own check"
+echo "  GET /api/health/ (no cookie) -> HTTP ${RC:-000}   [401 = API up, auth enforced]"
+if command -v ss >/dev/null 2>&1; then
+  echo "  listeners on 6379: $(ss -ltn 2>/dev/null | grep -c ':6379' || echo 0)"
+  ss -ltn 2>/dev/null | grep ':6379' | sed 's/^/    /'
+else
+  echo "  ss not present"
+fi
+if command -v redis-cli >/dev/null 2>&1; then
+  echo "  redis-cli ping -> $(redis-cli ping 2>&1 | head -1)"
+else
+  # No client, so ask redis for its version over the raw socket. A reply at all
+  # proves it is accepting connections.
+  PONG=$( (exec 3<>/dev/tcp/127.0.0.1/6379 && printf 'PING\r\n' >&3 && head -c 16 <&3) 2>/dev/null | tr -d '\r\n')
+  echo "  raw PING on 127.0.0.1:6379 -> '${PONG:-no reply}'   [+PONG = up]"
+fi
+echo "  processes:"
+for p in redis celery; do
+  echo "    $p: $(pgrep -caf "$p" 2>/dev/null || echo 0) match(es)"
+done
 
 if [ "$COMMIT" != "yes" ]; then
   echo
