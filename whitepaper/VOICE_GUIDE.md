@@ -2,7 +2,7 @@
 
 **Source:** [Tom Jordan writing repository](https://github.com/tom-jordan23/writing)
 **Primary guides consulted:** `tojo_style.md`, `STYLE_INDEX.md`, `STYLE_PROMPT_CONDENSED.md`, `STYLE_Humanitarian_Executive.md`, `STYLE_Humanitarian_Technical.md`, and `STYLE_Academic_University_Business.md`
-**Application:** Humanitarian-academic lessons-learned whitepaper for a mixed audience of National Societies, humanitarian practitioners, university partners, and government scientists
+**Application:** Technical implementation and lessons-learned whitepaper primarily for humanitarian IT; program leaders, university partners, and government scientists are secondary readers
 
 This guide adapts Tom's established voice to this paper. It is a drafting and editing reference, not an evidence source.
 
@@ -11,6 +11,8 @@ This guide adapts Tom's established voice to this paper. It is a drafting and ed
 Write as an experienced practitioner explaining a difficult but navigable problem to capable peers. Begin with the humanitarian purpose, establish a clear framework, and then move from principle to concrete field evidence. Be candid about failures without dramatizing them. Use exact examples, costs, dates, and measurements where the evidence supports them. Treat technology as a tool that serves people and institutions. Give local partners, practitioners, and communities agency; the author is a participant and learner, not the hero.
 
 ## 2. Audience blend
+
+The primary register is humanitarian technical. Assume an IT practitioner who understands infrastructure, networking, remote support, and service operations but needs hydrology and survey concepts explained. Use concrete architecture, interfaces, failure mechanisms, and support requirements. Technical depth should help the reader evaluate or operate the service; configuration recipes belong in linked documentation.
 
 The paper needs three aspects of Tom's voice:
 

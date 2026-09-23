@@ -1,9 +1,9 @@
 # OpenRiverCam Humanitarian Whitepaper — Working Brief
 
-**Status:** Working brief based on Tom's completed questionnaire
+**Status:** Working brief based on Tom's completed questionnaire; audience revised after first review, 23 September 2026
 **Target length:** 8–10 pages, excluding cover and references
 **Target publication date:** November 1, 2026 (assumed from `11/1`; confirm)
-**Primary form:** Humanitarian-academic lessons-learned paper
+**Primary form:** Technical implementation and lessons-learned paper for humanitarian IT
 **Final editor:** Tom
 **Final approval:** Tom, Dan, and Teguh
 
@@ -32,12 +32,11 @@ The paper is not principally a product pitch or an impact evaluation. No humanit
 
 ## 3. Primary audience
 
-- Humanitarian practitioners and leaders
-- Red Cross and Red Crescent National Societies
-- Academic hydrologists and university partners
-- Government hydrology, meteorology, water-management, and disaster-risk scientists
+**Humanitarian IT:** technical leads, field ICT staff, infrastructure and systems engineers, and data/platform teams in National Societies and humanitarian organizations who would assess, integrate, deploy, or support this service.
 
-The technical content should remain intelligible to a humanitarian program manager while offering enough precision for a scientific or technical reader to trust the account.
+Assume familiarity with networks, Linux systems, remote support, data pipelines, and constrained field operations. Explain hydrology, surveying, camera calibration, and measurement uncertainty; do not assume specialist knowledge of those disciplines. Humanitarian program leaders, university partners, and government scientists are secondary readers.
+
+The paper should enable a technical reader to assess the architecture, understand failure mechanisms, identify integration and support obligations, and define evidence required before operational adoption. Include concrete components, interfaces, power and connectivity constraints, data-quality boundaries, and recovery responsibilities. Keep configuration commands and assembly instructions in linked technical documentation.
 
 ## 4. Intended reader takeaway
 
@@ -108,16 +107,16 @@ Short form:
 
 ### Page 3 — What OpenRiverCam is
 
-- Plain-language explanation of computer vision and edge processing
+- Technical explanation of image acquisition, edge processing, local persistence, synchronization, and server delivery; define hydrologic concepts
 - Direct observations versus calculated quantities
 - Camera, survey, water level, river geometry, compute, power, connectivity, server, and data products
 - Suitability conditions and limitations
 - Boundary between upstream ORC/ORC-OS/pyorc/LocalDevices work and this project's station engineering and field implementation
 
-**Target:** 500–600 words
+**Target:** 750–900 words; allocate additional space from general framing and partnership repetition
 **Lead:** Tom
 
-**Exhibit:** System and data-flow diagram
+**Exhibit:** System and data-flow diagram with interfaces, failure boundaries, and quality checks
 
 ### Page 4 — The Indonesia project and its partnership model
 
@@ -342,7 +341,7 @@ These items remain open; they do not prevent drafting the first version.
 
 ## 14. Drafting guardrails
 
-- Lead with partnership and humanitarian purpose, not hardware.
+- Lead with the humanitarian service requirement, then explain the architecture and its operational dependencies. Make partnership concrete through technical ownership, scientific validation, support, and decision authority.
 - Be candid about failures and unresolved limitations.
 - Separate current evidence from future potential in every section.
 - Never convert a calibration statistic into a discharge-accuracy claim.
