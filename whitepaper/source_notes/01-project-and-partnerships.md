@@ -2,6 +2,8 @@
 
 ## 1. Project identity and scope
 
+**Reported by Tom, September 23, 2026.** The paper covers two installations: October 2025 using a PTBox, and April 2026 using devices Tom built. This clarification expands the earlier draft’s April-only scope. It supersedes the voice guide’s earlier claim that the October 2025 date was incorrect.
+
 **Documented.** The root [`README.md`](../../README.md), opening section, describes this repository as the engineering record for camera-based river-monitoring stations built for PMI and the American Red Cross and deployed in Indonesia in April 2026. It explicitly distinguishes this work from the upstream ORC and ORC-OS software maintained by LocalDevices.
 
 **Useful paper distinction:**
@@ -17,7 +19,17 @@
 
 ## 2. Station chronology and status
 
-### Sukabumi
+### October 2025 — PTBox installation
+
+**Reported by Tom.** The first installation covered by the paper took place in October 2025 using a PTBox. The [Sukabumi site record](../../spring_2026_ID/SITES.md) identifies the April work as a redeployment after trapped humidity affected the earlier combined compute/video unit. The [PTBox and design-evolution note](05-ptbox-and-design-evolution.md) assembles the preparation, survey workflow, environmental observations, and design responses. Individual on-site credits and an equivalent PTBox performance dataset remain to be established.
+
+**Available research leads:** archived [PTBox configuration files](../../prior_work/legacy_hardware/) and [survey procedures with PTBox instructions](../../survey/SURVEY_PROCESS_v2.md). These establish available technical material, not a verified as-installed configuration or an installation date by themselves.
+
+### April 2026 — devices built by Tom Jordan
+
+**Reported by Tom/documented.** The later phase used devices built by Tom. The repository describes the Sukabumi installation and a separate Jakarta unit that was built but remained undeployed. Do not confuse these two units with the two installation phases.
+
+### Sukabumi — April 2026 build
 
 **Documented.** Built and installed in April 2026; solar powered; scheduled on a 30-minute duty cycle; uploads video and sensor data to LiveORC. The current configuration uses IPB total-station data.
 
@@ -29,7 +41,7 @@
 - [`spring_2026_ID/README.md`](../../spring_2026_ID/README.md), “Station Status.”
 - [`spring_2026_ID/docs/REPLICATION_RECOMMENDATIONS_APPENDIX.md`](../../spring_2026_ID/docs/REPLICATION_RECOMMENDATIONS_APPENDIX.md), §A3.1.
 
-### Jakarta
+### Jakarta — April 2026 build
 
 **Documented.** Built and software-ready, but never deployed because permission for the intended site did not materialize. It remained at Wisma PMI and had been unpowered since April at the dates of the current records.
 
@@ -56,7 +68,7 @@
 
 ### IPB
 
-**Measured/documented contribution.** IPB performed the total-station re-survey that replaced two failed RTK surveys and underpins the deployed configuration.
+**Measured/documented contribution.** IPB performed the total-station re-survey that provided suitable control after two RTK surveys showed the need for a different method and underpins the deployed configuration.
 
 **Documented active collaboration.** [`PROGRAM_TODO.md`](../../PROGRAM_TODO.md), opening commitments and TODO-401, records that:
 
@@ -119,6 +131,7 @@ This is strong evidence for the claim that open technology does not eliminate in
 
 ## 6. Publication caveats and missing information
 
+- Use [source note 5](05-ptbox-and-design-evolution.md) for the PTBox account and design transition; complete its publication checks. Keep later station metrics and costs separate from the PTBox evidence.
 - All descriptions of partner roles require circulation and approval.
 - Partner logos are not the project's assets to license; permission is required.
 - Correct individual names, titles, and acknowledgements are missing.

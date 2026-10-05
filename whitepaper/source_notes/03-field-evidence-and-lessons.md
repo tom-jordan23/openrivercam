@@ -1,5 +1,7 @@
 # Source Notes 3 — Field Evidence, Failures, Costs, and Recommendations
 
+**Phase scope:** The detailed configurations and quantitative evidence below concern the April 2026 Tom-built devices and subsequent work. The paper also covers the October 2025 PTBox installation, as clarified by Tom on September 23, 2026. Its qualitative field account and design lessons are assembled in [source note 5](05-ptbox-and-design-evolution.md); do not apply these later specifications or metrics to the PTBox.
+
 ## 1. Evidence summary suitable for the paper
 
 | Topic | Evidence | Status | Important boundary |

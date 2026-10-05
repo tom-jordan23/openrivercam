@@ -18,8 +18,13 @@ Drafting should also follow the [whitepaper voice guide](../VOICE_GUIDE.md). The
 
 1. [Project, chronology, and partnerships](01-project-and-partnerships.md)
 2. [Technology and measurement chain](02-technology-and-measurement.md)
-3. [Field evidence, failures, costs, and recommendations](03-field-evidence-and-lessons.md)
+3. [Field evidence, lessons, costs, and recommendations](03-field-evidence-and-lessons.md)
 4. [Humanitarian framing, data-to-action, ethics, and evidence gaps](04-humanitarian-framing-and-gaps.md)
+5. [October 2025 PTBox and April 2026 design transition](05-ptbox-and-design-evolution.md)
+
+## Installation scope
+
+Tom clarified on September 23, 2026 that the paper covers October 2025 with the PTBox and April 2026 with devices he built. Most detailed evidence currently assembled concerns the latter phase. The [chronology note](01-project-and-partnerships.md) records this clarification and links the PTBox account to the earlier site and design records. Absence from the April-focused summaries is not evidence that the October installation did not occur.
 
 ## Source hierarchy
 
@@ -36,7 +41,7 @@ The replication report and appendix are explicitly drafts not yet circulated. Th
 
 - The repository strongly supports a candid engineering and partnership learning case.
 - It does not yet support a demonstrated humanitarian-impact case.
-- The strongest partnership evidence is the recovery of the failed survey through IPB and the active collaboration recorded with IPB and BHLK in August–September 2026.
+- The strongest partnership evidence is IPB’s contribution of suitable survey control and the active collaboration recorded with IPB and BHLK in August–September 2026.
 - The best quantitative evidence concerns calibration, availability failure modes, optical water-level rejection, processing/sync loss, power, and scoped materials cost.
 - Privacy and humanitarian data-responsibility documentation is incomplete. Operational access-control and retention notes exist, but they do not amount to a protection framework for identifiable camera imagery.
 - Formal repository licensing remains open, so “open stack” and “intent to share freely” are safer than claiming that every artifact in this repository is presently licensed for unrestricted reuse.

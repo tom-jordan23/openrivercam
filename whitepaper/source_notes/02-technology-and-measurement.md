@@ -1,5 +1,7 @@
 # Source Notes 2 — Technology and Measurement Chain
 
+**Phase scope:** The detailed configurations and quantitative evidence below concern the April 2026 Tom-built devices and subsequent work. The paper also covers the October 2025 PTBox installation, as clarified by Tom on September 23, 2026. Its qualitative field account and design lessons are assembled in [source note 5](05-ptbox-and-design-evolution.md); do not apply these later specifications or metrics to the PTBox.
+
 ## 1. Plain-language system description
 
 **Documented.** A camera observes the river; a Raspberry Pi-based station records a short video; ORC/ORC-OS derives water level and surface velocity, combines these with surveyed river geometry to estimate discharge, and uploads data and video through LTE to LiveORC.

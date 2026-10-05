@@ -8,11 +8,11 @@ This guide adapts Tom's established voice to this paper. It is a drafting and ed
 
 ## 1. Voice in one paragraph
 
-Write as an experienced practitioner explaining a difficult but navigable problem to capable peers. Begin with the humanitarian purpose, establish a clear framework, and then move from principle to concrete field evidence. Be candid about failures without dramatizing them. Use exact examples, costs, dates, and measurements where the evidence supports them. Treat technology as a tool that serves people and institutions. Give local partners, practitioners, and communities agency; the author is a participant and learner, not the hero.
+Write as an experienced practitioner explaining a difficult but navigable problem to capable peers. Begin with the humanitarian purpose, establish a clear framework, and then move from principle to concrete field evidence. Frame the October 2025 PTBox installation and April 2026 installation using devices built by Tom as a continuing process of learning, adaptation, and partnership. Describe technical issues precisely and connect them to what the team learned and what should change next. Use exact examples, costs, dates, and measurements where the evidence supports them. Treat technology as a tool that serves people and institutions. Give local partners, practitioners, and communities agency; the author is a participant and learner, not the hero.
 
 ## 2. Audience blend
 
-The primary register is humanitarian technical. Assume an IT practitioner who understands infrastructure, networking, remote support, and service operations but needs hydrology and survey concepts explained. Use concrete architecture, interfaces, failure mechanisms, and support requirements. Technical depth should help the reader evaluate or operate the service; configuration recipes belong in linked documentation.
+The primary register is humanitarian technical. Assume an IT practitioner who understands infrastructure, networking, remote support, and service operations but needs hydrology and survey concepts explained. Use concrete architecture, interfaces, operational dependencies, and support requirements. Technical depth should help the reader evaluate or operate the service; configuration recipes belong in linked documentation.
 
 The paper needs three aspects of Tom's voice:
 
@@ -28,11 +28,11 @@ Use for the opening, partnership argument, institutional model, and conclusion.
 
 ### Humanitarian technical
 
-Use for system explanation, deployment evidence, failures, and recommendations.
+Use for system explanation, deployment evidence, learning, and recommendations.
 
 - Explain how the system works in plain language before introducing technical terminology.
 - Use measured values, versions, time windows, and cost scopes.
-- Explain failure mechanisms, not merely symptoms.
+- Explain the causes of specific technical issues and their implications for the next design.
 - Design for unreliable power, connectivity, staffing, supply chains, and long-term maintenance.
 - Favor open, repairable, locally supportable technology, while acknowledging when integration creates new dependencies.
 
@@ -53,13 +53,13 @@ Tom's strongest recurring structure is:
 1. **Problem:** Name the practical or institutional problem in human terms.
 2. **Framework:** Show how to think about it; define responsibilities, stages, or decision criteria.
 3. **Specific approach:** Explain what the team attempted.
-4. **Evidence:** Give concrete deployment results, including failures.
+4. **Evidence:** Give concrete deployment results, including learning, adaptations, and remaining limitations.
 5. **Tradeoff:** State what the approach gains and what it costs or requires.
 6. **Guidance:** Offer a path that another capable team can adapt.
 
 For this whitepaper, that becomes:
 
-> Humanitarian organizations need better local river information. A camera can generate observations, but observations become useful only through a data-to-action system. The Indonesia project tested one part of that system. Its strongest evidence includes both a functioning station and the failures that exposed hidden dependencies. Those lessons point toward a partnership model in which National Societies, universities, government agencies, communities, and technology developers own different parts of the work.
+> Humanitarian organizations need better local river information. A camera can generate observations, but observations become useful only through a data-to-action system. The Indonesia project tested one part of that system. Its evidence includes a functioning station, refined survey methods, and field experience that clarified operational dependencies. Those lessons point toward a partnership model in which National Societies, universities, government agencies, communities, and technology developers own different parts of the work.
 
 ## 4. Tone
 
@@ -77,7 +77,7 @@ For this whitepaper, that becomes:
 
 - Product marketing or technological triumphalism
 - “Revolutionary,” “game-changing,” “seamless,” or “simple”
-- Treating failure as embarrassment or assigning blame
+- Characterizing early deployment learning as failure or assigning blame
 - Presenting outside expertise as rescue
 - Abstract claims about “communities” without naming their role
 - False precision or unsupported impact statistics
@@ -85,7 +85,7 @@ For this whitepaper, that becomes:
 
 ### Preferred stance
 
-> This is hard. The failure is understandable. The evidence tells us what to change. Capable partners can navigate the next step together.
+> A first deployment builds practical understanding. The evidence helps partners refine the method and identify the next questions to test together.
 
 ## 5. Sentence and paragraph habits
 
@@ -118,24 +118,24 @@ Tom's voice is credible when it is specific and transparent about evidence stren
 
 ### Recommendation
 
-> A future operational station should include an independent water-level reference. This recommendation follows from the measured failure; it does not depend on proving the optical cause.
+> A future operational station should include an independent water-level reference. This recommendation follows from the observed limits of optical water-level detection; it does not depend on proving the optical cause.
 
 ### Future potential
 
 > High-frequency river observations could support anticipatory action when partners also establish validated thresholds, decision authority, communication channels, and community response plans.
 
-## 7. How to write about failure
+## 7. How to write about learning across installations
 
-Failure analysis is a central feature of Tom's voice and of this project. Use a four-part pattern:
+Learning and adaptation are central to this project’s contribution. Do not categorize the deployment, survey iterations, site arrangements, or unfinished validation as failures. Retain precise technical terms such as processing error or failed upload when they describe a documented system state. Use a four-part pattern:
 
-1. What happened.
-2. How the team established it.
-3. Why it mattered to the larger system.
-4. What should change next time.
+1. What the team observed or established.
+2. How the team investigated or adapted.
+3. What this taught the partners about the larger system.
+4. What to refine or test next.
 
 Keep people out of the causal chain unless human action is itself the relevant, documented system issue. Prefer:
 
-> The first survey method failed twice under the site's conditions. Repeating it with the same equipment and process reproduced the same noise. IPB changed the method and recovered the project with a total-station survey. The lesson is not that RTK is inherently unsuitable; it is that an independent field check must fail before the team leaves, and a failed method should not be repeated unchanged.
+> Two RTK surveys showed that the initial method did not provide suitable control data under the site’s conditions. IPB adapted the approach with a total-station survey that supplied the geometry for the deployed calibration. This experience established the value of independent field checks and a plan for changing methods when the data do not meet the required accuracy.
 
 Avoid:
 
@@ -244,7 +244,7 @@ Return to capable people and a practical next step:
 
 - [ ] Is every number sourced and scoped?
 - [ ] Are measured results separated from interpretations and future potential?
-- [ ] Are failure causes labeled according to confidence?
+- [ ] Are explanations of technical issues labeled according to confidence, and are learning and adaptations made explicit?
 - [ ] Does the paper state plainly that no humanitarian decision has yet used Sukabumi data?
 - [ ] Is calibration fit kept separate from discharge accuracy?
 
@@ -266,4 +266,4 @@ Return to capable people and a practical next step:
 
 ## 15. Factual warning about the writing repository
 
-The writing repository is authoritative for voice, not for OpenRiverCam project facts. Some audience guides contain stale or incorrect project biographical examples, including an October 2025 Indonesia date and a Delft University partnership. The current OpenRiverCam repository establishes an April 2026 deployment and names PMI, IPB, BHLK, and American Red Cross as partners. Use the source-note hierarchy for facts.
+The writing repository is authoritative for voice, not for OpenRiverCam project facts. Tom clarified on September 23, 2026 that the paper covers two installations: October 2025 using a PTBox and April 2026 using devices he built. The October 2025 date is valid; the earlier version of this guide incorrectly dismissed it. Much of the current repository documents the April 2026 hardware and subsequent operation, so that material alone does not describe the full project history. Keep configurations, results, costs, and lessons tied to their installation phase. A Delft University partnership is not established by the reviewed project evidence and should not be inferred from a writing example. Use Tom’s chronology clarification and the source notes for project facts.

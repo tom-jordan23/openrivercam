@@ -21,6 +21,8 @@ Alternative titles:
 
 ## 2. Paper purpose
 
+The paper covers both the October 2025 PTBox installation and the April 2026 installation using devices built by Tom Jordan, as clarified by Tom on September 23, 2026. It will trace the experience from each phase and explain which lessons informed subsequent work. Jakarta’s built but undeployed April unit is part of the second phase, not the earlier PTBox installation.
+
 The paper will use the Indonesia OpenRiverCam project as a candid lessons-learned case to show:
 
 1. The potential of emerging, open technologies to generate high-frequency local river data for flood and drought preparedness, operational awareness, anticipatory action, recovery, and climate adaptation.
@@ -28,7 +30,7 @@ The paper will use the Indonesia OpenRiverCam project as a candid lessons-learne
 3. The importance of durable collaboration among National Societies, universities, government scientists, local communities, and technology developers.
 4. The need to design the complete data-to-action pathway: generation, quality control, sharing, interpretation, analysis, decision-making, and humanitarian action.
 
-The paper is not principally a product pitch or an impact evaluation. No humanitarian decisions have yet been made using the Sukabumi data. Its contribution is the implementation experience, the evidence generated so far, the failures and adaptations, and the partnership model emerging from the work.
+The paper is not principally a product pitch or an impact evaluation. No humanitarian decisions have yet been made using the Sukabumi data. Its contribution is the implementation experience, the evidence generated so far, the field learning and adaptations, and the partnership model emerging from the work.
 
 ## 3. Primary audience
 
@@ -36,7 +38,7 @@ The paper is not principally a product pitch or an impact evaluation. No humanit
 
 Assume familiarity with networks, Linux systems, remote support, data pipelines, and constrained field operations. Explain hydrology, surveying, camera calibration, and measurement uncertainty; do not assume specialist knowledge of those disciplines. Humanitarian program leaders, university partners, and government scientists are secondary readers.
 
-The paper should enable a technical reader to assess the architecture, understand failure mechanisms, identify integration and support obligations, and define evidence required before operational adoption. Include concrete components, interfaces, power and connectivity constraints, data-quality boundaries, and recovery responsibilities. Keep configuration commands and assembly instructions in linked technical documentation.
+The paper should enable a technical reader to assess the architecture, understand operational dependencies and lessons, identify integration and support obligations, and define evidence required before operational adoption. Include concrete components, interfaces, power and connectivity constraints, data-quality boundaries, and recovery responsibilities. Keep configuration commands and assembly instructions in linked technical documentation.
 
 ## 4. Intended reader takeaway
 
@@ -58,7 +60,7 @@ Short form:
 - Camera-based, non-contact monitoring offers potential advantages at locations where in-water work is dangerous or impractical.
 - The system can support off-grid power and multiple connectivity strategies.
 - High-frequency observations may be useful for studying rapid-onset events, including flood waves.
-- The project produced an operating station, a documented measurement chain, a field-tested hardware design, survey and calibration experience, operational documentation, and a substantial record of failures and adaptations.
+- The project produced an operating station, a documented measurement chain, a field-tested hardware design, survey and calibration experience, operational documentation, and a substantial record of field learning and adaptations.
 - Effective deployment required complementary expertise from humanitarian, university, government, community, and technology partners.
 - The next phase should be driven by explicit hydrologic questions and a defined data-to-action pathway.
 
@@ -116,13 +118,15 @@ Short form:
 **Target:** 750–900 words; allocate additional space from general framing and partnership repetition
 **Lead:** Tom
 
-**Exhibit:** System and data-flow diagram with interfaces, failure boundaries, and quality checks
+**Exhibit:** System and data-flow diagram with interfaces, operational dependencies, and quality checks
 
 ### Page 4 — The Indonesia project and its partnership model
 
 - Project origin, grant, objectives, and evolution
 - Roles of American Red Cross, PMI, IPB, BHLK, BMKG if applicable, LocalDevices, the Sukabumi PMI team, and SIBAT volunteers
-- Sukabumi and Jakarta configurations and intended purposes
+- October 2025 PTBox installation: site, configuration, participants, observations, and lessons
+- April 2026 Tom-built devices: Sukabumi installation and Jakarta’s intended purpose and undeployed status
+- Connections between the phases, including retained approaches and design changes
 - Community support and field collaboration
 
 **Target:** 450–550 words
@@ -130,9 +134,10 @@ Short form:
 
 **Exhibits:** Site map/status panel and one field photograph
 
-### Page 5 — What the deployment demonstrated
+### Page 5 — What the two installations established
 
-- Current Sukabumi status
+- October 2025 PTBox outcomes, with the limits of available evidence
+- Current status of the April 2026 Sukabumi station
 - Build and operating accomplishments
 - IPB total-station survey and current calibration
 - Off-grid operation and connectivity
@@ -145,12 +150,13 @@ Short form:
 
 **Exhibits:** AR view, time series, or verified-results panel
 
-### Page 6 — Failure as evidence: what the field taught us
+### Page 6 — Field learning: how experience informs the next design
 
-- Failed RTK surveys and successful recovery through IPB
-- Daylight optical water-level failures and need for an independent reference
+- PTBox experience and its documented influence on the April 2026 builds
+- Survey-method learning and IPB’s total-station contribution to the deployed calibration
+- Observed daylight limits of optical water-level detection and the need for an independent reference
 - Power, duty-cycle, connectivity, synchronization, server, and observability issues
-- Jakarta site-permission failure
+- Jakarta site-permission experience and the importance of early site agreements
 - Distinguish technical defects, design choices, field constraints, and ownership gaps
 
 **Target:** 550–650 words
@@ -195,7 +201,7 @@ Short form:
 - Secure site permission and community support early
 - Fund survey, validation, data stewardship, maintenance, and interpretation
 - Design for local repair and institutional continuity
-- Treat failure documentation as part of responsible innovation
+- Document field learning and design adaptations as part of responsible innovation
 - Invite National Societies, universities, and government agencies to develop shared climate-adaptation capability
 
 **Target:** 400–500 words
@@ -207,7 +213,7 @@ Short form:
 
 - Technical system and measurement explanation
 - Field evidence and quantitative claims
-- Failure analysis and design recommendations
+- Learning across both installations and design recommendations
 - Exhibits using survey and ORC data products
 - Evidence ledger and numerical verification
 - Editorial integration and final decisions
@@ -247,7 +253,7 @@ Every substantive claim will be entered in an evidence ledger and classified as:
 - **Inferred:** the project team's interpretation of evidence
 - **Proposed:** a recommendation or future possibility
 
-The current repository record should be the factual spine:
+Tom’s September 23, 2026 clarification establishes the two-installation scope and chronology. Add the PTBox account using archived configurations, field records, and attributed participant recollections. The following repository records provide the factual spine for the April 2026 builds and subsequent operation:
 
 - `README.md`
 - `spring_2026_ID/README.md`
@@ -269,7 +275,7 @@ The older humanitarian research report and manual may be used to discover source
 3. Sukabumi field photograph featuring PMI/SIBAT participation where permission permits
 4. Survey diagnostic or calibration visualization
 5. ORC output such as an AR view, hydrograph, or time series
-6. Failure-to-design-response table
+6. Observation, learning, and design-response table covering both installation phases
 7. Partnership/responsibility diagram
 8. Pilot learning and scale pathway
 
@@ -325,8 +331,9 @@ These items remain open; they do not prevent drafting the first version.
 
 ### Technical evidence
 
+- Use source note 5 for the October 2025 PTBox account and its connection to the April builds: trapped humidity, separate factory-sealed optics, reuse of solar infrastructure, and field serviceability. Complete configuration and individual-credit checks.
 - Freeze a dated dataset cutoff for all station-status and performance claims.
-- Produce a defensible summary of captures, valid results, failure modes, flow conditions, and data gaps.
+- Produce a defensible summary of captures, valid results, processing and delivery issues, flow conditions, and data gaps.
 - Distinguish station uptime, capture success, processing validity, upload success, and end-user availability.
 - Describe the status and results of independent discharge comparison work.
 - Define what the 0.037 m calibration RMSE does and does not establish.
@@ -342,7 +349,7 @@ These items remain open; they do not prevent drafting the first version.
 ## 14. Drafting guardrails
 
 - Lead with the humanitarian service requirement, then explain the architecture and its operational dependencies. Make partnership concrete through technical ownership, scientific validation, support, and decision authority.
-- Be candid about failures and unresolved limitations.
+- Present both installation phases as learning and adaptation. October 2025 is the PTBox installation; April 2026 uses Tom-built devices. Do not call April 2026 the project’s first deployment or apply its performance figures to the PTBox. Be precise about technical issues and unresolved limitations, and connect each to a refinement or further test.
 - Separate current evidence from future potential in every section.
 - Never convert a calibration statistic into a discharge-accuracy claim.
 - Never imply that Sukabumi data has already triggered humanitarian decisions.
