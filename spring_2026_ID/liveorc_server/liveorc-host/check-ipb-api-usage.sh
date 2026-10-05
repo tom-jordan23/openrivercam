@@ -6,21 +6,22 @@
 # from the workstation: the Grafana datasource is the sensor DB (orc), not
 # LiveORC's Django DB.
 #
-# Section 1 gives the definitive answer. LiveORC runs simplejwt with
-# BLACKLIST_AFTER_ROTATION, so the token_blacklist app is installed. That app
-# writes a token_blacklist_outstandingtoken row, with user_id and created_at,
-# for every refresh token it issues. Each login (POST /api/token/) and each
-# refresh (/api/token/refresh/, which rotates) adds a row. Our own 2026-09-09
-# matrix run accounts for the rows that day. A row with a later date is IPB,
-# unless someone on our side ran the account again since.
+# There is no per-user record of API use. The first version of this script
+# counted rows in token_blacklist_outstandingtoken, assuming that
+# BLACKLIST_AFTER_ROTATION meant the blacklist app was installed. On the host
+# (2026-10-05) the table does not exist: the setting is on, but the app is
+# not installed. auth_user.last_login is the only per-user field, and
+# simplejwt only writes it when UPDATE_LAST_LOGIN is set. So an empty value
+# means "not recorded", not "never logged in".
 #
-# auth last_login is shown too, but simplejwt only updates it when
-# UPDATE_LAST_LOGIN is set. Treat an empty value as "not recorded", not as
-# "never logged in".
-#
-# Section 2 is supporting evidence only. The access log records the path and
-# the client IP but not the user, and docker logs only go back to the last
-# container restart.
+# The access log is therefore the main evidence, and it does not name the
+# user. Section 2 tells the clients apart by user agent instead. Our partner
+# client (partner-api/fetch_timeseries.py) uses urllib, which sends
+# "Python-urllib/3.x". ORC-OS on the station uses python-requests. Our own
+# verification runs use curl. The station has been offline since 2026-10-01,
+# so any python-requests traffic after that date is not the station.
+# Timestamps come from `docker logs --timestamps`, which works whatever the
+# nginx log format is.
 #
 # READ-ONLY. SELECT queries and docker logs. Writes nothing.
 #
@@ -36,32 +37,29 @@ DBN=$($D exec db sh -c 'printf %s "${POSTGRES_DB:-$POSTGRES_USER}"' 2>/dev/null)
 Q(){ $D exec -i db psql -U "$DBU" -d "$DBN" -At -F '|' -c "$1" 2>&1; }
 echo "  db: ${DBU:-<unset>}/${DBN:-<unset>}   user_id: $UID_IPB"
 
-h "0. which user table, and is it the right account"
-UT=$(Q "select table_name from information_schema.columns
-        where column_name='last_login' and table_schema='public' limit 1;")
-echo "  user table: ${UT:-<not found>}"
-[ -n "$UT" ] && Q "select id, email, last_login, date_joined from $UT where id=$UID_IPB;" 2>&1 \
-  | sed 's/^/  /' || true
-echo "  (an error naming email/date_joined just means different column names; section 1 still stands)"
+h "0. the account, and its last_login"
+Q "select id, email, last_login from auth_user where id=$UID_IPB;" | sed 's/^/  /'
+echo "  (empty last_login = not recorded, not proof of no use)"
 
-h "1. refresh tokens issued to this account, by day (UTC) — the answer"
-Q "select date(created_at), count(*) from token_blacklist_outstandingtoken
-   where user_id=$UID_IPB group by 1 order by 1;" | sed 's/^/  /'
-echo "  --- first and last issue, and how many were spent by rotation ---"
-Q "select min(o.created_at), max(o.created_at), count(*), count(b.id)
-   from token_blacklist_outstandingtoken o
-   left join token_blacklist_blacklistedtoken b on b.token_id=o.id
-   where o.user_id=$UID_IPB;" | sed 's/^/  /'
-echo "  (columns: first | last | issued | blacklisted)"
-echo "  only 2026-09-09 rows -> nobody has logged in since our verification run"
-echo "  --- the same for every account, for comparison ---"
-Q "select user_id, count(*), max(created_at) from token_blacklist_outstandingtoken
-   group by 1 order by 1;" | sed 's/^/  /'
+h "1. any token or session tables at all"
+Q "select table_name from information_schema.tables
+   where table_schema='public' and (table_name like '%token%' or table_name like '%session%');" \
+  | sed 's/^/  /'
 
-h "2. API traffic in the webapp access log since 2026-09-10 (supporting only)"
-echo "  log held from: $($D logs $W 2>&1 | head -1 | cut -c1-80)"
-$D logs $W --since 2026-09-10T00:00:00 2>&1 \
-  | grep -E '"(GET|POST) /api/(token|site|timeseries|video|cross)' \
-  | grep -v -E '"POST /api/(video|timeseries)/' \
-  | awk '{print $1}' | sort | uniq -c | sort -rn | head -20 | sed 's/^/  /'
-echo "  (count per client IP; the station's own uploads are filtered out)"
+h "2. read-side API traffic since 2026-09-10, by day, request and client"
+L=$($D logs --timestamps --since 2026-09-10T00:00:00 $W 2>&1 \
+  | grep -E '"(GET|POST) /api/' | grep -v -E '"POST /api/(video|timeseries)/')
+echo "  matching lines: $(printf '%s\n' "$L" | grep -c .)"
+echo "  --- three raw samples, so the format can be checked ---"
+printf '%s\n' "$L" | head -3 | cut -c1-300 | sed 's/^/  /'
+echo "  --- day | request | client ---"
+printf '%s\n' "$L" | grep . | awk '
+  { day=substr($1,1,10)
+    match($0, /"(GET|POST) \/api\/[a-z_]+/); req=substr($0, RSTART+1, RLENGTH-1)
+    ua="other"
+    if ($0 ~ /Python-urllib/) ua="urllib (our partner client)"
+    else if ($0 ~ /python-requests/) ua="python-requests (ORC-OS)"
+    else if ($0 ~ /curl\//) ua="curl (us)"
+    else if ($0 ~ /Mozilla/) ua="browser"
+    print day " | " req " | " ua }' \
+  | sort | uniq -c | sed 's/^/  /'
