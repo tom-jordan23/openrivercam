@@ -1,0 +1,20 @@
+[Unit]
+Description=Re-activate the Witty Pi schedule script (TODO-116)
+# wp5d writes the RTC time into the system clock at start; activation uses
+# the RTC, but the log timestamps should be right.
+After=wp5d.service
+# Finish before ORC-OS can capture and shut the Pi down, so a single button
+# press re-arms the schedule. Ordering only: a failure here does not stop
+# orc-api.
+Before=orc-api.service
+# orc-sensors also drives wp5 (status reads); keep its first tick out of the
+# middle of an activation.
+Before=orc-sensors.timer
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/orc-wp5-rearm
+TimeoutStartSec=150
+
+[Install]
+WantedBy=multi-user.target

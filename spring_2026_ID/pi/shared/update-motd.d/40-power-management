@@ -49,6 +49,15 @@ else
     echo "  ORC-OS:     database not found"
 fi
 
+# Wake limit (duty-cycled sites only, ISS-FIELD-013)
+if systemctl is-enabled --quiet orc-wake-ceiling.timer 2>/dev/null; then
+    if [ -f /run/orc-stay-awake ]; then
+        echo "  Wake limit: held (/run/orc-stay-awake)"
+    else
+        echo "  Wake limit: POWER-OFF 12 min after boot — hold with: sudo touch /run/orc-stay-awake"
+    fi
+fi
+
 # Witty Pi 5 wake schedule
 if command -v wp5 >/dev/null 2>&1; then
     echo "  Wake:       managed by Witty Pi 5 (run 'wp5' to configure)"

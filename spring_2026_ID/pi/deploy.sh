@@ -1021,6 +1021,17 @@ run_services() {
     _ensure_service_enabled orc-boot-usb-log.service
     _ensure_service_enabled orc-maintenance-check.service
 
+    # Duty-cycled sites only (they live in the site overlay, so Jakarta never
+    # gets them): re-arm the Witty Pi schedule every boot (TODO-116) and cap
+    # each wake (ISS-FIELD-013). Enabled, never started here — the timer would
+    # fire at once on a Pi that has been up longer than its limit.
+    if [ -f "$SITE_DIR/etc/systemd/system/orc-wp5-rearm.service" ]; then
+        _ensure_service_enabled orc-wp5-rearm.service
+    fi
+    if [ -f "$SITE_DIR/etc/systemd/system/orc-wake-ceiling.timer" ]; then
+        _ensure_service_enabled orc-wake-ceiling.timer
+    fi
+
     # Disable
     # orc-gpio-relays uses active-low logic incompatible with Electronics-Salon relay module
     _ensure_service_disabled orc-gpio-relays.service

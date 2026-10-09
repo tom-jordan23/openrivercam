@@ -1,0 +1,34 @@
+#!/bin/bash
+# orc-wake-ceiling — power the Pi off a fixed time after boot (ISS-FIELD-013)
+#
+# WHY
+#   ORC-OS is the only thing that ends a normal wake: it runs `shutdown -h now`
+#   after its capture task (schemas/video.py:398). Anything that keeps that task
+#   from finishing — an upload stalled on a dead link, a capture that never
+#   arrives — leaves the Pi on until the Witty Pi's 25-minute backstop, and when
+#   the Witty Pi's schedule list has run out there is no backstop at all
+#   (TODO-116). This puts an upper bound on every wake that depends on neither.
+#
+#   Fired by orc-wake-ceiling.timer (OnBootSec, monotonic, so the RTC write at
+#   boot does not move it). Poweroff goes through wp5d_poweroff.service like
+#   ORC-OS's own shutdown, so the Witty Pi cuts power and arms the next startup.
+#
+# HOLDS (either one skips the poweroff):
+#   /run/orc-maintenance-mode   set by orc-maintenance-check from station_mode
+#   /run/orc-stay-awake         touch it in an attended session: sudo touch /run/orc-stay-awake
+#   Both live in /run, so a reboot clears them. The Witty Pi's own ON window
+#   still ends the wake.
+
+TAG="orc-wake-ceiling"
+
+if [ -f /run/orc-maintenance-mode ]; then
+    logger -t "$TAG" "maintenance mode — not powering off"
+    exit 0
+fi
+if [ -f /run/orc-stay-awake ]; then
+    logger -t "$TAG" "/run/orc-stay-awake present — not powering off"
+    exit 0
+fi
+
+logger -t "$TAG" "wake limit reached ($(cut -d' ' -f1 /proc/uptime)s since boot) — powering off"
+systemctl poweroff

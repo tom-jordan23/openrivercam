@@ -1,0 +1,87 @@
+#!/bin/bash
+# orc-wp5-rearm — re-activate the Witty Pi schedule script on every boot (TODO-116)
+#
+# WHY
+#   The Witty Pi 5 firmware expands the active .wpi into a fixed list of on/off
+#   times (schedule.skd) when the script is activated, capped at 4,096 entries
+#   (WPI_MAX_ACTIONS, firmware script.c:19). At two entries per 30-minute cycle
+#   the list runs out ~42.6 days after activation, whatever END says. Nothing
+#   rebuilds it: a button press re-reads the old list, finds no future startup,
+#   and the station runs one cycle and stays off. The last list entry also takes
+#   the 25-minute shutdown backstop with it.
+#
+#   Measured in the full wp5d.log: the runs started 05-13 and 07-03 each ended
+#   42.64 / 42.66 days later. Both were recovered by re-selecting the schedule
+#   on the first boot after a button press — by hand, in the wp5 menu. This
+#   does the same thing on every boot, so the list never runs out and a single
+#   button press restores the schedule.
+#
+# HOW
+#   Drives the vendor wp5 menu (v5.0.0 on this station), the same way deploy.sh
+#   and sensors_logger.py do. Option 6 lists the scripts on the Witty Pi as
+#   "[n] name" and takes a number; choosing one makes the firmware delete
+#   schedule.act/.skd and regenerate them from the .wpi as of now.
+#     pass 1: list, find the number for $SCHEDULE_SCRIPT, choose nothing
+#     pass 2: choose that number
+#     pass 3: read the menu header back and log the armed alarms
+#   Any surprise in the menu (version, option text, file list) aborts without
+#   choosing anything. A wrong number in this menu changes other settings.
+#
+# Config: /etc/orc-wp5-rearm.conf (SCHEDULE_SCRIPT; empty disables)
+# Log:    journal (tag orc-wp5-rearm) and /var/log/orc/wp5-rearm.last
+
+set -u
+
+CONF="/etc/orc-wp5-rearm.conf"
+TAG="orc-wp5-rearm"
+LAST="/var/log/orc/wp5-rearm.last"
+EXPECTED_VERSION="5.0.0"
+
+mkdir -p "$(dirname "$LAST")"
+: > "$LAST"
+log() { logger -t "$TAG" "$*"; echo "$(date -u +%FT%TZ) $*" >> "$LAST"; }
+die() { log "ABORT: $*"; exit 1; }
+
+SCHEDULE_SCRIPT=""
+# shellcheck source=/dev/null
+[ -f "$CONF" ] && . "$CONF"
+[ -n "$SCHEDULE_SCRIPT" ] || { log "SCHEDULE_SCRIPT empty in $CONF — not re-arming"; exit 0; }
+command -v wp5 >/dev/null 2>&1 || die "wp5 not installed"
+
+# wp5 prints ANSI colour and block-buffers into a pipe; it flushes on Exit (14).
+run_wp5() {  # $1 = stdin, $2 = timeout seconds
+    printf '%b' "$1" | timeout "$2" wp5 2>&1 | sed 's/\x1b\[[0-9;]*m//g'
+}
+
+# ── pass 1: list ────────────────────────────────────────────────────
+out=$(run_wp5 '6\n\n14\n' 30) || die "wp5 list pass failed or timed out"
+
+grep -q "< Version ${EXPECTED_VERSION} >" <<<"$out" \
+    || die "wp5 is not version ${EXPECTED_VERSION}; menu numbering unverified"
+grep -qE '^ *6\. Choose schedule script' <<<"$out" \
+    || die "menu option 6 is not 'Choose schedule script'"
+grep -q "Available schedule scripts on disk:" <<<"$out" \
+    || die "option 6 did not list scripts"
+
+matches=$(grep -oiE "^ *\[[0-9]+\] ${SCHEDULE_SCRIPT//./\\.}\s*$" <<<"$out")
+[ "$(grep -c . <<<"$matches")" -eq 1 ] \
+    || die "expected exactly one '${SCHEDULE_SCRIPT}' in the list, got: $(grep -oE '^ *\[[0-9]+\] .*' <<<"$out" | tr '\n' ' ')"
+n=$(grep -oE '[0-9]+' <<<"$matches" | head -1)
+
+# ── pass 2: choose ──────────────────────────────────────────────────
+out=$(run_wp5 "6\n${n}\n14\n" 90) || die "wp5 choose pass failed or timed out"
+grep -qi "You have chosen ${SCHEDULE_SCRIPT}" <<<"$out" \
+    || die "wp5 did not confirm choosing ${SCHEDULE_SCRIPT} (item ${n})"
+grep -q "done :)" <<<"$out" || die "wp5 did not report done after choosing"
+
+# ── pass 3: verify ──────────────────────────────────────────────────
+# The firmware regenerates the list on a 0.5 s alarm after the copy; give it
+# time to write 4,096 entries to its flash before reading the alarms back.
+sleep 10
+out=$(run_wp5 '14\n' 20) || die "wp5 verify pass failed or timed out"
+sd=$(grep -oE 'Schedule next shutdown.*' <<<"$out" | head -1)
+su=$(grep -oE 'Schedule next startup.*' <<<"$out" | head -1)
+grep -qE 'Choose schedule script \(in use\)' <<<"$out" \
+    || die "script not marked in use after choosing; ${sd:-no shutdown line}; ${su:-no startup line}"
+
+log "OK: activated ${SCHEDULE_SCRIPT} (item ${n}); ${sd}; ${su}"

@@ -1,0 +1,13 @@
+[Unit]
+Description=Wake limit: power off 12 minutes after boot (ISS-FIELD-013)
+
+# Never `systemctl start` this mid-session: OnBootSec is measured from boot,
+# so on a Pi that has been up longer than the limit it fires at once.
+# deploy.sh only enables it; it takes effect from the next boot.
+
+[Timer]
+OnBootSec=12min
+AccuracySec=10s
+
+[Install]
+WantedBy=timers.target

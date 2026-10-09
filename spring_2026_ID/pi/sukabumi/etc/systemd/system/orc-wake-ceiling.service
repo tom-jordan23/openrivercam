@@ -1,0 +1,6 @@
+[Unit]
+Description=Power off when a wake runs past its limit (ISS-FIELD-013)
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/orc-wake-ceiling
