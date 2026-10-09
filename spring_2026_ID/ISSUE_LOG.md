@@ -2575,3 +2575,160 @@ synchronize" beside 2,978 FAILED rows.
 
 **Not done:** no re-drive has been fired and nothing on the station has been
 changed. All three grabs were read-only.
+
+---
+
+### ISS-FIELD-013: Sukabumi offline since 2026-10-02 05:00 WIB; data quota exhausted, and the station did not reconnect after the 2026-10-06 top-up
+
+| Field | Value |
+|-------|-------|
+| **Date opened** | 2026-10-07 |
+| **Site** | Sukabumi |
+| **Risk** | Station availability; un-synced video backlog (TODO-119) |
+| **Impact** | Medium (pilot station) |
+| **Status** | OPEN — site visit requested 2026-10-07 |
+
+**Observations (all read-only, from the server and the Tailscale control plane):**
+
+- The last row in `sensor_readings` for Sukabumi is **2026-10-02 05:00:41 WIB**.
+  All five streams (`wittypi`, `orccapture`, `rg15`, `sht40`, `ds18b20`) stop
+  at the same wake. Before that the station was logging normally:
+  2,400–2,630 rows per day from 09-28 to 10-01.
+- Tailscale reports `orc-sukabumi` last seen at **2026-10-01 22:01:14 UTC**
+  (10-02 05:01 WIB), the same wake. No connection since, as of 2026-10-07
+  19:14 WIB.
+- Power was normal up to the cutoff. Daily V-IN from the Witty Pi, 09-25 to
+  10-02: `vin_min_v` 11.66–12.32 V at the daily low, `vin_max_v` up to
+  14.16 V on 09-30 and 10-01. There is no downward trend and the panel was
+  charging the pack.
+
+**Uplink cause: the data quota was exhausted.** MyTelkomsel screenshots
+supplied by Tom on 2026-10-07:
+
+| | Before top-up | Immediately after top-up (2026-10-06) |
+|---|---|---|
+| Sisa kuota (data remaining) | 0 MB of 0 MB | 55.0 GB of 55.0 GB |
+| Aktif hingga (account valid until) | 22 Nov 2026 | 22 Mar 2027 |
+| Pulsa (credit) | Rp7.160 | Rp7.160 |
+
+The package is the same one used previously. The cutoff falls about 30 days
+after the station's recovery from ISS-FIELD-011 (2026-09-02 01:00 WIB), which
+is consistent with a 30-day package expiring. This is the second outage caused
+by the SIM account. The balance and quota are still not monitored.
+
+The "after" screenshot was taken immediately after purchase, so it does not
+show whether the station has used any of the new quota.
+
+**The station did not reconnect after the top-up.** In ISS-FIELD-011 the
+station reconnected by itself within hours of the account being funded. This
+time it has not reconnected after more than 24 hours at 48 scheduled wakes per
+day. The difference is not yet explained.
+
+**Working hypothesis (Tom, 2026-10-07): the battery is exhausted.** When
+uploads fail, the ORC-OS task does not finish and the Pi stays on until the
+Witty Pi's 25-minute limit, instead of about 2 minutes. ISS-FIELD-011 measured
+this at about 15 hours awake per day. If the Pi also failed to shut down at all,
+the load would be continuous.
+
+Against this: during ISS-FIELD-011 the station ran in the same condition for
+4.8 days and V-IN never fell below 12.149 V. This outage has lasted 5.6 days as
+of 2026-10-07, so exhaustion is plausible if solar input was lower, or if the
+Pi stayed on continuously. There is no server data after 10-02 05:00 WIB to
+confirm or exclude it.
+
+**Why the 13.0 V recovery voltage has probably not restarted the station.**
+The last Witty Pi configuration read (2026-09-01, `data/station-forensics/
+orc-sukabumi-wp5-state-20260901T190154Z.txt`) shows:
+
+```
+  7. Set low voltage threshold                  <-- no value: UNSET
+  8. Set recovery voltage threshold [13.0V]
+```
+
+The recovery voltage is the condition for powering the Pi on again *after a
+low-voltage shutdown*. With no low-voltage threshold set, the Witty Pi never
+performs that shutdown, so the recovery condition is probably never armed. This
+was noted as "probably inert" in ISS-FIELD-008 and has not been confirmed
+against the Witty Pi 5 firmware documentation. If the battery was exhausted,
+the likely sequence is:
+
+1. The Witty Pi does not cut the load at low voltage, because no threshold is set.
+2. The pack discharges until its BMS disconnects it.
+3. The Witty Pi loses all power. It has no low-voltage shutdown to recover
+   from, so the recovery voltage has no effect.
+
+**A second possible cause, independent of the Witty Pi settings:** a LiFePO4
+pack whose BMS has disconnected reads about 0 V at its terminals. Many solar
+charge controllers do not begin charging when they detect 0 V on the battery
+input. If this controller behaves that way, the pack cannot recharge and the
+BMS does not reconnect. This is the BMS/charge-controller latch raised in
+ISS-FIELD-009. Ten of the thirteen historical outages ended with a button press
+on site, which is consistent with it.
+
+**Site visit checklist:**
+
+1. **Before changing anything,** measure and record, with the time:
+   - the voltage at the battery terminals;
+   - the voltage at the charge controller's battery input;
+   - the charge controller's display or status lights;
+   - the Witty Pi and Pi status lights.
+
+   About 0 V at the battery means the BMS has disconnected the pack. About
+   12–13 V means the battery is connected and the fault is further downstream.
+2. Please photograph the charge controller and the Witty Pi before and after.
+3. If the BMS has disconnected the pack, reconnect it using the method the
+   charge controller or BMS supports (for example, a short connection to a
+   charger), then confirm the controller starts charging.
+4. Restart the station and confirm it reports to the server. Rows in
+   `sensor_readings` and Tailscale both confirm this.
+5. Do not change the Witty Pi thresholds on site unless the values have been
+   agreed in advance (see "Next steps").
+
+**Data to collect once the station reconnects:**
+
+- The Witty Pi values it uploads for the first wake: `power_on_reason_code`,
+  `prev_shutdown_reason_code` and `downtime_s`. These show whether the station
+  ran continuously, shut down on schedule, or lost power.
+- The buffered sensor rows from 10-02 onwards. In ISS-FIELD-011 the station
+  uploaded its whole buffer on reconnection. If rows arrive covering the
+  outage, the station was running and the battery hypothesis is wrong.
+- The Witty Pi log (`wp5d.log`) and `df -h /`. The disk was forecast to reach
+  the 5 GB purge threshold between 10-04 and 10-07 (TODO-119), so un-synced
+  video from July may already have been deleted.
+
+**Next steps:**
+
+- [ ] Site visit (requested 2026-10-07).
+- [ ] Confirm against the Witty Pi 5 documentation whether the recovery voltage
+      requires a low-voltage threshold.
+- [ ] Choose a low-voltage threshold and recovery voltage together, with enough
+      separation that load sag on the LiFePO4 plateau does not repeatedly cross
+      both (ISS-FIELD-008), and set them on the next attended visit.
+- [ ] Add the SIM quota expiry date to a calendar, or monitor it. The current
+      package was bought 2026-10-06; if it is a 30-day package it expires about
+      2026-11-05.
+
+**Not done:** nothing on the station, the server or the account has been
+changed. No connection to the station was possible.
+
+**Update 2026-10-09: probable cause of the non-recovery found** (TODO-116).
+The Witty Pi's schedule list runs out ~42.6 days after the script was last
+activated, and a button press does not rebuild it. If the list was last
+rebuilt on 08-21 (the recovery that held, run started ~01:14 UTC), it ran out
+at about **10-02 16:45 UTC (23:45 WIB)**, about 19 hours after the quota cutoff.
+That would explain why the 10-06 top-up had no effect: by then the station was
+no longer waking. Test on the next contact:
+
+- buffered sensor rows should continue past 10-02 05:00 WIB and stop at about
+  10-02 23:45 WIB;
+- `/log/WittyPi5.log` on the Witty Pi should contain `No future action is
+  found in script.`
+
+**Shutdown when uploads fail: wake limit added.** `orc-wake-ceiling.timer`
+powers the Pi off 12 minutes after boot unless `/run/orc-maintenance-mode` or
+`/run/orc-stay-awake` exists. It does not depend on ORC-OS finishing its task
+or on the Witty Pi's schedule. Sukabumi overlay only; not yet deployed.
+
+**Recovery plan (Tom, 2026-10-09):** catch the station on its first boot after
+the button press and re-add the schedule by hand, as on 07-03 and 08-21; then
+deploy `orc-wp5-rearm` and `orc-wake-ceiling` with `deploy.sh`.

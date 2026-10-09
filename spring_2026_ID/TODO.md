@@ -2991,6 +2991,28 @@ one threshold alone says nothing about hysteresis.
       files `deploy.sh` already manages.** The running schedule is 30-minute
       while the assembly docs call `prod_15.wpi` the default.
 
+**Latch mechanism found, 2026-10-09: the schedule list runs out after 42.6
+days.** The Witty Pi 5 firmware expands the active `.wpi` into
+`schedule.skd` once, at activation, capped at 4,096 entries
+(`WPI_MAX_ACTIONS`, firmware `script.c:19`, same in v1.1 and HEAD). At two
+entries per 30-minute cycle that is ~42.6 days, whatever `END` says. Nothing
+regenerates it except activating a script again; a button press re-reads the
+exhausted list, finds no future startup, and gives one cycle. With no list
+entry there is also no shutdown alarm, so the 25-minute backstop is gone too.
+
+- Full `wp5d.log`: the runs started 05-13 06:02 and 07-03 02:47 UTC ended
+  42.64 and 42.66 days later. The first button press after each outage
+  (07-02, 08-20) gave exactly one cycle.
+- **Tom, 2026-10-09:** on the recoveries that held, he caught the station on
+  its first boot and re-added the schedule by hand. That is the re-activation
+  that restarts the list.
+- Fix built 2026-10-09: `orc-wp5-rearm.service` re-activates
+  `SCHEDULE_SCRIPT` (`/etc/orc-wp5-rearm.conf`) on **every boot** (Tom's
+  choice), before `orc-api`. Sukabumi overlay only; enabled by `deploy.sh`.
+  Not yet deployed. No bench test: Jakarta was never deployed.
+- Side effect to remember: a script loaded on the Witty Pi by hand is switched
+  back to `SCHEDULE_SCRIPT` on the next boot unless the conf is changed too.
+
 **No longer blocked on physical access.** The station recovered **on its own**
 at 11:00 WIB on 2026-08-27, 6.5 hours after failing, with nobody sent to site.
 It is up and cycling now. That also unseats this TODO's premise: "stays down
