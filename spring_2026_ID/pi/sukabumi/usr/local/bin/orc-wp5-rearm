@@ -1,5 +1,5 @@
 #!/bin/bash
-# orc-wp5-rearm — re-activate the Witty Pi schedule script on every boot (TODO-116)
+# orc-wp5-rearm — re-activate the Witty Pi schedule script once a day (TODO-116)
 #
 # WHY
 #   The Witty Pi 5 firmware expands the active .wpi into a fixed list of on/off
@@ -13,8 +13,15 @@
 #   Measured in the full wp5d.log: the runs started 05-13 and 07-03 each ended
 #   42.64 / 42.66 days later. Both were recovered by re-selecting the schedule
 #   on the first boot after a button press — by hand, in the wp5 menu. This
-#   does the same thing on every boot, so the list never runs out and a single
-#   button press restores the schedule.
+#   does the same thing at most once a day, so the list never runs out and a
+#   single button press restores the schedule.
+#
+# WHY NOT EVERY BOOT
+#   An activation takes ~33 s, and orc-api waits for it (Before=). Every boot
+#   that added ~33 s to each wake, ~26 min awake a day (measured 2026-10-12).
+#   The list lasts 42.6 days, so once a day is ample. Every boot still reads
+#   the status header (0.1 s) and re-arms at once if no startup is armed or no
+#   script is in use, so a button press after a run-out still recovers.
 #
 # HOW
 #   Drives the vendor wp5 menu (v5.0.0 on this station), the same way deploy.sh
@@ -26,15 +33,20 @@
 #     pass 3: read the menu header back and log the armed alarms
 #   Any surprise in the menu (version, option text, file list) aborts without
 #   choosing anything. A wrong number in this menu changes other settings.
+#   Before pass 1, pass 0 reads the header and skips the rest unless the
+#   re-arm is due (see WHY NOT EVERY BOOT).
 #
-# Config: /etc/orc-wp5-rearm.conf (SCHEDULE_SCRIPT; empty disables)
+# Config: /etc/orc-wp5-rearm.conf (SCHEDULE_SCRIPT; empty disables;
+#         REARM_INTERVAL_H, default 23)
 # Log:    journal (tag orc-wp5-rearm) and /var/log/orc/wp5-rearm.last
+# State:  /var/lib/orc-wp5-rearm/last-ok (epoch of the last successful re-arm)
 
 set -u
 
 CONF="/etc/orc-wp5-rearm.conf"
 TAG="orc-wp5-rearm"
 LAST="/var/log/orc/wp5-rearm.last"
+STAMP="/var/lib/orc-wp5-rearm/last-ok"
 EXPECTED_VERSION="5.0.0"
 
 mkdir -p "$(dirname "$LAST")"
@@ -43,6 +55,9 @@ log() { logger -t "$TAG" "$*"; echo "$(date -u +%FT%TZ) $*" >> "$LAST"; }
 die() { log "ABORT: $*"; exit 1; }
 
 SCHEDULE_SCRIPT=""
+# 23, not 24: the re-arm lands ~50 s after a boot, so 24 h later the same
+# boot sees 23 h 59 m and the time of day would slip one cycle each day.
+REARM_INTERVAL_H=23
 # shellcheck source=/dev/null
 [ -f "$CONF" ] && . "$CONF"
 [ -n "$SCHEDULE_SCRIPT" ] || { log "SCHEDULE_SCRIPT empty in $CONF — not re-arming"; exit 0; }
@@ -55,6 +70,27 @@ run_wp5() {  # $1 = stdin, $2 = timeout seconds
     printf '%b' "$1" | timeout "$2" wp5 2>&1 | sed 's/\x1b\[[0-9;]*m//g'
     [ "${PIPESTATUS[1]}" -ne 124 ]
 }
+
+# ── pass 0: is a re-arm due? ────────────────────────────────────────
+# Due if the last success is missing, older than REARM_INTERVAL_H, or in the
+# future (clock wrong); or if the header shows no armed startup (wp5 prints
+# "Schedule next startup" with no [dd hh:mm:ss] when none is set) or no script
+# in use. Anything unexpected here falls through to the full, guarded path.
+out=$(run_wp5 '14\n' 20) || die "wp5 header read failed or timed out"
+sd=$(grep -oE 'Schedule next shutdown.*' <<<"$out" | head -1)
+su=$(grep -oE 'Schedule next startup.*' <<<"$out" | head -1)
+now=$(date +%s)
+last=$(cat "$STAMP" 2>/dev/null || echo 0)
+[[ "$last" =~ ^[0-9]+$ ]] || last=0
+age=$(( now - last ))
+if [ "$age" -ge 0 ] && [ "$age" -lt $(( REARM_INTERVAL_H * 3600 )) ] \
+   && grep -qE 'Schedule next startup *\[[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}\]' <<<"$out" \
+   && grep -qE 'Choose schedule script \(in use\)' <<<"$out"; then
+    log "OK: not due (last re-arm $(( age / 3600 ))h$(( age % 3600 / 60 ))m ago); ${sd}; ${su}"
+    exit 0
+fi
+[ "$last" -eq 0 ] && agestr="none recorded" || agestr="${age}s ago"
+log "re-arm due: last re-arm ${agestr}; ${sd:-no shutdown line}; ${su:-no startup line}"
 
 # ── pass 1: list ────────────────────────────────────────────────────
 out=$(run_wp5 '6\n\n14\n' 30) || die "wp5 list pass failed or timed out"
@@ -87,4 +123,5 @@ su=$(grep -oE 'Schedule next startup.*' <<<"$out" | head -1)
 grep -qE 'Choose schedule script \(in use\)' <<<"$out" \
     || die "script not marked in use after choosing; ${sd:-no shutdown line}; ${su:-no startup line}"
 
+mkdir -p "$(dirname "$STAMP")" && date +%s > "$STAMP"
 log "OK: activated ${SCHEDULE_SCRIPT} (item ${n}); ${sd}; ${su}"
