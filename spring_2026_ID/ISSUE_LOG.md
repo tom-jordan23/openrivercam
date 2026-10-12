@@ -2732,3 +2732,127 @@ or on the Witty Pi's schedule. Sukabumi overlay only; not yet deployed.
 **Recovery plan (Tom, 2026-10-09):** catch the station on its first boot after
 the button press and re-add the schedule by hand, as on 07-03 and 08-21; then
 deploy `orc-wp5-rearm` and `orc-wake-ceiling` with `deploy.sh`.
+
+**Update 2026-10-12: root cause confirmed.** The station came back on
+2026-10-10 and was read on the 2026-10-12 13:00 UTC wake
+(`data/station-forensics/orc-sukabumi-checkin1012-20261012T130044Z.txt`,
+script `liveorc_server/station-health/checkin_2026-10-12.sh`, read-only), with
+server rows from Grafana. Both predictions from 10-09 held:
+
+| Time (WIB) | Witty Pi log / journal | Server rows |
+|---|---|---|
+| 10-02 05:00 → 23:30 | Scheduled startups every 30 min, clean `shutdown -h now` after each task | Present, uploaded later from the buffer |
+| 10-02 23:30 | Last scheduled startup (16:30:16 UTC); clean shutdown at 16:33 UTC | Last row 23:32 |
+| 10-02 23:33 → 10-09 10:32 | **No boot of any kind** (journal boot list and `wp5d.log` agree) | None |
+| 10-09 10:32 | `Startup reason: Button Click`; one task, clean shutdown; no next startup | 3 wakes' rows |
+| 10-10 10:02 | `Startup reason: Button Click` | Rows |
+| 10-10 10:30 onward | `Scheduled Startup` every 30 min | Rows every cycle |
+
+1. **The schedule list ran out at the predicted time.** The last scheduled
+   startup was 10-02 16:30 UTC, within one cycle of the predicted 16:45 UTC.
+   The station then shut down normally and nothing powered it on again.
+2. **The battery hypothesis is not supported.** The station kept cycling for
+   18.5 hours after the quota ran out, every wake ended with a normal
+   shutdown, and V-IN on the last wakes was 12.4–12.9 V. On 10-09 and 10-10
+   it was 12.5–13.1 V. The quota cut stopped uploads only.
+3. **The 10-06 top-up had no effect because the station was already off.**
+   It was not waking, so it could not reconnect.
+4. **The first button press (10-09) gave one cycle, as predicted.** The
+   schedule resumed only after the second press on 10-10. `orc-wp5-rearm` and
+   `orc-wake-ceiling` are **not deployed** (no unit, no binary, no config), so
+   the schedule was re-added by hand during the 10-10 03:02 UTC boot. The
+   `wp5d.log` does not record the menu action.
+5. Not checked: `No future action is found in script.` in the Witty Pi's
+   internal log. That log is not mounted on the Pi, and the evidence above does
+   not need it.
+
+**State on 2026-10-12 13:00 UTC:**
+
+- Witty Pi: schedule script in use, next shutdown 13:25, next startup 13:30
+  UTC. Low-voltage threshold still unset, recovery 13.0 V.
+- **The schedule list will run out again around 2026-11-21 18:25 UTC
+  (11-22 01:25 WIB)**, 42.64 days after the 10-10 re-arm, unless
+  `orc-wp5-rearm` is deployed first.
+- Disk: 90% used, 6.25 GB free. The purge has not started: the oldest
+  surviving un-synced clip is still 2026-07-03 09:31. Status counts: SYNCED
+  3855, FAILED 3263, LOCAL 126. 1,475 un-synced clips still have their file.
+- Link: LTE connected, signal 100%. `throttled=0x0`.
+
+**Next steps (updated):**
+
+- [ ] Deploy `orc-wp5-rearm` and `orc-wake-ceiling` before 2026-11-21.
+- [ ] The SIM quota bought 10-06 probably expires about 2026-11-05 if it is a
+      30-day package. That is earlier than the schedule deadline.
+- [ ] The low-voltage and recovery thresholds are still unset. This no longer
+      blocks recovery but remains open (ISS-FIELD-008).
+
+**Update 2026-10-12 (later): `orc-wp5-rearm` and `orc-wake-ceiling` deployed.**
+All steps were run from `liveorc_server/station-health/` through the wake
+runner; output is in `data/station-forensics/` under the labels given.
+
+1. `deploycheck1012b` (15:00 UTC): the station's checkout
+   (`/home/pi/code/git/openrivercam`, clean, `main`) fast-forwarded from
+   `f763f61` (2026-05-15) to `a5749ad`. `deploy.sh sukabumi --check
+   --skip-packages`: 139 pass, 9 fail. All 9 failures came from 9b2e78f. No
+   other drift.
+2. `rearmprecheck1012` (16:30 UTC, read-only): `wp5d_poweroff.service` is
+   present and enabled, so `systemctl poweroff` from the wake ceiling informs
+   the Witty Pi. `wp5` is a compiled binary. The vendor source (uugear/
+   Witty-Pi-5-Software `79f4e83`, v5.0.0, `wp5.c` `choose_schedule_script`)
+   shows that an empty answer to option 6 chooses nothing.
+3. `rearmlist1012` (16:31 UTC): the option-6 list pass, run once. The status
+   header was identical before and after; the pass took 0.1 s. Scripts on the
+   Witty Pi: `[1] prod_30.wpi`, `[2] maint.wpi`, `[3] prod_15.wpi`.
+4. Offline: `orc-wp5-rearm` was run against a fake `wp5` that replays that
+   output, in 10 cases (normal run, empty config, wrong version, script missing
+   or listed twice, no confirmation, no "done", not in use afterwards, `wp5`
+   hanging). Every fault case stopped; none chose a script after a failed list
+   pass. The hang case was logged as "not version 5.0.0"; fixed in 32cb6b0.
+5. `rearmdeploy1012` (17:30 UTC): pulled 32cb6b0, ran `deploy.sh sukabumi
+   --yes --skip-packages` (10 fixed: the 9 above plus the RTC sync, 0 fail),
+   then ran the re-arm once by hand. Result: `OK: activated prod_30.wpi
+   (item 1)`, in 32.8 s. Activating during a scheduled wake kept that wake's
+   shutdown (17:55) and the next startup (18:00).
+6. `rearmfirstboot1012` (18:00 UTC): the station woke at 18:00 on the
+   re-armed schedule. The re-arm ran by itself and succeeded; next startup
+   18:30. `orc-api` started at 38.4 s after boot, when the re-arm finished.
+   The wake-ceiling timer was due at 18:12:10, 12 min after boot. Capture
+   delivered.
+
+**Cost:** the re-arm holds `orc-api` back about 33 s on every boot. That is
+about 33 s more awake per wake, roughly 26 min a day. Capture is not delayed,
+because `orc-capture` runs independently of `orc-api`. Re-arming less often
+would also prevent the list running out; this is not yet decided.
+
+The 2026-11-21 run-out date above no longer applies while the re-arm runs on
+every boot.
+
+**Update 2026-10-12 (evening): re-arm reduced to once a day.** Tom chose a
+daily re-arm over every boot.
+
+- `088b30e`: every boot reads the status header (0.1 s) and re-arms only if
+  the last success is missing, older than `REARM_INTERVAL_H` (23 h), or in
+  the future, or if no startup is armed or no script is in use. Successes are
+  stamped in `/var/lib/orc-wp5-rearm/last-ok`. Deployed on the 18:30 UTC wake
+  (`rearmdaily1012`).
+- **This did not work at first.** On the 19:00 boot it re-armed anyway
+  (`rearmdailyboot1012b`). The re-arm runs about 4 s into boot, before
+  `wp5d` has copied the RTC into the system clock, which still read
+  2026-03-26 17:50. Every stamp therefore looked like it was in the future.
+  `After=wp5d.service` waits only for wp5d to start. The unit's comment said
+  the clock was already set; it was not.
+- `eb7c7b0`: the age is now measured on the Witty Pi's RTC, from the
+  header's `RTC Time` line, and the stamp is written from it too. Deployed on
+  the 19:30 UTC wake (`rearmrtc1012`).
+- **Verified on the 20:00 UTC boot** (`rearmrtcboot1012b`): `OK: not due
+  (last re-arm 0h29m ago)`. The re-arm unit finished 4.4 s after boot; next
+  startup 20:30; capture delivered.
+
+**Correction to the cost stated above.** On the 20:00 boot `orc-api` started
+at 21.8 s, not at about 5 s, so something other than the re-arm also holds it
+until about 22 s (probably `orc-maintenance-check`; not confirmed). The
+every-boot re-arm therefore added about 15 s per wake (37–38 s against
+21.8 s), not 33 s: roughly 12 min a day, not 26.
+
+**Daily re-arm:** the first boot at least 23 h after the last success, now
+about 18:30–19:30 UTC. A boot with no armed startup re-arms regardless.
