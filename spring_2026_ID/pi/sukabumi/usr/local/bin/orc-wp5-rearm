@@ -49,8 +49,11 @@ SCHEDULE_SCRIPT=""
 command -v wp5 >/dev/null 2>&1 || die "wp5 not installed"
 
 # wp5 prints ANSI colour and block-buffers into a pipe; it flushes on Exit (14).
+# Returns non-zero only when timeout killed wp5. A pipeline's status is sed's,
+# so without this a hung wp5 surfaced as "not version 5.0.0" on empty output.
 run_wp5() {  # $1 = stdin, $2 = timeout seconds
     printf '%b' "$1" | timeout "$2" wp5 2>&1 | sed 's/\x1b\[[0-9;]*m//g'
+    [ "${PIPESTATUS[1]}" -ne 124 ]
 }
 
 # ── pass 1: list ────────────────────────────────────────────────────
