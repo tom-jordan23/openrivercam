@@ -1,7 +1,9 @@
 [Unit]
 Description=Re-activate the Witty Pi schedule script (TODO-116)
-# wp5d writes the RTC time into the system clock at start; activation uses
-# the RTC, but the log timestamps should be right.
+# wp5d copies the RTC into the system clock some time after it starts; this
+# ordering does not wait for that (on 2026-10-12 the clock still read March
+# when this ran). The script measures ages on the RTC itself, so only its
+# log timestamps can be stale.
 After=wp5d.service
 # Finish before ORC-OS can capture and shut the Pi down, so a single button
 # press re-arms the schedule. Ordering only: a failure here does not stop

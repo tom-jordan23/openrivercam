@@ -39,7 +39,17 @@
 # Config: /etc/orc-wp5-rearm.conf (SCHEDULE_SCRIPT; empty disables;
 #         REARM_INTERVAL_H, default 23)
 # Log:    journal (tag orc-wp5-rearm) and /var/log/orc/wp5-rearm.last
-# State:  /var/lib/orc-wp5-rearm/last-ok (epoch of the last successful re-arm)
+# State:  /var/lib/orc-wp5-rearm/last-ok (epoch of the last successful re-arm,
+#         by the Witty Pi's RTC)
+#
+# CLOCK
+#   Ages are measured on the Witty Pi's RTC, read from the header's "RTC Time"
+#   line, never on the system clock. At the point this runs in boot the system
+#   clock can still hold a stale saved time: on 2026-10-12 19:00 UTC it read
+#   2026-03-26 17:50, because After=wp5d.service waits for wp5d to start, not
+#   for it to copy the RTC into the system clock. That made every stamp look
+#   like it was in the future, and every boot re-armed. Station clock is UTC
+#   and so is the RTC.
 
 set -u
 
@@ -79,7 +89,13 @@ run_wp5() {  # $1 = stdin, $2 = timeout seconds
 out=$(run_wp5 '14\n' 20) || die "wp5 header read failed or timed out"
 sd=$(grep -oE 'Schedule next shutdown.*' <<<"$out" | head -1)
 su=$(grep -oE 'Schedule next startup.*' <<<"$out" | head -1)
-now=$(date +%s)
+rtc_epoch() {  # header text on stdin -> epoch of its "RTC Time", or nothing
+    local t
+    t=$(grep -oE 'RTC Time: [0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}' | head -1 | cut -d' ' -f3-)
+    [ -n "$t" ] && date -u -d "$t" +%s 2>/dev/null
+}
+now=$(rtc_epoch <<<"$out")
+[[ "$now" =~ ^[0-9]+$ ]] || now=0   # unreadable RTC: age is negative, so due
 last=$(cat "$STAMP" 2>/dev/null || echo 0)
 [[ "$last" =~ ^[0-9]+$ ]] || last=0
 age=$(( now - last ))
@@ -89,7 +105,9 @@ if [ "$age" -ge 0 ] && [ "$age" -lt $(( REARM_INTERVAL_H * 3600 )) ] \
     log "OK: not due (last re-arm $(( age / 3600 ))h$(( age % 3600 / 60 ))m ago); ${sd}; ${su}"
     exit 0
 fi
-[ "$last" -eq 0 ] && agestr="none recorded" || agestr="${age}s ago"
+if [ "$now" -eq 0 ]; then agestr="unknown (no RTC time in header)"
+elif [ "$last" -eq 0 ]; then agestr="none recorded"
+else agestr="${age}s ago"; fi
 log "re-arm due: last re-arm ${agestr}; ${sd:-no shutdown line}; ${su:-no startup line}"
 
 # ── pass 1: list ────────────────────────────────────────────────────
@@ -123,5 +141,7 @@ su=$(grep -oE 'Schedule next startup.*' <<<"$out" | head -1)
 grep -qE 'Choose schedule script \(in use\)' <<<"$out" \
     || die "script not marked in use after choosing; ${sd:-no shutdown line}; ${su:-no startup line}"
 
-mkdir -p "$(dirname "$STAMP")" && date +%s > "$STAMP"
+done_at=$(rtc_epoch <<<"$out")
+[[ "$done_at" =~ ^[0-9]+$ ]] || die "activated, but no RTC time in the verify header; stamp not written"
+mkdir -p "$(dirname "$STAMP")" && echo "$done_at" > "$STAMP"
 log "OK: activated ${SCHEDULE_SCRIPT} (item ${n}); ${sd}; ${su}"
