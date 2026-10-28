@@ -2856,3 +2856,155 @@ every-boot re-arm therefore added about 15 s per wake (37–38 s against
 
 **Daily re-arm:** the first boot at least 23 h after the last success, now
 about 18:30–19:30 UTC. A boot with no armed startup re-arms regardless.
+
+**Update 2026-10-14: check-in, and the disk is at the purge threshold.** Read
+on the 13:00 UTC wake with `checkin_2026-10-12.sh` (read-only; output
+`data/station-forensics/orc-sukabumi-checkin1014b-20261014T130041Z.txt`).
+Server rows are present every day since 10-10, latest 12:30 UTC.
+
+| | 2026-10-12 13:00 UTC | 2026-10-14 13:00 UTC |
+|---|---|---|
+| Root free | 6.25 GB | **5,109 MiB (4.99 GiB), 92% used** |
+| SYNCED / FAILED / LOCAL | 3855 / 3263 / 126 | 3947 / 3267 / 126 |
+| Un-synced clips with a file | 1,475 | 1,479 |
+| Oldest surviving un-synced clip | 2026-07-03 09:31 | 2026-07-03 09:31 |
+
+- `orc-wp5-rearm` last re-armed 17h59m before this wake (not due until 24 h);
+  `orc-wake-ceiling.timer` active. Next startup 13:30 UTC. LTE connected,
+  `throttled=0x0`.
+- Free space fell about 0.6 GB/day. The purge has not started (oldest clip
+  unchanged), but `min_free_space = 5.0` is probably GiB, so the next wake can
+  start it. It deletes oldest-first, which is the clean 07-23 → 09-01 upload
+  block.
+- The re-arm journal lines carry 2026-03-26 timestamps: the known stale
+  early-boot clock. The ages it reports are measured on the Witty Pi RTC.
+
+**Decision (Tom, 2026-10-14): try to free space by other means before
+deleting any synced video.** `todo119_space_census.sh` (read-only, written,
+not yet run) measures `/home/pi/code/git` (3.9 GB on 08-27, 3 uncommitted
+changes then), `.ORC-OS/tmp` (1.2 GB), caches, logs, and the non-mp4 output
+inside `uploads/videos`. `pi/tools/orc_reclaim_nonvideo.sh` has a dry run and
+`--apply`; `--apply` deletes caches, `__pycache__` and tmp files older than
+24 h only, and was not run.
+
+**Next:** run the census on a wake
+(`python3 todo119_wake_runner.py todo119_space_census.sh census1014 --timeout 330`
+from `liveorc_server/station-health/`; wakes at :00 and :30 UTC). Then choose
+what to reclaim. Fallback if that is not enough: rebuild the verified list of
+clips synced since 09-02 (`todo119_timestamp_join.py`), dry-run it, and delete
+only with Tom's approval. Nothing on the station has been changed.
+
+**Update 2026-10-14 (later): non-video space reclaimed; purge threshold cleared.**
+Census (`orc-sukabumi-census1014-20261014T133046Z.txt`) then cleanup on the
+14:00 UTC wake with `todo119_reclaim_wake.sh`
+(`orc-sukabumi-reclaim1014-20261014T140039Z.txt`). Tom approved the cleanup and
+the removal of the orcos qemu image. No video and nothing under
+`.ORC-OS/uploads` was touched.
+
+| Step | Free after (MiB) |
+|---|---|
+| Before | 5,106 |
+| `.ORC-OS/tmp` (older than 24 h, 1.19 GB), caches, `__pycache__` | 6,833 |
+| apt cache and lists | 7,176 |
+| Old Claude binaries 2.1.116/117/132 (kept 2.1.133) | 7,869 |
+| `rainbow-sensing/image/...orcos-qemu.img.gz` (2.55 GiB, ignored by git, not open) | 10,479 |
+
+- At about 0.6 GB/day the station has roughly 9 days above the 5.0 GiB
+  threshold (about 5.4 GiB of margin).
+- Non-mp4 output under `uploads/videos` is 8.70 GiB, of which `.jpg` is 8.09
+  GiB (7,339 files, mostly `output/plot_quiver.jpg`, up to 4.7 MB each) and
+  `.nc` is 0.48 GiB. The earlier census per-extension sizes were wrong (awk
+  `sub()` rewrote `$1`); the corrected table is in the reclaim output.
+- Not yet explained: `git status` on the station checkout shows 2 lines after
+  the cleanup; it showed 0 dirty on the census. Check what they are.
+- Open decision: whether the quiver plots of already-synced videos can go.
+  ORC-OS may reference them, so this needs Tom's explicit approval.
+
+### ISS-FIELD-014: LiveORC server unreachable from the internet; all inbound security group rules were removed by an InfoSec administrator
+
+| Field | Value |
+|-------|-------|
+| **Date opened** | 2026-10-28 |
+| **Site** | LiveORC server (AWS us-east-1, instance `ip-172-31-90-132`, 34.203.227.187) |
+| **Risk** | Service availability; station uploads; Grafana |
+| **Impact** | High while it lasted (web app, Grafana and the station's sensor uploads all unreachable) |
+| **Status** | OPEN — service restored 2026-10-28 15:40 UTC; InfoSec's reason and any standing agreement on the ports are not yet confirmed |
+
+**What happened.** The security group `LiveORC-server` (`sg-0590532d52e77699a`)
+lost all its inbound rules, so ports 80, 443, 8443 and 9443 timed out from the
+internet. The host itself was healthy throughout. CloudTrail shows the rules
+were removed and restored by hand, in the AWS console, by a person using the
+SSO role `AWSReservedSSO_AWS-InfoSecTempAdmin` (an InfoSec staff member; the
+individual's identity is in the CloudTrail events and is not recorded here).
+
+**Timeline (UTC):**
+
+| Time | Event |
+|---|---|
+| 2026-10-27 21:24 | Last outside request in the `liveorc_webapp` log (an API client, `POST /api/token/` then `GET /api/site/4/timeseries/`, both 200). |
+| 2026-10-27, after 21:24 | Rules first removed. This CloudTrail event has not been retrieved. |
+| 2026-10-27 | Tom reported the server unreachable. Probes from the workstation (47.7.209.76) to ports 22, 80, 443 and 9443 timed out. |
+| 2026-10-28, before 14:39 | Tom re-added 80, 443 and 9443 (exact time not recorded). Verified reachable from the workstation. |
+| 2026-10-28 14:39:39 | InfoSec role `RevokeSecurityGroupIngress` removed those three rules (80, 443, 9443; each TCP from `0.0.0.0/0`). Console session, source IP 104.177.7.231, session started 13:27:32. |
+| 2026-10-28 15:08 | Probes from the workstation failed again on 80, 443, 8443 and 9443. |
+| 2026-10-28 15:40:37 | Same role `AuthorizeSecurityGroupIngress` added four rules, all TCP from `0.0.0.0/0`: 80, 443, 8443 (description `orc-sensor-up`) and 9443 (description `grafana/sensor`). Console session started 15:32:48, same source IP. |
+| 2026-10-28 16:04 | Verified from the workstation: all four ports accept connections; LiveORC 443 returns 302; Grafana `/api/health` returns 200; port 8443 answers 404 at `/`. An actual sensor upload was not tested. |
+
+**Evidence that the cause was upstream of the host (all read-only):**
+
+- Over Session Manager on 2026-10-27: seven containers up 2 months
+  (`liveorc_webapp`, `orc-sensor-ingest`, `orc-grafana`, `orc-timescale`,
+  `orc-sensor-upload`, `rabbitmq`, `db`); ports 80, 443 and 9443 listening on all
+  interfaces; `curl localhost` returned 302 (LiveORC) and 200 (Grafana
+  `/api/health`); root disk 27% used; host uptime 63 days; public IP still
+  34.203.227.187.
+- `tcpdump` on the host, filtered to SYN packets from the workstation, captured
+  nothing while the workstation ran connection attempts to 443 and 9443. The
+  packets never reached the instance, so the block was in AWS (security group),
+  not iptables, Docker or the containers.
+- The Tom-run console view showed `LiveORC-server` with no inbound rules. A
+  group named `LiveORC-Security-Group` (the name in
+  `prior_work/deployment_guides/LIVEORC_DEPLOY_GUIDE.md`) does not exist, and
+  the `launch-wizard-*` groups in the account are not attached to this instance.
+
+**Ports the service needs.** 80 (HTTP redirect; Let's Encrypt validation), 443
+(LiveORC), 8443 (`orc-sensor-upload`, where the station PUTs sensor CSVs;
+`pi/shared/etc/orc/sensors-upload.conf`), 9443 (Grafana). The deploy guide lists
+only 80 and 443. While working on this the first re-add omitted 8443 and the
+station-side check of the upload path was wrongly reported as passing; the
+station's own config is the authority for the port list, not the guide.
+
+**PHP2Shell (CVE-2026-109618 and CVE-2026-109619, reported patched 2026-10-21).**
+Raised as a possible reason for the removal. On 2026-10-27 no PHP was found on
+the host or in any of the seven running containers: `command -v php php-fpm
+php8` returned nothing, the `dpkg`/`apk` PHP package count was 0 in every
+container and on the host, and `pgrep php` returned nothing. An external probe
+found no `X-Powered-By: PHP` header and 404 for `phpinfo.php`, `index.php`,
+`info.php` and `wp-login.php`. The check does not cover PHP built outside the
+package manager and `PATH`. InfoSec has not said that PHP2Shell was the reason.
+
+**Not caused by this:** the Sukabumi station stopped sending on 2026-10-21, six
+days before the removal. Its last server rows are 14:30:21–14:30:36 UTC
+(21:30 WIB). `boot_age_s` 21.3 at 14:30:36 puts the wake at about 14:30:15; the
+second Witty Pi reading and two of the three `orccapture` rows normally written
+in the following two minutes are missing, so the cycle is incomplete. V-IN was
+12.64 V on the last reading with no downward trend (daily minimum 12.46–12.64 V,
+10-12 to 10-21). Tailscale shows `orc-sukabumi` offline, last seen 6 days before
+2026-10-28. Tom reported on 2026-10-28 that the SIM still has a large balance.
+Per ISS-FIELD-013 the earlier outage was the data quota, not the balance, and the
+quota has not been checked for this stop. The cause of the 10-21 stop is open.
+
+**Open items:**
+
+1. Retrieve the 2026-10-27 `RevokeSecurityGroupIngress` event (CloudTrail Event
+   history, us-east-1, resource name `sg-0590532d52e77699a`) to confirm the
+   first removal was the same role.
+2. Get InfoSec's stated reason and whether they accept the current rules: all
+   four ports open to `0.0.0.0/0`. The station is on a cellular network in
+   Indonesia, so its uploads cannot be restricted to a fixed source address.
+   Port 9443 serves Grafana with anonymous Viewer access (see the LiveORC
+   read-only query notes); that is worth raising with them.
+3. Confirm a sensor upload reaches 8443 once the station next syncs.
+4. Nothing monitors whether the server is reachable from outside. The
+   station's SIM and this server's network path have each caused an outage that
+   was found only when a person looked.
