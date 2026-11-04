@@ -26,6 +26,8 @@ while i<len(inp):
         out+=o; ch=inp[i].strip() if i<len(inp) else ''; i+=1
         if ch:
             open(e('H_STATE'),'a').write(f"CHOSE {ch} {sc[int(ch)-1]}\n")
+            if e('F_HANG')=='choose':
+                import time; sys.stdout.flush(); time.sleep(999)
             out+=f"You have chosen {sc[int(ch)-1]}\ndone :)\n"
         else: out=cut(out,'F_CUT_LIST')
 sys.stdout.write(out)

@@ -3008,3 +3008,165 @@ quota has not been checked for this stop. The cause of the 10-21 stop is open.
 4. Nothing monitors whether the server is reachable from outside. The
    station's SIM and this server's network path have each caused an outage that
    was found only when a person looked.
+
+### ISS-FIELD-015: Sukabumi silent since 2026-10-21 14:30 UTC; station did not restart on its own; cause open
+
+| Field | Value |
+|-------|-------|
+| **Date opened** | 2026-11-04 |
+| **Site** | Sukabumi |
+| **Risk** | Station availability; recurrence of the Witty Pi schedule failure after the ISS-FIELD-013 fix |
+| **Impact** | Medium (pilot station) |
+| **Status** | OPEN — button press and read-only log collection planned; nobody assigned yet |
+
+**Observations (read-only; server SQL via Grafana, local `tailscale status`, repo files):**
+
+- Last server row: 2026-10-21 14:30:36 UTC (21:30 WIB). No rows in the 14
+  days since (checked 2026-11-04 07:55 UTC). That wake contains one of the three
+  data batches a wake normally delivers (boot_age_s 21.3). A normal wake
+  delivers batches at about +20 s, +70 s and +120 s.
+- Tailscale `LastSeen` for `orc-sukabumi`: 2026-10-21 14:33:18 UTC, 198 s after
+  the 14:30 slot. In the 10-01 quota outage `LastSeen` came 33 s after the last
+  row; here it came 162 s after, so a link or quota cut at 14:30:36 does not fit.
+  A normal wake ends about 135–165 s after the slot, so 14:33:18 is consistent with
+  a normal end. I have no measured baseline for `LastSeen` after a normal wake.
+- V-IN at 14:30 UTC was 12.58 V. The same reading on the 8 previous days was
+  12.58–12.63 V. The nightly lows (11.5–12.3 V) show no trend. Tom judges the
+  battery and charge controller unlikely to be at fault, and the data show nothing
+  against that.
+- The 42.6-day schedule run-out does not apply. The newest activation was at most
+  8 days old on 10-21 (daily re-arm, deployed 2026-10-12).
+- Since 2026-09-02 the only other wake with a single Witty Pi reading is
+  2026-10-12 17:30, the re-arm deploy itself.
+- The server cannot show which wakes ran the re-arm. The first-reading boot_age is
+  20–30 s and the fresh-capture row falls 130 s after the slot on 345 of 346 wakes
+  since 10-12.
+- The last server row is when the station stopped reporting, not when it stopped
+  waking. In ISS-FIELD-013 the station cycled for 18 hours after its last row.
+
+**Withdrawn interpretation.** An earlier reading in this investigation treated the
+missing second and third batches as a truncated wake (power loss or crash about
+40–60 s after boot). The evidence does not support it. The last wake may have been
+complete, with the Pi powering off normally and no next startup armed, which is
+the same shape as 10-02. Late batches going unshipped is also a known failure
+(ISS-FIELD-010).
+
+**Hypotheses, Witty Pi first. None is confirmed.**
+
+1. **The schedule write left the next startup empty (Tom's hypothesis, 2026-11-04).**
+   Two variants were proposed: a race in setting the schedule, and a Witty Pi
+   NVRAM write (5–10 s through `wp5`) that had not completed before shutdown.
+2. **The Witty Pi lost its alarm state.** The original TODO-116 latch: the next
+   startup is left in the past and nothing fires it, triggered by something
+   other than run-out.
+3. **The Pi is on but offline.** The server cannot exclude it, and the data quota
+   has not been checked for this stop (ISS-FIELD-014 records only that the SIM
+   still has a large balance). The Tailscale timing argues against a quota cut at
+   14:30:36.
+
+**Attempts to disprove hypothesis 1 (what held and what did not):**
+
+| Test | Result |
+|---|---|
+| Re-arm racing `orc-sensors` or ORC-OS shutdown | Closed. In the 10-12 boot captures `orc-api` and `orc-sensors.timer` start when the re-arm ends (37.2–38.4 s on activation boots, against about 22 s on others). The ordering `Before=orc-api.service` and `Before=orc-sensors.timer` holds. |
+| NVRAM write cut short by poweroff | Not supported. The only schedule write is the activation. `wp5d.log` records nothing about arming at poweroff (5,250 plain `Caught signal 2 / Exit now`). The activation ends 33–38 s after boot, including the `sleep 10` and verify; poweroff follows at about +120–165 s, a margin of 85 s or more. Observed: both alarms populated at +10 s on all 5 distinct activations in the 10-12 captures (17:31, 18:00, 18:30, 18:31, 19:00). The daily activations after 10-13 were not captured. The microcontroller runs from VIN, not the Pi's 5 V, so Pi power-down does not stop a write it is doing itself; only killing the `wp5` command mid-transfer could. That last point is from reasoning, not from the firmware source. |
+| Failure rate | Cannot exclude a rate of a few percent. About 5 activations were observed and about 8 more occurred unobserved. |
+| Shutdown-time arming, over the full `wp5d.log` (2026-04-07 to 09-01) | 5,645 scheduled startups. Zero "Power Newly Connected" events after April. Since May the clean-poweroff-then-silence onsets are 05-11 (activation date unknown, so unexplained), 08-14 (run-out predicted 18:08, last wake 18:30) and 08-20→21. The 06-24 outage differs: the Pi stayed on for 7.26 days with no shutdown. The run-out matches are arithmetic from ISS-FIELD-013, not independent evidence. |
+| Re-arm slot arithmetic | Predicts the 10-21 re-arm at 15:00 UTC (anchor: stamp 10-13 19:01, 30 minutes earlier each day), one slot after the stop. It assumes every re-arm succeeded. Any out-of-slot re-arm re-anchors it, and pass 0 treats an unreadable header as due. Weak evidence either way. |
+| Exposure | Activations ran about 4 times in 5 months before 2026-10-12 and about daily since. A rare flaw in that path now has about 100 times the exposure. |
+
+**Code paths that could leave the startup empty (`pi/sukabumi/usr/local/bin/orc-wp5-rearm`):**
+
+1. Pass 3 requires only `Choose schedule script (in use)`. It does not require an
+   armed startup, yet it writes `last-ok` and logs `OK`. If the firmware has not
+   finished regenerating its 4,096-entry list at +10 s, the wake ends with
+   nothing armed. Confirmed by reading the script. Not reproduced.
+2. `wp5` killed between the firmware's delete and regenerate steps. Pass 2 runs
+   under `timeout 90` and the unit has `TimeoutStartSec=150`. The firmware
+   sequence has not been read.
+3. Not a re-arm path: `orc-sensors` runs `wp5` status reads (up to 6 per tick,
+   every 60 s) until the Pi powers off. Nothing locks them against
+   `wp5d_poweroff`. Unverified.
+
+**Plan for the button press** (no station DB writes). Tom, 2026-11-04: a watcher
+will be armed so he does not need to be present for the press. The standing rule
+from 2026-09-01 (nothing polls or touches the station without a live Claude
+session) still applies: the watcher must be session-scoped, so a Claude session
+stays running until the press. Not yet armed; no press time is set.
+
+
+1. Before the press, check MyTelkomsel data remaining. The unit is enclosed, so
+   LEDs cannot be photographed.
+2. On the first boot, `sudo touch /run/orc-stay-awake` first (the wake ceiling
+   powers the Pi off after 12 minutes). Then collect, read-only:
+   - `journalctl -t orc-wp5-rearm` across boots. The re-arm overwrites
+     `/var/log/orc/wp5-rearm.last` and `/var/lib/orc-wp5-rearm/last-ok` on this
+     boot, so the journal (persistent, about 109 boots) is the source. Its
+     "re-arm due" line records the header **before** the re-arm changes anything.
+     Early-boot journal times are stale (they read 2026-03-26).
+   - `journalctl --list-boots`: the end time of the 2026-10-21 14:30 boot. About
+     14:32:20–30 means a complete wake; about 14:31 means a truncated one.
+   - The tail of `wp5d.log` around 10-21 14:30. Its format at shutdown has not
+     been seen for this event.
+   - `schedule.skd` and `schedule.act` mtime and size.
+   - The wp5 header only (`14`). No menu choices.
+3. Reading the result: a blank "Schedule next startup" means the startup was
+   emptied (hypothesis 1); a past-dated startup means the alarm was missed
+   (hypothesis 2); a Pi already on at site means hypothesis 3. Compare any armed
+   time with the predicted 15:00 slot.
+4. Before ending the session, confirm the header shows a next startup, then watch
+   two on-grid wakes (:00 and :30) arrive.
+
+**Candidate fix, not built.** Nothing confirms that a startup is armed before the
+Pi powers off, and that gap is common to the run-out, the NVRAM variant and the
+verify-step path. Two changes would close it: make pass 3 fail unless "Schedule
+next startup" shows a time, with one retry; and add a unit that runs before
+poweroff, reads the header, and re-activates and waits if the startup is blank.
+Both change the 10-12 fix, so they need Tom's approval.
+
+**Next step (Tom, 2026-11-04):** execute each relevant code path to see which one
+can leave the startup empty. Candidates: the three paths above, plus a forced
+`die` after pass 2, a `timeout` kill of pass 2, and a `wp5` status read
+overlapping an activation. Use a bench Witty Pi if one is available; running them
+on the station is a station change and needs Tom's explicit approval.
+
+**Code-path execution, 2026-11-04.** `orc-wp5-rearm` and `orc-wake-ceiling` were
+run on a workstation as copies, with `wp5`, `logger`, `systemctl` and `sleep`
+replaced by stubs (`pi/tests/rearm_harness/`; findings in
+`pi/WP5_REARM_FAILURE_MODES.md`). No Witty Pi and no station were used. The stub
+`wp5` was written from what the script searches for, not from a captured
+transcript, so these runs show what the script does with a given menu output.
+They do not show what the firmware outputs. 44 scenarios were run.
+
+| Path | Result |
+|---|---|
+| Path 1: after the choice, the header shows "in use" but no armed startup (`paths.sh`, P1) | **Reproduced.** The script logs `OK: activated`, writes `last-ok` and exits 0 with "Schedule next startup" blank. This confirms that pass 3 does not check the startup. It does not show that the firmware ever returns that header at +10 s. The 10-12 captures showed both alarms populated at +10 s on all 5 activations. |
+| `timeout` kill of pass 2 after the choice was sent (P2) | Script aborts with `wp5 choose pass failed or timed out`, exit 1, no `last-ok`, so the next boot re-arms. Whether the firmware is left with an empty list after being killed between its delete and regenerate steps cannot be tested with a stub. The firmware sequence is still unread. |
+| Forced abort after pass 2 (no RTC time in the verify header, or script not marked in use) | Activation has happened, no `last-ok` is written, exit 1. The stub leaves the startup armed, so this path alone does not empty it. The next boot re-arms. |
+| `wp5` status read overlapping an activation | Not tested. The stub has no shared state. |
+| `wp5` output cut at the RTC, startup, "in use" or list lines; empty output; crash with a complete header | The script never chose a wrong schedule script. It aborts or treats the re-arm as due. A crash (exit 139) with a complete header is accepted. |
+
+Other defects found in the same runs. None of them empties the startup by itself;
+they bear on whether re-arming happens at all, or happens more often than needed:
+
+1. A failed write of `last-ok` is logged as `OK` (exit 0), the old stamp stays and
+   every later boot re-arms. That adds exposure to the path-1 gap.
+2. A broken `/etc/orc-wp5-rearm.conf` (unterminated quote, value with a space)
+   disables re-arming with exit 0, and the log says only "SCHEDULE_SCRIPT empty".
+   A disabled re-arm would bring back the 42.6-day run-out. The station's conf has
+   not been checked.
+3. `REARM_INTERVAL_H` that is empty or negative re-arms on every boot. A
+   non-numeric value ends the script with no log line.
+4. No RTC time in the verify header leaves no `last-ok`, so each boot re-arms.
+
+A patch for items 1 to 3 and the regex handling is saved as
+`pi/tests/rearm_harness/proposed_fix.patch`. It is **not applied** and does
+**not** add the startup check from the candidate fix above. The deployed script is
+unchanged.
+
+**Open items:**
+
+1. Who presses the button, and when.
+2. The read-only grab script is not yet written.
+3. The data quota for this stop has not been checked.
+4. ISS-FIELD-014 states the 10-21 stop is open; this entry now carries it.

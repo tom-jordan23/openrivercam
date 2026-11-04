@@ -87,3 +87,7 @@ Left as is, by design:
 - No RTC time in the verify header (E1, T24): the age cannot be measured, so no stamp is written and the next boot re-arms.
 - CRLF in the conf (T20): already aborts loudly.
 - `/proc` and `wp5` hang paths: unchanged.
+
+## 6. Link to the issue
+
+These findings are the "execute each relevant code path" step of ISS-FIELD-015 (see "Code-path execution, 2026-11-04" there). `tests/rearm_harness/paths.sh` adds two scenarios: P1 (header shows "in use" with no armed startup: the script logs OK and writes the stamp) and P2 (`wp5` killed by the 90 s timeout after the choice was sent). The stub `wp5` gained an `F_HANG=choose` mode for P2.
