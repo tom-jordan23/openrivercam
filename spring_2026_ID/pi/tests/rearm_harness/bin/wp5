@@ -1,0 +1,32 @@
+#!/usr/bin/env python3
+# Stub of the vendor wp5 menu. F_CUT_HDR / F_CUT_LIST: drop all output after the
+# first occurrence of that string (a crash mid-write). F_EXIT: exit status.
+import os,sys
+e=os.environ.get
+inp=sys.stdin.read().split('\n')
+def hdr():
+    s=f"< Version {e('F_VERSION','5.0.0')} >\n"
+    if e('F_RTC','2026-11-04 10:00:00')!='none': s+=f"RTC Time: {e('F_RTC','2026-11-04 10:00:00')}\n"
+    s+="Schedule next shutdown [04 10:25:00]\n"
+    s+=f"Schedule next startup {e('F_STARTUP','[05 10:30:00]')}\n"
+    s+="\x1b[32m 6. Choose schedule script"+(" (in use)" if e('F_INUSE','1')=='1' else "")+"\x1b[0m\n"
+    return s
+def cut(s,k):
+    m=e(k)
+    if m and m in s: return s[:s.index(m)+len(m)]
+    return s
+out="";i=0
+while i<len(inp):
+    l=inp[i].strip(); i+=1
+    if not l: continue
+    if l=='14': out+=cut(hdr(),'F_CUT_HDR'); break
+    if l=='6':
+        sc=e('F_SCRIPTS','prod_30.wpi,maint.wpi').split(',')
+        o="Available schedule scripts on disk:\n"+"".join(f" [{n}] {s}\n" for n,s in enumerate(sc,1))
+        out+=o; ch=inp[i].strip() if i<len(inp) else ''; i+=1
+        if ch:
+            open(e('H_STATE'),'a').write(f"CHOSE {ch} {sc[int(ch)-1]}\n")
+            out+=f"You have chosen {sc[int(ch)-1]}\ndone :)\n"
+        else: out=cut(out,'F_CUT_LIST')
+sys.stdout.write(out)
+sys.exit(int(e('F_EXIT','0')))

@@ -1,0 +1,2 @@
+#!/bin/bash
+echo "sleep $*" >> "$H_JOURNAL"

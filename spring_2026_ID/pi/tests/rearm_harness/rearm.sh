@@ -1,0 +1,147 @@
+#!/bin/bash
+# orc-wp5-rearm — re-activate the Witty Pi schedule script once a day (TODO-116)
+#
+# WHY
+#   The Witty Pi 5 firmware expands the active .wpi into a fixed list of on/off
+#   times (schedule.skd) when the script is activated, capped at 4,096 entries
+#   (WPI_MAX_ACTIONS, firmware script.c:19). At two entries per 30-minute cycle
+#   the list runs out ~42.6 days after activation, whatever END says. Nothing
+#   rebuilds it: a button press re-reads the old list, finds no future startup,
+#   and the station runs one cycle and stays off. The last list entry also takes
+#   the 25-minute shutdown backstop with it.
+#
+#   Measured in the full wp5d.log: the runs started 05-13 and 07-03 each ended
+#   42.64 / 42.66 days later. Both were recovered by re-selecting the schedule
+#   on the first boot after a button press — by hand, in the wp5 menu. This
+#   does the same thing at most once a day, so the list never runs out and a
+#   single button press restores the schedule.
+#
+# WHY NOT EVERY BOOT
+#   An activation takes ~33 s, and orc-api waits for it (Before=). Every boot
+#   that added ~33 s to each wake, ~26 min awake a day (measured 2026-10-12).
+#   The list lasts 42.6 days, so once a day is ample. Every boot still reads
+#   the status header (0.1 s) and re-arms at once if no startup is armed or no
+#   script is in use, so a button press after a run-out still recovers.
+#
+# HOW
+#   Drives the vendor wp5 menu (v5.0.0 on this station), the same way deploy.sh
+#   and sensors_logger.py do. Option 6 lists the scripts on the Witty Pi as
+#   "[n] name" and takes a number; choosing one makes the firmware delete
+#   schedule.act/.skd and regenerate them from the .wpi as of now.
+#     pass 1: list, find the number for $SCHEDULE_SCRIPT, choose nothing
+#     pass 2: choose that number
+#     pass 3: read the menu header back and log the armed alarms
+#   Any surprise in the menu (version, option text, file list) aborts without
+#   choosing anything. A wrong number in this menu changes other settings.
+#   Before pass 1, pass 0 reads the header and skips the rest unless the
+#   re-arm is due (see WHY NOT EVERY BOOT).
+#
+# Config: /home/tjordan/code/git/openrivercam/spring_2026_ID/pi/tests/rearm_harness/run/conf (SCHEDULE_SCRIPT; empty disables;
+#         REARM_INTERVAL_H, default 23)
+# Log:    journal (tag orc-wp5-rearm) and /home/tjordan/code/git/openrivercam/spring_2026_ID/pi/tests/rearm_harness/run/last
+# State:  /home/tjordan/code/git/openrivercam/spring_2026_ID/pi/tests/rearm_harness/run/state/stamp (epoch of the last successful re-arm,
+#         by the Witty Pi's RTC)
+#
+# CLOCK
+#   Ages are measured on the Witty Pi's RTC, read from the header's "RTC Time"
+#   line, never on the system clock. At the point this runs in boot the system
+#   clock can still hold a stale saved time: on 2026-10-12 19:00 UTC it read
+#   2026-03-26 17:50, because After=wp5d.service waits for wp5d to start, not
+#   for it to copy the RTC into the system clock. That made every stamp look
+#   like it was in the future, and every boot re-armed. Station clock is UTC
+#   and so is the RTC.
+
+set -u
+
+CONF="/home/tjordan/code/git/openrivercam/spring_2026_ID/pi/tests/rearm_harness/run/conf"
+TAG="orc-wp5-rearm"
+LAST="/home/tjordan/code/git/openrivercam/spring_2026_ID/pi/tests/rearm_harness/run/last"
+STAMP="/home/tjordan/code/git/openrivercam/spring_2026_ID/pi/tests/rearm_harness/run/state/stamp"
+EXPECTED_VERSION="5.0.0"
+
+mkdir -p "$(dirname "$LAST")"
+: > "$LAST"
+log() { logger -t "$TAG" "$*"; echo "$(date -u +%FT%TZ) $*" >> "$LAST"; }
+die() { log "ABORT: $*"; exit 1; }
+
+SCHEDULE_SCRIPT=""
+# 23, not 24: the re-arm lands ~50 s after a boot, so 24 h later the same
+# boot sees 23 h 59 m and the time of day would slip one cycle each day.
+REARM_INTERVAL_H=23
+# shellcheck source=/dev/null
+[ -f "$CONF" ] && . "$CONF"
+[ -n "$SCHEDULE_SCRIPT" ] || { log "SCHEDULE_SCRIPT empty in $CONF — not re-arming"; exit 0; }
+command -v wp5 >/dev/null 2>&1 || die "wp5 not installed"
+
+# wp5 prints ANSI colour and block-buffers into a pipe; it flushes on Exit (14).
+# Returns non-zero only when timeout killed wp5. A pipeline's status is sed's,
+# so without this a hung wp5 surfaced as "not version 5.0.0" on empty output.
+run_wp5() {  # $1 = stdin, $2 = timeout seconds
+    printf '%b' "$1" | timeout "$2" wp5 2>&1 | sed 's/\x1b\[[0-9;]*m//g'
+    [ "${PIPESTATUS[1]}" -ne 124 ]
+}
+
+# ── pass 0: is a re-arm due? ────────────────────────────────────────
+# Due if the last success is missing, older than REARM_INTERVAL_H, or in the
+# future (clock wrong); or if the header shows no armed startup (wp5 prints
+# "Schedule next startup" with no [dd hh:mm:ss] when none is set) or no script
+# in use. Anything unexpected here falls through to the full, guarded path.
+out=$(run_wp5 '14\n' 20) || die "wp5 header read failed or timed out"
+sd=$(grep -oE 'Schedule next shutdown.*' <<<"$out" | head -1)
+su=$(grep -oE 'Schedule next startup.*' <<<"$out" | head -1)
+rtc_epoch() {  # header text on stdin -> epoch of its "RTC Time", or nothing
+    local t
+    t=$(grep -oE 'RTC Time: [0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}' | head -1 | cut -d' ' -f3-)
+    [ -n "$t" ] && date -u -d "$t" +%s 2>/dev/null
+}
+now=$(rtc_epoch <<<"$out")
+[[ "$now" =~ ^[0-9]+$ ]] || now=0   # unreadable RTC: age is negative, so due
+last=$(cat "$STAMP" 2>/dev/null || echo 0)
+[[ "$last" =~ ^[0-9]+$ ]] || last=0
+age=$(( now - last ))
+if [ "$age" -ge 0 ] && [ "$age" -lt $(( REARM_INTERVAL_H * 3600 )) ] \
+   && grep -qE 'Schedule next startup *\[[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}\]' <<<"$out" \
+   && grep -qE 'Choose schedule script \(in use\)' <<<"$out"; then
+    log "OK: not due (last re-arm $(( age / 3600 ))h$(( age % 3600 / 60 ))m ago); ${sd}; ${su}"
+    exit 0
+fi
+if [ "$now" -eq 0 ]; then agestr="unknown (no RTC time in header)"
+elif [ "$last" -eq 0 ]; then agestr="none recorded"
+else agestr="${age}s ago"; fi
+log "re-arm due: last re-arm ${agestr}; ${sd:-no shutdown line}; ${su:-no startup line}"
+
+# ── pass 1: list ────────────────────────────────────────────────────
+out=$(run_wp5 '6\n\n14\n' 30) || die "wp5 list pass failed or timed out"
+
+grep -q "< Version ${EXPECTED_VERSION} >" <<<"$out" \
+    || die "wp5 is not version ${EXPECTED_VERSION}; menu numbering unverified"
+grep -qE '^ *6\. Choose schedule script' <<<"$out" \
+    || die "menu option 6 is not 'Choose schedule script'"
+grep -q "Available schedule scripts on disk:" <<<"$out" \
+    || die "option 6 did not list scripts"
+
+matches=$(grep -oiE "^ *\[[0-9]+\] ${SCHEDULE_SCRIPT//./\\.}\s*$" <<<"$out")
+[ "$(grep -c . <<<"$matches")" -eq 1 ] \
+    || die "expected exactly one '${SCHEDULE_SCRIPT}' in the list, got: $(grep -oE '^ *\[[0-9]+\] .*' <<<"$out" | tr '\n' ' ')"
+n=$(grep -oE '[0-9]+' <<<"$matches" | head -1)
+
+# ── pass 2: choose ──────────────────────────────────────────────────
+out=$(run_wp5 "6\n${n}\n14\n" 90) || die "wp5 choose pass failed or timed out"
+grep -qi "You have chosen ${SCHEDULE_SCRIPT}" <<<"$out" \
+    || die "wp5 did not confirm choosing ${SCHEDULE_SCRIPT} (item ${n})"
+grep -q "done :)" <<<"$out" || die "wp5 did not report done after choosing"
+
+# ── pass 3: verify ──────────────────────────────────────────────────
+# The firmware regenerates the list on a 0.5 s alarm after the copy; give it
+# time to write 4,096 entries to its flash before reading the alarms back.
+sleep 10
+out=$(run_wp5 '14\n' 20) || die "wp5 verify pass failed or timed out"
+sd=$(grep -oE 'Schedule next shutdown.*' <<<"$out" | head -1)
+su=$(grep -oE 'Schedule next startup.*' <<<"$out" | head -1)
+grep -qE 'Choose schedule script \(in use\)' <<<"$out" \
+    || die "script not marked in use after choosing; ${sd:-no shutdown line}; ${su:-no startup line}"
+
+done_at=$(rtc_epoch <<<"$out")
+[[ "$done_at" =~ ^[0-9]+$ ]] || die "activated, but no RTC time in the verify header; stamp not written"
+mkdir -p "$(dirname "$STAMP")" && echo "$done_at" > "$STAMP"
+log "OK: activated ${SCHEDULE_SCRIPT} (item ${n}); ${sd}; ${su}"

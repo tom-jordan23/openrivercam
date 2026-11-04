@@ -1,0 +1,74 @@
+diff --git a/spring_2026_ID/pi/sukabumi/usr/local/bin/orc-wp5-rearm b/spring_2026_ID/pi/sukabumi/usr/local/bin/orc-wp5-rearm
+index 5d88b0c..db4c49a 100755
+--- a/spring_2026_ID/pi/sukabumi/usr/local/bin/orc-wp5-rearm
++++ b/spring_2026_ID/pi/sukabumi/usr/local/bin/orc-wp5-rearm
+@@ -68,17 +68,36 @@ SCHEDULE_SCRIPT=""
+ # 23, not 24: the re-arm lands ~50 s after a boot, so 24 h later the same
+ # boot sees 23 h 59 m and the time of day would slip one cycle each day.
+ REARM_INTERVAL_H=23
+-# shellcheck source=/dev/null
+-[ -f "$CONF" ] && . "$CONF"
++if [ -f "$CONF" ]; then
++    # A syntax error or stray command in the conf (unterminated quote, a value
++    # with a space) used to leave SCHEDULE_SCRIPT empty and so disable re-arming
++    # with exit 0. Any stderr from sourcing it is now fatal and is logged.
++    # shellcheck source=/dev/null
++    . "$CONF" 2>"$LAST.conf-err"
++    [ -s "$LAST.conf-err" ] && die "error in $CONF: $(tr '\n' ' ' < "$LAST.conf-err")"
++    rm -f "$LAST.conf-err"
++else
++    log "$CONF not found — not re-arming"; exit 0
++fi
+ [ -n "$SCHEDULE_SCRIPT" ] || { log "SCHEDULE_SCRIPT empty in $CONF — not re-arming"; exit 0; }
++# Empty, negative or non-numeric would break the age test (or make every boot
++# re-arm); keep the default and say so.
++if ! [[ "$REARM_INTERVAL_H" =~ ^[0-9]+$ ]] || [ "$REARM_INTERVAL_H" -lt 1 ]; then
++    log "WARN: REARM_INTERVAL_H='${REARM_INTERVAL_H}' is not a positive integer; using 23"
++    REARM_INTERVAL_H=23
++fi
+ command -v wp5 >/dev/null 2>&1 || die "wp5 not installed"
+ 
+ # wp5 prints ANSI colour and block-buffers into a pipe; it flushes on Exit (14).
+ # Returns non-zero only when timeout killed wp5. A pipeline's status is sed's,
+ # so without this a hung wp5 surfaced as "not version 5.0.0" on empty output.
++# Any other non-zero exit is logged but not fatal: wp5's normal exit status was
++# never checked, and every caller still verifies the text it needs.
+ run_wp5() {  # $1 = stdin, $2 = timeout seconds
+     printf '%b' "$1" | timeout "$2" wp5 2>&1 | sed 's/\x1b\[[0-9;]*m//g'
+-    [ "${PIPESTATUS[1]}" -ne 124 ]
++    local rc="${PIPESTATUS[1]}"
++    [ "$rc" -eq 0 ] || [ "$rc" -eq 124 ] || log "WARN: wp5 exited with status $rc"
++    [ "$rc" -ne 124 ]
+ }
+ 
+ # ── pass 0: is a re-arm due? ────────────────────────────────────────
+@@ -120,10 +139,13 @@ grep -qE '^ *6\. Choose schedule script' <<<"$out" \
+ grep -q "Available schedule scripts on disk:" <<<"$out" \
+     || die "option 6 did not list scripts"
+ 
+-matches=$(grep -oiE "^ *\[[0-9]+\] ${SCHEDULE_SCRIPT//./\\.}\s*$" <<<"$out")
++# Literal, case-insensitive compare of the whole name: the name goes through awk
++# as data, so regex characters in it (prod+30.wpi) match themselves.
++matches=$(sed -nE 's/^ *\[([0-9]+)\] +(.*[^[:space:]])[[:space:]]*$/\1\t\2/p' <<<"$out" \
++    | awk -F'\t' -v s="$SCHEDULE_SCRIPT" 'tolower($2)==tolower(s){print $1}')
+ [ "$(grep -c . <<<"$matches")" -eq 1 ] \
+     || die "expected exactly one '${SCHEDULE_SCRIPT}' in the list, got: $(grep -oE '^ *\[[0-9]+\] .*' <<<"$out" | tr '\n' ' ')"
+-n=$(grep -oE '[0-9]+' <<<"$matches" | head -1)
++n=$matches
+ 
+ # ── pass 2: choose ──────────────────────────────────────────────────
+ out=$(run_wp5 "6\n${n}\n14\n" 90) || die "wp5 choose pass failed or timed out"
+@@ -143,5 +165,12 @@ grep -qE 'Choose schedule script \(in use\)' <<<"$out" \
+ 
+ done_at=$(rtc_epoch <<<"$out")
+ [[ "$done_at" =~ ^[0-9]+$ ]] || die "activated, but no RTC time in the verify header; stamp not written"
+-mkdir -p "$(dirname "$STAMP")" && echo "$done_at" > "$STAMP"
++# Write to a temp file and rename, and check it: a failed write (full or
++# read-only disk) used to be logged as OK and leave the old stamp, so every boot
++# re-armed.
++if ! { mkdir -p "$(dirname "$STAMP")" && echo "$done_at" > "$STAMP.tmp" && sync "$STAMP.tmp" \
++       && mv -f "$STAMP.tmp" "$STAMP"; } 2>>"$LAST"; then
++    rm -f "$STAMP.tmp" 2>/dev/null
++    die "activated ${SCHEDULE_SCRIPT} (item ${n}) but could not write $STAMP; the next boot will re-arm again"
++fi
+ log "OK: activated ${SCHEDULE_SCRIPT} (item ${n}); ${sd}; ${su}"
