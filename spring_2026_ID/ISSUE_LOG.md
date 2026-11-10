@@ -3097,8 +3097,14 @@ stays running until the press. Not yet armed; no press time is set.
 
 1. Before the press, check MyTelkomsel data remaining. The unit is enclosed, so
    LEDs cannot be photographed.
-2. On the first boot, `sudo touch /run/orc-stay-awake` first (the wake ceiling
-   powers the Pi off after 12 minutes). Then collect, read-only:
+2. On the first boot, collect, read-only, with `liveorc_server/station-health/iss015_button_grab.sh`
+   (run through `todo119_wake_runner.py`). **No `/run/orc-stay-awake` touch (Tom,
+   2026-11-10):** the 12-minute ceiling runs once and skips for good if the file
+   exists, a normal wake ends 2-3 minutes after boot when ORC-OS powers the Pi
+   off (the file does not stop that), and a file left behind with nothing armed
+   could keep the Pi on indefinitely. The grab must fit inside that 2-3 minute
+   wake. It ends with a VERDICT (ARMED, NOT_ARMED, SUSPECT or UNKNOWN) read from
+   the header. It collects:
    - `journalctl -t orc-wp5-rearm` across boots. The re-arm overwrites
      `/var/log/orc/wp5-rearm.last` and `/var/lib/orc-wp5-rearm/last-ok` on this
      boot, so the journal (persistent, about 109 boots) is the source. Its
@@ -3115,7 +3121,11 @@ stays running until the press. Not yet armed; no press time is set.
    (hypothesis 2); a Pi already on at site means hypothesis 3. Compare any armed
    time with the predicted 15:00 slot.
 4. Before ending the session, confirm the header shows a next startup, then watch
-   two on-grid wakes (:00 and :30) arrive.
+   two on-grid wakes (:00 and :30) arrive. Use
+   `liveorc_server/station-health/iss015_two_wakes.py`, started only after the grab
+   reports DONE (armed during the boot it could count the press wake). It is passive
+   (`tailscale status` only, no ssh) and must run session-scoped. Wakes may be hours
+   apart: the solar schedule skips the night.
 
 **Candidate fix, not built.** Nothing confirms that a startup is armed before the
 Pi powers off, and that gap is common to the run-out, the NVRAM variant and the
