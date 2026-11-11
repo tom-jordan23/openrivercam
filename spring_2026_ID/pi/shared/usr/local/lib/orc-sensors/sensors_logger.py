@@ -749,6 +749,34 @@ DRIVERS = {
 }
 
 
+# ─── Clock state (orc-clock-floor, ISS-FIELD-015) ────────────────────
+
+CLOCK_STATE_FILE = os.environ.get("ORC_CLOCK_FLOOR_STATE", "/run/orc-clock-floor/state")
+
+
+def clock_columns():
+    """Values describing how this wake's clock was set, for any sensor whose
+    CSV_HEADER lists them (columns not in a header are simply not written, so
+    this is inert until a conf opts in).
+
+      clock_state  0 = clock was not behind the floor; nothing done
+                   1 = clock was behind the floor and orc-clock-floor set it
+                   2 = no state file (orc-clock-floor did not run)
+      clock_adj_s  seconds the clock was moved forward (0 unless state 1)
+    """
+    try:
+        kv = {}
+        with open(CLOCK_STATE_FILE) as f:
+            for line in f:
+                k, _, v = line.strip().partition("=")
+                kv[k] = v
+        state = 1 if kv.get("restored") == "1" else 0
+        adj = int(kv.get("adj_s", "0") or 0)
+        return {"clock_state": state, "clock_adj_s": adj}
+    except (OSError, ValueError):
+        return {"clock_state": 2, "clock_adj_s": ""}
+
+
 # ─── CSV write ───────────────────────────────────────────────────────
 
 def append_csv(log_dir, label, header, values):
@@ -813,6 +841,10 @@ def process_sensor(conf_path):
     os.makedirs(log_dir, exist_ok=True)
 
     values = DRIVERS[sensor_type](conf)
+    wanted = {c.strip() for c in header.split(",")}
+    for k, v in clock_columns().items():
+        if k in wanted:
+            values.setdefault(k, v)
     csv_path = append_csv(log_dir, label, header, values)
 
     # Format values for log line

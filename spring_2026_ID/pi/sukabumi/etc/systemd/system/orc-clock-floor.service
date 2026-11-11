@@ -1,0 +1,21 @@
+[Unit]
+Description=Keep the system clock from starting a wake behind the last known-good time (ISS-FIELD-015)
+# wp5d steps the clock to the Witty Pi RTC a few seconds after it starts; restore
+# waits for that step (bounded) so it cannot be overwritten.
+After=wp5d.service
+# chrony stops AFTER this unit at shutdown, so `save` can ask it whether it is synced.
+After=chrony.service
+# Fix the clock before anything stamps data with it.
+Before=orc-sensors.timer orc-api.service
+# Never block boot or shutdown: a failure here only means the clock is not floored.
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/orc-clock-floor restore
+ExecStop=/usr/local/bin/orc-clock-floor save
+TimeoutStartSec=45
+TimeoutStopSec=20
+
+[Install]
+WantedBy=multi-user.target

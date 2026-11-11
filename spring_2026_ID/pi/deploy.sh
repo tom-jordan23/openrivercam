@@ -1031,6 +1031,14 @@ run_services() {
     if [ -f "$SITE_DIR/etc/systemd/system/orc-wake-ceiling.timer" ]; then
         _ensure_service_enabled orc-wake-ceiling.timer
     fi
+    # Keep the clock from starting a wake behind the last known-good time
+    # (ISS-FIELD-015). RemainAfterExit: restore at boot, save at shutdown. Enabled,
+    # never started here: starting it mid-session would run `restore` on a Pi whose
+    # clock chrony has already corrected, which is harmless, but `save` is what
+    # should run at shutdown, not now.
+    if [ -f "$SITE_DIR/etc/systemd/system/orc-clock-floor.service" ]; then
+        _ensure_service_enabled orc-clock-floor.service
+    fi
 
     # Disable
     # orc-gpio-relays uses active-low logic incompatible with Electronics-Salon relay module

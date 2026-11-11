@@ -1,0 +1,182 @@
+#!/bin/bash
+# orc-clock-floor — never let the system clock start a wake behind the last time
+# this station knew was true (ISS-FIELD-015)
+#
+# WHY
+#   Every boot, wp5d copies the Witty Pi RTC into the system clock (~6 s in), and
+#   only chrony over the cellular link corrects it (~25 s in). On 2026-11-11 the
+#   RTC read 2026-01-11, 304 days behind, and nothing wrote the right date back.
+#   With no data (no NTP) the whole wake would run on the January date: sensor
+#   rows named and stamped 2026-01-11, ORC-OS video timestamps, journals.
+#   orc-sensors-upload only sends files whose mtime is newer than its watermark,
+#   so January-clock files would also be stranded locally, never uploaded.
+#
+# WHAT
+#   save     at shutdown (ExecStop): remember the current time as the floor.
+#   restore  at boot, after wp5d has stepped the clock: if the system time is
+#            behind the floor (or behind the upload watermark), set it to that.
+#            chrony still corrects it as soon as it can reach a server.
+#   status   print the floor and what restore did.
+#
+# SAFETY — the dangerous direction is a floor that is too HIGH (the clock would
+# be pushed into the future on every boot), so:
+#   * a floor is only trusted inside [BUILD_FLOOR, CEIL] (BUILD_FLOOR = the date
+#     this was written; nothing earlier is a plausible station time).
+#   * save lowers the floor only when chrony is really synced to an upstream
+#     server. "local stratum 10" (camera-net.conf) makes chrony report
+#     "Leap status: Normal" with NO upstream, so that reference is excluded.
+#   * unsynced, save may only advance the floor, by at most 2 days. That keeps
+#     consecutive no-data wakes strictly increasing: the server drops rows whose
+#     (ts, station, sensor, metric) repeat, so repeating a timestamp loses data.
+#   * restore never lowers the clock and never fails the boot (always exits 0).
+#   * this script NEVER writes the Witty Pi RTC and never touches the schedule.
+#
+# State:   /var/lib/orc-clock-floor/floor   epoch seconds (atomic write)
+# Output:  /run/orc-clock-floor/state       key=value for sensors_logger.py
+# Log:     journal, tag orc-clock-floor
+
+set -u
+TAG="orc-clock-floor"
+FLOOR_DIR="${ORC_CF_DIR:-/var/lib/orc-clock-floor}"
+FLOOR_FILE="$FLOOR_DIR/floor"
+RUN_DIR="${ORC_CF_RUN:-/run/orc-clock-floor}"
+STATE_OUT="$RUN_DIR/state"
+UPLOAD_STATE="${ORC_CF_UPLOAD_STATE:-/var/lib/orc-sensors/upload.state}"
+BUILD_FLOOR="${ORC_CF_BUILD_FLOOR:-1793491200}"     # 2026-11-01T00:00:00Z
+CEIL="${ORC_CF_CEIL:-2082758400}"                   # 2036-01-01T00:00:00Z
+MAX_WAIT="${ORC_CF_MAX_WAIT:-20}"                   # s to wait for wp5d's clock step
+STEP_THRESHOLD="${ORC_CF_STEP_THRESHOLD:-3600}"     # a "step" is a jump bigger than this
+MAX_UNSYNCED_ADVANCE=$((2 * 86400))
+UPTIME_FILE="${ORC_CF_UPTIME_FILE:-/proc/uptime}"
+NOW_CMD="${ORC_CF_NOW_CMD:-date +%s}"
+SET_CMD="${ORC_CF_SET_CMD:-date -u -s}"             # called as: $SET_CMD "@<epoch>"
+CHRONYC="${ORC_CF_CHRONYC:-chronyc}"
+
+log() { logger -t "$TAG" -- "$*" 2>/dev/null || true; echo "$TAG: $*" >&2; }
+now() { $NOW_CMD; }
+uptime_s() { cut -d' ' -f1 "$UPTIME_FILE" 2>/dev/null | cut -d. -f1; }
+is_int() { [[ "${1:-}" =~ ^[0-9]+$ ]]; }
+in_range() { is_int "${1:-}" && [ "$1" -ge "$BUILD_FLOOR" ] && [ "$1" -le "$CEIL" ]; }
+
+# True only when chrony is synchronised to a real upstream source.
+synced() {
+    local t
+    t=$(timeout 5 "$CHRONYC" tracking 2>/dev/null) || return 1
+    grep -qE '^Leap status *: *Normal' <<<"$t" || return 1
+    # 00000000 = no reference; 7F7F0101 = chrony's own "local" reference
+    grep -qE '^Reference ID *: *(00000000|7F7F0101)' <<<"$t" && return 1
+    local st; st=$(awk -F: '/^Stratum/ {gsub(/ /,"",$2); print $2}' <<<"$t")
+    is_int "$st" && [ "$st" -ge 1 ] && [ "$st" -le 9 ] || return 1
+    return 0
+}
+
+read_floor() {  # prints a valid floor or 0
+    local f
+    f=$(cat "$FLOOR_FILE" 2>/dev/null | tr -d '[:space:]')
+    if in_range "$f"; then echo "$f"
+    else
+        [ -e "$FLOOR_FILE" ] && log "ignoring invalid floor '${f:0:20}' (outside $BUILD_FLOOR..$CEIL)"
+        echo 0
+    fi
+}
+
+write_state() {  # restored adj_s floor sys_before waited stepped
+    mkdir -p "$RUN_DIR" 2>/dev/null || return 0
+    local tmp="$STATE_OUT.$$"
+    {
+        echo "restored=$1"; echo "adj_s=$2"; echo "floor=$3"
+        echo "sys_before=$4"; echo "waited_s=$5"; echo "stepped=$6"
+    } > "$tmp" 2>/dev/null && mv -f "$tmp" "$STATE_OUT" 2>/dev/null && chmod 0644 "$STATE_OUT" 2>/dev/null
+    return 0
+}
+
+cmd_restore() {
+    # wp5d steps the clock from the image time (2026-03-26) to the RTC date a few
+    # seconds after it starts. If we acted before that, it would overwrite us.
+    local u0 t0 waited=0 stepped=0 u t exp
+    u0=$(uptime_s); t0=$(now)
+    is_int "$u0" && is_int "$t0" || { log "cannot read time/uptime; doing nothing"; write_state 0 0 0 0 0 0; return 0; }
+    while [ "$waited" -lt "$MAX_WAIT" ]; do
+        u=$(uptime_s); t=$(now)
+        if is_int "$u" && is_int "$t"; then
+            exp=$(( t0 + u - u0 ))
+            if [ $(( t - exp )) -gt "$STEP_THRESHOLD" ] || [ $(( exp - t )) -gt "$STEP_THRESHOLD" ]; then stepped=1; break; fi
+        fi
+        sleep 1; waited=$(( waited + 1 ))
+    done
+    [ "$stepped" = 1 ] || log "no clock step seen from wp5d in ${waited}s; checking the floor anyway"
+
+    local floor wm eff sys
+    floor=$(read_floor)
+    wm=0
+    if [ -e "$UPLOAD_STATE" ]; then
+        wm=$(stat -c %Y "$UPLOAD_STATE" 2>/dev/null || echo 0)
+        in_range "$wm" && wm=$(( wm + 1 )) || wm=0
+    fi
+    eff=$floor; [ "$wm" -gt "$eff" ] && eff=$wm
+    sys=$(now)
+    if ! is_int "$sys"; then log "cannot read the clock; doing nothing"; write_state 0 0 "$eff" 0 "$waited" "$stepped"; return 0; fi
+
+    if [ "$eff" -eq 0 ]; then
+        log "no floor yet (first run); clock left at $sys"
+        write_state 0 0 0 "$sys" "$waited" "$stepped"; return 0
+    fi
+    if [ "$sys" -ge "$eff" ]; then
+        log "clock $sys is not behind floor $eff; nothing to do"
+        write_state 0 0 "$eff" "$sys" "$waited" "$stepped"; return 0
+    fi
+    # Behind. Never act on an impossible gap (> 5 years) — that means the floor, not the clock, is wrong.
+    if [ $(( eff - sys )) -gt $(( 5 * 365 * 86400 )) ]; then
+        log "floor $eff is >5 years ahead of clock $sys; refusing to set"
+        write_state 0 0 "$eff" "$sys" "$waited" "$stepped"; return 0
+    fi
+    if $SET_CMD "@$eff" >/dev/null 2>&1; then
+        log "clock was $sys, behind floor $eff by $(( eff - sys )) s; set to $eff (chrony will correct when it can)"
+        write_state 1 $(( eff - sys )) "$eff" "$sys" "$waited" "$stepped"
+    else
+        log "FAILED to set clock to $eff (was $sys)"
+        write_state 0 0 "$eff" "$sys" "$waited" "$stepped"
+    fi
+    return 0
+}
+
+cmd_save() {
+    local sys floor
+    sys=$(now)
+    in_range "$sys" || { log "not saving: clock $sys outside $BUILD_FLOOR..$CEIL"; return 0; }
+    floor=$(read_floor)
+    if synced; then
+        :   # trusted time: may raise or lower the floor
+    else
+        if [ "$floor" -gt 0 ] && [ "$sys" -ge "$floor" ] && [ $(( sys - floor )) -le "$MAX_UNSYNCED_ADVANCE" ]; then
+            :   # unsynced: advance only, by a bounded amount
+        else
+            log "not saving: chrony unsynced and $sys is not within +${MAX_UNSYNCED_ADVANCE}s above floor $floor"
+            return 0
+        fi
+    fi
+    mkdir -p "$FLOOR_DIR" 2>/dev/null || { log "cannot create $FLOOR_DIR"; return 0; }
+    local tmp="$FLOOR_FILE.$$"
+    if echo "$sys" > "$tmp" && sync "$tmp" 2>/dev/null; mv -f "$tmp" "$FLOOR_FILE"; then
+        log "saved floor $sys (was $floor)"
+    else
+        log "FAILED to save floor"; rm -f "$tmp" 2>/dev/null
+    fi
+    return 0
+}
+
+cmd_status() {
+    echo "floor file : $(cat "$FLOOR_FILE" 2>&1)"
+    echo "valid floor: $(read_floor)"
+    echo "clock      : $(now)"
+    echo "synced     : $(synced && echo yes || echo no)"
+    echo "last restore:"; cat "$STATE_OUT" 2>&1 | sed 's/^/  /'
+}
+
+case "${1:-}" in
+    restore) cmd_restore ;;
+    save)    cmd_save ;;
+    status)  cmd_status ;;
+    *) echo "usage: $0 restore|save|status" >&2; exit 2 ;;
+esac
+exit 0

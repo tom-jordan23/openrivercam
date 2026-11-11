@@ -3017,7 +3017,7 @@ quota has not been checked for this stop. The cause of the 10-21 stop is open.
 | **Site** | Sukabumi |
 | **Risk** | Station availability; recurrence of the Witty Pi schedule failure after the ISS-FIELD-013 fix |
 | **Impact** | Medium (pilot station) |
-| **Status** | OPEN — button press and read-only log collection planned; nobody assigned yet |
+| **Status** | OPEN — station cycling again since the 2026-11-11 button press; cause of the 10-21 miss unknown; Witty Pi RTC date is 304 days behind (see Update 2026-11-11); clock-floor change built and tested, not deployed |
 
 **Observations (read-only; server SQL via Grafana, local `tailscale status`, repo files):**
 
@@ -3180,3 +3180,91 @@ unchanged.
 2. The read-only grab script is not yet written.
 3. The data quota for this stop has not been checked.
 4. ISS-FIELD-014 states the 10-21 stop is open; this entry now carries it.
+
+#### Update 2026-11-11: button press, grab results, clock findings
+
+Everything here was read from the station or the server. Items marked *inferred*
+were not observed.
+
+**Press and grab.** The press was at 07:51:26 UTC (wp5d.log: "Startup reason:
+Button Click"). `iss015_button_grab.sh` ran at 07:51:55–07:52:12 through
+`todo119_wake_runner.py`. It made no station changes. The `/run/orc-stay-awake`
+touch was dropped on 2026-11-10 (Tom): `orc-wake-ceiling` runs once, 12 minutes
+after boot, and does nothing if the file exists at that moment, and ORC-OS powers
+the Pi off 2–3 minutes after boot whether or not the file exists.
+Capture: `data/station-forensics/orc-sukabumi-iss015-button-20261111T075155Z.txt`.
+
+| Finding | Evidence |
+|---|---|
+| The 10-21 14:30 wake was complete and a startup was armed | The re-arm line written at the start of that boot reads `OK: not due (last re-arm 22h59m ago); Schedule next shutdown [21 14:55:00]; Schedule next startup [21 15:00:00]`. The boot ran 14:30:15–14:32:22. No activation ran in that wake, so the schedule-write race and NVRAM-write variants of hypothesis 1 do not apply to it. |
+| The Witty Pi RTC date is wrong | Header: `RTC Time: 2026-01-11 07:52:11`, `SYS Time: 2026-11-11 07:52:12`. Same day of month and time of day; the month reads 01 instead of 11 (304 days). wp5d.log shows the RTC correct on 10-21 (14:30:15). |
+| Pre-change header at the button boot | Next shutdown `[20 15:55:00]`, next startup `[20 16:00:00]`, "last re-arm -24392363s ago". `[20 16:00]` is the first entry of the old list, which is what the header shows if the RTC date is earlier than the list. |
+| The re-arm activated on the wrong calendar | `OK: activated prod_30.wpi (item 1)`; next startup `[11 08:00:00]`. Verdict: ARMED. |
+| Other | V-IN 12.97 V at 1.2 A (recovery threshold 13.0 V). Disk 89% used. `wp5d.log` contains NUL bytes: `grep` reports "binary file matches"; use `grep -a`. `schedule.skd` was not found under `/home/pi`, `/opt` or `/usr/local`. |
+
+**The station cycles.** `iss015_two_wakes.py` (passive, `tailscale status` only)
+saw wakes at 08:00:43 and 08:30:40 UTC, 43 s and 40 s after their slots, and ten
+wakes in total through 11:30 at +40 to +46 s. The server shows rows for each wake
+in the normal 13/21/16 pattern, all dated 2026-11-11. Two entries the watcher
+first flagged off-grid (08:03:08 and 10:03:36) were the node dropping off
+Tailscale for about 15 s and returning inside the same wake. For 10:00 the boot
+list shows one boot, 10:00:15–10:03:43 (3 min 28 s against about 2 min usual). For
+08:03 the boot list did not reach back far enough. The watcher counted these as
+wakes; it now treats a return within 300 s as the same wake. Replaying the
+recorded events through the fixed watcher gives CYCLE OK at 08:30. The 10:00 wake
+is missing its first server batch and has an extra batch at 10:03; unexplained.
+
+**Clock findings** (`iss015_clock_grab.sh`, 12:00 UTC wake; capture
+`orc-sukabumi-iss015-clock-20261111T120044Z.txt`):
+
+1. Early boot reads the image time, 2026-03-26 17:50.
+2. About 6 s in, wp5d copies the Witty Pi RTC into the system clock (Jan 11);
+   chrony logs "Backward time jump".
+3. About 25 s in, chrony reaches an Indonesian ISP NTP server over the cellular
+   link and steps the clock by +26,265,600.76 s (exactly 304 days). Config:
+   `pool 2.debian.pool.ntp.org iburst`, `makestep 1 3`, `rtcsync`.
+4. `rtcsync` updates only the Pi's own RTC (`rpi-rtc`, which reads correctly).
+   Nothing writes the Witty Pi RTC. It still read 2026-01-11 after the step, and
+   wp5d.log shows the same Jan 11 copy at every wake since the press.
+
+*Inferred, not tested:* with no NTP source the system clock would stay on the
+RTC's Jan 11 date. The sensors take timestamps from `datetime.now()` at read time
+with no check, and name the daily CSV from the same clock. In the 12:00 wake the
+first row was written 4 s after the step. `orc-sensors-upload` sends only files
+whose mtime is newer than a watermark file, so a file written under the January
+clock would carry an older mtime and would not be uploaded. The server keeps
+`(ts, station, sensor, metric)` unique with `ON CONFLICT DO NOTHING`, so repeated
+timestamps are dropped silently. The server holds 126,308 Sukabumi rows, earliest
+2026-04-16, none mis-dated; no January-clock row has been stored.
+
+**Not known:** when or why the RTC date changed; whether it caused the missed
+15:00 startup on 10-21.
+
+**Change built, not deployed.** `pi/sukabumi/usr/local/bin/orc-clock-floor` and
+`orc-clock-floor.service` save the current time as a floor at shutdown and, at
+boot after wp5d's clock step, set the clock forward to the floor (or to the upload
+watermark's mtime, if later). The floor is lowered only when chrony is synced to a
+real upstream (the `local stratum 10` reference is excluded) and otherwise may
+only advance, by at most 2 days. The script never writes the Witty Pi RTC, never
+touches the schedule, and never fails the boot. `sensors_logger.py` can write
+`clock_state` and `clock_adj_s` columns; they are inert until a sensor's
+`CSV_HEADER` lists them. Tests: `pi/tests/clock_floor/test_clock_floor.py`, 38
+checks, run against a fake clock and the real `orc-sensors-upload`; each guard was
+also checked by running the tests against 12 deliberately broken copies of the
+script. Not verified on hardware: `date -u -s @epoch`, and that `After=wp5d.service`
+waits for the clock step (the script waits for it itself).
+
+**Options still open.** (A) the floor above, which is built. (B) Write the system
+time to the Witty Pi RTC after chrony syncs, then re-arm in the same wake. This
+must not be done alone: the active list covers Jan 11 to about Feb 23 on the RTC
+calendar, so correcting the RTC leaves no future startup. (C) Leave it and watch.
+
+**Open items:**
+
+1. Deploy the floor (see the deploy checks below once the station checkout is read).
+2. Decide on B, and whether a bench Witty Pi is available to test menu item 1.
+3. Find why the RTC date changed.
+4. The 10:00 server batch anomaly.
+5. The data quota for the 10-21 stop was not checked; the station is now on the
+   cellular link normally, so this is no longer blocking.
+

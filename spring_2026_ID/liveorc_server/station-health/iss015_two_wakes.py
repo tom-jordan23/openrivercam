@@ -43,6 +43,8 @@ HERE = Path(__file__).resolve().parent
 SLOT_S = 1800
 GRID_TOL_S = 150      # start of a wake, seconds after a :00/:30 slot
 GAP_TOL_S = 150       # tolerance on start-to-start spacing being a multiple of SLOT_S
+FLAP_S = 300          # Online=False then True again within this long is the SAME wake (seen 11-11:
+                      # 08:02:53 off, 08:03:08 on, 08:04:38 off; the boot list showed one boot)
 
 
 def iso(t):
@@ -64,6 +66,7 @@ class Tracker:
         self.cur_counted = False
         self.wakes = []       # counted wakes: dict(start, end, offset, ongrid)
         self.events = []      # human lines produced by the last update()
+        self.last_off = None  # observation time of the last Online=False after a counted wake
 
     def update(self, now, online, last_seen):
         self.events = []
@@ -78,7 +81,14 @@ class Tracker:
             else:
                 self.events.append(f"baseline: Online=False at {iso(now)} (LastSeen {iso(last_seen) if last_seen else '?'})")
             return
-        if online and not self.online:
+        if online and not self.online and self.wakes and self.last_off is not None \
+                and now - self.last_off <= FLAP_S and self.wakes[-1]["end"] is not None:
+            # back online shortly after going offline: same wake, not a new one
+            self.wakes[-1]["end"] = None
+            self.cur_start, self.cur_counted = self.cur_start or self.wakes[-1]["start"], True
+            self.events.append(f"flap: back online {now - self.last_off:.0f} s after going offline - same wake {len(self.wakes)}")
+            self.last_off = None
+        elif online and not self.online:
             self.cur_start, self.cur_counted = now, True
             off = slot_offset(now)
             ongrid = off <= GRID_TOL_S
@@ -87,10 +97,12 @@ class Tracker:
             near = off if off <= SLOT_S / 2 else off - SLOT_S
             self.events.append(f"WAKE {len(self.wakes)} start {iso(now)} ({near:+.0f} s from slot) {tag}")
         elif not online and self.online:
-            end = last_seen or now
+            start = self.cur_start if self.cur_start is not None else now
+            end = max(last_seen or now, start)     # LastSeen can predate the start; never report a negative length
             if self.cur_counted and self.wakes:
                 self.wakes[-1]["end"] = end
-            self.events.append(f"wake ended ~{iso(end)} (observed {iso(now)}), lasted ~{(end - (self.cur_start or end)):.0f} s")
+                self.last_off = now
+            self.events.append(f"wake ended ~{iso(end)} (observed {iso(now)}), lasted ~{end - start:.0f} s")
             self.cur_start = None
         self.online = online
 
@@ -161,6 +173,16 @@ def selftest():
     assert len(run(s).wakes) == 0
     # 7. baseline already online is never counted
     tr = run([(t0 + 10, True, None), (t0 + 100, False, t0 + 90)]); assert tr.wakes == []
+    # 8. 11-11 pattern: on, off, back on 15 s later, off again = ONE wake; next slot = second wake
+    s = [(t0 - 60, False, None), (t0 + 43, True, None), (t0 + 173, False, t0 + 20),
+         (t0 + 188, True, None), (t0 + 278, False, t0 + 270),
+         (t0 + 1800 + 40, True, None), (t0 + 1800 + 170, False, t0 + 1800 + 160)]
+    tr = run(s); assert len(tr.wakes) == 2 and tr.verdict()[0] == "OK", (len(tr.wakes), tr.verdict())
+    assert all(w["end"] is None or w["end"] >= w["start"] for w in tr.wakes)
+    # 9. a gap longer than FLAP_S is a new wake and, if off-grid, is still flagged
+    s = [(t0 - 60, False, None), (t0 + 43, True, None), (t0 + 173, False, t0 + 160),
+         (t0 + 173 + 400, True, None)]
+    assert run(s).verdict()[0] == "OFFGRID"
     print("selftest ok")
 
 
