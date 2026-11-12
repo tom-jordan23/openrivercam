@@ -51,7 +51,18 @@ if $S true 2>/dev/null; then
   echo "  boot-time re-arm state: ${st:-unknown}; its result this boot:"
   rearm_new_lines | sed 's/^/    /'
   up=$(cut -d. -f1 ${ISS015_UPTIME_FILE:-/proc/uptime})
-  if [ "$up" -gt "$MAX_UP" ]; then
+  # Is the Pi already cycling on its own? Count OTHER boots whose last journal entry is within the last
+  # 110 min. Three or more means it has been waking on the grid: leave the schedule alone (an
+  # activation mid-wake on a healthy station is an unneeded write). If the clock is stale or the
+  # journal unreadable the count is 0 and the recovery proceeds (the safe direction for the wake).
+  NOWE=$(date +%s)
+  RECENT=$(jc --list-boots --no-pager | awk '$1!="0"' | awk '{print $(NF-2)" "$(NF-1)}' | while read -r d t; do
+             e=$(date -u -d "$d $t" +%s 2>/dev/null) && [ $((NOWE - e)) -ge 0 ] && [ $((NOWE - e)) -le 6600 ] && echo x
+           done | wc -l)
+  echo "  boots (other than this one) that ended in the last 110 min: $RECENT"
+  if [ "$RECENT" -ge 3 ]; then
+    RESULT="SKIPPED (not needed): the Pi ended $RECENT boots in the last 110 min, so it is cycling; schedule left alone"
+  elif [ "$up" -gt "$MAX_UP" ]; then
     RESULT="SKIPPED: uptime ${up}s > ${MAX_UP}s (too close to ORC-OS shutdown to risk an activation)"
   else
     # 2. nothing may read wp5 while it activates
@@ -82,7 +93,7 @@ else
 fi
 echo "  RECOVERY RESULT: $RESULT"
 echo "  RTC-copy lines of this boot (wp5d.log): $(tail -n 8 /var/log/wp5d.log 2>/dev/null | tr -d '\000' | grep -aE '^[A-Z][a-z]{2} [A-Z][a-z]{2} |Startup reason' | tail -n 2 | tr '\n' ' ')"
-case "$RESULT" in OK*) ;; *) echo "  !! WAKE NOT RE-ESTABLISHED BY THIS SCRIPT - a second press, or an attended session, is needed";; esac
+case "$RESULT" in OK*|"SKIPPED (not needed)"*) ;; *) echo "  !! WAKE NOT RE-ESTABLISHED BY THIS SCRIPT - a second press, or an attended session, is needed";; esac
 
 sec "1. boot list (end time of each boot = its last journal entry)"
 BL=$(jc --list-boots --no-pager)

@@ -29,14 +29,24 @@ echo "=== ISS015 POSTMORTEM GRAB $(date -u +%Y-%m-%dT%H:%M:%SZ) (clock may be st
 echo "proc uptime s: $(cut -d' ' -f1 /proc/uptime)"
 
 sec "1. boot list (end time of each boot = its last journal entry)"
-jc --list-boots --no-pager | tail -n 8
+BL=$(jc --list-boots --no-pager)
+printf '%s\n' "$BL" | tail -n 14
+# Boots are found by END time, not by -1/-2: after the 2026-11-11 stop the station booted again
+# (17:00) so "previous boot" is no longer the 12:00 boot. Falls back to -1/-2/-10 if not found.
+findboot() { printf '%s\n' "$BL" | awk -v pat="$1" '$0 ~ pat { id=$1 } END { print id }'; }
+B_STOP=$(findboot "2026-11-11 12:0[0-9]:[0-9][0-9] UTC$");  [ -n "$B_STOP" ] || B_STOP=-1
+B_NORM=$(findboot "2026-11-11 11:3[0-9]:[0-9][0-9] UTC$");  [ -n "$B_NORM" ] || B_NORM=-2
+B_PRESS=$(findboot "2026-11-11 07:5[0-9]:[0-9][0-9] UTC$"); [ -n "$B_PRESS" ] || B_PRESS=-10
+echo "  boot index used: stopped(12:0x)=$B_STOP  normal(11:3x)=$B_NORM  press(07:5x)=$B_PRESS"
+echo "  boots that ended 12:03-17:00 (any boot here means the Pi powered on during the gap):"
+printf '%s\n' "$BL" | awk '$0 ~ /2026-11-11 (12:[0-5][0-9]|1[3-6]:[0-5][0-9]|17:00):[0-9][0-9] UTC$/ && $0 !~ /12:0[0-2]:[0-9][0-9] UTC$/' | head -n 20
 
-sec "2. LAST 80 LINES OF THE PREVIOUS BOOT (the 12:00 boot)"
-jc -b -1 -n 80 -o short-iso --no-pager
+sec "2. LAST 80 LINES OF THE STOPPED BOOT (the 12:00 boot, chosen by end time)"
+jc -b "$B_STOP" -n 80 -o short-iso --no-pager
 
 # Read the stopped boot's journal ONCE into memory (nothing written to disk) and search the copy.
-PB=$(timeout 25 journalctl -b -1 -o short-iso --no-pager 2>&1) || PB=$(timeout 25 $S journalctl -b -1 -o short-iso --no-pager 2>&1)
-PBU=$(timeout 25 journalctl -b -1 -o short-unix --no-pager 2>&1) || PBU=$(timeout 25 $S journalctl -b -1 -o short-unix --no-pager 2>&1)
+PB=$(timeout 25 journalctl -b "$B_STOP" -o short-iso --no-pager 2>&1) || PB=$(timeout 25 $S journalctl -b "$B_STOP" -o short-iso --no-pager 2>&1)
+PBU=$(timeout 25 journalctl -b "$B_STOP" -o short-unix --no-pager 2>&1) || PBU=$(timeout 25 $S journalctl -b "$B_STOP" -o short-unix --no-pager 2>&1)
 echo "  (read stopped boot: $(printf '%s\n' "$PB" | wc -l) lines)"
 
 sec "3. previous boot: power / shutdown / voltage / kill keywords (last 25)"
@@ -48,7 +58,7 @@ printf '%s\n' "$PB" | grep -E "sshd.*(Accepted|session opened|session closed|Dis
 echo "  --- sudo sessions in the stopped boot"
 printf '%s\n' "$PB" | grep -E "sudo.*(session opened|session closed|COMMAND)" | tail -n 16 | cut -c1-170
 echo "  --- kernel messages, last 50 of the stopped boot (i2c / usb / voltage / mmc errors would show here)"
-jc -b -1 -k -n 50 -o short-iso --no-pager | cut -c1-170
+jc -b "$B_STOP" -k -n 50 -o short-iso --no-pager | cut -c1-170
 
 sec "3c. WAS IT NTP/CLOCK? clock jumps in the stopped boot, and chrony's own log (journal only, no chronyc)"
 echo "  --- chrony journal, stopped boot"
@@ -59,9 +69,9 @@ echo "  --- orc-sensors and upload in the stopped boot (wp5 sampling errors, mis
 printf '%s\n' "$PB" | grep -E "orc-sensors|orc-sensors-upload|orc-capture" | tail -n 25 | cut -c1-170
 
 sec "3d. COMPARISON: how a normal wake ends (11:30, no grab) and how the button-press wake ended (07:51, grabbed, survived)"
-echo "  --- boot list positions: -2 = 11:30 normal; -10 = 07:51 press wake (check against section 1)"
-echo "  --- last 25 lines of boot -2 (11:30)"; jc -b -2 -n 25 -o short-iso --no-pager | cut -c1-170
-echo "  --- last 25 lines of boot -10 (07:51)"; jc -b -10 -n 25 -o short-iso --no-pager | cut -c1-170
+echo "  --- boots chosen by end time (see section 1): normal=$B_NORM press=$B_PRESS"
+echo "  --- last 25 lines of the 11:3x boot"; jc -b "$B_NORM" -n 25 -o short-iso --no-pager | cut -c1-170
+echo "  --- last 25 lines of the 07:5x boot"; jc -b "$B_PRESS" -n 25 -o short-iso --no-pager | cut -c1-170
 
 sec "4. orc-wp5-rearm journal (last 14 lines: pre-change headers of the 12:00 boot and this boot)"
 jc -t orc-wp5-rearm --no-pager -o short-iso | tail -n 14
