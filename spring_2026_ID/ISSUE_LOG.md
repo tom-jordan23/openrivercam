@@ -3268,3 +3268,100 @@ calendar, so correcting the RTC leaves no future startup. (C) Leave it and watch
 5. The data quota for the 10-21 stop was not checked; the station is now on the
    cellular link normally, so this is no longer blocking.
 
+#### Update 2026-11-12: gap and short wake on 11-11, press not visible, state at session end
+
+Measured unless marked *inferred*. Times UTC.
+
+- **11-11 12:00 wake** was complete for sensors (rows at 12:00, 12:01, 12:02). Its 12:01 and
+  12:02 batches reached the server late, in a whole-file re-send of the daily CSV. A "latest row"
+  query shortly after a wake therefore under-reports; check again later before concluding a wake
+  was cut short.
+- **12:30–16:30:** ten scheduled slots produced no wake. `prod_30.wpi` has no gap
+  (`ON M25 / OFF M5`, 2026-01-01 to 2099, 48 a day). The daily CSV re-sent at the 17:00 wake held no
+  rows for those slots, so the sensors did not run in them.
+- **17:00:44:** one wake, on grid (+44 s). Tailscale showed it online for about 40 s; only the first
+  batch (13 rows, 17:00:13) reached the server. No wake at 17:30, 18:00, 18:30 or 19:00.
+- **Nothing visible since.** At 11:35 on 11-12: Tailscale offline (`LastSeen` 17:01:22 on 11-11),
+  latest server row 17:00:38 on 11-11, and the recovery runner never saw tcp/22 open.
+- **The team pressed the button** and shared a video showing the unit went through a cycle. The
+  press time is not recorded here. A boot that none of Tailscale, the server or the runner saw
+  means the Pi had no usable network path during it (*inferred*). Candidates, none established:
+  the cellular data balance (not yet checked; Tom asked the team to check it), the modem, or the
+  tailnet. This would also fit the partial deliveries at 12:00 and 17:00 (*inferred*).
+- **Not known:** why wakes were skipped 12:30–16:30; why the 17:00 wake was short; whether the
+  schedule is cycling now, unseen. A wake with no network leaves rows in the daily CSV, which are
+  delivered whole once a PUT succeeds.
+
+**Tools written and committed (nothing deployed):** `iss015_clock_grab.sh` (`65051b2`),
+`iss015_postmortem_grab.sh` (`acac211`), `iss015_press_boot.sh` (`e93e6b6`, not pushed).
+`iss015_press_boot.sh` runs through `todo119_wake_runner.py` at the first visible boot and makes four
+root writes, approved by Tom on 2026-11-11: `sudo -n true`; `systemctl stop orc-sensors.timer
+orc-sensors.service`; `rm -f /var/lib/orc-wp5-rearm/last-ok`; `systemctl start orc-wp5-rearm`. It
+forces one fresh schedule activation, because the boot-time re-arm would say "not due" at a press
+boot (stamp 16–21 h old, header shows an armed startup) and an armed header was not enough on 11-11
+(12:00:50 showed `[11 12:30:00]`, no wake followed). It then reads evidence from files and the journal
+only. Dry-run against stubs in nine scenarios; never run on the station. Uncommitted:
+`iss015_postmortem_grab.sh` now finds boots by end time instead of `-1`.
+
+**Evidence ages out.** The station journal held about 109 boots on 11-04. At 48 wakes a day the
+11-11 12:00 and 17:00 boots may be rotated out within about two days of normal cycling. Read them
+at the first reachable wake.
+
+**Stopped at session end (Tom leaving the session):** the passive watcher and the recovery runner
+were stopped on purpose so nothing polls or connects to the station without a live session. To
+resume: re-arm both from `liveorc_server/station-health` with
+`python3 -I iss015_two_wakes.py --poll 5 --wait-s 172800` and
+`python3 todo119_wake_runner.py iss015_press_boot.sh iss015-pressboot --timeout 300 --wait 172800`,
+as session-scoped tracked tasks (not `&`, `nohup` or `disown`). Reconfirm the four writes with Tom first,
+and consider skipping the forced re-arm if the boot list shows the Pi already cycling on the grid.
+
+**Open items:**
+1. MyTelkomsel data balance (team checking, 2026-11-12).
+2. The team's video: press time, how long the unit stayed on, status LED colours if visible.
+3. Push `e93e6b6`; commit the postmortem boot-lookup fix.
+4. Decide on the clock floor deploy (built and tested, not deployed; the station checkout state
+   is in the press-boot script's section 9 output once it runs).
+5. Option B (write the RTC, then re-arm in one wake) and the unexplained RTC date remain open.
+
+#### Correction 2026-11-12 12:35: the station kept cycling; the "gaps" were network outages
+
+Source: `data/station-forensics/orc-sukabumi-iss015-pressboot-20261112T123043Z.txt` (press-boot runner,
+12:30:43 UTC wake). This supersedes the readings above that treat 11-11 12:30–16:30 as missed wakes and a
+possible Witty Pi schedule fault.
+
+- **The Witty Pi kept firing.** `wp5d.log` on the station records Scheduled Startups at 10:00, 10:30,
+  11:00, 11:30, 12:00 and 12:30 on 11-12 (RTC date Jan 12), each ending in a normal shutdown after
+  about 3 min. The re-arm journal shows the schedule advancing on the grid (next startup `[12 11:00]`,
+  `[12 11:30]`, `[12 12:00]`, `[12 12:30]`, `[12 13:00]`) and a daily re-arm about 5 h before 12:30.
+- **The Pi had no network in those wakes.** chrony in the 12:00 wake of 11-12 logs `Can't synchronise:
+  no selectable sources`. With no NTP step the system clock stayed on the Witty Pi RTC date (Jan 12).
+  Tailscale, uploads and the recovery runner could not see those wakes.
+- **Rows were written but stranded.** `sht40_2026-01-11.csv` (600 B, last write Jan 11 23:30) and
+  `sht40_2026-01-12.csv` (1215 B, last write Jan 12 12:30) hold sensor rows stamped with the RTC's month
+  (01) and the real day and time. `orc-sensors-upload` sends only files newer than its watermark, so files
+  with January mtimes are not uploaded. The section 7 listing was cut to 20 lines, so Jan files for the
+  other sensors were not shown; their existence is unconfirmed. The sizes fit roughly one sht40 row per wake.
+- **Network returned at the 12:30 wake** (tcp/22 open 12:30:43, +43 s). Cause not established; the team was
+  asked to check the data balance.
+- **What this means for the earlier items.** The 11-11 12:30–16:30 "gap", the short 17:00 wake and the
+  absent 17:30–11-12 12:00 wakes were wakes without a working network, not a schedule fault. The RTC
+  month error (01 for 11) is real and persists, but it did not stop the schedule from firing on the grid.
+  The 10-21 stop is different: `wp5d.log` has no startups between 10-21 14:32 and the 11-11 press.
+- **The recovery runner forced a fresh activation that was not needed.** It ran as approved:
+  `OK: activated prod_30.wpi`, next startup `[12 13:00:00]`. Its "already cycling" guard counted 0 recent
+  boots because the journal's end times are on the Jan/Jul clock, so it fell through to the forced path.
+  The guard must not rely on the wall clock. Proof the activation did no harm is the 13:00 wake.
+- **Videos (*inferred*).** Wakes with no NTP stamp January dates. LiveORC may show videos from these wakes
+  under Jan 11–12. Not checked.
+- **Station checkout** is at `eb7c7b0` (2026-10-12), branch `main`, upstream `origin/main`, with two tracked
+  `__pycache__/*.pyc` files deleted locally. A pull would fast-forward 7 commits (all by Tom, 29 files:
+  tooling, tests, docs, the clock-floor files, and changes to `pi/deploy.sh` and
+  `pi/shared/.../sensors_logger.py`). Nothing incoming touches the installed re-arm, ceiling or uploader, or
+  the two deleted files. Installed copies of the re-arm, ceiling, uploader and logger equal the checkout.
+  A pull alone installs nothing; `deploy.sh` does. A full `deploy.sh` run has not been reviewed.
+
+**Revised open items:** (1) confirm the 13:00 wake; (2) clock floor deploy now has a concrete case: it would
+have kept rows out of January files (it does not fix the network); (3) recovering the stranded rows
+(+304 days to each timestamp; the server drops duplicates) is a station-side file write and needs approval;
+(4) why the network was down 11-11 12:00 to 11-12 12:30; (5) review a full `deploy.sh` run before deploying.
+
