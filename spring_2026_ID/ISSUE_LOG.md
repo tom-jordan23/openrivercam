@@ -3365,3 +3365,73 @@ have kept rows out of January files (it does not fix the network); (3) recoverin
 (+304 days to each timestamp; the server drops duplicates) is a station-side file write and needs approval;
 (4) why the network was down 11-11 12:00 to 11-12 12:30; (5) review a full `deploy.sh` run before deploying.
 
+#### Update 2026-11-12 14:30: collection grab results; offline sensor data was deleted by log rotation
+
+Source: `data/station-forensics/orc-sukabumi-iss015-collect-20261112T140049Z.txt` (read-only; 14:00:49
+wake; 14 s). Supersedes earlier items where noted.
+
+- **No scheduled startup was missed from the 11-11 press to 11-12 14:00.** `wp5d.log`: 32 Scheduled
+  Startups on 11-11 (08:00 to 23:30) and 29 on 11-12 (00:00 to 14:00), no gap over 35 minutes, plus a
+  press at 11-12 03:41:50. Earlier presses are logged on 07-03, 08-20/21 and 10-09/10.
+- **The 21-day silence left no daemon trace.** No `wp5d.log` line exists between 10-21 14:32 and the
+  11-11 press. Non-routine events in the log are I2C read-back retries at shutdown on 06-19, 08-25 and
+  09-27 and register changes; none after 09-27. The cause of the 10-21 stop remains unknown.
+- **Sensor data from the offline wakes was deleted by our log rotation.** `rotate_logs` removes
+  `<label>_*.csv` whose name date is older than 30 days relative to the clock. Offline wakes wrote
+  January-dated files (clock on the RTC). After NTP corrected the clock, the next tick removed them.
+  `sht40_2026-01-11.csv` (600 B) and `sht40_2026-01-12.csv` (1215 B) existed at the 12:30 capture and
+  were gone at 14:00. They had never been uploaded (the uploader skips files older than its
+  watermark). No other copy is known. The affected span is about 11-11 12:30 to 11-12 13:00.
+- **The first sensor tick races the clock step.** chrony steps +304 days 19–24 s after boot; the 14:00
+  wake still wrote a January-dated row in four sensor files. The server lacks the 13:00 first batch.
+- **Videos.** `/home/pi/.ORC-OS/uploads/videos` holds 68,647 files, 42.2 GB; the oldest is dated
+  2026-01-11 12:32 (directory `20260111`). Disk is 90% used. Whether the January-dated videos are
+  exposed to a date-based purge was not checked.
+- **Journal.** The 11-11 07:51, 12:00 and 17:00 boots are not in the journal (1053 boots, at the 200 MB
+  limit, mostly July to mid-October). `--list-boots` labels are unreliable for these boots.
+- **Network.** chrony: no NTP source at the 11-12 12:00 wake; stepped at 12:30, 13:00, 13:30, 14:00.
+  The modem-level failure mode was not isolated.
+- **Deploy diff.** 46 installed overlay files hashed; all equal the station checkout (`eb7c7b0`). A
+  deploy from `HEAD` would change one existing file (`sensors_logger.py`) and add `orc-clock-floor`
+  and its unit. The rest of `deploy.sh` has not been reviewed.
+
+**Revised open items:** (1) fix log rotation (do not delete implausibly dated files; prefer deleting
+only uploaded files) and deploy it with the clock floor; (2) check LiveORC and the ORC-OS purge for
+the January-dated videos; (3) add RTC date and next startup to the Witty Pi sensor CSV; (4) track the
+data balance expiry and run the staleness alert; (5) the 10-21 stop and the RTC month stay open.
+The earlier item "recover the stranded rows" is withdrawn: the files no longer exist.
+
+#### Update 2026-11-12 16:15: data grab results (video purge exposure; whole-history wake census)
+
+Sources: `data/station-forensics/orc-sukabumi-iss015-data-20261112T160045Z.txt`, `wp5d_filtered_2026-11-12.txt`,
+`boots_2026-11-12.txt`, `server_gaps_2026-11-12.txt`. Read-only collection at the 16:00 wake.
+
+- **Video purge exposure (time-sensitive).** ORC-OS `orc_api/utils/disk_management.py`, function `purge`, sorts every
+  file under the media folder by file modification time (`os.path.getmtime`), oldest first, and deletes until free
+  space is at least `min_free_space`. It does not look at upload state. `min_free_space` is 5.0 GB on this station
+  (default in the code is 20; the DB default `critical_space` is 10, below which the service shuts down).
+  Disk: 6.0 GB available of 62.2 GB, 90% used, so about 1.0 GB above the threshold. Directories `20260111` and
+  `20260112` (48 mp4 files, about 589 MB, 787 files in all) hold the video from the offline wakes and are the oldest
+  files on the disk by mtime (next oldest: `20260703`). They are first in line for deletion. Whether they were
+  already uploaded to LiveORC is not known. The scheduler frequency (default 3600 s) against wakes of about 2 minutes
+  means it may rarely run; the Sept notes record it was never seen firing. Not established either way.
+- **Whole-history census of `wp5d.log`** (7,818 startup events from 2026-04-07: 7,745 scheduled, 44 button, 12 reboot,
+  17 "Power Newly Connected", all of those in April). Every silent stop from May on matches the 42.6-day list run-out
+  to within hours: 05-13 06:02 + 42.65 d = 06-24 21:30; 07-03 02:47 + 42.66 d = 08-14 18:30; 08-21 01:14 + 42.64 d =
+  10-02 16:30 (each ended by a button press). **10-21 14:30 is the only stop since May that the run-out does not
+  explain.** The daily re-arm (23 h interval, so a schedule activation every day) had been running since 10-12.
+  One stop after nine daily activations is one observation, not evidence the activation caused it, but it is the only
+  change in exposure. No I2C trouble lines within an hour of any of the stops.
+- **Journal.** 1,056 boots listed; 1,051 end between 2026-07 and 2026-10-13, and only 5 end in November (all 11-12).
+  The boots from 10-14 to 11-11, including the last wake before the silence, are not in the journal. For 10-21 the only
+  surviving records are `wp5d.log` and the sensor CSVs.
+- **Server-side history** (`station_gaps.py`): 18 outages since 04-16, 56.7 of 210.2 days. Read as "no rows", which
+  includes no-network periods.
+- **Files.** 68,719 files under the video directory; `20261111` and `20261112` hold the online wakes since the press.
+
+**Candidate actions (none taken; all need Tom's approval):** (a) confirm in LiveORC whether Jan 11–12 videos exist;
+(b) if not, protect them: free several GB by an approved reclaim, and/or reset the modification times of the 787 files
+to a current date (metadata only, original times recorded first); (c) consider a longer re-arm interval
+(`REARM_INTERVAL_H`; the list lasts 42.6 days, so a week would still be safe) to reduce activation exposure, weighing
+that a daily re-arm also self-heals a bad list.
+
