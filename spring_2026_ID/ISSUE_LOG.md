@@ -2920,6 +2920,29 @@ the removal of the orcos qemu image. No video and nothing under
 - Open decision: whether the quiver plots of already-synced videos can go.
   ORC-OS may reference them, so this needs Tom's explicit approval.
 
+**Update 2026-11-13: orphaned quiver plots deleted; swap file is not the quick win it looked like.**
+Free space had fallen back to 5.10 GiB (5,223 MiB at 14:30) against ORC-OS's 5.0 GiB minimum. The disk manager measures free space in
+GiB (`5.0999 GB` logged at 14:30:55 is 5,222 MiB), runs about 5 s after each ORC-OS start (once per wake), and was losing about 11 to 14 MiB
+per wake, so the first purge was projected at about 19:00 UTC. Purge order is oldest mtime first, ignoring sync state: the 48 January-dated
+offline videos (0.549 GiB, all `FAILED`) first, then early July.
+- **Plots.** `sync_image=1` and the sync only uploads a plot if the file exists; `/video/{id}/image/` returns a clean 404 when it is
+  missing; the DB `image` column points at `output/plot_quiver.jpg`. The station had 3,387 plots (9.03 GiB): 2,311 with their mp4
+  (6.18 GiB) and 1,076 **orphaned** (no mp4 in the video dir; 2.846 GiB, all `SYNCED`, July and August; they exist because the earlier
+  reclaims deleted only the mp4s). All 1,076 matched a LiveORC record by timestamp (offset 0 h) whose `image` field is set (09-16 listing;
+  the field being set does not prove the image file is readable).
+- **Deleted at 17:01 UTC, `todo119_orphan_plot_reclaim_apply.sh` (build 2beb85a):** 1,076 files, 3,055,948,649 bytes, 0 failed; free
+  5,162 -> 8,079 MiB (+2,917 MiB). Each file was re-checked on the station first (regular file, listed size, no mp4 in the dir, DB row
+  `SYNCED`, older than 24 h, path under the videos dir). A dry run at 17:00 had 1,076 ok, 0 skipped. Manifest on the station:
+  `/home/pi/orphan-plot-reclaim-20261113T170121Z.manifest`. Margin is now about 2.9 GiB, roughly 5 days at ~0.56 GiB/day.
+- **`/var/swap` (2.0 GiB, fully allocated) must NOT be deleted or renamed.** It is the writeback backing file of the zram swap under
+  `rpi-swap` 1.2.1 (`Mechanism=auto` is `zram+file`); `rpi-resize-swap-file` re-creates it with `fallocate` at every boot if it is missing.
+  The supported removal is a drop-in with `[Main]` `Mechanism=zram` (then `rpi-remove-swap-file@var-swap.service` runs `rm -f` at the next
+  boot, and the zram device is unchanged). Not applied. The generator was read, not run.
+- **Other findings.** Processing-peak memory about 2 GiB of 8 GiB with swap unused; zero OOM-killer lines in the journal. mp4 on disk:
+  1,807 `SYNCED` (16.24 GiB), 1,552 `FAILED` (13.96 GiB). `FAILED` is not necessarily not-uploaded (known 500-after-commit failures).
+- **Not done / open:** the January videos remain first in the purge queue; whether LiveORC holds them (Tom to check); a retention policy for
+  synced mp4s; the swap drop-in. The unit-test and broken-copy suites are `test_orphan_reclaim.py` and `run_orphan_reclaim_mutants.py`.
+
 ### ISS-FIELD-014: LiveORC server unreachable from the internet; all inbound security group rules were removed by an InfoSec administrator
 
 | Field | Value |
