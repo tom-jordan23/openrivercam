@@ -54,6 +54,25 @@ timeout 30 find "$V" -xdev -name '*.mp4' -mmin -180 -printf '    %TY-%Tm-%Td %TT
 echo "  sync lines in the orc-api journal, last 2 hours:"
 sj=$(timeout 25 journalctl -u orc-api --since '2 hours ago' --no-pager 2>&1); case "$sj" in *"insufficient permissions"*|*"No journal files"*) sj=$(timeout 25 sudo -n journalctl -u orc-api --since '2 hours ago' --no-pager 2>&1);; esac
 printf '%s\n' "$sj" | grep -i "sync\|upload\|queue" | tail -10 | cut -c1-210 | sed 's/^/    /'
+sec "7. early-boot guard: rows deferred this boot, and any row stamped inside the floor-clock window (there should be none)"
+fl=$(cat /var/lib/orc-clock-floor/floor 2>/dev/null)
+if [ -n "$fl" ]; then
+  lo=$(date -u -d "@$fl" +%Y-%m-%dT%H:%M:%S); hi=$(date -u -d "@$((fl + 120))" +%Y-%m-%dT%H:%M:%S)
+  echo "  floor file = $lo (the previous shutdown). Rows in today's CSVs stamped in ($lo, $hi]:"
+  n=0; for f in /var/log/orc/sensors/*_$(date -u +%F).csv; do
+    awk -F, -v lo="$lo" -v hi="$hi" -v f="$(basename "$f")" 'NR>1 && substr($1,1,19) > lo && substr($1,1,19) <= hi {print "    MISLABELLED? " f ": " substr($0,1,90)}' "$f"
+  done | tee /dev/stderr 2>/dev/null | wc -l | sed 's/^/  count: /'
+fi
+echo "  'deferred' lines this boot (journal; the stamps on early lines come from the floor-set clock):"
+dj=$(timeout 25 journalctl -b --no-pager 2>&1); case "$dj" in *"insufficient permissions"*|*"No journal files"*) dj=$(timeout 25 sudo -n journalctl -b --no-pager 2>&1);; esac
+printf '%s\n' "$dj" | grep -i "deferred" | head -12 | cut -c1-220 | sed 's/^/    /'
+echo "  deferred lines: $(printf '%s\n' "$dj" | grep -ci 'deferred')   guard state now: $(PYTHONDONTWRITEBYTECODE=1 python3 -I -c "
+import importlib.util, sys
+sys.dont_write_bytecode = True
+sp = importlib.util.spec_from_file_location('sl', '/usr/local/lib/orc-sensors/sensors_logger.py'); m = importlib.util.module_from_spec(sp); sp.loader.exec_module(m)
+print('uptime', m._uptime_s(), 'restored', m._floor_set_clock(), 'synced', m._chrony_synced(), 'untrusted', m.clock_untrusted())" 2>&1)"
+echo "  which sensor rows were written this boot, by journal time (orc-capture-sensors / orc-sensors):"
+printf '%s\n' "$dj" | grep -i "\[orc-sensors\] \(orccapture\|wittypi\|sht40\|rg15\|ds18b20\):" | cut -c1-120 | head -12 | sed 's/^/    /'
 echo; echo "=== END ==="
 }
 main </dev/null
