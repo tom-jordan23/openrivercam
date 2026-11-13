@@ -40,6 +40,20 @@ echo "  rows stamped 18:3x UTC today (the 18:30 wake), first 8:"; grep -h "$(dat
 echo "  uploader / capture journal, last 45 min (tag orc-sensors-upload, orc-capture):"
 u=$(timeout 20 journalctl --since '45 min ago' --no-pager 2>&1); case "$u" in *"insufficient permissions"*|*"No journal files"*) u=$(timeout 20 sudo -n journalctl --since '45 min ago' --no-pager 2>&1);; esac
 printf '%s\n' "$u" | grep -i "orc-sensors-upload\|orc-capture" | tail -24 | cut -c1-200 | sed 's/^/    /'
+sec "6. VIDEO pipeline (a separate path from the sensor rows): ORC-OS DB rows and files, last 3 hours"
+DB=/home/pi/.ORC-OS/orc-os.db; V=/home/pi/.ORC-OS/uploads/videos
+if command -v sqlite3 >/dev/null && [ -r "$DB" ]; then
+  echo "  newest 8 video rows (id | timestamp | status | sync_status):"
+  sqlite3 -separator ' | ' "file:$DB?mode=ro" "SELECT id,timestamp,status,ifnull(sync_status,'NULL') FROM video ORDER BY id DESC LIMIT 8;" 2>&1 | sed 's/^/    /'
+  echo "  last 3 hours by (status, sync_status):"
+  sqlite3 -separator ' | ' "file:$DB?mode=ro" "SELECT status, ifnull(sync_status,'NULL'), count(*) FROM video WHERE timestamp > datetime('now','-3 hours') GROUP BY 1,2;" 2>&1 | sed 's/^/    /'
+  echo "  sync_status totals now: $(sqlite3 -separator '=' "file:$DB?mode=ro" "SELECT s, n FROM (SELECT ifnull(sync_status,'NULL') AS s, count(*) AS n FROM video GROUP BY ifnull(sync_status,'NULL'));" 2>&1 | tr '\n' ' ')"
+fi
+echo "  mp4 files written in the last 3 hours (time size path):"
+timeout 30 find "$V" -xdev -name '*.mp4' -mmin -180 -printf '    %TY-%Tm-%Td %TT %s %P\n' 2>/dev/null | sort | tail -8
+echo "  sync lines in the orc-api journal, last 2 hours:"
+sj=$(timeout 25 journalctl -u orc-api --since '2 hours ago' --no-pager 2>&1); case "$sj" in *"insufficient permissions"*|*"No journal files"*) sj=$(timeout 25 sudo -n journalctl -u orc-api --since '2 hours ago' --no-pager 2>&1);; esac
+printf '%s\n' "$sj" | grep -i "sync\|upload\|queue" | tail -10 | cut -c1-210 | sed 's/^/    /'
 echo; echo "=== END ==="
 }
 main </dev/null
