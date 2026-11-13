@@ -3458,3 +3458,37 @@ to a current date (metadata only, original times recorded first); (c) consider a
 (`REARM_INTERVAL_H`; the list lasts 42.6 days, so a week would still be safe) to reduce activation exposure, weighing
 that a daily re-arm also self-heals a bad list.
 
+
+#### Update 2026-11-13: firmware v1.1, `deploy.sh` RTC guard, clock floor installed, early-boot guard installed
+
+- **Firmware (read-only, `iss015_fw_version_read.sh`, 13:31 UTC):** the Witty Pi 5 reports id 0x51 (HAT+), **firmware v1.1**. It lacks the v1.4
+  next-occurrence fix, the **v1.5 internal I2C pointer-race fix** (the release note says heavy firmware work such as schedule activation could
+  corrupt register reads/writes and, "in practice", overwrite the RTC minute register) and the v1.7 RTC-alarm race fix. Our daily re-arm is a schedule
+  activation, so pre-v1.5 is a live candidate (inference, unproven) for the wrong RTC month and the 10-21 stop. The vendor update path is physical
+  (BOOTSEL + USB-C); a Pi-driven remote flash is not supported. Not done; needs a decision and probably a site visit. The investigation doc's old
+  v1.6 row was wrong (v1.6 is "Fix configurable I2C slave address") and is corrected.
+- **`pi/deploy.sh`:** the unconditional `wp5` RTC write is now `rtc_sync_fix` (writes only if chrony is synced to a real upstream and the RTC is within
+  3,600 s; otherwise warns). Tested (17 checks, 7 broken copies); never run on a station. The floor install does not use `deploy.sh`.
+- **Clock floor installed 18:00 UTC (wake B, build 62608e4):** `orc-clock-floor` + unit (enabled) and a new `sensors_logger.py` (rotation keeps files dated
+  before 2026-03-01, which is what destroyed the offline Jan-named data after the clock was corrected). First boot with it (18:30): restore moved the clock
+  from the RTC's Jan 13 to the floor within 2 s of wp5d's step (+26,263,831 s), chrony corrected it ~27 s in; unit active, no failed units, `orc-api` @23.8 s
+  (28.0 s before), unit cost 2.1 s. 19:00: the shutdown-time `save` advanced the floor 18:00:49 -> 18:32:25. Video rows 7793-7800 `SYNCED` (Tom
+  confirmed the 18:30 cycle uploaded a video).
+- **Sensor rows reach the DB one wake late** (the uploader runs ~28 s into a wake and sends all files newer than its watermark), so a wake's later ticks
+  arrive at the start of the next wake. I misread this as a fault for ~30 min on the first boot; it is not.
+- **Side effect found 19:01, then fixed.** orc-capture runs the logger (`orc-capture-sensors` tag) ~14-25 s into a boot, before chrony steps the clock (~29 s).
+  With the floor the clock then equals the previous shutdown time (~28 min behind), so rows were stamped early and clock-derived values were wrong:
+  DB rows `orccapture` 18:32:32 (`capture_age_s` 54.2, true ~1,700) and `wittypi` 18:32:42 belong to the 19:00 boot. (Before the floor those rows got the RTC's
+  January date, went to Jan CSVs and were never uploaded: lost, not mislabelled.) **Guard** (logger build `f2b79dd9`, commit 4f13423, installed 20:00 UTC by
+  `iss015_logger_update_wake.sh`): `process_sensor` reads and writes nothing while the floor set the clock this boot, chrony is not synced to a real upstream
+  and uptime < 45 s; the sensors are due again at the next tick. Offline wakes still log after 45 s (compressed floor-based stamps remain the known limit);
+  unreadable uptime fails open. **Verified at the 20:30 boot:** journal `orccapture: deferred` and `wittypi: deferred` at 20:02:27 (floor clock), **0 rows**
+  stamped in the floor window, guard state afterwards `untrusted False`; the uploader retried through four connection failures and finished at 20:30:35.
+  A DB check for rows in the sleep windows after the 21:00 upload is pending.
+- **Tests (final commit dde7df3):** floor logic 65/65 (11 guard checks), broken copies 17/17, install/updater/rollback sandbox 25/25 (includes a forced
+  post-install failure that restores the backup), `deploy.sh` guard 17/17 + 7/7. No systemd-level boot environment exists; unit ordering was checked with
+  `systemd-analyze verify` against the station's real neighbouring units (no cycle) and then by the real boots above.
+- **Backups and rollback:** `/var/lib/orc-clock-floor-backup/` holds the original logger (8fe3b052...) and the 18:00 build (4bb8f93a...). `iss015_floor_rollback.sh`
+  restores the newest backup (the 18:00 build), disables the unit and removes the script and unit; no button press needed.
+- **Open:** whether LiveORC holds the 48 January-dated offline videos (Tom); synced-mp4 retention policy; the zram-only swap drop-in (about 2 GiB);
+  the raw RTC month register read and the 12-01 rollover observation; the firmware update decision; the compressed timestamps of offline wakes.
