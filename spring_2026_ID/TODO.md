@@ -207,6 +207,13 @@ IPB.
 | **Site** | Sukabumi |
 | **Opened** | 2026-09-01 |
 
+> **Update 2026-11-13 (see ISS-FIELD-016):** the disk was back at the purge floor (5.1 GiB free against 5.0). 1,076 orphaned quiver plots (2.846 GiB, all `SYNCED`)
+> were deleted with a verified allow-list, taking free space to about 8.0 GiB (about 4.7 days of margin at 0.56 GiB/day). `/var/swap` cannot simply be deleted (it is the zram
+> writeback file; `Mechanism=zram` is the supported removal, not applied). Station mp4s now: 3,360 clips, 30.21 GiB: `SYNCED` 1,807 (16.24 GiB), `FAILED` 1,552 (13.96 GiB).
+> The 48 January-dated offline videos (0.549 GiB, `FAILED`) are the oldest files on the disk and the first the purge would take; check LiveORC for them before moving anything.
+> **Next step: start moving some video off the station.** Constraints already measured: `QUEUE` rows are drained at every boot with no throttle, so queue depth is the only throttle;
+> the link resets about half the large uploads; `FAILED` is not terminal and not proof the file never arrived; station DB writes need explicit approval.
+
 **3,105 videos on the station have never reached LiveORC** (2978 FAILED, 127
 LOCAL). Of those, **1,190 still have their file — 10.69 GB.** The other 1,911
 have already lost theirs to the disk manager. See ISS-FIELD-009.

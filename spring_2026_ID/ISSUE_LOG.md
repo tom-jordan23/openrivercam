@@ -3040,7 +3040,7 @@ quota has not been checked for this stop. The cause of the 10-21 stop is open.
 | **Site** | Sukabumi |
 | **Risk** | Station availability; recurrence of the Witty Pi schedule failure after the ISS-FIELD-013 fix |
 | **Impact** | Medium (pilot station) |
-| **Status** | OPEN — station cycling again since the 2026-11-11 button press; cause of the 10-21 miss unknown; Witty Pi RTC date is 304 days behind (see Update 2026-11-11); clock-floor change built and tested, not deployed |
+| **Status** | OPEN — mitigated, root cause open. Station cycling since the 2026-11-11 button press. Clock floor (installed 2026-11-13 18:00 UTC) and early-boot logger guard (installed 20:00 UTC) are live and verified on the real station. The 10-21 stop and the 304-day RTC month error are unexplained; firmware v1.1 is the leading candidate (ISS-FIELD-017); offline-wake timestamps are a known limit (ISS-FIELD-018) |
 
 **Observations (read-only; server SQL via Grafana, local `tailscale status`, repo files):**
 
@@ -3493,3 +3493,94 @@ that a daily re-arm also self-heals a bad list.
   restores the newest backup (the 18:00 build), disables the unit and removes the script and unit; no button press needed.
 - **Open:** whether LiveORC holds the 48 January-dated offline videos (Tom); synced-mp4 retention policy; the zram-only swap drop-in (about 2 GiB);
   the raw RTC month register read and the 12-01 rollover observation; the firmware update decision; the compressed timestamps of offline wakes.
+
+
+### ISS-FIELD-016: Sukabumi disk fills at about 0.56 GiB/day; the ORC-OS purge is oldest-first and ignores sync state; there is no retention policy
+
+| Field | Value |
+|-------|-------|
+| **Date opened** | 2026-11-13 |
+| **Site** | Sukabumi |
+| **Risk** | Loss of the only copy of un-synced video; the purge reaching the 48 January-dated offline videos first |
+| **Impact** | Medium (pilot station) |
+| **Status** | OPEN — margin about 2.9 GiB (roughly 4.7 days) after the 2026-11-13 reclaim; next step is to move video off the station (TODO-119) |
+
+**Observations (2026-11-13; read-only station grabs, station DB read-only, LiveORC listing of 09-16):**
+
+- Free space 7,991 MiB at 20:30 UTC against ORC-OS's 5.0 GiB (5,120 MiB) minimum; it was 5,162 MiB at 17:00, which put the first purge at about
+  19:00 UTC. The disk manager measures in **GiB**, runs about 5 s after each ORC-OS start (once per wake) and was losing about 11 to 14 MiB per wake.
+- `purge()` sorts every file under the media folder by mtime and deletes the oldest first until free space is back above the minimum. It ignores sync state.
+- mp4 on the station: 3,360 clips, 30.21 GiB: `SYNCED` 1,807 (16.24 GiB), `FAILED` 1,552 (13.96 GiB), `LOCAL` 1. `FAILED` does not mean not uploaded (the known
+  500-after-commit failures leave some on the server), so the true un-uploaded set is smaller than 1,552 clips.
+- The oldest files by mtime are the 48 January-dated offline videos (dirs 20260111 and 20260112, 0.549 GiB, all `FAILED`). The first GiB a purge would remove
+  covers 213 videos: 153 `SYNCED`, 60 `FAILED`. Whether LiveORC already holds the January videos is not known (needs LiveORC credentials).
+- Processing outputs are in the same tree: `output/plot_quiver.jpg` is referenced by the DB `image` column, uploaded when `sync_image=1`, and `/video/{id}/image/`
+  returns a clean 404 if the file is missing.
+
+**Done 2026-11-13:**
+
+- Deleted the 1,076 **orphaned** quiver plots (video dir with the plot and no mp4; all `SYNCED`, July and August; they exist because the earlier reclaims deleted only
+  the mp4s): 2.846 GiB, free 5,162 -> 8,079 MiB. Each was matched to a LiveORC record by timestamp (offset 0 h, all 1,076 with the image field set) and re-checked
+  on the station before deletion. Allow-list: `data/station-forensics/orphan-plots-deleted-20261113-allowlist.txt`; manifest on the station:
+  `/home/pi/orphan-plot-reclaim-20261113T170121Z.manifest`. Scripts: `todo119_orphan_plot_reclaim.sh.in` + `build_orphan_reclaim.py` (22 checks, 7 broken copies caught).
+- `/var/swap` (2.0 GiB, fully allocated) is **not** reclaimable by deleting it: it is the zram writeback file under `rpi-swap` 1.2.1 and `rpi-resize-swap-file` re-creates it
+  at every boot. The supported way is a drop-in with `[Main]` `Mechanism=zram`; not applied (about 2 GiB; generator read, not run).
+
+**Options for headroom (none applied):** (1) upload the `FAILED` backlog (TODO-119; queue depth is the only throttle, the link resets about half the large uploads, the
+prepaid balance is unmonitored); (2) copy selected files off the station by another route; (3) retention: delete `SYNCED` mp4s older than N days from a verified list
+(precedent: the 09-02 reclaim; needs approval); (4) the zram-only swap drop-in; (5) a larger root device on a site visit (video must stay on the same disk as the ORC-OS DB).
+
+**Next:** start moving some video off the station. First candidates: the 48 January videos (check LiveORC first), then the oldest `FAILED` clips.
+
+### ISS-FIELD-017: Witty Pi 5 firmware v1.1 is six minor versions behind v1.7; the pre-v1.5 pointer race and the pre-v1.7 alarm race are live candidates for the wrong RTC month and the 10-21 stop
+
+| Field | Value |
+|-------|-------|
+| **Date opened** | 2026-11-13 |
+| **Site** | Sukabumi (Jakarta's unit not checked) |
+| **Risk** | Recurrence of a missed startup; RTC date errors; every wake depends on the RTC alarm |
+| **Impact** | Medium (pilot station) |
+| **Status** | OPEN — decision needed on a firmware update (physical, needs a visit); raw RTC register read and the 12-01 rollover observation pending |
+
+**Observations:**
+
+- Read-only I2C reads of registers 0 to 2 (13:31 UTC): id 0x51 (HAT+), firmware **v1.1**. The installed software is 5.0.0 (June 2025), which cannot display the firmware version.
+- Release notes read from the vendor repository tags: v1.2 deferred admin commands (adds a BUSY status); v1.3 fixed flash writes that "could result in corrupted data being
+  written to flash"; v1.4 fixed the next-occurrence calculation and alarms not programmed when the configured day was smaller than the current day; **v1.5** fixed an internal I2C pointer
+  race in which heavy firmware operations such as schedule activation could corrupt register reads/writes and, "in practice", overwrite the RTC minute register; v1.6 fixed the
+  configurable I2C address; **v1.7** fixed an RTC-alarm race that could miss scheduled startups. Our daily re-arm is a schedule activation and `wp5` runs several times a minute.
+- The RTC has the right day and time but the wrong month (reads Jan for Nov, +304 days). Vendor code decodes the month correctly, nothing on the Pi writes the RTC apart from
+  `deploy.sh` (now guarded), and Vin was steady at the last wake before the 10-21 stop. The pointer race is **inference, not proof**: the release note names the minute register, not the month.
+- Register reads: 0, 1, 2 and 80 to 86 are plain; 66 and 71 have read side effects (download stream byte, heartbeat); a read with no register byte reuses the last register. Registers 1 and 2
+  carry no internal I2C access.
+
+**Update path and risks (none attempted):** the vendor path is physical (power off, hold BOOTSEL, USB-C to a computer, copy the `.uf2`; HAT+ and Mini builds differ); no reset-to-BOOTSEL USB
+interface was found, so a Pi-driven flash is not supported. Open risks: firmware v1.7 with software 5.0.0 is untested together (our `orc-wp5-rearm` drives the 5.0.0 menu and hard-checks the version);
+whether `conf` and `schedule` survive a flash is unverified (copy the emulated drive's `conf`/`log`/`schedule` off first, which also gives `WittyPi5.log`); the RTC month stays wrong after an update
+and any RTC write needs a schedule re-arm in the same wake. A spare Witty Pi 5 and Pi would allow a rehearsal; its existence is unknown.
+
+**Next:** raw register 85 read (needs Tom's go); observe the RTC across 2026-11-30 -> 12-01 (month 02 and day 1 means the chip is fine and only the read is wrong; Jan 31 means the chip counts January);
+ask the team about a spare unit, a laptop with a USB-C cable and a CR2032; decide on the update.
+
+### ISS-FIELD-018: Offline wakes get compressed, floor-based timestamps; sensor rows reach the database one wake late (known limits of the clock floor)
+
+| Field | Value |
+|-------|-------|
+| **Date opened** | 2026-11-13 |
+| **Site** | Sukabumi |
+| **Risk** | Mislabelled timestamps on sensor rows from wakes with no network |
+| **Impact** | Low to medium (pilot station; rows were previously lost, not mislabelled) |
+| **Status** | OPEN — accepted limitation of the clock floor; revisit after the 2026-12-01 RTC observation |
+
+**What happens:** a wake with no network never gets a chrony step. `orc-clock-floor` sets the clock to the saved floor (the previous shutdown time) at boot and advances it only by the length of the wake, so
+consecutive offline wakes start where the previous one ended: a day offline is squeezed into a few hours of timestamps just after the last synced wake. The rows are no longer stranded in January files
+(which were also deleted by log rotation after the clock was corrected), but they upload later with wrong times. The logger defers rows only for the first 45 s of a floor-set boot while chrony is unsynced
+(the early-boot guard, installed 2026-11-13 20:00 UTC); after that it logs with floor-based stamps.
+
+**Month repair (deferred):** taking year and month from the floor and day and time of day from the RTC copy would give true timestamps, but it trusts the RTC's day-of-month and time of day, which are unproven until the
+12-01 rollover: if the register really holds January, the RTC's day drifts at month end and the repair could accept a date about 30 days ahead inside its window.
+
+**Also noted (not a fault):** the uploader runs about 28 s into each wake and sends every file newer than its watermark, so a wake's later sensor ticks reach the database at the start of the next wake.
+
+**Options:** accept; add `clock_state` columns to the sensor `CSV_HEADER` confs (the ingest turns every numeric column into a metric, so no schema change, but two new metrics per sensor appear in Grafana and the sheets export);
+the month repair after 12-01.
