@@ -40,8 +40,18 @@ if [ -z "${ISS015_SKIP_JOBS_CHECK:-}" ]; then
   jobs=$(systemctl list-jobs --no-legend 2>/dev/null | grep -Ei 'poweroff|shutdown|reboot|halt' || true)
   if [ -n "$jobs" ]; then echo "REFUSED: a shutdown/poweroff job is queued:"; printf '%s\n' "$jobs" | sed 's/^/  /'; return 2; fi
 fi
-if ! command -v "$I2CGET" >/dev/null 2>&1; then echo "REFUSED: $I2CGET not found"; return 2; fi
-if [ -z "${ISS015_I2CGET:-}" ] && [ ! -e "/dev/i2c-$BUS" ]; then echo "REFUSED: /dev/i2c-$BUS missing"; return 2; fi
+if ! command -v "$I2CGET" >/dev/null 2>&1; then
+  # Debian installs i2c-tools in /usr/sbin, which is not on a non-root ssh PATH (11-13 first attempt).
+  for d in /usr/sbin /sbin /usr/bin; do [ -x "$d/$I2CGET" ] && { I2CGET="$d/$I2CGET"; break; }; done
+fi
+if ! command -v "$I2CGET" >/dev/null 2>&1; then echo "REFUSED: $I2CGET not found (PATH=$PATH)"; return 2; fi
+echo "i2cget: $I2CGET   user: $(id -un) groups: $(id -Gn)"
+if [ -z "${ISS015_I2CGET:-}" ]; then
+  if [ ! -e "/dev/i2c-$BUS" ]; then echo "REFUSED: /dev/i2c-$BUS missing"; return 2; fi
+  if [ ! -r "/dev/i2c-$BUS" ] || [ ! -w "/dev/i2c-$BUS" ]; then
+    echo "REFUSED: no read/write access to /dev/i2c-$BUS ($(ls -l "/dev/i2c-$BUS")); not escalating"; return 2
+  fi
+fi
 if [ ! -e "$LOCK" ]; then echo "REFUSED: lock file $LOCK missing (the vendor tools create it; do not read without it)"; return 2; fi
 exec 9<"$LOCK" || { echo "REFUSED: cannot open $LOCK (permission); not escalating"; return 2; }
 
