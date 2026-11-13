@@ -113,6 +113,47 @@ def main():
     r = run(RB)
     check("RB3 rollback refuses a backup that does not compile; logger untouched", "REFUSED: backup does not compile" in r.stdout and logger.read_text() == old, r.stdout[-200:])
 
+    # ── logger-only update (the early-boot clock guard), from the build deployed on 11-13 ──
+    U = d / "build/iss015_logger_update_wake.sh"
+    prev = subprocess.run(["git", "-C", str(SPRING.parent), "show", "62608e4:spring_2026_ID/pi/shared/usr/local/lib/orc-sensors/sensors_logger.py"], capture_output=True, text=True).stdout
+    root2 = d / "root2"
+    (root2 / "usr/local/lib/orc-sensors").mkdir(parents=True); (root2 / "var/lib").mkdir(parents=True)
+    lg2 = root2 / "usr/local/lib/orc-sensors/sensors_logger.py"; lg2.write_text(prev); lg2.chmod(0o755)
+    env2 = dict(env, ISS015_TEST_ROOT=str(root2), ISS015_STAGE=str(d / "ustage"))
+
+    def run_u(script, **extra): return subprocess.run(["bash", str(script)], env=dict(env2, **extra), capture_output=True, text=True, timeout=120)
+    bks2 = lambda: sorted((root2 / "var/lib/orc-clock-floor-backup").glob("sensors_logger.py.*"))
+    r = run_u(U, ISS015_MAX_UPTIME_S="1")
+    check("U1 refuses an old wake; logger untouched", "REFUSED: wake is" in r.stdout and lg2.read_text() == prev, r.stdout[-200:])
+    bt = d / "build/u_tampered.sh"; txt = U.read_text(); i = txt.index("B64_LOGGER='") + len("B64_LOGGER='")
+    bt.write_text(txt[:i] + ("A" if txt[i] != "A" else "B") + txt[i + 1:])
+    r = run_u(bt)
+    check("U2 a corrupted embedded payload is refused; logger untouched", "REFUSED: payload" in r.stdout and lg2.read_text() == prev, r.stdout[-200:])
+    lg2.write_text(prev + "\n# someone edited this\n")
+    r = run_u(U)
+    check("U3 an unknown installed version is refused; nothing changed", "REFUSED: installed logger is not a known previous version" in r.stdout and not bks2(), r.stdout[-200:])
+    lg2.write_text(prev)
+    # compile failure after install: a python3 shim that fails only on the INSTALLED path, so the staged copy still passes
+    sh = d / "pyshim"; sh.mkdir()
+    (sh / "python3").write_text(f'#!/bin/bash\ncase "$*" in *"{root2}/usr/local/lib/orc-sensors/sensors_logger.py"*) [ -e "{d}/failflag" ] && exit 1;; esac\nexec {sys.executable} "$@"\n')
+    (sh / "python3").chmod(0o755); (d / "failflag").write_text("x")
+    r = run_u(U, PATH=f"{sh}:{env2['PATH']}")
+    check("U4 a failed post-install check restores the backup and reports NOT UPDATED", "NOT UPDATED (backup restored)" in r.stdout and lg2.read_text() == prev, r.stdout[-300:])
+    (d / "failflag").unlink()
+    for b in bks2(): b.unlink()
+    r = run_u(U)
+    new = (PI / "shared/usr/local/lib/orc-sensors/sensors_logger.py")
+    check("U5 normal update: UPDATED, installed = the tested bytes, mode kept, one backup = the previous version",
+          "RESULT: UPDATED" in r.stdout and sha(lg2) == sha(new) and oct(lg2.stat().st_mode & 0o777) == "0o755" and len(bks2()) == 1 and bks2()[0].read_text() == prev, r.stdout[-400:])
+    check("U6 the import check ran and reports the guard present", "guard present: True" in r.stdout, r.stdout[-400:])
+    r = run_u(U)
+    check("U7 idempotent: second run changes nothing and takes no new backup", "already the new version" in r.stdout and len(bks2()) == 1, r.stdout[-200:])
+    rb2 = subprocess.run(["bash", str(RB)], env=env2, capture_output=True, text=True, timeout=120)
+    check("U8 rollback after the update restores the PREVIOUS deployed logger byte for byte", "RESULT: rolled back" in rb2.stdout and lg2.read_text() == prev, rb2.stdout[-300:])
+    lg2.write_text(subprocess.run(["git", "-C", str(SPRING.parent), "show", "eb7c7b0:spring_2026_ID/pi/shared/usr/local/lib/orc-sensors/sensors_logger.py"], capture_output=True, text=True).stdout)
+    r = run_u(U)
+    check("U9 the ORIGINAL logger (eb7c7b0) is also an accepted starting point", "RESULT: UPDATED" in r.stdout, r.stdout[-200:])
+
     bad = [n for n, ok in results if not ok]
     print(f"\n{len(results) - len(bad)}/{len(results)} passed" + (f"; FAILED: {bad}" if bad else ""))
     sys.exit(1 if bad else 0)

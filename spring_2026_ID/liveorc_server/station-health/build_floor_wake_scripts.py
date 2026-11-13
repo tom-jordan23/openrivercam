@@ -31,6 +31,7 @@ FILES = {                                     # name -> (repo file, station path
     "LOGGER": (PI / "shared/usr/local/lib/orc-sensors/sensors_logger.py", "/usr/local/lib/orc-sensors/sensors_logger.py"),
 }
 STATION_CHECKOUT = "eb7c7b0"                  # the station's git checkout; installed overlay files equal it (11-12)
+DEPLOYED_LOGGER_COMMITS = ["eb7c7b0", "62608e4"]   # sensors_logger.py versions that have run on the station (original; wake-B build of 11-13)
 
 
 def sh(*a, **k):
@@ -63,15 +64,28 @@ def main():
         die(f"cannot read sensors_logger.py at {STATION_CHECKOUT}")
     commit = sh("git", "-C", str(REPO), "rev-parse", "--short", "HEAD").stdout.strip()
 
-    lines = [f"BUILD_COMMIT='{commit}'", f"EXPECT_OLD_LOGGER_SHA='{hashlib.sha256(old.stdout.encode()).hexdigest()}'"]
-    for name, (p, dest) in FILES.items():
-        data = p.read_bytes()
-        lines.append(f"EXPECT_{name}_SHA='{hashlib.sha256(data).hexdigest()}'")
-        lines.append(f"DEST_{name}='{dest}'")
-        lines.append(f"B64_{name}='{base64.b64encode(data).decode()}'")
-    payload = "\n".join(lines)
+    deployed = []
+    for c in DEPLOYED_LOGGER_COMMITS:
+        g = sh("git", "-C", str(REPO), "show", f"{c}:spring_2026_ID/pi/shared/usr/local/lib/orc-sensors/sensors_logger.py")
+        if g.returncode != 0:
+            die(f"cannot read sensors_logger.py at {c}")
+        deployed.append(hashlib.sha256(g.stdout.encode()).hexdigest())
 
-    for tmpl, dest in (("iss015_floor_wake_a.sh.in", "iss015_floor_wake_a.sh"), ("iss015_floor_wake_b.sh.in", "iss015_floor_wake_b.sh")):
+    def make_payload(names):
+        lines = [f"BUILD_COMMIT='{commit}'", f"EXPECT_OLD_LOGGER_SHA='{hashlib.sha256(old.stdout.encode()).hexdigest()}'",
+                 f"EXPECT_DEPLOYED_LOGGER_SHAS='{' '.join(deployed)}'"]
+        for name in names:
+            p, dest = FILES[name]
+            data = p.read_bytes()
+            lines.append(f"EXPECT_{name}_SHA='{hashlib.sha256(data).hexdigest()}'")
+            lines.append(f"DEST_{name}='{dest}'")
+            lines.append(f"B64_{name}='{base64.b64encode(data).decode()}'")
+        return "\n".join(lines)
+
+    for tmpl, dest, names in (("iss015_floor_wake_a.sh.in", "iss015_floor_wake_a.sh", list(FILES)),
+                              ("iss015_floor_wake_b.sh.in", "iss015_floor_wake_b.sh", list(FILES)),
+                              ("iss015_logger_update_wake.sh.in", "iss015_logger_update_wake.sh", ["LOGGER"])):
+        payload = make_payload(names)
         text = (HERE / tmpl).read_text()
         if text.count("@@PAYLOAD@@") != 1:
             die(f"{tmpl} must contain @@PAYLOAD@@ exactly once")

@@ -1,0 +1,61 @@
+set -u
+# ISS-FIELD-015: install the early-boot clock guard = a new sensors_logger.py. LOGGER ONLY. Template; build with
+# build_floor_wake_scripts.py. Run through todo119_wake_runner.py in the FIRST MINUTE of a wake. Station times are UTC.
+#
+# STATION WRITES, ROOT (sudo -n), needs Tom's explicit go: back up the installed logger to /var/lib/orc-clock-floor-backup/, install the new one
+# atomically (install to .new, then mv), verify its hash and that it compiles, restore the backup on ANY failure. Does not touch the
+# floor script, the unit, systemd, wp5, i2c, the RTC or the schedule. The logger is a per-tick Python script, so the change takes effect at
+# the next tick; nothing is restarted. Accepts only the two known previous versions (the original and the build deployed on 11-13) or the new one.
+# Rollback: iss015_floor_rollback.sh restores the newest backup, i.e. the build deployed before this one.
+# The body is a function run with stdin from /dev/null.
+
+@@PAYLOAD@@
+
+main() {
+STAGE="${ISS015_STAGE:-/tmp/orc-logger-stage}"
+ROOT="${ISS015_TEST_ROOT:-}"; OWN="-o root -g root"; MAXUP="${ISS015_MAX_UPTIME_S:-60}"; [ -n "$ROOT" ] && OWN=""
+DEST_LOGGER="$ROOT$DEST_LOGGER"; BK="$ROOT/var/lib/orc-clock-floor-backup"; S="sudo -n"
+echo "=== ISS015 LOGGER UPDATE $(date -u +%Y-%m-%dT%H:%M:%SZ)  build $BUILD_COMMIT ==="
+up=$(cut -d' ' -f1 /proc/uptime | cut -d. -f1); echo "uptime s: $up   user: $(id -un)"
+chk() { python3 -I -c "import sys; p=sys.argv[1]; compile(open(p).read(), p, 'exec')" "$1"; }
+
+[ "$up" -le "$MAXUP" ] || { echo "REFUSED: wake is ${up}s old (limit ${MAXUP}s; run in the first minute)"; return 2; }
+jobs=$(systemctl list-jobs --no-legend 2>/dev/null | grep -Ei 'poweroff|shutdown|reboot|halt' || true)
+[ -z "$jobs" ] || { echo "REFUSED: a shutdown job is queued"; return 2; }
+$S true 2>/dev/null || { echo "REFUSED: sudo -n is not available"; return 2; }
+mkdir -p "$STAGE" || { echo "REFUSED: cannot create $STAGE"; return 2; }
+printf '%s' "$B64_LOGGER" | base64 -d > "$STAGE/sensors_logger.py" 2>/dev/null
+[ -s "$STAGE/sensors_logger.py" ] && [ "$(sha256sum "$STAGE/sensors_logger.py" | cut -c1-64)" = "$EXPECT_LOGGER_SHA" ] || { echo "REFUSED: payload does not decode to its expected hash"; return 2; }
+chk "$STAGE/sensors_logger.py" || { echo "REFUSED: payload does not compile"; return 2; }
+echo "payload decoded, hash ok, compiles"
+
+inst=$(sha256sum "$DEST_LOGGER" 2>/dev/null | cut -c1-64)
+echo "installed logger: ${inst:-none}"
+if [ "$inst" = "$EXPECT_LOGGER_SHA" ]; then echo "RESULT: already the new version; nothing changed"; return 0; fi
+case " $EXPECT_DEPLOYED_LOGGER_SHAS " in *" $inst "*) ;; *) echo "REFUSED: installed logger is not a known previous version"; return 2;; esac
+
+$S mkdir -p "$BK" || { echo "STOPPED: mkdir backup"; return 1; }
+ts=$(date -u +%Y%m%dT%H%M%SZ)
+$S cp -a "$DEST_LOGGER" "$BK/sensors_logger.py.$ts" || { echo "STOPPED: backup"; return 1; }
+echo "1. backed up -> $BK/sensors_logger.py.$ts ($(sha256sum "$BK/sensors_logger.py.$ts" | cut -c1-16))"
+mode=$(stat -c '%a' "$DEST_LOGGER"); own=$(stat -c '%U' "$DEST_LOGGER"); grp=$(stat -c '%G' "$DEST_LOGGER")
+restore() { $S cp -a "$BK/sensors_logger.py.$ts" "$DEST_LOGGER"; echo "   backup restored: $(sha256sum "$DEST_LOGGER" | cut -c1-16)"; }
+if ! { $S install -m "$mode" ${OWN:+-o "$own" -g "$grp"} "$STAGE/sensors_logger.py" "$DEST_LOGGER.new" && $S mv -f "$DEST_LOGGER.new" "$DEST_LOGGER"; }; then
+  echo "STOPPED: install failed"; $S rm -f "$DEST_LOGGER.new"; restore; return 1
+fi
+if chk "$DEST_LOGGER" && [ "$(sha256sum "$DEST_LOGGER" | cut -c1-64)" = "$EXPECT_LOGGER_SHA" ]; then
+  echo "2. installed ($mode $own:$grp), hash and compile ok"
+else
+  echo "2. the installed file FAILED its check"; restore; echo "RESULT: NOT UPDATED (backup restored)"; return 1
+fi
+echo "3. importing the installed module (defines functions only; no sensor is read, no row is written):"
+PYTHONDONTWRITEBYTECODE=1 python3 -I - "$DEST_LOGGER" <<'PY' 2>&1 | sed 's/^/     /'
+import importlib.util, sys
+sys.dont_write_bytecode = True
+spec = importlib.util.spec_from_file_location("sensors_logger", sys.argv[1]); m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+print("guard present:", hasattr(m, "clock_untrusted"), "| uptime:", m._uptime_s(), "| floor set the clock this boot:", m._floor_set_clock(),
+      "| chrony synced:", m._chrony_synced(), "| clock_untrusted() now:", m.clock_untrusted())
+PY
+echo "RESULT: UPDATED. Takes effect at the next orc-sensors tick. Rollback: iss015_floor_rollback.sh (restores $BK/sensors_logger.py.$ts)"
+}
+main </dev/null
