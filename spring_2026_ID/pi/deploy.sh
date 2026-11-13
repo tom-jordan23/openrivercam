@@ -125,6 +125,62 @@ fixed() {
     FIXED=$((FIXED+1))
 }
 
+# ─── RTC write guard (ISS-FIELD-015) ──────────────────────────────
+# wp5 menu 1 writes the Pi's system clock into the Witty Pi RTC. It used to run unconditionally in
+# fix mode. That is only safe when the RTC is already close to the clock: the Witty Pi schedule is a
+# list of absolute RTC times, so moving the RTC by months leaves no future startup and the station
+# stays down until someone presses the button (Sukabumi, 2026-11-11: RTC read Jan, clock read Nov).
+# It is also wrong to write a system clock nobody has confirmed (the clock floor can hold it at a
+# saved time while the network is down). So: write only if chrony is synced to a real upstream AND
+# the RTC is within RTC_WRITE_MAX_DRIFT_S of the clock. Anything else is reported, never fixed.
+# A deliberate large correction is a manual step with a schedule re-arm in the same wake
+# (DEPLOY_FORCE_RTC_WRITE=1 lifts only the drift limit, never the chrony requirement).
+# BEGIN rtc_write_guard
+RTC_WRITE_MAX_DRIFT_S="${RTC_WRITE_MAX_DRIFT_S:-3600}"
+
+# True only when chrony is synchronised to a real upstream source ("local stratum 10" does not count).
+rtc_chrony_synced() {
+    local t st
+    t=$(timeout 5 chronyc tracking 2>/dev/null) || return 1
+    grep -qE '^Leap status *: *Normal' <<<"$t" || return 1
+    if grep -qE '^Reference ID *: *(00000000|7F7F0101)' <<<"$t"; then return 1; fi
+    st=$(awk -F: '/^Stratum/ {gsub(/ /,"",$2); print $2}' <<<"$t")
+    [[ "$st" =~ ^[0-9]+$ ]] && [ "$st" -ge 1 ] && [ "$st" -le 9 ]
+}
+
+# Sync the RTC to the system clock only when that is safe. Reports through pass/warn/fixed and
+# always returns 0 (a refusal is a warning, not a failure that --yes would try to fix again).
+rtc_sync_fix() {
+    local rtc_txt rtc_epoch sys_epoch drift
+    rtc_txt=$(echo "14" | timeout 30 wp5 2>/dev/null | grep "RTC Time:" | head -1 | sed 's/.*RTC Time: //' || true)
+    rtc_epoch=$(date -u -d "$rtc_txt" +%s 2>/dev/null || echo 0)
+    if [ -z "$rtc_txt" ] || [ "$rtc_epoch" -eq 0 ]; then
+        warn "Witty Pi 5 RTC NOT written: could not read the RTC time (wp5 header)"
+        return 0
+    fi
+    sys_epoch=$(date -u +%s)
+    drift=$(( sys_epoch - rtc_epoch )); drift=${drift#-}
+    if [ "$drift" -le 5 ]; then
+        pass "Witty Pi 5 RTC in sync with system clock (${rtc_txt}); not written"
+        return 0
+    fi
+    if ! rtc_chrony_synced; then
+        warn "Witty Pi 5 RTC NOT written: RTC is ${drift}s off, but the system clock is not confirmed by chrony (it may be a saved or stale time)"
+        return 0
+    fi
+    if [ "$drift" -gt "$RTC_WRITE_MAX_DRIFT_S" ] && [ "${DEPLOY_FORCE_RTC_WRITE:-0}" != "1" ]; then
+        warn "Witty Pi 5 RTC NOT written: RTC (${rtc_txt}) is ${drift}s from the clock (limit ${RTC_WRITE_MAX_DRIFT_S}s). Rewriting it moves the schedule calendar and can leave no future startup (station stays down until a button press). Do it by hand with a schedule re-arm in the same wake, or set DEPLOY_FORCE_RTC_WRITE=1"
+        return 0
+    fi
+    printf '1\n14\n' | timeout 30 wp5 >/dev/null 2>&1 || true
+    fixed "Witty Pi 5 RTC synced to system clock (was ${drift}s off)"
+    if [ "$drift" -gt "$RTC_WRITE_MAX_DRIFT_S" ]; then
+        warn "RTC was moved by ${drift}s (forced): re-arm the Witty Pi schedule in this wake (orc-wp5-rearm) or the station may have no future startup"
+    fi
+    return 0
+}
+# END rtc_write_guard
+
 section() {
     printf "\n" | tee -a "$REPORT_FILE"
     printf "=== %s ===\n" "$1" | tee -a "$REPORT_FILE"
@@ -798,8 +854,7 @@ run_witty_pi() {
     # RTC synced to system clock
     if command -v wp5 >/dev/null 2>&1; then
         if [ "$FIXING" -eq 1 ]; then
-            printf '1\n14\n' | timeout 30 wp5 >/dev/null 2>&1 || true
-            fixed "Witty Pi 5 RTC synced to system clock"
+            rtc_sync_fix
         else
             # RTC drift check (check-only)
             local wp5_rtc
@@ -814,7 +869,7 @@ run_witty_pi() {
                     if [ "$drift" -le 5 ]; then
                         pass "Witty Pi 5 RTC in sync with system clock (${wp5_rtc})"
                     else
-                        warn "Witty Pi 5 RTC drift: ${drift}s (RTC: ${wp5_rtc}) — sync with: printf '1\\n14\\n' | wp5"
+                        warn "Witty Pi 5 RTC drift: ${drift}s (RTC: ${wp5_rtc}) — a fix run syncs it only if chrony is synced and the drift is small; a large drift needs a manual write plus a schedule re-arm in the same wake (see rtc_write_guard in deploy.sh)"
                     fi
                 fi
             fi

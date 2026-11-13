@@ -49,6 +49,12 @@ that was harmless then because the clock was right. **Today it would write the c
 RTC. The active schedule list is built on the January calendar, so the Witty Pi would have no future startup and
 the station would stop until a button press.** Also patch `deploy.sh` later so this write is not unconditional.
 
+**Patched 2026-11-13:** the write is now `rtc_sync_fix` in `pi/deploy.sh` (between the `rtc_write_guard` markers). In fix mode it writes the RTC only when chrony
+is synced to a real upstream and the RTC is within 3,600 s of the clock (`RTC_WRITE_MAX_DRIFT_S`); within 5 s it does nothing; otherwise it only warns.
+`DEPLOY_FORCE_RTC_WRITE=1` lifts the drift limit (never the chrony requirement) and prints a re-arm warning. 17 tests and 7 broken copies in
+`pi/tests/deploy_rtc_guard/`. The floor install still does not use `deploy.sh`; a full `deploy.sh` run on Sukabumi has still not been reviewed for
+other changes (plan section 12 of the status doc).
+
 Install instead, from this workstation, with the exact tested files:
 
 1. Copy the files to a staging directory on the station and compare `sha256sum` on both sides.
