@@ -119,3 +119,42 @@ Read-only, at the first wake after the install:
 1. Approve writing section 3 (four code changes plus tests).
 2. Container rehearsal: yes or no.
 3. Install timing: which wake, and whether the team should be on standby (not required, because the schedule is untouched).
+
+## 13. Update 2026-11-13: reduced scope, built and tested, not deployed
+
+**Scope change (Tom's gut check, 2026-11-13).** Sections 3.2 and 3.4 are done; 3.1 is done in a simpler form; **3.3 (month repair) is
+deferred** and 3.5 is done. Reason for deferring the month repair: it trusts the RTC's day-of-month and time of day, and we do not yet know
+how the RTC is wrong (12-01 rollover test, firmware v1.1 now known). If the register really holds January, the RTC's day-of-month drifts
+at month end and the repair could accept a date about 30 days ahead inside its window. Revisit after 12-01.
+
+**What changed (commits cff7d05 and the install-test commit):**
+- `orc-clock-floor`: the upload watermark may raise the floor by at most 86,400 s (a future-dated file cannot push the clock; with no
+  floor it is never trusted). `restore --dry-run` and `save --dry-run` print the decision and change nothing, and restore does not wait.
+- `sensors_logger.py` `rotate_logs`: never deletes files dated before 2026-03-01. **Mechanism corrected:** with the clock on January the
+  cutoff is December 2025, so no November file is at risk. The loss happened afterwards: a wake with no network writes
+  `<label>_2026-01-12.csv`, and once chrony corrects the clock those files look more than 30 days old and rotation deleted them.
+  (An earlier version of this change measured the cutoff from the newest file; the mutant check showed that rule did nothing, so it was removed.)
+- Tests: `test_clock_floor.py` 54 checks (was 38); `run_mutants.py` 9 broken copies, all caught (the first run found three weak
+  spots: a redundant guard, an untested dry-run state path, and the useless rotation rule); `test_install_scripts.py` 16 checks that run
+  the install, a re-run, three refusals and the rollback against a fake station root.
+
+**How to run it (every station step needs Tom's explicit approval; never via `pi/deploy.sh`):**
+```
+cd spring_2026_ID/liveorc_server/station-health
+python3 -I build_floor_wake_scripts.py $OUT          # refuses unless files are committed, tests pass, mutants caught
+python3 -I todo119_wake_runner.py $OUT/iss015_floor_wake_a.sh iss015-floor-a --timeout 300 --wait 3600   # wake A: read + stage, no root
+python3 -I todo119_wake_runner.py $OUT/iss015_floor_wake_b.sh iss015-floor-b --timeout 300 --wait 3600   # wake B: install (sudo -n)
+python3 -I todo119_wake_runner.py iss015_floor_rollback.sh iss015-floor-rb --timeout 300 --wait 3600     # only if needed
+```
+Wake B refuses unless: the wake is at most 60 s old, no shutdown job is queued, `sudo -n` works, the staged files match the build hashes,
+and the installed `sensors_logger.py` is the expected old version (the station checkout `eb7c7b0`) or already the new one. It backs up only
+the old logger, installs the script and unit (inert), runs `daemon-reload`, installs the logger (compile-checked, backup restored on
+failure), enables the unit without starting it, and seeds the floor if chrony is synced. It never touches wp5, i2c, the RTC or the schedule.
+
+**Known limits (unchanged by this work):**
+- **Offline wakes get compressed, wrong timestamps.** Each no-network wake starts at the saved floor, so a day offline is squeezed into
+  a few hours of timestamps just after the last synced wake. They no longer vanish, but they are mislabelled once they upload. Options:
+  (a) accept it; (b) add `clock_state,clock_adj_s` to the sensor `CSV_HEADER` confs so those rows are identifiable. The ingest
+  (`sensor-ingest/app.py`) makes every numeric column a metric, so this needs no schema change but adds two new metrics per sensor that
+  other readers of the data (Grafana, the sheets export) would see; (c) the month repair after 12-01.
+- The floor does not fix the network (the expired data balance) and does not touch the RTC.

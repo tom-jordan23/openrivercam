@@ -7,8 +7,10 @@ set -u
 # Does not start or stop anything mid-wake.
 
 main() {
-S="sudo -n"; BK=/var/lib/orc-clock-floor-backup
-LOGGER=/usr/local/lib/orc-sensors/sensors_logger.py
+S="sudo -n"
+ROOT="${ISS015_TEST_ROOT:-}"          # test-only sandbox prefix
+BK="$ROOT/var/lib/orc-clock-floor-backup"; LOGGER="$ROOT/usr/local/lib/orc-sensors/sensors_logger.py"
+UNIT="$ROOT/etc/systemd/system/orc-clock-floor.service"; SCRIPT="$ROOT/usr/local/bin/orc-clock-floor"; FLOORF="$ROOT/var/lib/orc-clock-floor/floor"
 echo "=== ISS015 FLOOR ROLLBACK $(date -u +%Y-%m-%dT%H:%M:%SZ) ==="
 $S true 2>/dev/null || { echo "REFUSED: sudo -n is not available"; return 2; }
 latest=$(ls -1t "$BK"/sensors_logger.py.* 2>/dev/null | head -1)
@@ -17,10 +19,10 @@ echo "backup to restore: $latest ($(sha256sum "$latest" | cut -c1-16))"
 python3 -I -c "import sys; p=sys.argv[1]; compile(open(p).read(), p, 'exec')" "$latest" || { echo "REFUSED: backup does not compile"; return 2; }
 $S systemctl disable orc-clock-floor.service 2>&1 | sed 's/^/  /'
 mode=$(stat -c '%a' "$LOGGER"); own=$(stat -c '%U' "$LOGGER"); grp=$(stat -c '%G' "$LOGGER")
-$S install -m "$mode" -o "$own" -g "$grp" "$latest" "$LOGGER.new" && $S mv -f "$LOGGER.new" "$LOGGER" || { echo "FAILED restoring logger"; return 1; }
-$S rm -f /etc/systemd/system/orc-clock-floor.service /usr/local/bin/orc-clock-floor
+$S install -m "$mode" $([ -z "$ROOT" ] && echo "-o $own -g $grp") "$latest" "$LOGGER.new" && $S mv -f "$LOGGER.new" "$LOGGER" || { echo "FAILED restoring logger"; return 1; }
+$S rm -f "$UNIT" "$SCRIPT"
 $S systemctl daemon-reload
-echo "logger now: $(sha256sum "$LOGGER" | cut -c1-16)   unit file: $(ls /etc/systemd/system/orc-clock-floor.service 2>&1 | tail -1)"
-echo "RESULT: rolled back (effective at next boot). floor file left: $(cat /var/lib/orc-clock-floor/floor 2>&1)"
+echo "logger now: $(sha256sum "$LOGGER" | cut -c1-16)   unit file: $(ls "$UNIT" 2>&1 | tail -1)"
+echo "RESULT: rolled back (effective at next boot). floor file left: $(cat "$FLOORF" 2>&1)"
 }
 main </dev/null
