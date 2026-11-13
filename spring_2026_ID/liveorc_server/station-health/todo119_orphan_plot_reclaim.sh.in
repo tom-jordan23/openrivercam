@@ -1,0 +1,87 @@
+set -u
+# TODO-119 / ISS-FIELD-013: delete ORPHANED quiver plots (template; build with build_orphan_reclaim.py). Station times are UTC.
+# Approved by Tom 2026-11-13: "let's just delete the orphaned plots for now". Deletes ONLY the files on the embedded allow-list, one
+# regular file each: <videos>/<YYYYMMDD>/<id>/output/plot_quiver.jpg. Never a directory, never an mp4, nothing else.
+#
+# The allow-list (id|date|bytes) comes from match_orphans_to_server.py: orphans (a video dir with that plot and no .mp4) whose station
+# DB row is SYNCED and whose LiveORC record (same timestamp, 09-16 listing) has its image field set.
+# EVERY entry is re-checked on the station immediately before deletion; any failure skips that entry:
+#   regular file (not a symlink) | size equals the list | no .mp4 anywhere in that video dir | DB sync_status = SYNCED | mtime > 24 h old
+#   | path stays under the videos dir | id and date well formed
+# All-or-nothing preflight: if more than ABORT_PCT percent of entries fail, or the checked total differs wildly from the list, NOTHING
+# is deleted. APPLY=0 (dry run) prints everything and deletes nothing. Output is the evidence; the manifest is also written next to
+# the DB owner's home (a few tens of KB). Free space is printed before and after.
+# The body is a function run with stdin from /dev/null.
+
+@@PAYLOAD@@
+
+main() {
+V="${ISS_V:-/home/pi/.ORC-OS/uploads/videos}"
+DB="${ISS_DB:-/home/pi/.ORC-OS/orc-os.db}"
+MAN="${ISS_MANIFEST_DIR:-/home/pi}/orphan-plot-reclaim-$(date -u +%Y%m%dT%H%M%SZ).manifest"
+MAXUP="${ISS_MAX_UPTIME_S:-90}"; ABORT_PCT="${ISS_ABORT_PCT:-2}"; MINAGE="${ISS_MIN_AGE_S:-86400}"; BUDGET="${ISS_BUDGET_S:-80}"
+avail() { df -B1M --output=avail "$V" 2>/dev/null | tail -1 | tr -d ' '; }
+echo "=== ORPHAN PLOT RECLAIM $(date -u +%Y-%m-%dT%H:%M:%SZ)  build $BUILD_COMMIT  mode: $([ "$APPLY" = 1 ] && echo APPLY || echo DRY-RUN) ==="
+free0=$(avail); up=$(cut -d' ' -f1 /proc/uptime | cut -d. -f1)
+echo "  free: ${free0} MiB   uptime s: $up   entries on the list: $EXPECT_N ($EXPECT_BYTES bytes)"
+[ "$up" -le "$MAXUP" ] || { echo "REFUSED: wake is ${up}s old (limit ${MAXUP}s)"; return 2; }
+jobs=$(systemctl list-jobs --no-legend 2>/dev/null | grep -Ei 'poweroff|shutdown|reboot|halt' || true)
+[ -z "$jobs" ] || { echo "REFUSED: a shutdown job is queued"; return 2; }
+command -v sqlite3 >/dev/null || { echo "REFUSED: sqlite3 not installed"; return 2; }
+[ -r "$DB" ] && [ -d "$V" ] || { echo "REFUSED: DB or videos dir not readable"; return 2; }
+Vreal=$(realpath "$V") || return 2
+synced=$(sqlite3 "file:$DB?mode=ro" "SELECT id FROM video WHERE sync_status='SYNCED';" 2>&1) || { echo "REFUSED: DB query failed: $synced"; return 2; }
+echo "  SYNCED rows in the DB: $(printf '%s\n' "$synced" | grep -c .)"
+now=$(date +%s); total=0; n_ok=0; n_skip=0; bytes_ok=0
+OKLIST=""
+declare -A why
+while IFS='|' read -r id date bytes; do
+  [ -n "$id" ] || continue
+  total=$((total + 1)); r=""
+  if ! [[ "$id" =~ ^[0-9]+$ && "$date" =~ ^[0-9]{8}$ && "$bytes" =~ ^[0-9]+$ ]]; then r="malformed entry"
+  else
+    p="$V/$date/$id/output/plot_quiver.jpg"; d="$V/$date/$id"
+    if [ ! -e "$p" ]; then r="already gone"
+    elif [ -L "$p" ] || [ ! -f "$p" ]; then r="not a regular file"
+    elif [ "$(stat -c %s "$p")" != "$bytes" ]; then r="size differs"
+    elif [ -n "$(find "$d" -name '*.mp4' -print -quit 2>/dev/null)" ]; then r="video dir has an mp4"
+    elif ! printf '%s\n' "$synced" | grep -qx "$id"; then r="DB row not SYNCED"
+    elif [ $((now - $(stat -c %Y "$p"))) -lt "$MINAGE" ]; then r="modified in the last 24 h"
+    else
+      rp=$(realpath "$p" 2>/dev/null); case "$rp" in "$Vreal"/*) ;; *) r="resolves outside the videos dir" ;; esac
+    fi
+  fi
+  if [ -z "$r" ]; then n_ok=$((n_ok + 1)); bytes_ok=$((bytes_ok + bytes)); OKLIST="${OKLIST}${id}|${date}|${bytes}"$'\n'
+  else n_skip=$((n_skip + 1)); why["$r"]=$(( ${why["$r"]:-0} + 1 )); [ "$n_skip" -le 8 ] && echo "  skip $date/$id: $r"
+  fi
+done <<ALLOW
+@@ALLOWLIST@@
+ALLOW
+echo "  preflight: $total checked, $n_ok ok ($bytes_ok bytes = $(awk -v b=$bytes_ok 'BEGIN{printf "%.3f", b/1073741824}') GiB), $n_skip skipped"
+for k in "${!why[@]}"; do echo "    skipped for '$k': ${why[$k]}"; done
+[ "$total" -eq "$EXPECT_N" ] || { echo "ABORT: checked $total entries but the build expected $EXPECT_N"; return 3; }
+limit=$(( EXPECT_N * ABORT_PCT / 100 ))
+if [ "$n_skip" -gt "$limit" ]; then echo "ABORT: $n_skip skipped is more than ${ABORT_PCT}% ($limit); nothing deleted"; return 3; fi
+if [ "$APPLY" != 1 ]; then echo "DRY RUN: would delete $n_ok files, $bytes_ok bytes. Nothing changed."; return 0; fi
+
+echo "  deleting (budget ${BUDGET}s) ..."
+t0=$(date +%s); del=0; delb=0; fail=0
+: > "$MAN" 2>/dev/null || { echo "  cannot write the manifest $MAN"; MAN=/dev/null; }
+while IFS='|' read -r id date bytes; do
+  [ -n "$id" ] || continue
+  if [ $(( $(date +%s) - t0 )) -ge "$BUDGET" ]; then echo "  time budget reached; stopping with the rest untouched"; break; fi
+  p="$V/$date/$id/output/plot_quiver.jpg"
+  if [ -f "$p" ] && [ ! -L "$p" ] && rm -f -- "$p"; then
+    del=$((del + 1)); delb=$((delb + bytes)); printf '%s|%s|%s|%s\n' "$id" "$date" "$bytes" "deleted" >> "$MAN"
+  else fail=$((fail + 1)); printf '%s|%s|%s|%s\n' "$id" "$date" "$bytes" "FAILED" >> "$MAN"; fi
+done <<DELLIST
+$OKLIST
+DELLIST
+sync
+free1=$(avail)
+echo "  deleted $del files ($delb bytes = $(awk -v b=$delb 'BEGIN{printf "%.3f", b/1073741824}') GiB), $fail failed"
+echo "  free: ${free0} -> ${free1} MiB  (+$((free1 - free0)) MiB)"
+echo "  manifest: $MAN ($(wc -l < "$MAN" 2>/dev/null) lines); first/last: $(head -1 "$MAN" 2>/dev/null) / $(tail -1 "$MAN" 2>/dev/null)"
+echo "RESULT: $([ "$fail" -eq 0 ] && echo OK || echo "$fail FAILURES")"
+}
+main </dev/null
