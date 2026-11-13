@@ -1,0 +1,97 @@
+set -u
+# ISS-FIELD-015 clock floor, WAKE B: INSTALL. Template; build with build_floor_wake_scripts.py.
+# Run through todo119_wake_runner.py in the FIRST MINUTE of a wake, after wake A passed.
+# Station times are UTC.
+#
+# STATION WRITES, ROOT (sudo -n). Needs Tom's explicit approval of exactly these steps:
+#   1. back up the installed sensors_logger.py to /var/lib/orc-clock-floor-backup/
+#   2. install /usr/local/bin/orc-clock-floor and /etc/systemd/system/orc-clock-floor.service
+#   3. systemctl daemon-reload
+#   4. install the new sensors_logger.py (atomic mv; compile-checked; backup restored on failure)
+#   5. systemctl enable orc-clock-floor.service      (NOT started this wake)
+#   6. orc-clock-floor save (seeds the floor; the script itself refuses unless chrony is synced)
+# NEVER: pi/deploy.sh, wp5, i2c, the RTC, the schedule, a reboot, starting the unit mid-wake.
+# Stops at the first failed step and prints what was and was not done. Rollback: iss015_floor_rollback.sh.
+# Plan: ISS-FIELD-015_FLOOR_DEPLOY_PLAN_2026-11-12.md sections 4, 8, 10.
+# The body is a function run with stdin from /dev/null.
+
+@@PAYLOAD@@
+
+main() {
+STAGE="${ISS015_STAGE:-/tmp/orc-floor-stage}"
+# Test-only sandbox: ISS015_TEST_ROOT prefixes every station path (and drops root ownership).
+ROOT="${ISS015_TEST_ROOT:-}"; OWN="-o root -g root"; MAXUP="${ISS015_MAX_UPTIME_S:-60}"
+if [ -n "$ROOT" ]; then OWN=""; export ORC_CF_DIR="$ROOT/var/lib/orc-clock-floor"; fi
+DEST_FLOOR="$ROOT$DEST_FLOOR"; DEST_UNIT="$ROOT$DEST_UNIT"; DEST_LOGGER="$ROOT$DEST_LOGGER"
+BK="$ROOT/var/lib/orc-clock-floor-backup"; FLOORF="$ROOT/var/lib/orc-clock-floor/floor"
+S="sudo -n"
+echo "=== ISS015 FLOOR WAKE B (INSTALL) $(date -u +%Y-%m-%dT%H:%M:%SZ)  build $BUILD_COMMIT ==="
+up=$(cut -d' ' -f1 /proc/uptime | cut -d. -f1); echo "uptime s: $up   user: $(id -un)"
+stop() { echo "STOPPED at: $1"; echo "RESULT: NOT COMPLETE. State: $DONE"; return 1; }
+DONE="nothing changed"
+
+# --- preconditions: refuse rather than guess ---
+[ "$up" -le "$MAXUP" ] || { echo "REFUSED: wake is ${up}s old (limit ${MAXUP}s; install in the first minute)"; return 2; }
+jobs=$(systemctl list-jobs --no-legend 2>/dev/null | grep -Ei 'poweroff|shutdown|reboot|halt' || true)
+[ -z "$jobs" ] || { echo "REFUSED: a shutdown job is queued: $jobs"; return 2; }
+$S true 2>/dev/null || { echo "REFUSED: sudo -n is not available"; return 2; }
+for n in FLOOR UNIT LOGGER; do
+  bv="EXPECT_${n}_SHA"; dv="DEST_$n"; f="$STAGE/$(basename "${!dv}")"
+  [ -f "$f" ] && [ "$(sha256sum "$f" | cut -c1-64)" = "${!bv}" ] || { echo "REFUSED: staged $f missing or hash differs (run wake A in this build)"; return 2; }
+done
+inst=$(sha256sum "$DEST_LOGGER" 2>/dev/null | cut -c1-64)
+if [ "$inst" != "$EXPECT_OLD_LOGGER_SHA" ] && [ "$inst" != "$EXPECT_LOGGER_SHA" ]; then
+  echo "REFUSED: installed sensors_logger.py ($inst) is neither the expected old version nor the new one"; return 2
+fi
+[ ! -e "$FLOORF" ] && echo "no floor file yet (expected on first install)" || echo "floor file exists: $(cat "$FLOORF")"
+
+# --- 1. backup ---
+ts=$(date -u +%Y%m%dT%H%M%SZ)
+if [ "$inst" = "$EXPECT_OLD_LOGGER_SHA" ]; then      # back up only the OLD version, never a copy of the new one
+  $S mkdir -p "$BK" || { stop "mkdir backup"; return 1; }
+  $S cp -a "$DEST_LOGGER" "$BK/sensors_logger.py.$ts" || { stop "backup logger"; return 1; }
+  echo "1. backed up logger -> $BK/sensors_logger.py.$ts ($(sha256sum "$BK/sensors_logger.py.$ts" | cut -c1-16))"; DONE="backup only"
+else echo "1. logger is already the new version; no backup taken (an earlier run made it)"; fi
+
+# --- 2. floor script and unit (inert until enabled) ---
+$S mkdir -p "$(dirname "$DEST_FLOOR")" "$(dirname "$DEST_UNIT")"
+$S install -m 0755 $OWN "$STAGE/orc-clock-floor" "$DEST_FLOOR.new" && $S mv -f "$DEST_FLOOR.new" "$DEST_FLOOR" || { stop "install floor script"; return 1; }
+$S install -m 0644 $OWN "$STAGE/orc-clock-floor.service" "$DEST_UNIT.new" && $S mv -f "$DEST_UNIT.new" "$DEST_UNIT" || { stop "install unit"; return 1; }
+echo "2. installed $DEST_FLOOR and $DEST_UNIT"; DONE="backup, floor script and unit installed (inert: unit not enabled)"
+systemd-analyze verify "$DEST_UNIT" 2>&1 | grep -v "CPUAccounting\|xfs_scrub" | sed 's/^/     verify: /'
+
+# --- 3. daemon-reload ---
+$S systemctl daemon-reload || { stop "daemon-reload"; return 1; }
+echo "3. daemon-reload ok"
+
+# --- 4. logger: keep its owner and mode, atomic replace, compile-check, restore on failure ---
+if [ "$inst" = "$EXPECT_LOGGER_SHA" ]; then
+  echo "4. logger already the new version; skipped"
+else
+  mode=$(stat -c '%a' "$DEST_LOGGER"); own=$(stat -c '%U' "$DEST_LOGGER"); grp=$(stat -c '%G' "$DEST_LOGGER")
+  $S install -m "$mode" -o "$own" -g "$grp" "$STAGE/sensors_logger.py" "$DEST_LOGGER.new" && $S mv -f "$DEST_LOGGER.new" "$DEST_LOGGER" || { stop "install logger"; return 1; }
+  if python3 -I -c "import sys; p=sys.argv[1]; compile(open(p).read(), p, 'exec')" "$DEST_LOGGER" && [ "$(sha256sum "$DEST_LOGGER" | cut -c1-64)" = "$EXPECT_LOGGER_SHA" ]; then
+    echo "4. logger installed ($mode $own:$grp), hash and compile OK"; DONE="script, unit and logger installed; unit not enabled"
+  else
+    $S cp -a "$BK/sensors_logger.py.$ts" "$DEST_LOGGER"; echo "4. logger FAILED its check; backup restored"; stop "logger check"; return 1
+  fi
+fi
+
+# --- 5. enable (symlink only; never start mid-wake) ---
+$S systemctl enable orc-clock-floor.service 2>&1 | sed 's/^/     /'
+[ "$(systemctl is-enabled orc-clock-floor.service 2>&1)" = "enabled" ] || { stop "enable"; return 1; }
+echo "5. enabled (not started; it first runs at the next boot)"; DONE="installed and enabled; floor not yet seeded"
+
+# --- 6. seed the floor (the script refuses unless chrony is synced to a real upstream) ---
+$S env ${ORC_CF_DIR:+ORC_CF_DIR="$ORC_CF_DIR"} "$DEST_FLOOR" save 2>&1 | sed 's/^/     /'
+echo "   floor file now: $(cat "$FLOORF" 2>&1)   (absent means chrony was not synced; the first synced shutdown will save it)"
+
+echo
+echo "-- dry-run with the installed script (changes nothing):"
+"$DEST_FLOOR" restore --dry-run 2>&1 | sed 's/^/     /'
+echo "-- status:"; "$DEST_FLOOR" status 2>&1 | sed 's/^/     /'
+echo
+echo "RESULT: INSTALLED. unit enabled=$(systemctl is-enabled orc-clock-floor.service 2>&1) active=$(systemctl is-active orc-clock-floor.service 2>&1) (inactive is expected until the next boot)"
+echo "NEXT: verify at the next wake (plan section 9). Rollback: iss015_floor_rollback.sh"
+}
+main </dev/null

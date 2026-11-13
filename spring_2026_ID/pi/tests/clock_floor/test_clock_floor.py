@@ -20,7 +20,7 @@ HERE = Path(__file__).resolve().parent
 PI = HERE.parents[1]
 FLOOR = Path(os.environ.get("ORC_CF_TEST_SCRIPT") or PI / "sukabumi/usr/local/bin/orc-clock-floor")   # mutants for self-checking
 UPLOADER = PI / "shared/usr/local/bin/orc-sensors-upload"
-LOGGER = PI / "shared/usr/local/lib/orc-sensors/sensors_logger.py"
+LOGGER = Path(os.environ.get("ORC_CF_TEST_LOGGER") or PI / "shared/usr/local/lib/orc-sensors/sensors_logger.py")   # mutants too
 
 T_MAR = 1774547400      # 2026-03-26 17:50:00  image time before wp5d steps the clock
 T_JAN = 1768132816      # 2026-01-11 12:00:16  the Witty Pi RTC date seen on 11-11
@@ -280,6 +280,80 @@ def main():
     check("L5 header listing the columns gets them in the row", rows["with"][1].split(",")[2:] == ["1", "99"], rows["with"])
     check("L6 header without them: row unchanged (inert until a conf opts in)",
           rows["without"][0] == "timestamp,x" and len(rows["without"][1].split(",")) == 2, rows["without"])
+
+    # ── watermark cap: the watermark may raise the floor by at most a day ─
+    def wm_rig(floor, wm_delta):
+        rg = Rig(clock=T_MAR, step_at=6, step_to=T_JAN)
+        if floor is not None:
+            rg.set_floor(floor)
+        wf = rg.d / "upload.state"; wf.write_text(""); os.utime(wf, (T_NOV + wm_delta, T_NOV + wm_delta))
+        rg.run("restore")
+        return rg
+    rg = wm_rig(T_NOV, 86400)
+    check("WM1 watermark exactly one day above the floor is honoured (+1 s)", rg.clock_now() >= T_NOV + 86401 and any(int(x.lstrip('@')) == T_NOV + 86401 for x in rg.set_log()), rg.set_log())
+    rg = wm_rig(T_NOV, 86401)
+    check("WM2 watermark one second past the cap is ignored; the floor wins", [int(x.lstrip('@')) for x in rg.set_log()] == [T_NOV], rg.set_log())
+    rg = wm_rig(T_NOV, 30 * 86400)
+    check("WM3 a future-dated watermark (+30 d) never moves the clock there", [int(x.lstrip('@')) for x in rg.set_log()] == [T_NOV] and rg.clock_now() < T_NOV + 3600, (rg.set_log(), rg.clock_now()))
+    rg = wm_rig(None, 900)
+    check("WM4 a watermark with no floor at all is not trusted: nothing set", rg.set_log() == [], rg.set_log())
+
+    # ── --dry-run: print the decision, change nothing ─────────────────
+    rg = Rig(clock=T_MAR, step_at=6, step_to=T_JAN); rg.set_floor(T_NOV)
+    p = rg.run("restore", "--dry-run")
+    check("D1 restore --dry-run: says it WOULD set, sets nothing, writes no state, exit 0",
+          p.returncode == 0 and "WOULD set" in p.stdout and rg.set_log() == [] and rg.restore_state() == {} and rg.clock_now() == T_MAR,
+          (p.returncode, p.stdout[-200:], rg.set_log(), rg.restore_state()))
+    rg2 = Rig(clock=T_NOV + 50, step_at=6, step_to=T_NOV + 56); rg2.set_floor(T_NOV)
+    p2 = rg2.run("restore", "--dry-run")
+    check("D1b restore --dry-run when the clock is NOT behind: still no state file, nothing set",
+          p2.returncode == 0 and rg2.restore_state() == {} and rg2.set_log() == [], (p2.returncode, rg2.restore_state()))
+    check("D2 restore --dry-run does not sit out MAX_WAIT (no sleep ran)", (rg.d / "uptime").read_text().startswith("3.00"), (rg.d / "uptime").read_text())
+    rg = Rig(clock=T_NOV + 300, chrony="real"); rg.set_floor(T_NOV)
+    p = rg.run("save", "--dry-run")
+    check("D3 save --dry-run: floor file unchanged, says WOULD save", p.returncode == 0 and rg.floor() == str(T_NOV) and "WOULD save" in p.stdout, (rg.floor(), p.stdout))
+    rg = Rig(clock=T_NOV, chrony="real")
+    rg.run("save", "--dry-run")
+    check("D3b save --dry-run with no floor yet creates nothing", rg.floor() is None and not (rg.d / "lib").exists(), rg.floor())
+    rg = Rig(clock=T_MAR); rg.set_floor(T_NOV)
+    p = rg.run("restore", "--bogus")
+    check("D4 an unknown flag is refused (exit 2) and does nothing", p.returncode == 2 and rg.set_log() == [] and rg.clock_now() == T_MAR, (p.returncode, rg.set_log()))
+    rg = Rig(clock=T_NOV + 300, chrony="real"); rg.set_floor(T_NOV)
+    rg.run("save")
+    check("D5 without the flag save still writes (the flag is not sticky)", rg.floor() == str(T_NOV + 300), rg.floor())
+
+    # ── log rotation: a clock behind the data must not delete the data ─
+    from datetime import datetime as _dt
+    rot = Path(tempfile.mkdtemp(prefix="rot_"))
+
+    def rot_files(names):
+        for f in rot.glob("*.csv"): f.unlink()
+        for n in names: (rot / n).write_text("timestamp,x\n")
+
+    def rot_left(): return sorted(f.name for f in rot.glob("*.csv"))
+
+    nov = [f"sht40_2026-10-{d:02d}.csv" for d in (14, 20, 31)] + [f"sht40_2026-11-{d:02d}.csv" for d in (1, 5, 11, 12)]
+    rot_files(nov)
+    sl.rotate_logs(str(rot), "sht40", 30, now=_dt(2026, 1, 12, 12, 30))      # RTC clock reads Jan 12: cutoff is Dec 2025
+    check("RT1 clock behind the data (Jan 12 vs Nov files): nothing is deleted", rot_left() == sorted(nov), rot_left())
+    rot_files(["sht40_2026-09-01.csv", "sht40_2026-10-01.csv", "sht40_2026-10-13.csv", "sht40_2026-10-14.csv", "sht40_2026-10-20.csv", "sht40_2026-11-12.csv"])
+    sl.rotate_logs(str(rot), "sht40", 30, now=_dt(2026, 11, 13, 9, 0))
+    # Unchanged semantics: a file dated midnight 30 days back is older than "now - 30 d" at 09:00, so it goes.
+    check("RT2 normal clock: files older than 30 days go, newer stay",
+          rot_left() == ["sht40_2026-10-20.csv", "sht40_2026-11-12.csv"], rot_left())
+    rot_files(["sht40_2026-01-11.csv", "sht40_2026-01-12.csv", "sht40_2026-11-12.csv", "sht40_2026-09-01.csv"])
+    sl.rotate_logs(str(rot), "sht40", 30, now=_dt(2026, 11, 13, 9, 0))
+    check("RT3 January-dated files (evidence of a wrong clock) are kept; a legitimate old file is still rotated",
+          rot_left() == ["sht40_2026-01-11.csv", "sht40_2026-01-12.csv", "sht40_2026-11-12.csv"], rot_left())
+    rot_files(["sht40_2026-10-01.csv", "ds18b20_2026-10-01.csv", "sht40_2026-11-12.csv", "notes.csv", "sht40_bad.csv"])
+    sl.rotate_logs(str(rot), "sht40", 30, now=_dt(2026, 11, 13))
+    check("RT4 only this sensor's dated files are touched", rot_left() == ["ds18b20_2026-10-01.csv", "notes.csv", "sht40_2026-11-12.csv", "sht40_bad.csv"], rot_left())
+    rot_files([])
+    try:
+        sl.rotate_logs(str(rot), "sht40", 30, now=_dt(2026, 11, 13)); ok = True
+    except Exception as e:                      # noqa: BLE001
+        ok = False
+    check("RT5 an empty directory is fine", ok)
 
     bad = [n for n, ok in results if not ok]
     print(f"\n{len(results) - len(bad)}/{len(results)} passed" + (f"; FAILED: {bad}" if bad else ""))

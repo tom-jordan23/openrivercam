@@ -1,0 +1,65 @@
+set -u
+# ISS-FIELD-015 clock floor, WAKE A: read-only checks, then STAGE and verify (no installation).
+# Template; build with build_floor_wake_scripts.py, run through todo119_wake_runner.py (bash -s over ssh).
+# Station times are UTC.
+#
+# Writes only into the staging directory /tmp/orc-floor-stage (the ssh user's own files, no sudo).
+# Does NOT touch /usr/local, /etc, systemd, the RTC, the schedule, wp5 or i2c. The dry-run
+# commands at the end change nothing (tested: restore/save --dry-run write no file, set no clock).
+# Plan: ISS-FIELD-015_FLOOR_DEPLOY_PLAN_2026-11-12.md sections 5 and 8. Needs Tom's approval to run.
+# The body is a function run with stdin from /dev/null.
+
+@@PAYLOAD@@
+
+main() {
+STAGE="${ISS015_STAGE:-/tmp/orc-floor-stage}"
+sec() { echo; echo "=== $1 ==="; }
+echo "=== ISS015 FLOOR WAKE A $(date -u +%Y-%m-%dT%H:%M:%SZ)  build $BUILD_COMMIT ==="
+up=$(cut -d' ' -f1 /proc/uptime | cut -d. -f1); echo "uptime s: $up   user: $(id -un)"
+MAXUP="${ISS015_MAX_UPTIME_S:-150}"
+if [ "$up" -gt "$MAXUP" ]; then echo "REFUSED: wake is ${up}s old (limit ${MAXUP}s); run in the first minutes of a wake"; return 2; fi
+
+sec "1. boot ordering: a dependency cycle makes systemd drop a unit (the failure we cannot test locally)"
+for u in orc-api.service orc-sensors.timer orc-sensors.service chrony.service wp5d.service; do
+  echo "-- $u: $(systemctl is-enabled $u 2>&1) / $(systemctl is-active $u 2>&1)"
+  systemctl cat "$u" 2>&1 | grep -E '^(After|Before|Requires|Wants|Conflicts|BindsTo|PartOf|WantedBy|Type|ExecStart|TimeoutStartSec)=' | sed 's/^/    /' | head -14
+done
+echo "-- critical-chain orc-api.service"; systemd-analyze critical-chain orc-api.service 2>&1 | head -16 | sed 's/^/    /'
+echo "-- existing orc-clock-floor on the station:"; systemctl is-enabled orc-clock-floor.service 2>&1 | sed 's/^/    /'
+ls -l /usr/local/bin/orc-clock-floor /etc/systemd/system/orc-clock-floor.service /var/lib/orc-clock-floor 2>&1 | sed 's/^/    /'
+
+sec "2. environment"
+echo "python3: $(python3 --version 2>&1)   bash: ${BASH_VERSION}"
+df -h / /var /var/log 2>/dev/null | sed 's/^/    /'
+echo "upload watermark: $(stat -c '%n  mtime %y (%Y)' /var/lib/orc-sensors/upload.state 2>&1)"
+echo "chrony: $(timeout 5 chronyc tracking 2>&1 | grep -E 'Reference ID|Stratum|Leap status' | tr '\n' ';')"
+echo "installed logger: $(sha256sum "$DEST_LOGGER" 2>&1 | cut -c1-64)  mode/owner: $(stat -c '%a %U:%G' "$DEST_LOGGER" 2>&1)"
+echo "expected OLD    : $EXPECT_OLD_LOGGER_SHA   (repo at the station checkout)"
+[ "$(sha256sum "$DEST_LOGGER" 2>/dev/null | cut -c1-64)" = "$EXPECT_OLD_LOGGER_SHA" ] && echo "  installed logger == expected old version: OK" || echo "  INSTALLED LOGGER DIFFERS FROM THE EXPECTED OLD VERSION: do not install over it"
+
+sec "3. stage and verify the exact tested files"
+mkdir -p "$STAGE" || { echo "cannot create $STAGE"; return 1; }
+ok=1
+for n in FLOOR UNIT LOGGER; do
+  bv="B64_$n"; sv="EXPECT_${n}_SHA"; dv="DEST_$n"
+  b="${!bv}"; want="${!sv}"; f="$STAGE/$(basename "${!dv}")"
+  printf '%s' "$b" | base64 -d > "$f" || { echo "decode failed: $n"; ok=0; continue; }
+  got=$(sha256sum "$f" | cut -c1-64)
+  [ "$got" = "$want" ] && echo "  $(basename "$f"): sha256 OK ($got)" || { echo "  $(basename "$f"): SHA MISMATCH got $got want $want"; ok=0; }
+done
+chmod 755 "$STAGE/orc-clock-floor"
+bash -n "$STAGE/orc-clock-floor" && echo "  bash -n orc-clock-floor: OK" || { echo "  bash -n FAILED"; ok=0; }
+python3 -I -c "import sys; p=sys.argv[1]; compile(open(p).read(), p, 'exec')" "$STAGE/sensors_logger.py" && echo "  compile sensors_logger.py (no .pyc written): OK" || { echo "  compile FAILED"; ok=0; }
+echo "  systemd-analyze verify (the only expected warning is that the script is not installed yet):"
+systemd-analyze verify "$STAGE/orc-clock-floor.service" 2>&1 | grep -v "CPUAccounting\|xfs_scrub" | sed 's/^/    /' | head -8
+
+sec "4. dry-runs with the STAGED script against the real chrony (writes nothing, sets nothing)"
+"$STAGE/orc-clock-floor" restore --dry-run 2>&1 | sed 's/^/    restore: /'
+"$STAGE/orc-clock-floor" save --dry-run 2>&1 | sed 's/^/    save   : /'
+echo "  (before the first install there is no floor file: restore has nothing to do, and save needs chrony synced to a real upstream)"
+echo "  clock now: $(date -u +%Y-%m-%dT%H:%M:%SZ)   RTC copy in wp5d.log (last): $(tr -d '\000' < /var/log/wp5d.log 2>/dev/null | grep -a 'RTC Time' | tail -1 | cut -c1-80)"
+
+echo
+if [ "$ok" = 1 ]; then echo "RESULT: staged and verified in $STAGE; nothing installed"; else echo "RESULT: STAGING FAILED CHECKS; do not install"; return 1; fi
+}
+main </dev/null

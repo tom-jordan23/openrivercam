@@ -802,9 +802,22 @@ def append_csv(log_dir, label, header, values):
 
 # ─── Log rotation ────────────────────────────────────────────────────
 
-def rotate_logs(log_dir, label, keep_days):
-    """Delete <label>_*.csv files older than keep_days."""
-    cutoff = datetime.now() - timedelta(days=keep_days)
+# Files dated before this cannot be real data from this station (commissioned March 2026). They are
+# evidence of a wrong clock (the Witty Pi RTC read January on 2026-11-11) and are never rotated away.
+# Rotation is by file NAME date, so a file named for a wrong-clock day looks old once the clock is right.
+MIN_PLAUSIBLE_DATE = datetime(2026, 3, 1)
+
+
+def rotate_logs(log_dir, label, keep_days, now=None):
+    """Delete <label>_*.csv files older than keep_days, except files dated before MIN_PLAUSIBLE_DATE.
+
+    ISS-FIELD-015: a wake with no network keeps the Witty Pi RTC date (January), so it writes
+    <label>_2026-01-12.csv. When chrony later corrects the clock to November, those files are
+    more than 30 days "old" and the next rotation deleted them, along with the only copy of
+    that wake's readings. A file dated before the station existed is evidence of a wrong clock,
+    not an old log, so it is kept.
+    """
+    cutoff = (now or datetime.now()) - timedelta(days=keep_days)
     pattern = os.path.join(log_dir, f"{label}_*.csv")
 
     for path in globmod.glob(pattern):
@@ -813,6 +826,8 @@ def rotate_logs(log_dir, label, keep_days):
             date_str = fname.replace(f"{label}_", "").replace(".csv", "")
             file_date = datetime.strptime(date_str, "%Y-%m-%d")
         except ValueError:
+            continue
+        if file_date < MIN_PLAUSIBLE_DATE:
             continue
         if file_date < cutoff:
             os.remove(path)

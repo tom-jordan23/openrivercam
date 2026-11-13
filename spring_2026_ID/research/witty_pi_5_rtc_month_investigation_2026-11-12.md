@@ -152,6 +152,25 @@ outside the vendor tools):** with the vendor lock held, read virtual registers 1
 alarm), 44 (DST enable) and 94 (RTC flag register). Raw month 0x01 supports H1 (a lost bit in the chip
 or the write path). Raw 0x11 with `wp5` showing 01 would contradict the code we read.
 
+## 7c. Firmware version read (2026-11-13 13:31:54 UTC; read by me)
+
+Capture: `data/station-forensics/orc-sukabumi-iss015-fwversion2-20261113T133150Z.txt`, script `iss015_fw_version_read.sh`
+(registers 0, 1, 2 only; checked against the vendor firmware source, tags v1.0 to v1.7). A first attempt at the 13:31:03
+capture refused before any I2C access because `i2cget` is in `/usr/sbin`, not on the ssh PATH.
+
+- Register 0 = 0x51 (Witty Pi 5 HAT+), register 1 = 0x01, register 2 = 0x01: **firmware v1.1**.
+- The read succeeded on the first try, in a 104 s old wake, under the vendor lock. The 13:30 wake wrote its rows normally.
+  **Not yet checked:** that the 14:00 wake and later ones arrived on the grid after the read.
+- v1.1 predates every fix listed in section 3: v1.4 (next-occurrence calculation; alarms not programmed when the configured day
+  is smaller than the current day), **v1.5 (internal I2C pointer race)** and v1.7 (RTC alarm race that could miss scheduled
+  startups).
+- v1.5's note says heavy firmware work such as schedule activation could change the RTC chip's internal pointer between the Pi's
+  index write and the read or write, corrupting values and, "in practice", overwriting the RTC minute register. Our daily
+  re-arm is a schedule activation and `wp5` runs several times a minute, so this race was exposed on our unit. That makes H2
+  (firmware fault) a stronger candidate for both the wrong RTC month and the 10-21 missed startup. Still **not proven**: no
+  read has shown the raw month register, and the race note names the minute register.
+- Not examined: whether the vendor documents a safe update path for a unit on v1.1 (USB-C by the team, or software upgrade).
+
 ## 8. Sources
 
 - Witty Pi 5 user manual (revision 1.01), text extracted from the PDF by me:

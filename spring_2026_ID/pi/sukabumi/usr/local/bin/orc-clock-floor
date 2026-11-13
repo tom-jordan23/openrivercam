@@ -47,12 +47,19 @@ CEIL="${ORC_CF_CEIL:-2082758400}"                   # 2036-01-01T00:00:00Z
 MAX_WAIT="${ORC_CF_MAX_WAIT:-20}"                   # s to wait for wp5d's clock step
 STEP_THRESHOLD="${ORC_CF_STEP_THRESHOLD:-3600}"     # a "step" is a jump bigger than this
 MAX_UNSYNCED_ADVANCE=$((2 * 86400))
+# The upload watermark (mtime of upload.state) may only raise the floor by this much. A watermark
+# further ahead than that is a future-dated file or a wrong clock, not a real last-upload time.
+MAX_WM_AHEAD="${ORC_CF_MAX_WM_AHEAD:-86400}"
+DRY=0                                               # --dry-run: print the decision, change nothing
 UPTIME_FILE="${ORC_CF_UPTIME_FILE:-/proc/uptime}"
 NOW_CMD="${ORC_CF_NOW_CMD:-date +%s}"
 SET_CMD="${ORC_CF_SET_CMD:-date -u -s}"             # called as: $SET_CMD "@<epoch>"
 CHRONYC="${ORC_CF_CHRONYC:-chronyc}"
 
-log() { logger -t "$TAG" -- "$*" 2>/dev/null || true; echo "$TAG: $*" >&2; }
+log() {
+    if [ "$DRY" = 1 ]; then echo "$TAG (dry-run): $*"; return 0; fi
+    logger -t "$TAG" -- "$*" 2>/dev/null || true; echo "$TAG: $*" >&2
+}
 now() { $NOW_CMD; }
 uptime_s() { cut -d' ' -f1 "$UPTIME_FILE" 2>/dev/null | cut -d. -f1; }
 is_int() { [[ "${1:-}" =~ ^[0-9]+$ ]]; }
@@ -81,6 +88,7 @@ read_floor() {  # prints a valid floor or 0
 }
 
 write_state() {  # restored adj_s floor sys_before waited stepped
+    [ "$DRY" = 1 ] && return 0
     mkdir -p "$RUN_DIR" 2>/dev/null || return 0
     local tmp="$STATE_OUT.$$"
     {
@@ -96,6 +104,8 @@ cmd_restore() {
     local u0 t0 waited=0 stepped=0 u t exp
     u0=$(uptime_s); t0=$(now)
     is_int "$u0" && is_int "$t0" || { log "cannot read time/uptime; doing nothing"; write_state 0 0 0 0 0 0; return 0; }
+    # A dry run is for a manual check mid-wake, long after wp5d's step: do not sit out MAX_WAIT.
+    [ "$DRY" = 1 ] && MAX_WAIT=0
     while [ "$waited" -lt "$MAX_WAIT" ]; do
         u=$(uptime_s); t=$(now)
         if is_int "$u" && is_int "$t"; then
@@ -109,9 +119,18 @@ cmd_restore() {
     local floor wm eff sys
     floor=$(read_floor)
     wm=0
+    # The watermark covers a floor that is stale because a wake ended in a hard power cut (the
+    # upload ran, the shutdown save did not). It is trusted only up to MAX_WM_AHEAD above the
+    # floor, so a future-dated file cannot push the clock forward (with no floor, 0 + MAX_WM_AHEAD
+    # is below BUILD_FLOOR, so it is never trusted).
     if [ -e "$UPLOAD_STATE" ]; then
         wm=$(stat -c %Y "$UPLOAD_STATE" 2>/dev/null || echo 0)
-        in_range "$wm" && wm=$(( wm + 1 )) || wm=0
+        if in_range "$wm" && [ "$wm" -le $(( floor + MAX_WM_AHEAD )) ]; then
+            wm=$(( wm + 1 ))
+        else
+            [ "$wm" -gt 0 ] && log "ignoring upload watermark $wm (not within ${MAX_WM_AHEAD}s above floor $floor)"
+            wm=0
+        fi
     fi
     eff=$floor; [ "$wm" -gt "$eff" ] && eff=$wm
     sys=$(now)
@@ -130,7 +149,9 @@ cmd_restore() {
         log "floor $eff is >5 years ahead of clock $sys; refusing to set"
         write_state 0 0 "$eff" "$sys" "$waited" "$stepped"; return 0
     fi
-    if $SET_CMD "@$eff" >/dev/null 2>&1; then
+    if [ "$DRY" = 1 ]; then
+        log "clock $sys is behind floor $eff by $(( eff - sys )) s; WOULD set it to $eff (nothing changed)"
+    elif $SET_CMD "@$eff" >/dev/null 2>&1; then
         log "clock was $sys, behind floor $eff by $(( eff - sys )) s; set to $eff (chrony will correct when it can)"
         write_state 1 $(( eff - sys )) "$eff" "$sys" "$waited" "$stepped"
     else
@@ -155,6 +176,7 @@ cmd_save() {
             return 0
         fi
     fi
+    if [ "$DRY" = 1 ]; then log "WOULD save floor $sys (was $floor); nothing written"; return 0; fi
     mkdir -p "$FLOOR_DIR" 2>/dev/null || { log "cannot create $FLOOR_DIR"; return 0; }
     local tmp="$FLOOR_FILE.$$"
     if echo "$sys" > "$tmp" && sync "$tmp" 2>/dev/null; mv -f "$tmp" "$FLOOR_FILE"; then
@@ -173,10 +195,11 @@ cmd_status() {
     echo "last restore:"; cat "$STATE_OUT" 2>&1 | sed 's/^/  /'
 }
 
+if [ "${2:-}" = "--dry-run" ]; then DRY=1; elif [ -n "${2:-}" ]; then echo "usage: $0 restore|save [--dry-run] | status" >&2; exit 2; fi
 case "${1:-}" in
     restore) cmd_restore ;;
     save)    cmd_save ;;
     status)  cmd_status ;;
-    *) echo "usage: $0 restore|save|status" >&2; exit 2 ;;
+    *) echo "usage: $0 restore|save [--dry-run] | status" >&2; exit 2 ;;
 esac
 exit 0
