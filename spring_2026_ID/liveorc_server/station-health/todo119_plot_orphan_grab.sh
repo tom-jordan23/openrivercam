@@ -39,13 +39,13 @@ sec "1. DB: columns that could point at a plot or output file, and what file/ima
 ro "SELECT m.name, p.name FROM sqlite_master m, pragma_table_info(m.name) p
     WHERE m.type='table' AND (p.name LIKE '%plot%' OR p.name LIKE '%jpg%' OR p.name LIKE '%output%' OR p.name LIKE '%image%'
           OR p.name LIKE '%path%' OR p.name LIKE '%file%' OR p.name LIKE '%thumb%') ORDER BY 1,2;" | sed 's/^/  /'
-echo "  video rows by sync_status: $(ro "SELECT ifnull(sync_status,'NULL')||'='||count(*) FROM video GROUP BY 1;" | tr '\n' ' ')"
+echo "  video rows by sync_status: $(ro "SELECT s||'='||n FROM (SELECT ifnull(sync_status,'NULL') AS s, count(*) AS n FROM video GROUP BY ifnull(sync_status,'NULL'));" | tr '\n' ' ')"
 echo "  3 newest rows (id|timestamp|status|sync_status|file|image|thumbnail):"
 ro "SELECT id,timestamp,status,ifnull(sync_status,'NULL'),file,image,thumbnail FROM video ORDER BY id DESC LIMIT 3;" | cut -c1-230 | sed 's/^/    /'
 echo "  3 oldest rows:"
 ro "SELECT id,timestamp,status,ifnull(sync_status,'NULL'),file,image,thumbnail FROM video ORDER BY id ASC LIMIT 3;" | cut -c1-230 | sed 's/^/    /'
 echo "  any column anywhere mentioning 'plot_quiver' (text columns of video/time_series/video_config):"
-ro "SELECT count(*) FROM video WHERE file LIKE '%plot%' OR image LIKE '%plot%' OR thumbnail LIKE '%plot%';" | sed 's/^/    video rows with plot in file/image/thumbnail: /'
+ro "SELECT count(*) FROM video WHERE file LIKE '%plot%' OR image LIKE '%plot%' OR thumbnail LIKE '%plot%';" | sed 's|^|    video rows with plot in file or image or thumbnail: |'
 
 sec "2. code: who references plot_quiver, and how a missing file is handled"
 echo "  orc_api python files mentioning plot_quiver:"; t 25 $N grep -rIn "plot_quiver" "$PKG" --include=*.py | head -12 | cut -c1-200 | sed 's/^/    /'
