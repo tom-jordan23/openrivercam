@@ -5,7 +5,7 @@
 
 Each mutant is a copy of orc-clock-floor or sensors_logger.py with ONE rule deliberately broken.
 The test suite must FAIL on every one. A mutant that passes means a rule has no test behind it.
-Mutants cover the rules added on 2026-11-13: the watermark cap, --dry-run, the pre-station-file guard in rotation.
+Mutants cover the rules added on 2026-11-13: the watermark cap, --dry-run, the pre-station-file guard in rotation, the early-boot clock guard.
 """
 import os
 import subprocess
@@ -31,6 +31,14 @@ FLOOR_MUTANTS = {
 LOGGER_MUTANTS = {
     "rotation never deletes (rotation disabled)": ('            os.remove(path)', '            pass'),
     "rotation deletes pre-station (January) files": ('if file_date < MIN_PLAUSIBLE_DATE:\n            continue', 'if False:\n            continue'),
+    "guard removed (never defers)": ('    if clock_untrusted():\n        log(', '    if False:\n        log('),
+    "guard ignores whether the floor set the clock": ('    if not _floor_set_clock():\n        return False\n', ''),
+    "guard defers forever (no uptime window)": ('    if up is None or up >= CLOCK_DEFER_UNTIL_S:', '    if up is None:'),
+    "guard window boundary off by one": ('up >= CLOCK_DEFER_UNTIL_S', 'up > CLOCK_DEFER_UNTIL_S'),
+    "guard fails closed on unreadable uptime": ('    if up is None or up >= CLOCK_DEFER_UNTIL_S:', '    if up is not None and up >= CLOCK_DEFER_UNTIL_S:'),
+    "guard ignores chrony (always untrusted)": ('    return not _chrony_synced()', '    return True'),
+    "local reference counts as synced": ('    if re.search(r"^Reference ID\\s*:\\s*(00000000|7F7F0101)", out, re.M):\n        return False\n', ''),
+    "any stratum counts as synced": ('    return bool(m) and 1 <= int(m.group(1)) <= 9', '    return bool(m)'),
 }
 
 

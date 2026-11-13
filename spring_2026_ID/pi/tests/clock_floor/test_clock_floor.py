@@ -355,6 +355,66 @@ def main():
         ok = False
     check("RT5 an empty directory is fine", ok)
 
+    # ── early-boot clock guard: defer while the floor-set clock is unconfirmed ─
+    gd = Path(tempfile.mkdtemp(prefix="guard_"))
+    (gd / "chronyc").write_text('#!/bin/bash\ncat "$(dirname "$0")/chrony.txt"\n'); (gd / "chronyc").chmod(0o755)
+    calls = []
+    sl.DRIVERS["gfake"] = lambda conf: calls.append(1) or {"x": 7}
+
+    def guard_case(restored=None, uptime=20.0, chrony="none", chronyc_present=True, label="g"):
+        calls.clear()
+        out_dir = gd / f"out_{label}"; shutil_rmtree(out_dir)
+        (gd / "chrony.txt").write_text(CHRONY_TXT[chrony])
+        st = gd / "state"; st.unlink(missing_ok=True)
+        if restored is not None: st.write_text(f"restored={restored}\nadj_s=1\n")
+        (gd / "up").write_text("" if uptime is None else f"{uptime:.2f} 0.00")
+        sl.CLOCK_STATE_FILE, sl.UPTIME_FILE = str(st), str(gd / "up")
+        sl.CHRONYC = str(gd / "chronyc") if chronyc_present else str(gd / "no-such-chronyc")
+        conf = gd / f"{label}.conf"
+        conf.write_text(f"SENSOR_TYPE=gfake\nSENSOR_LABEL={label}\nLOG_DIR={out_dir}\nINTERVAL_SEC=1\nCSV_HEADER=timestamp,x\n")
+        rv = sl.process_sensor(str(conf))
+        rows = [l for f in out_dir.glob("*.csv") for l in f.read_text().splitlines()[1:]] if out_dir.exists() else []
+        return rv, len(calls), rows
+
+    def shutil_rmtree(pth):
+        import shutil as _sh
+        _sh.rmtree(pth, ignore_errors=True)
+
+    CHRONY_TXT = {"none": "Reference ID    : 00000000 ()\nStratum         : 0\nLeap status     : Not synchronised\n",
+                  "real": "Reference ID    : CB591F0D (x)\nStratum         : 4\nLeap status     : Normal\n",
+                  "local": "Reference ID    : 7F7F0101 ()\nStratum         : 5\nLeap status     : Normal\n",
+                  "stratum10": "Reference ID    : CB591F0D (x)\nStratum         : 10\nLeap status     : Normal\n"}
+    rv, n, rows = guard_case(restored=1, uptime=20, chrony="none")
+    check("GD1 floor set the clock, chrony unsynced, young boot: DEFERRED (returns ok, sensor not read, nothing written)", rv is True and n == 0 and rows == [], (rv, n, rows))
+    rv, n, rows = guard_case(restored=1, uptime=20, chrony="real")
+    check("GD2 same, but chrony is synced to a real upstream: logs", n == 1 and len(rows) == 1, (n, rows))
+    rv, n, rows = guard_case(restored=1, uptime=60, chrony="none")
+    check("GD3 OFFLINE wake past the defer window (uptime 60 s): logs anyway", n == 1 and len(rows) == 1, (n, rows))
+    rv, n, rows = guard_case(restored=0, uptime=20, chrony="none")
+    check("GD4 floor did not move the clock (restored=0): no guard, logs", n == 1 and len(rows) == 1, (n, rows))
+    rv, n, rows = guard_case(restored=None, uptime=20, chrony="none")
+    check("GD5 no state file (floor did not run): no guard, logs", n == 1 and len(rows) == 1, (n, rows))
+    rv, n, rows = guard_case(restored=1, uptime=20, chrony="none", chronyc_present=False)
+    check("GD6 chronyc missing counts as unsynced: DEFERRED while young", n == 0 and rows == [], (n, rows))
+    rv, n, rows = guard_case(restored=1, uptime=20, chrony="local")
+    check("GD7 chrony on its own local reference does not count as synced: DEFERRED", n == 0 and rows == [], (n, rows))
+    rv, n, rows = guard_case(restored=1, uptime=20, chrony="stratum10")
+    check("GD8 stratum 10 does not count as synced: DEFERRED", n == 0 and rows == [], (n, rows))
+    rv, n, rows = guard_case(restored=1, uptime=44.9, chrony="none", label="gb1")
+    rv2, n2, rows2 = guard_case(restored=1, uptime=45.0, chrony="none", label="gb2")
+    check("GD9 the window is [0, 45) s: 44.9 s defers, 45.0 s logs", n == 0 and n2 == 1, (n, n2))
+    rv, n, rows = guard_case(restored=1, uptime=None, chrony="none")
+    check("GD10 unreadable uptime fails OPEN (logs rather than silently drop data)", n == 1 and len(rows) == 1, (n, rows))
+    calls.clear(); out_n = gd / "out_notdue"; shutil_rmtree(out_n); out_n.mkdir()
+    (out_n / f"notdue_{__import__('datetime').datetime.now():%Y-%m-%d}.csv").write_text("timestamp,x\n" + __import__("datetime").datetime.now().astimezone().isoformat() + ",1\n")
+    (gd / "notdue.conf").write_text(f"SENSOR_TYPE=gfake\nSENSOR_LABEL=notdue\nLOG_DIR={out_n}\nINTERVAL_SEC=3600\nCSV_HEADER=timestamp,x\n")
+    (gd / "state").write_text("restored=1\n"); (gd / "up").write_text("20.00 0.00"); (gd / "chrony.txt").write_text(CHRONY_TXT["none"])
+    import io, contextlib
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        sl.process_sensor(str(gd / "notdue.conf"))
+    check("GD11 a sensor that is not due stays silent (no 'deferred' noise, nothing read)", "deferred" not in buf.getvalue() and not calls, buf.getvalue())
+
     bad = [n for n, ok in results if not ok]
     print(f"\n{len(results) - len(bad)}/{len(results)} passed" + (f"; FAILED: {bad}" if bad else ""))
     sys.exit(1 if bad else 0)

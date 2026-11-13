@@ -777,6 +777,65 @@ def clock_columns():
         return {"clock_state": 2, "clock_adj_s": ""}
 
 
+# ─── Early-boot clock guard (orc-clock-floor, ISS-FIELD-015) ─────────
+# orc-capture runs this logger ~14-25 s into a boot, a few seconds BEFORE chrony steps the clock (~29 s). When orc-clock-floor
+# has set the clock this boot, that early clock is the saved floor: the previous shutdown time, ~28 min behind real. Rows written
+# then are stamped ~28 min early (and values derived from the clock, such as capture_age_s, are wrong). Before the floor those rows
+# got the RTC's January date and were lost; the floor must not turn them into mislabelled data. So: while the floor set the clock,
+# chrony has not confirmed real time, and the boot is young, DEFER (write nothing); the same sensors are due again at the next
+# tick (~60 s), by when the clock is real. An offline wake never syncs, so after CLOCK_DEFER_UNTIL_S the logger writes anyway
+# (floor-based stamps: the documented compressed-timestamp limit).
+
+CLOCK_DEFER_UNTIL_S = int(os.environ.get("ORC_CLOCK_DEFER_UNTIL_S", "45"))
+UPTIME_FILE = os.environ.get("ORC_UPTIME_FILE", "/proc/uptime")
+CHRONYC = os.environ.get("ORC_CHRONYC", "chronyc")
+
+
+def _uptime_s():
+    try:
+        with open(UPTIME_FILE) as f:
+            return float(f.read().split()[0])
+    except (OSError, ValueError, IndexError):
+        return None
+
+
+def _floor_set_clock():
+    """True if orc-clock-floor moved the clock this boot (state file says restored=1)."""
+    try:
+        with open(CLOCK_STATE_FILE) as f:
+            for line in f:
+                k, _, v = line.strip().partition("=")
+                if k == "restored":
+                    return v == "1"
+    except OSError:
+        pass
+    return False
+
+
+def _chrony_synced():
+    """True only when chrony is synchronised to a real upstream ("local stratum 10" and no-reference do not count)."""
+    try:
+        out = subprocess.run([CHRONYC, "tracking"], capture_output=True, text=True, timeout=3).stdout
+    except (OSError, subprocess.SubprocessError):
+        return False
+    if not re.search(r"^Leap status\s*:\s*Normal", out, re.M):
+        return False
+    if re.search(r"^Reference ID\s*:\s*(00000000|7F7F0101)", out, re.M):
+        return False
+    m = re.search(r"^Stratum\s*:\s*(\d+)", out, re.M)
+    return bool(m) and 1 <= int(m.group(1)) <= 9
+
+
+def clock_untrusted():
+    """True while rows would be stamped from an unconfirmed floor-set clock (see the block comment above)."""
+    up = _uptime_s()
+    if up is None or up >= CLOCK_DEFER_UNTIL_S:
+        return False
+    if not _floor_set_clock():
+        return False
+    return not _chrony_synced()
+
+
 # ─── CSV write ───────────────────────────────────────────────────────
 
 def append_csv(log_dir, label, header, values):
@@ -852,6 +911,10 @@ def process_sensor(conf_path):
 
     if not is_due(log_dir, label, interval):
         return True  # not due yet, not an error
+
+    if clock_untrusted():
+        log(f"{label}: deferred, the clock was set by orc-clock-floor and chrony has not confirmed real time yet")
+        return True  # nothing read, nothing written; due again at the next tick
 
     os.makedirs(log_dir, exist_ok=True)
 
