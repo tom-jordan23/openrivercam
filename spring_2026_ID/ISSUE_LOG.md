@@ -3484,7 +3484,8 @@ that a daily re-arm also self-heals a bad list.
   and uptime < 45 s; the sensors are due again at the next tick. Offline wakes still log after 45 s (compressed floor-based stamps remain the known limit);
   unreadable uptime fails open. **Verified at the 20:30 boot:** journal `orccapture: deferred` and `wittypi: deferred` at 20:02:27 (floor clock), **0 rows**
   stamped in the floor window, guard state afterwards `untrusted False`; the uploader retried through four connection failures and finished at 20:30:35.
-  A DB check for rows in the sleep windows after the 21:00 upload is pending.
+  **DB check after the 21:00 upload (21:01:40 UTC): no row stamped in any sleep window (20:03-20:30, 20:33:30-21:00)**; the 20:30 wake's rows are stamped
+  20:31:13 to 20:32:12 (the normal pattern) and nothing sits on the floor-set clock around 20:02:27.
 - **Tests (final commit dde7df3):** floor logic 65/65 (11 guard checks), broken copies 17/17, install/updater/rollback sandbox 25/25 (includes a forced
   post-install failure that restores the backup), `deploy.sh` guard 17/17 + 7/7. No systemd-level boot environment exists; unit ordering was checked with
   `systemd-analyze verify` against the station's real neighbouring units (no cycle) and then by the real boots above.
