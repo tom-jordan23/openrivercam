@@ -9,6 +9,7 @@ Proves the install order, idempotence, the refusals, and that a rollback restore
 """
 import hashlib
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -71,16 +72,17 @@ def main():
     # ── wake B refusals (nothing may change) ──────────────────────────
     r = run(B, ISS015_MAX_UPTIME_S="1")
     check("B1 refuses when the wake is too old; nothing installed", "REFUSED: wake is" in r.stdout and not (root / "usr/local/bin/orc-clock-floor").exists(), r.stdout[-200:])
-    (stage / "orc-clock-floor").write_text("tampered\n")
-    r = run(B)
-    check("B2 refuses a staged file whose hash differs; nothing installed", "REFUSED: staged" in r.stdout and not (root / "usr/local/bin/orc-clock-floor").exists(), r.stdout[-200:])
-    run(A)                                                    # re-stage the good file
+    shutil.rmtree(stage, ignore_errors=True)                  # B must not need wake A's staging directory (a reboot can wipe /tmp)
+    bad = d / "build/b_tampered.sh"; txt = B.read_text()
+    i = txt.index("B64_FLOOR='") + len("B64_FLOOR='"); bad.write_text(txt[:i] + ("A" if txt[i] != "A" else "B") + txt[i + 1:])
+    r = run(bad)
+    check("B2 a corrupted embedded payload is refused before anything is installed", "REFUSED: payload FLOOR" in r.stdout and not (root / "usr/local/bin/orc-clock-floor").exists(), r.stdout[-200:])
     logger.write_text(old + "\n# local edit\n")
     r = run(B)
     check("B3 refuses when the installed logger is neither old nor new", "REFUSED: installed sensors_logger.py" in r.stdout and sha(logger) != sha(new_logger), r.stdout[-200:])
     logger.write_text(old)
 
-    # ── wake B install ────────────────────────────────────────────────
+    # ── wake B install (the staging directory was removed above: B stages itself) ──
     r = run(B)
     fl = root / "usr/local/bin/orc-clock-floor"
     check("B4 install completes", "RESULT: INSTALLED" in r.stdout, r.stdout[-400:] + r.stderr[-200:])

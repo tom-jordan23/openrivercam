@@ -1,6 +1,6 @@
 set -u
 # ISS-FIELD-015 clock floor, WAKE B: INSTALL. Template; build with build_floor_wake_scripts.py.
-# Run through todo119_wake_runner.py in the FIRST MINUTE of a wake, after wake A passed.
+# Run through todo119_wake_runner.py in the FIRST MINUTE of a wake (wake A is a read-only rehearsal; B does not depend on it).
 # Station times are UTC.
 #
 # STATION WRITES, ROOT (sudo -n). Needs Tom's explicit approval of exactly these steps:
@@ -35,10 +35,16 @@ DONE="nothing changed"
 jobs=$(systemctl list-jobs --no-legend 2>/dev/null | grep -Ei 'poweroff|shutdown|reboot|halt' || true)
 [ -z "$jobs" ] || { echo "REFUSED: a shutdown job is queued: $jobs"; return 2; }
 $S true 2>/dev/null || { echo "REFUSED: sudo -n is not available"; return 2; }
+# Every wake is a reboot and /tmp does not reliably survive one, so wake B does not depend on wake A's staging directory:
+# it writes the files from its OWN embedded payload and verifies each hash before anything is installed.
+mkdir -p "$STAGE" || { echo "REFUSED: cannot create $STAGE"; return 2; }
 for n in FLOOR UNIT LOGGER; do
-  bv="EXPECT_${n}_SHA"; dv="DEST_$n"; f="$STAGE/$(basename "${!dv}")"
-  [ -f "$f" ] && [ "$(sha256sum "$f" | cut -c1-64)" = "${!bv}" ] || { echo "REFUSED: staged $f missing or hash differs (run wake A in this build)"; return 2; }
+  bv="B64_$n"; sv="EXPECT_${n}_SHA"; dv="DEST_$n"; f="$STAGE/$(basename "${!dv}")"
+  printf '%s' "${!bv}" | base64 -d > "$f" 2>/dev/null
+  [ -s "$f" ] && [ "$(sha256sum "$f" | cut -c1-64)" = "${!sv}" ] || { echo "REFUSED: payload $n does not decode to its expected hash"; return 2; }
 done
+chmod 755 "$STAGE/orc-clock-floor"
+echo "payload decoded and verified in $STAGE (3 files)"
 inst=$(sha256sum "$DEST_LOGGER" 2>/dev/null | cut -c1-64)
 if [ "$inst" != "$EXPECT_OLD_LOGGER_SHA" ] && [ "$inst" != "$EXPECT_LOGGER_SHA" ]; then
   echo "REFUSED: installed sensors_logger.py ($inst) is neither the expected old version nor the new one"; return 2
