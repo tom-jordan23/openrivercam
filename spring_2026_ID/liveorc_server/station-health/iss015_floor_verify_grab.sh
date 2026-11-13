@@ -33,6 +33,13 @@ for f in /var/log/orc/sensors/sht40_$(date -u +%F).csv /var/log/orc/sensors/witt
 done
 echo "  orc-sensors service, last 8 journal lines:"; timeout 15 journalctl -u orc-sensors.service -n 8 --no-pager 2>&1 | cut -c1-170 | sed 's/^/    /'
 echo "  any 'Traceback' or 'Error' from the logger in the last 30 min: $(timeout 15 journalctl -u orc-sensors.service --since '30 min ago' --no-pager 2>&1 | grep -ci 'traceback\|error')"
+sec "5. did the previous wake's rows reach the station files and the uploader? (watermark = mtime of upload.state; files newer than it are PUT)"
+echo "  upload.state mtime: $(stat -c '%y' /var/lib/orc-sensors/upload.state 2>&1)"
+echo "  today's CSVs by mtime (newest first):"; ls -l --time-style=full-iso -t /var/log/orc/sensors/*_$(date -u +%F).csv 2>&1 | head -8 | awk '{print "    "$6" "$7" "$5" "$9}'
+echo "  rows stamped 18:3x UTC today (the 18:30 wake), first 8:"; grep -h "$(date -u +%F)T18:3" /var/log/orc/sensors/*_$(date -u +%F).csv 2>/dev/null | head -8 | cut -c1-90 | sed 's/^/    /'
+echo "  uploader / capture journal, last 45 min (tag orc-sensors-upload, orc-capture):"
+u=$(timeout 20 journalctl --since '45 min ago' --no-pager 2>&1); case "$u" in *"insufficient permissions"*|*"No journal files"*) u=$(timeout 20 sudo -n journalctl --since '45 min ago' --no-pager 2>&1);; esac
+printf '%s\n' "$u" | grep -i "orc-sensors-upload\|orc-capture" | tail -24 | cut -c1-200 | sed 's/^/    /'
 echo; echo "=== END ==="
 }
 main </dev/null
