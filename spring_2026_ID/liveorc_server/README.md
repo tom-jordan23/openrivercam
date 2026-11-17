@@ -11,8 +11,9 @@ LiveORC's container or config**:
   every 30 s and upserts parsed rows into the TimescaleDB hypertable.
   Idempotent (composite unique key per `(ts, station, sensor, metric)`).
 - **`timescale`** — TimescaleDB instance backing the sensor time-series.
-- **`grafana`** — UI at port 9443 with anonymous viewer access (admin
-  login required for editing). Reuses the same self-signed cert.
+- **`grafana`** — UI at port 9443. Login required; anonymous access is off
+  (see "Grafana lock-down" below). Queries Postgres as the read-only role
+  `orc_grafana_ro`, never the `orc` superuser. Reuses the same self-signed cert.
 - **`sheets-export/`** — hourly job that appends un-exported rows from the
   TimescaleDB `sensor_readings` table to a Google Sheet, so stakeholders can
   read the data without a login or a self-signed-cert warning. Pure consumer:
@@ -146,10 +147,11 @@ add two inbound rules:
 | Port | Description |
 |------|-------------|
 | `8443` | `orc-sensor-upload (station CSV ingest)` |
-| `9443` | `orc-grafana (public read-only dashboards)` |
+| `9443` | `orc-grafana (login required)` |
 
-Both: Type `Custom TCP`, Source `0.0.0.0/0` (public dashboards are an
-explicit design choice — see disclaimer banner on every dashboard).
+Both: Type `Custom TCP`, Source `0.0.0.0/0`. The stations upload from cellular
+networks, so 8443 cannot be restricted to a fixed address. Grafana on 9443
+requires a login (see "Grafana lock-down" below).
 
 ### 8. Bring up the service
 
@@ -166,8 +168,9 @@ Expect to see `loaded tokens for stations: ['jakarta', 'sukabumi']` and
 
 Browser → `https://openrivercam.endlessprojects.info:9443/`. You'll see a
 browser cert warning (self-signed). Accept the risk; you'll land on the
-Grafana home page in anonymous viewer mode. The "Station overview"
-dashboard should be available under "Browse → ORC station dashboards".
+Grafana login page. Sign in as `orc-readonly` (Viewer) or `orc-admin`. The
+"Station overview" dashboard should be available under "Browse → ORC station
+dashboards".
 
 The disclaimer banner at the top of every dashboard is **mandatory and
 non-removable** — see `memory/project_grafana_disclaimer.md`. If you add
@@ -175,6 +178,29 @@ new dashboards, copy the banner panel as the first row.
 
 Admin login (to edit dashboards) is at `/login` with `orc-admin` and the
 password from `.env`.
+
+#### Grafana lock-down (2026-11)
+
+Until November 2026 this Grafana allowed anonymous Viewer access and queried
+Postgres as the superuser `orc`. Anonymous Viewers can call `/api/ds/query`,
+so anyone on the internet could run arbitrary SQL as a superuser. The image
+(11.3.0) was also past end of life. `lockdown-grafana.sh` fixes both: it
+creates the read-only role, creates the `orc-readonly` login, switches the
+image to 13.3.1, turns anonymous access off and request logging on, and
+verifies that the sensor upload path was not disturbed. It backs everything up
+first and rolls back automatically if a check fails.
+
+```bash
+sudo ./lockdown-grafana.sh --check     # preflight only
+sudo ./lockdown-grafana.sh             # apply, verify, auto-rollback
+sudo ./lockdown-grafana.sh --rollback  # restore the newest backup
+```
+
+The `station-health/` tools now need the `orc-readonly` credentials: set
+`ORC_GRAFANA_USER` and `ORC_GRAFANA_PASSWORD`, or put `user:password` in
+`~/.config/orc/grafana-readonly` (mode 0600). After the change,
+`station-health/ingest_flow_check.py --since <time>` shows from the workstation
+whether the station's rows are still arriving.
 
 ### 10. Smoke test sensor-upload from the open internet
 
@@ -206,7 +232,8 @@ refuses to connect with `unable to get local issuer certificate`.
 `sensor_readings` — the station writes rows on every wake, so their absence
 dates every outage exactly, and the spacing between them exposes boots the
 schedule never asked for. Read-only, runs from a workstation against the
-anonymous Grafana proxy: no credentials, no SSH, no Session Manager.
+Grafana proxy with the read-only `orc-readonly` login: no SSH, no Session
+Manager.
 
 ```bash
 ./station-health/station_gaps.py                    # sukabumi, all history

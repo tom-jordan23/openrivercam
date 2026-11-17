@@ -5,9 +5,12 @@ datasources:
     type: postgres
     uid: timescale
     url: timescale:5432
-    user: orc
+    # Read-only role with SELECT on sensor_readings only. Never the orc
+    # superuser: anyone who can reach Grafana's query API can run any SQL the
+    # datasource role can.
+    user: orc_grafana_ro
     secureJsonData:
-      password: $TIMESCALE_PASSWORD
+      password: $GRAFANA_RO_PASSWORD
     jsonData:
       database: orc
       sslmode: disable

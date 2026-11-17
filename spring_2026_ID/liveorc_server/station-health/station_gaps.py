@@ -65,6 +65,7 @@ Read-only. Safe to re-run.
 """
 
 import argparse
+import base64
 import json
 import os
 import ssl
@@ -79,6 +80,29 @@ DEFAULT_GRAFANA = os.environ.get(
     "ORC_GRAFANA", "https://openrivercam.endlessprojects.info:9443"
 )
 DATASOURCE_UID = "timescale"
+
+# Grafana no longer allows anonymous access (2026-11 lock-down). Every tool in
+# this directory goes through query() below, so credentials are handled here.
+# The login is the Viewer user orc-readonly. Supply it either as
+#   ORC_GRAFANA_USER / ORC_GRAFANA_PASSWORD   (environment), or
+#   ~/.config/orc/grafana-readonly            (one line, user:password, mode 0600)
+CRED_FILE = Path.home() / ".config/orc/grafana-readonly"
+
+
+def _auth_header():
+    user, pw = os.environ.get("ORC_GRAFANA_USER"), os.environ.get("ORC_GRAFANA_PASSWORD")
+    if not (user and pw):
+        try:
+            if CRED_FILE.stat().st_mode & 0o077:
+                sys.exit(f"error: {CRED_FILE} must not be readable by others (chmod 600)")
+            user, _, pw = CRED_FILE.read_text().strip().partition(":")
+        except FileNotFoundError:
+            sys.exit(
+                "error: no Grafana credentials. Set ORC_GRAFANA_USER and\n"
+                f"ORC_GRAFANA_PASSWORD, or write user:password to {CRED_FILE}"
+            )
+    token = base64.b64encode(f"{user}:{pw}".encode()).decode()
+    return {"Authorization": f"Basic {token}"}
 
 # Site local time. Both Indonesian sites are WIB (UTC+7); the query asks
 # Postgres to do the conversion so we never guess at DST that doesn't exist.
@@ -115,12 +139,16 @@ def query(sql, grafana, ca_path, timeout=90):
     req = urllib.request.Request(
         f"{grafana}/api/ds/query",
         data=body,
-        headers={"Content-Type": "application/json"},
+        headers={"Content-Type": "application/json", **_auth_header()},
         method="POST",
     )
     try:
         with urllib.request.urlopen(req, timeout=timeout, context=ctx) as resp:
             payload = json.load(resp)
+    except urllib.error.HTTPError as exc:
+        if exc.code in (401, 403):
+            sys.exit(f"error: Grafana refused the credentials ({exc.code}); check {CRED_FILE}")
+        sys.exit(f"error: Grafana at {grafana} returned HTTP {exc.code}")
     except urllib.error.URLError as exc:
         sys.exit(f"error: cannot reach Grafana at {grafana}: {exc}")
 

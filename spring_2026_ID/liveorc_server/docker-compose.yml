@@ -5,7 +5,7 @@
 #   sensor-upload    HTTPS PUT endpoint :8443 (ingests from Pi stations)
 #   timescale        TimescaleDB; backing store for sensor time series
 #   sensor-ingest    Polls /var/orc/sensors/*.csv → upserts into timescale
-#   grafana          UI at :9443 (anonymous viewer; admin login for editing)
+#   grafana          UI at :9443 (login required; no anonymous access)
 #
 # Self-signed cert (10-year) at ./certs/{fullchain,privkey}.pem is shared
 # by sensor-upload and grafana. Public cert is in the repo at
@@ -100,7 +100,7 @@ services:
       - ./secrets:/secrets:ro
 
   grafana:
-    image: grafana/grafana:11.3.0
+    image: grafana/grafana:13.3.1
     container_name: orc-grafana
     restart: unless-stopped
     # Runs as root so it can read the self-signed privkey (mode 0600
@@ -116,16 +116,25 @@ services:
       GF_SERVER_HTTP_PORT: "9443"
       GF_SERVER_CERT_FILE: /certs/fullchain.pem
       GF_SERVER_CERT_KEY: /certs/privkey.pem
-      # Anonymous read access (public dashboards). Admin still needs login
-      # to edit; that path is at /login.
-      GF_AUTH_ANONYMOUS_ENABLED: "true"
-      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      # No anonymous access. Until 2026-11 this was "true" with role Viewer,
+      # which let anyone on the internet run arbitrary SQL through
+      # /api/ds/query as the Postgres superuser (ISSUE_LOG, Grafana lock-down).
+      # Our own tooling signs in as the Viewer user orc-readonly instead.
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      # Log every request, so use can be measured. Without this Grafana logs
+      # only failures, and "nobody came" cannot be told from "nothing logged".
+      GF_SERVER_ROUTER_LOGGING: "true"
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?GRAFANA_ADMIN_PASSWORD must be set in .env}
       # Branding — reinforces the research/non-official framing
       GF_SECURITY_ADMIN_USER: orc-admin
       GF_USERS_DEFAULT_THEME: light
       # Datasource expansion uses env vars (referenced in provisioning yml)
-      TIMESCALE_PASSWORD: ${TIMESCALE_PASSWORD}
+      # Password of the read-only role orc_grafana_ro (created by
+      # liveorc-host/lockdown-grafana.sh). NOT the orc superuser's password.
+      # Deliberately not ${...:?}: compose evaluates that for the WHOLE file, so a
+      # missing value would stop every compose command on the host, not just
+      # Grafana. An empty value shows up as a failing datasource health check.
+      GRAFANA_RO_PASSWORD: ${GRAFANA_RO_PASSWORD:-}
     ports:
       - "9443:9443"
     volumes:
