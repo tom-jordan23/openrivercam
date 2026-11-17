@@ -3027,6 +3027,7 @@ quota has not been checked for this stop. The cause of the 10-21 stop is open.
    Indonesia, so its uploads cannot be restricted to a fixed source address.
    Port 9443 serves Grafana with anonymous Viewer access (see the LiveORC
    read-only query notes); that is worth raising with them.
+   **Update 2026-11-17:** anonymous access on 9443 was closed; see ISS-FIELD-019.
 3. Confirm a sensor upload reaches 8443 once the station next syncs.
 4. Nothing monitors whether the server is reachable from outside. The
    station's SIM and this server's network path have each caused an outage that
@@ -3584,3 +3585,70 @@ consecutive offline wakes start where the previous one ended: a day offline is s
 
 **Options:** accept; add `clock_state` columns to the sensor `CSV_HEADER` confs (the ingest turns every numeric column into a metric, so no schema change, but two new metrics per sensor appear in Grafana and the sheets export);
 the month repair after 12-01.
+
+### ISS-FIELD-019: Public Grafana on :9443 gave anyone on the internet superuser SQL access to the sensor database; image 11.3.0 was past end of life
+
+| Field | Value |
+|-------|-------|
+| **Date opened** | 2026-11-17 |
+| **Site** | LiveORC server (AWS), `orc-grafana`, port 9443 |
+| **Risk** | Confidentiality, integrity and availability of the sensor database; code execution inside the database container |
+| **Impact** | High while open; no sign of misuse found, but successful requests were never logged, so misuse cannot be excluded |
+| **Status** | OPEN — exposure closed and verified 2026-11-17 15:41 UTC (commit `ce793d4`); follow-ups below |
+
+**Trigger.** AmCross IT/security asked about the Grafana instance and noted that it was a terminal release and going out of date. Tom asked whether it was still used and
+whether to password-protect or remove it.
+
+**What was found (2026-11-17, read-only).**
+
+- `GF_AUTH_ANONYMOUS_ENABLED=true` with role Viewer. Anonymous Viewers can call `/api/ds/query`, and the one datasource connected as the Postgres role `orc`. A read-only SELECT
+  through the anonymous endpoint showed `orc` has `rolsuper = true`, owns `sensor_readings`, and has INSERT and DELETE. Anyone who could reach port 9443 could run arbitrary SQL as a
+  superuser. A superuser can normally also run programs inside the database container (`COPY ... TO PROGRAM`). No write or program execution was tested.
+- Port 9443 was open to `0.0.0.0/0` (see ISS-FIELD-014). The container was created 2026-05-15, so the configuration is at least that old.
+- The image was `grafana/grafana:11.3.0`, the first release of the 11.3 line. Grafana's own table puts 12.3 at end of life in August 2026; 11.3 is older still. The advisories found by web search
+  that cover 11.3 (CVE-2026-11817, CVE-2026-28374) were read only as search summaries. CVE-2026-33380 (SQL Expressions read files from disk) lists fixed versions only for 11.6.14 and later, 12.x and 13.x. The
+  affected range of CVE-2026-27876 was not confirmed. These were not checked against the advisory pages in full.
+- Nothing on the station or in IPB's dashboard uses Grafana. IPB's dashboard uses the LiveORC API account; `sheets-export` reads Postgres directly. The only real consumers were our own
+  station-health tools (`station_gaps.py`, `station_watch.py`, `db_watch.py`, `wp5d_verdict.py`), which used the anonymous endpoint.
+
+**Evidence of use (`liveorc-host/check-grafana-usage.sh`, run on the host 2026-11-17).**
+
+- `orc-admin` has never logged in (last-seen is Grafana's 2016 placeholder). The dashboard `station-overview` was last edited 2026-05-15, the day it was built. No stars, no API keys.
+- `anon_device` holds 9 records from 8 addresses, none from Indonesia. Two are long-lived automated clients (a headless Chrome, first seen 2026-09-30, and an old Chrome version, first seen 2026-06-01). Six are
+  one-off browser visits from US addresses between 2026-10-29 and 2026-11-06 (one address twice), beginning the day after the 2026-10-28 security group change. They are probably AmCross looking at the
+  exposure; this is unconfirmed. The addresses are not recorded here.
+- The container log covers 2026-05-15 to 2026-07-29 only and holds 4,103 "Request Completed" lines, all failures or probes: scanners requesting `/.git/config`, `/.env`, swagger and actuator paths,
+  path-traversal attempts under `/public/plugins/alertlist/`, and 104 `POST /login` requests answered 401 (211 failed-auth lines in all). Grafana did not log successful requests. The log is empty after
+  2026-07-29 although the container last started on 2026-11-02; the cause is unknown.
+- Whether anyone used the anonymous SQL access is **unknown**. Our own curl and Python clients do not appear in `anon_device`, so it undercounts API-only use.
+
+**Fix (`lockdown-grafana.sh`, commit `ce793d4`; run on the host 2026-11-17 15:41 UTC).**
+
+- New Postgres role `orc_grafana_ro` (no superuser; SELECT on `sensor_readings` only). The `orc` role was not changed. Verified on the host: the role cannot DELETE, cannot run `COPY ... TO PROGRAM`,
+  and cannot CREATE a table.
+- Grafana now queries as `orc_grafana_ro`. Anonymous access is off; a Viewer login `orc-readonly` replaces it for the station-health tools (`station_gaps.query()` now sends credentials from the
+  environment or `~/.config/orc/grafana-readonly`). Request logging is on (`GF_SERVER_ROUTER_LOGGING`). Image is `grafana/grafana:13.3.1`. Only the `grafana` service was recreated.
+- Verified from the workstation without credentials: `/api/health` reports 13.3.1; `/api/search`, `/api/datasources` and `/api/ds/query` return 401. `:8443/sensors/health` still lists both stations.
+- The script backs up `.env`, the two changed files and the Grafana data volume before changing anything, and rolls back automatically on a failed check. The backup is at
+  `/opt/orc-additions/.lockdown-backup/20261117T154122Z` (it contains `.env`).
+- **Sensor path.** No change to the Sukabumi station. On the host, `orc-sensor-upload`, `orc-sensor-ingest` and `orc-timescale` kept their start times, and the newest row did not regress. From the
+  workstation (`station-health/ingest_flow_check.py`): rows from the 15:30 wake reached the database after the change (not present at 15:53 UTC, present at 16:12), and at 16:47 UTC every sensor had rows
+  stamped after the change (16:00 wake). Rows arrive one wake late, as before (see ISS-FIELD-018).
+- **Rehearsal.** The script was run first on the workstation against the real old stack (11.3.0, anonymous, `orc` datasource): apply, manual rollback, automatic rollback after a deliberately broken datasource,
+  the passphrase prompt, and two re-runs. It found four faults in the script, all fixed before the host run: the admin-password preflight passed with a wrong password (with anonymous access on,
+  `/api/org` returns 200 whatever the credentials); `docker exec -i` consumed the passphrase prompt's input; Grafana returns HTTP 500 when asked to set a user's password to its current value; and any unrelated
+  container restart would have triggered a rollback.
+
+**Decision.** Grafana is kept as an internal diagnostics path, because the station-health tools and the workstation's read-only access to the sensor data depend on it and the host has no SSH. The dashboard is kept behind
+the login. IPB's partner dashboard does not need it, which narrows TODO-102 to internal use (see TODO-401).
+
+**Open items:**
+
+1. Reply to AmCross IT (Tom). Ask which source addresses they used between 2026-10-29 and 2026-11-06, to match the six browser visits.
+2. The database was not examined for tampering. With superuser access open since at least 2026-05-15, check for unexpected roles, tables, functions, extensions and `pg_hba` or configuration changes, and that
+   `sensor_readings` row counts per day are plausible. Not done.
+3. `orc` is still a superuser and `sensor-ingest` and `sheets-export` still connect as it. It is no longer reachable from the internet (Postgres publishes no port), but a separate role per service with
+   only the grants each needs would remove the remaining exposure. Not done; it touches the sensor path.
+4. Confirm the `orc-admin` password in `.env` is strong; 104 failed `/login` attempts were logged between May and July.
+5. Establish why the Grafana container log is empty after 2026-07-29.
+6. Remove the host backup `20261117T154122Z` after a few days; it contains `.env`.
