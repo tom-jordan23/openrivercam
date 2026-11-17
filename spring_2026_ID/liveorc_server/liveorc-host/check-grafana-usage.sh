@@ -84,9 +84,17 @@ fi
 # ---- collect the two evidence files --------------------------------------
 if [ -z "$DB_FILE" ]; then
   mkdir -p "$TMP/db"
-  $D cp "$C:/var/lib/grafana/grafana.db" "$TMP/db/grafana.db" >/dev/null 2>&1
-  $D cp "$C:/var/lib/grafana/grafana.db-wal" "$TMP/db/grafana.db-wal" >/dev/null 2>&1
-  $D cp "$C:/var/lib/grafana/grafana.db-shm" "$TMP/db/grafana.db-shm" >/dev/null 2>&1
+  # Stream with `docker exec cat` rather than `docker cp`: the container runs
+  # as root, so the read succeeds, and the copy is owned by the caller. docker
+  # cp keeps the original owner (uid 472, mode 640), which the caller cannot
+  # read. That made the first version fail with "unable to open database file".
+  if ! $D exec "$C" cat /var/lib/grafana/grafana.db >"$TMP/db/grafana.db"; then
+    echo "  could not read /var/lib/grafana/grafana.db from $C" >&2
+  fi
+  # A WAL file, if present, holds recent writes not yet in the main file.
+  $D exec "$C" cat /var/lib/grafana/grafana.db-wal >"$TMP/db/grafana.db-wal" 2>/dev/null \
+    || rm -f "$TMP/db/grafana.db-wal"
+  [ -s "$TMP/db/grafana.db-wal" ] || rm -f "$TMP/db/grafana.db-wal"
   DB_FILE="$TMP/db/grafana.db"
 fi
 if [ -z "$LOGS_FILE" ]; then
